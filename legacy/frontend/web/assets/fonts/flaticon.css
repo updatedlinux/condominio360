@@ -1,0 +1,285 @@
+@charset "UTF-8";
+@font-face {
+  font-family: "flaticon";
+  src: url("./flaticon.ttf?d12c95950a03e0e5fd0c1b8ad3d73792") format("truetype"), url("./flaticon.woff?d12c95950a03e0e5fd0c1b8ad3d73792") format("woff"), url("./flaticon.woff2?d12c95950a03e0e5fd0c1b8ad3d73792") format("woff2"), url("./flaticon.eot?d12c95950a03e0e5fd0c1b8ad3d73792#iefix") format("embedded-opentype"), url("./flaticon.svg?d12c95950a03e0e5fd0c1b8ad3d73792#flaticon") format("svg");
+}
+
+i[class^="flaticon-"]:before, i[class*=" flaticon-"]:before {
+  font-family: flaticon !important;
+  font-style: normal;
+  font-weight: normal !important;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.flaticon-percentage:before {
+  content: "";
+}
+
+.flaticon-pie-chart:before {
+  content: "";
+}
+
+.flaticon-analytics:before {
+  content: "";
+}
+
+.flaticon-fluctuation:before {
+  content: "";
+}
+
+.flaticon-calculator:before {
+  content: "";
+}
+
+.flaticon-contract:before {
+  content: "";
+}
+
+.flaticon-buy:before {
+  content: "";
+}
+
+.flaticon-auction:before {
+  content: "";
+}
+
+.flaticon-point-of-service:before {
+  content: "";
+}
+
+.flaticon-archives:before {
+  content: "";
+}
+
+.flaticon-analytics-1:before {
+  content: "";
+}
+
+.flaticon-sell:before {
+  content: "";
+}
+
+.flaticon-target:before {
+  content: "";
+}
+
+.flaticon-newspaper:before {
+  content: "";
+}
+
+.flaticon-donation:before {
+  content: "";
+}
+
+.flaticon-loss:before {
+  content: "";
+}
+
+.flaticon-bank:before {
+  content: "";
+}
+
+.flaticon-apple:before {
+  content: "";
+}
+
+.flaticon-linkedin:before {
+  content: "";
+}
+
+.flaticon-phone-call:before {
+  content: "";
+}
+
+.flaticon-location-pin:before {
+  content: "";
+}
+
+.flaticon-web:before {
+  content: "";
+}
+
+.flaticon-calendar:before {
+  content: "";
+}
+
+.flaticon-check-mark:before {
+  content: "";
+}
+
+.flaticon-email:before {
+  content: "";
+}
+
+.flaticon-star:before {
+  content: "";
+}
+
+.flaticon-cheque:before {
+  content: "";
+}
+
+.flaticon-twitter:before {
+  content: "";
+}
+
+.flaticon-instagram:before {
+  content: "";
+}
+
+.flaticon-facebook:before {
+  content: "";
+}
+
+.flaticon-oil:before {
+  content: "";
+}
+
+.flaticon-bar-chart:before {
+  content: "";
+}
+
+.flaticon-abacus:before {
+  content: "";
+}
+
+.flaticon-book:before {
+  content: "";
+}
+
+.flaticon-time-is-money:before {
+  content: "";
+}
+
+.flaticon-shield:before {
+  content: "";
+}
+
+.flaticon-atm:before {
+  content: "";
+}
+
+.flaticon-money:before {
+  content: "";
+}
+
+.flaticon-analytics-2:before {
+  content: "";
+}
+
+.flaticon-briefcase:before {
+  content: "";
+}
+
+.flaticon-search:before {
+  content: "";
+}
+
+.flaticon-levels:before {
+  content: "";
+}
+
+.flaticon-pin-code:before {
+  content: "";
+}
+
+.flaticon-loss-1:before {
+  content: "";
+}
+
+.flaticon-withdraw:before {
+  content: "";
+}
+
+.flaticon-money-1:before {
+  content: "";
+}
+
+.flaticon-exchange:before {
+  content: "";
+}
+
+.flaticon-user:before {
+  content: "";
+}
+
+.flaticon-playstore:before {
+  content: "";
+}
+
+.flaticon-right-arrow:before {
+  content: "";
+}
+
+.flaticon-down-arrow:before {
+  content: "";
+}
+
+.flaticon-left-quote:before {
+  content: "";
+}
+
+.flaticon-wallet:before {
+  content: "";
+}
+
+.flaticon-money-bag:before {
+  content: "";
+}
+
+.flaticon-balance:before {
+  content: "";
+}
+
+.flaticon-profits:before {
+  content: "";
+}
+
+.flaticon-gold-ingot:before {
+  content: "";
+}
+
+.flaticon-presentation:before {
+  content: "";
+}
+
+.flaticon-businessman:before {
+  content: "";
+}
+
+.flaticon-businessman-1:before {
+  content: "";
+}
+
+.flaticon-chat:before {
+  content: "";
+}
+
+.flaticon-bar-chart-1:before {
+  content: "";
+}
+
+.flaticon-purse:before {
+  content: "";
+}
+
+.flaticon-id-card:before {
+  content: "";
+}
+
+.flaticon-payment-method:before {
+  content: "";
+}
+
+.flaticon-money-2:before {
+  content: "";
+}
+
+.flaticon-safebox:before {
+  content: "";
+}
+/*# sourceMappingURL=flaticon.css.map */

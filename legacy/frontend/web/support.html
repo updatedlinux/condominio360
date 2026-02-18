@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Soporte y Ayuda - BidiPago</title>
+
+    <style>
+        /* Sidebar Styles (Copied from dashboard) */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            background-color: #f9f9f9;
+        }
+
+        .dashboard-main.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                width: 200px;
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Support Page Specific Styles */
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h2 {
+            color: #333;
+            font-weight: 700;
+        }
+
+        .support-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 1px solid #f0f0f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .support-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(238, 106, 62, 0.15);
+            border-color: #ee6a3e;
+        }
+
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            transition: all 0.3s;
+        }
+
+        .icon-wrapper.chat {
+            background: rgba(238, 106, 62, 0.1);
+            color: #ee6a3e;
+        }
+
+        .icon-wrapper.email {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .icon-wrapper.faq {
+            background: rgba(23, 162, 184, 0.1);
+            color: #17a2b8;
+        }
+
+        .support-card:hover .icon-wrapper {
+            transform: scale(1.1);
+        }
+
+        .support-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .support-card p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .btn-support {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(238, 106, 62, 0.3);
+        }
+
+        .btn-support:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(238, 106, 62, 0.4);
+            color: #fff;
+        }
+
+        .btn-support.outline {
+            background: transparent;
+            border: 2px solid #ddd;
+            color: #666;
+            box-shadow: none;
+        }
+
+        .btn-support.outline:hover {
+            border-color: #ee6a3e;
+            color: #ee6a3e;
+            background: #fff;
+        }
+
+        .faq-section {
+            background: #fff;
+            border-radius: 15px;
+            padding: 40px;
+            margin-top: 40px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .faq-section h3 {
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 30px;
+            border-left: 5px solid #ee6a3e;
+            padding-left: 15px;
+        }
+
+        .accordion-item {
+            border: 1px solid #f0f0f0;
+            margin-bottom: 15px;
+            border-radius: 10px !important;
+            overflow: hidden;
+        }
+
+        .accordion-button {
+            font-weight: 600;
+            color: #333;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: none !important;
+        }
+
+        .accordion-button:not(.collapsed) {
+            color: #ee6a3e;
+            background-color: rgba(238, 106, 62, 0.05);
+        }
+
+        .accordion-body {
+            padding: 20px;
+            color: #666;
+            line-height: 1.6;
+            background: #fff;
+        }
+
+        /* Loading overlay for actions */
+        .overlay-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Dashboard Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support" class="active"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="dashboard-main" id="dashboardMain">
+        <div class="container-fluid">
+            <div class="dashboard-header">
+                <h2>Soporte y Ayuda</h2>
+                <p class="text-muted">Estamos aquí para ayudarte. Elige una de las siguientes opciones.</p>
+            </div>
+
+            <div class="row">
+                <!-- Chat Support -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="support-card">
+                        <div class="icon-wrapper chat">
+                            <i class="ri-customer-service-2-line"></i>
+                        </div>
+                        <h3>Chat en Vivo</h3>
+                        <p>Habla con nuestro equipo de soporte en tiempo real para resolver tus dudas rápidamente.</p>
+                        <a href="#" class="btn-support" onclick="openChat(); return false;">Iniciar Chat</a>
+                    </div>
+                </div>
+
+                <!-- Email Support -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="support-card">
+                        <div class="icon-wrapper email">
+                            <i class="ri-mail-send-line"></i>
+                        </div>
+                        <h3>Correo Electrónico</h3>
+                        <p>Escríbenos detalladamente tu problema y te responderemos en el menor tiempo posible.</p>
+                        <a href="#" class="btn-support" onclick="openContactModal(); return false;">Enviar Correo</a>
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="support-card">
+                        <div class="icon-wrapper faq">
+                            <i class="ri-question-answer-line"></i>
+                        </div>
+                        <h3>Centro de Ayuda</h3>
+                        <p>Consulta nuestra base de conocimientos para encontrar respuestas a preguntas frecuentes.</p>
+                        <a href="#faqSection" class="btn-support outline">Ver FAQ</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section (mismo contenido que landing /faq) -->
+            <div class="faq-section" id="faqSection">
+                <h3>Preguntas Frecuentes</h3>
+                <p class="text-muted mb-3">Encuentra respuestas rápidas sobre BidiPago: registro, niveles KYC, BidiInvest, BidiSan, criptomonedas, P2P, gift cards y más.</p>
+                <div class="accordion" id="faqAccordion">
+                    <!-- Registro y Cuenta -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqReg1">¿Cómo me registro en BidiPago?</button></h2>
+                        <div id="faqReg1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Es muy sencillo. Solo necesitas un correo electrónico válido y crear una contraseña segura. Una vez registrado, recibirás un código de verificación para activar tu cuenta y comenzar a explorar la plataforma.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqReg2">¿Qué son los niveles de verificación (KYC)?</button></h2>
+                        <div id="faqReg2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <p>Para garantizar la seguridad de todos nuestros usuarios y cumplir con las normativas internacionales, BidiPago utiliza niveles de verificación:</p>
+                                <ul>
+                                    <li><strong>Nivel 1 (Básico):</strong> Registro inicial. Permite explorar la plataforma y realizar operaciones limitadas.</li>
+                                    <li><strong>Nivel 2 (Verificado):</strong> Requiere subir tu documento de identidad y una selfie. Desbloquea límites más altos en el P2P.</li>
+                                    <li><strong>Nivel 3 (Cajero/Avanzado):</strong> Requiere verificación con datos adicionales. Ideal para quienes desean ser proveedores de liquidez y ganar comisiones, además ofrece acceso a Productos de Inversión.</li>
+                                    <li><strong>Nivel 4 (Máximo):</strong> Nivel más alto con acceso anticipado a nuevas funcionalidades.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- BidiInvest -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqInv1">¿Qué es BidiInvest y cómo funciona el Staking?</button></h2>
+                        <div id="faqInv1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">BidiInvest es nuestra herramienta de crecimiento patrimonial. El Staking consiste en mantener tus BiUSD "congelados" en un plazo fijo a cambio de recompensas diarias o al finalizar el periodo. Es como una cuenta de ahorros con rendimientos atractivos basados en tecnología blockchain.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqInv2">¿Cuáles son los planes de Staking?</button></h2>
+                        <div id="faqInv2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Conservador:</strong> Plazos cortos y riesgo mínimo.</li>
+                                    <li><strong>Arriesgado:</strong> Equilibrio entre tiempo y mayor retorno.</li>
+                                    <li><strong>Agresivo:</strong> Máxima rentabilidad a plazos más largos.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- BidiSan -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqSan1">¿Qué es BidiSan?</button></h2>
+                        <div id="faqSan1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Es la versión digital de los populares "Susu" o "San". Es un sistema de ahorro comunitario donde un grupo aporta una cuota fija periódica y en cada turno uno recibe el pote total. BidiPago actúa como organizador y garante para que todos reciban su dinero de forma segura.</div>
+                        </div>
+                    </div>
+                    <!-- Criptomonedas y Redes -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCry1">¿Qué criptomonedas puedo usar en BidiPago?</button></h2>
+                        <div id="faqCry1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Soportamos las monedas más estables y populares: USDT, USDC, BTC, ETH, SOL y nuestra moneda interna BiUSD.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCry2">¿Qué redes o blockchains están disponibles?</button></h2>
+                        <div id="faqCry2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>TRC20 (Tron), ERC20 (Ethereum), BEP20 (Binance Smart Chain)</li>
+                                    <li>Polygon (MATIC), Solana, Base</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- P2P y Monedas Fiat -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqP2P1">¿Qué monedas fiat puedo usar para comprar o vender?</button></h2>
+                        <div id="faqP2P1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Soportamos múltiples monedas fiduciarias con foco en Latinoamérica: Pesos Argentinos, Colombianos, Bolívares Venezolanos, Bolivianos, Pesos Mexicanos y más. También soportamos operaciones en USD a través de métodos de pago internacionales seleccionados.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqP2P2">¿Es seguro el mercado P2P?</button></h2>
+                        <div id="faqP2P2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Totalmente. BidiPago utiliza un sistema de Escrow (Garantía). Los fondos quedan bloqueados por la plataforma y solo se liberan cuando ambas partes confirman que el pago fiat fue realizado con éxito.</div>
+                        </div>
+                    </div>
+                    <!-- Servicios y Gift Cards -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqServ1">¿Puedo comprar tarjetas de regalo (Gift Cards)?</button></h2>
+                        <div id="faqServ1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Sí. En nuestra sección de Gift Cards puedes adquirir códigos para Amazon, Netflix, Apple, PlayStation, Razer Gold y muchas más, pagando con tu saldo en BiUSD o cripto.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqServ2">¿Cómo funcionan las recargas telefónicas?</button></h2>
+                        <div id="faqServ2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Puedes recargar saldo de forma inmediata para las principales operadoras del continente (Digitel, Movistar, Movilnet, Claro, Personal, Tigo, AT&amp;T, Virgin Mobile, etc.). Solo ingresas el número, el monto y el pago se procesa al instante.</div>
+                        </div>
+                    </div>
+                    <!-- Seguridad y Soporte -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqSec1">¿Cómo protegen mis fondos?</button></h2>
+                        <div id="faqSec1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Utilizamos estándares de seguridad bancaria, cifrado AES-256 y autenticación de dos factores (2FA). La mayoría de los fondos se mantienen en billeteras frías (offline) para mayor protección.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqSec2">¿Qué hago si tengo un problema con una transacción?</button></h2>
+                        <div id="faqSec2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Contamos con un sistema de Disputas en el P2P y un equipo de soporte técnico listo para ayudarte a través de nuestro chat interno o ticket de ayuda.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Unavailable Modal -->
+    <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content"
+                style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center pt-0 pb-4">
+                    <div class="mb-3">
+                        <i class="ri-chat-smile-2-line" style="font-size: 4rem; color: #ee6a3e;"></i>
+                    </div>
+                    <h4 class="mb-3" style="color: #333; font-weight: 700;">Próximamente</h4>
+                    <p class="mb-2" style="color: #666;">El chat de soporte estará disponible pronto.</p>
+
+                    <div class="mt-3 pt-3 border-top">
+                        <p style="color: #666; font-size: 0.95rem; margin-bottom: 10px;">Mientras tanto, contactanos
+                            via Whatsapp:</p>
+                        <a href="https://wa.link/bidipago" target="_blank" class="btn btn-support"
+                            style="background: #25D366; border: none; padding: 10px 25px; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="ri-whatsapp-line" style="font-size: 1.2rem;"></i> Whatsapp
+                        </a>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-top">
+                        <p class="small text-muted mb-2">Potenciado por Assistant360 un producto de:</p>
+                        <img src="/assets/arsysintela/svgMAIN-intelalogo.svg" alt="Arsys Intela"
+                            style="height: 30px; opacity: 0.8;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form Modal -->
+    <div class="modal fade" id="contactModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title">Enviar solicitud</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supportContactForm">
+                        <div id="contactAuthFields" class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small">Nombre</label>
+                                <input type="text" class="form-control" id="contactNombre" placeholder="Tu nombre">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Apellido</label>
+                                <input type="text" class="form-control" id="contactApellido" placeholder="Tu apellido">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">Correo electrónico</label>
+                                <input type="email" class="form-control" id="contactEmail" placeholder="ejemplo@correo.com">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Tu solicitud</label>
+                            <textarea class="form-control" id="contactSolicitud" rows="4" placeholder="Describe tu consulta, sugerencia o problema..." required></textarea>
+                        </div>
+                        <div class="mb-3 d-flex justify-content-center">
+                            <div id="supportRecaptchaContainer"></div>
+                        </div>
+                        <div id="contactFormMessage"></div>
+                        <button type="submit" class="btn btn-support w-100">Enviar solicitud</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.google.com/recaptcha/api.js?onload=onSupportRecaptchaLoad&render=explicit" async defer></script>
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/js/custom.js"></script>
+    <script>
+        let supportRecaptchaWidgetId = null;
+        window.onSupportRecaptchaLoad = function() {
+            fetch('/api/config/recaptcha').then(r => r.json()).then(data => {
+                if (data.siteKey && typeof grecaptcha !== 'undefined') {
+                    supportRecaptchaWidgetId = grecaptcha.render('supportRecaptchaContainer', {
+                        sitekey: data.siteKey,
+                        theme: 'light',
+                        size: 'normal'
+                    });
+                }
+            }).catch(() => {});
+        };
+
+        async function openContactModal() {
+            const modal = new bootstrap.Modal(document.getElementById('contactModal'));
+            const authFields = document.getElementById('contactAuthFields');
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                try {
+                    const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const u = data.user || data;
+                        const p = u.profile || {};
+                        document.getElementById('contactNombre').value = (p.firstName || '').trim() || (p.fullName || '').split(' ')[0] || '';
+                        document.getElementById('contactApellido').value = (p.lastName || '').trim() || (p.fullName || '').split(' ').slice(1).join(' ') || '';
+                        document.getElementById('contactEmail').value = (u.email || '').trim();
+                        authFields.style.display = 'none';
+                    } else authFields.style.display = '';
+                } catch (_) { authFields.style.display = ''; }
+            } else authFields.style.display = '';
+            document.getElementById('contactSolicitud').value = '';
+            document.getElementById('contactFormMessage').innerHTML = '';
+            if (supportRecaptchaWidgetId != null && typeof grecaptcha !== 'undefined') grecaptcha.reset(supportRecaptchaWidgetId);
+            modal.show();
+        }
+
+        document.getElementById('supportContactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            const token = localStorage.getItem('accessToken');
+            const isAuth = !!token;
+            const nombre = document.getElementById('contactNombre').value.trim();
+            const apellido = document.getElementById('contactApellido').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            const solicitud = document.getElementById('contactSolicitud').value.trim();
+            const recaptchaResp = (typeof grecaptcha !== 'undefined' && supportRecaptchaWidgetId != null) ? grecaptcha.getResponse(supportRecaptchaWidgetId) : '';
+            if (!recaptchaResp && supportRecaptchaWidgetId != null) {
+                document.getElementById('contactFormMessage').innerHTML = '<div class="alert alert-danger py-2 small">Completa la verificación "No soy un robot".</div>';
+                return;
+            }
+            if (solicitud.length < 10) {
+                document.getElementById('contactFormMessage').innerHTML = '<div class="alert alert-danger py-2 small">La solicitud debe tener al menos 10 caracteres.</div>';
+                return;
+            }
+            if (!isAuth && (!nombre || !apellido || !email)) {
+                document.getElementById('contactFormMessage').innerHTML = '<div class="alert alert-danger py-2 small">Completa nombre, apellido y correo.</div>';
+                return;
+            }
+            btn.disabled = true;
+            const origText = btn.textContent;
+            btn.textContent = 'Enviando...';
+            try {
+                const body = { solicitud, recaptchaToken: recaptchaResp };
+                if (!isAuth) { body.nombre = nombre; body.apellido = apellido; body.email = email; }
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('contactFormMessage').innerHTML = '<div class="alert alert-success py-2 small">' + (data.message || 'Tu solicitud ha sido enviada.') + '</div>';
+                    document.getElementById('contactSolicitud').value = '';
+                    if (supportRecaptchaWidgetId != null && typeof grecaptcha !== 'undefined') grecaptcha.reset(supportRecaptchaWidgetId);
+                    setTimeout(() => bootstrap.Modal.getInstance(document.getElementById('contactModal')).hide(), 2000);
+                } else {
+                    document.getElementById('contactFormMessage').innerHTML = '<div class="alert alert-danger py-2 small">' + (data.error || 'Error al enviar.') + '</div>';
+                }
+            } catch (err) {
+                document.getElementById('contactFormMessage').innerHTML = '<div class="alert alert-danger py-2 small">Error de conexión. Intenta de nuevo.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = origText;
+            }
+        });
+
+        // Sidebar Toggle Logic
+        document.getElementById('sidebarToggle').addEventListener('click', function () {
+            document.getElementById('dashboardSidebar').classList.toggle('show');
+            document.getElementById('dashboardMain').classList.toggle('sidebar-collapsed');
+        });
+
+        // Logout Logic
+        document.getElementById('logoutBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        });
+
+        // Chat Logic Placeholder
+        function openChat() {
+            var myModal = new bootstrap.Modal(document.getElementById('chatModal'));
+            myModal.show();
+        }
+
+        // Initialize user info if needed or auth check
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                window.location.href = '/login';
+            }
+        });
+    </script>
+</body>
+
+</html>

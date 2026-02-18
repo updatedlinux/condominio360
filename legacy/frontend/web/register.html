@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Links Of CSS File -->
+	<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/assets/css/flaticon.css">
+	<link rel="stylesheet" href="/assets/css/remixicon.css">
+	<link rel="stylesheet" href="/assets/css/meanmenu.min.css">
+
+	<!-- Favicon -->
+	<link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+	<link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+	<link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+	
+	<!-- Title -->
+	<title>Registrarse - BidiPago</title>
+
+	<!-- Estilos personalizados estilo AirTM con modo oscuro -->
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		:root {
+			--primary-orange: #ee6a3e;
+			--primary-orange-light: #ff8c5a;
+			--primary-purple-start: #667eea;
+			--primary-purple-end: #764ba2;
+			--bg-light: #f8f9fa;
+			--bg-dark: #1a202c;
+			--text-light: #1a202c;
+			--text-dark: #f7fafc;
+			--card-bg-light: #fff;
+			--card-bg-dark: #2d3748;
+			--border-light: #e2e8f0;
+			--border-dark: #4a5568;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+			background: var(--bg-light);
+			min-height: 100vh;
+			transition: background 0.3s ease, color 0.3s ease;
+		}
+
+		body.dark-mode {
+			background: var(--bg-dark);
+			color: var(--text-dark);
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		/* Theme Toggle */
+		.theme-toggle {
+			position: fixed;
+			top: 1rem;
+			right: 1rem;
+			z-index: 1001;
+			background: var(--card-bg-light);
+			border: 2px solid var(--border-light);
+			border-radius: 50%;
+			width: 50px;
+			height: 50px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		}
+
+		body.dark-mode .theme-toggle {
+			background: var(--card-bg-dark);
+			border-color: var(--border-dark);
+		}
+
+		.theme-toggle:hover {
+			transform: scale(1.1);
+		}
+
+		.theme-toggle i {
+			font-size: 1.5rem;
+			color: var(--primary-orange);
+		}
+
+		/* Navbar */
+		.navbar-custom {
+			background: var(--card-bg-light);
+			padding: 1rem 0;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+			transition: background 0.3s ease;
+		}
+
+		body.dark-mode .navbar-custom {
+			background: var(--card-bg-dark);
+			box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+		}
+
+		.navbar-custom .navbar-brand { position: relative; display: inline-block; }
+		.navbar-custom .navbar-brand img { height: 40px; }
+		.navbar-custom .navbar-brand .logo-dark { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-light { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-dark { display: inline; }
+
+		.navbar-custom .nav-link {
+			color: var(--text-light);
+			font-weight: 500;
+			margin: 0 1rem;
+			transition: color 0.3s;
+		}
+
+		body.dark-mode .navbar-custom .nav-link {
+			color: var(--text-dark);
+		}
+
+		.navbar-custom .nav-link:hover {
+			color: var(--primary-orange);
+		}
+
+		.navbar-custom .btn-login {
+			color: var(--text-light);
+			text-decoration: none;
+			font-weight: 500;
+			margin-right: 1rem;
+			transition: color 0.3s;
+		}
+
+		body.dark-mode .navbar-custom .btn-login {
+			color: var(--text-dark);
+		}
+
+		/* Main Register Container */
+		.register-container {
+			min-height: calc(100vh - 80px);
+			display: flex;
+			align-items: center;
+			padding: 2rem 0;
+		}
+
+		.register-wrapper {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 4rem;
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 0 2rem;
+		}
+
+		/* Left Side - Card Preview */
+		.register-left {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			position: relative;
+		}
+
+		.card-preview {
+			background: linear-gradient(135deg, var(--primary-purple-start) 0%, var(--primary-purple-end) 100%);
+			border-radius: 24px;
+			padding: 2.5rem;
+			color: #fff;
+			box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.card-preview::before {
+			content: '';
+			position: absolute;
+			top: -50%;
+			right: -50%;
+			width: 200%;
+			height: 200%;
+			background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+			animation: pulse 4s ease-in-out infinite;
+		}
+
+		@keyframes pulse {
+			0%, 100% { transform: scale(1); opacity: 0.5; }
+			50% { transform: scale(1.1); opacity: 0.8; }
+		}
+
+		.card-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 2rem;
+		}
+
+		.card-logo {
+			font-size: 1.5rem;
+			font-weight: 700;
+			letter-spacing: 2px;
+		}
+
+		.card-balance {
+			margin: 2rem 0;
+		}
+
+		.card-balance-label {
+			font-size: 0.875rem;
+			opacity: 0.9;
+			margin-bottom: 0.5rem;
+		}
+
+		.card-balance-amount {
+			font-size: 2.5rem;
+			font-weight: 700;
+			letter-spacing: 1px;
+		}
+
+		.card-balance-fiat {
+			font-size: 1.25rem;
+			opacity: 0.8;
+			margin-top: 0.5rem;
+		}
+
+		.card-actions {
+			display: flex;
+			gap: 1rem;
+			margin-top: 2rem;
+		}
+
+		.card-btn {
+			flex: 1;
+			background: rgba(255,255,255,0.2);
+			border: 1px solid rgba(255,255,255,0.3);
+			color: #fff;
+			padding: 0.75rem;
+			border-radius: 12px;
+			font-weight: 600;
+			text-align: center;
+			backdrop-filter: blur(10px);
+			transition: all 0.3s;
+		}
+
+		.card-btn:hover {
+			background: rgba(255,255,255,0.3);
+			transform: translateY(-2px);
+		}
+
+		.card-title {
+			margin-top: 2rem;
+			font-size: 1.5rem;
+			font-weight: 700;
+			color: var(--text-light);
+			transition: color 0.3s;
+		}
+
+		body.dark-mode .card-title {
+			color: var(--text-dark);
+		}
+
+		.card-description {
+			margin-top: 1rem;
+			opacity: 0.9;
+			line-height: 1.6;
+			color: var(--text-light);
+			transition: color 0.3s;
+		}
+
+		body.dark-mode .card-description {
+			color: var(--text-dark);
+			opacity: 0.8;
+		}
+
+		/* Right Side - Register Form */
+		.register-right {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+		}
+
+		.register-form-container {
+			background: var(--card-bg-light);
+			border-radius: 16px;
+			padding: 2.5rem;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+			transition: background 0.3s ease, box-shadow 0.3s ease;
+		}
+
+		body.dark-mode .register-form-container {
+			background: var(--card-bg-dark);
+			box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+		}
+
+		.register-form-title {
+			font-size: 2rem;
+			font-weight: 700;
+			color: var(--text-light);
+			margin-bottom: 0.5rem;
+			transition: color 0.3s;
+		}
+
+		body.dark-mode .register-form-title {
+			color: var(--text-dark);
+		}
+
+		.register-form-subtitle {
+			color: #718096;
+			margin-bottom: 2rem;
+		}
+
+		body.dark-mode .register-form-subtitle {
+			color: #a0aec0;
+		}
+
+		.form-group {
+			margin-bottom: 1.5rem;
+		}
+
+		.form-group label {
+			display: block;
+			font-weight: 600;
+			color: var(--text-light);
+			margin-bottom: 0.5rem;
+			font-size: 0.875rem;
+			transition: color 0.3s;
+		}
+
+		body.dark-mode .form-group label {
+			color: var(--text-dark);
+		}
+
+		.form-control {
+			width: 100%;
+			padding: 0.875rem 1rem;
+			border: 2px solid var(--border-light);
+			border-radius: 8px;
+			font-size: 1rem;
+			transition: all 0.3s;
+			background: var(--card-bg-light);
+			color: var(--text-light);
+		}
+
+		body.dark-mode .form-control {
+			background: #1a202c;
+			border-color: var(--border-dark);
+			color: var(--text-dark);
+		}
+
+		.password-toggle-btn { color: var(--text-light, #666); }
+		.password-toggle-btn:hover { opacity: 0.8; }
+		body.dark-mode .password-toggle-btn { color: #fff !important; }
+
+		.form-control:focus {
+			outline: none;
+			border-color: var(--primary-orange);
+			box-shadow: 0 0 0 3px rgba(238, 106, 62, 0.1);
+		}
+
+		.form-text {
+			font-size: 0.875rem;
+			color: #718096;
+			margin-top: 0.25rem;
+		}
+
+		body.dark-mode .form-text {
+			color: #a0aec0;
+		}
+
+		.password-badges {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.5rem;
+			margin-top: 0.75rem;
+		}
+		.password-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			font-size: 0.8125rem;
+			padding: 0.25rem 0.6rem;
+			border-radius: 20px;
+			font-weight: 500;
+		}
+		.password-badge.pending {
+			background: #e2e8f0;
+			color: #718096;
+		}
+		.password-badge.valid {
+			background: #c6f6d5;
+			color: #276749;
+		}
+		.password-badge.invalid {
+			background: #fed7d7;
+			color: #c53030;
+		}
+		body.dark-mode .password-badge.pending {
+			background: #4a5568;
+			color: #a0aec0;
+		}
+		body.dark-mode .password-badge.valid {
+			background: #22543d;
+			color: #9ae6b4;
+		}
+		body.dark-mode .password-badge.invalid {
+			background: #742a2a;
+			color: #fc8181;
+		}
+
+		.btn-register {
+			width: 100%;
+			background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%);
+			color: #fff;
+			border: none;
+			padding: 1rem;
+			border-radius: 8px;
+			font-size: 1rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.3s;
+			margin-top: 1rem;
+		}
+
+		.btn-register:hover:not(:disabled) {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 20px rgba(238, 106, 62, 0.3);
+		}
+
+		.btn-register:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+
+		.login-link {
+			text-align: center;
+			margin-top: 1.5rem;
+			color: #718096;
+			font-size: 0.875rem;
+		}
+
+		body.dark-mode .login-link {
+			color: #a0aec0;
+		}
+
+		.login-link a {
+			color: var(--primary-orange);
+			text-decoration: none;
+			font-weight: 600;
+		}
+
+		.login-link a:hover {
+			text-decoration: underline;
+		}
+
+		.alert {
+			padding: 1rem;
+			border-radius: 8px;
+			margin-bottom: 1rem;
+		}
+
+		.alert-danger {
+			background: #fed7d7;
+			color: #c53030;
+			border: 1px solid #feb2b2;
+		}
+
+		body.dark-mode .alert-danger {
+			background: #742a2a;
+			color: #fc8181;
+			border-color: #c53030;
+		}
+
+		.alert-success {
+			background: #c6f6d5;
+			color: #22543d;
+			border: 1px solid #9ae6b4;
+		}
+
+		body.dark-mode .alert-success {
+			background: #22543d;
+			color: #9ae6b4;
+			border-color: #2f855a;
+		}
+
+		/* Responsive */
+		@media (max-width: 968px) {
+			.register-wrapper {
+				grid-template-columns: 1fr;
+				gap: 2rem;
+			}
+
+			.register-left {
+				display: none;
+			}
+
+			.register-form-container {
+				padding: 2rem;
+			}
+
+			.theme-toggle {
+				top: 0.5rem;
+				right: 0.5rem;
+				width: 45px;
+				height: 45px;
+			}
+		}
+
+		/* Footer */
+		.footer-simple {
+			background: var(--card-bg-light);
+			color: #a0aec0;
+			padding: 2rem 0;
+			text-align: center;
+			transition: background 0.3s ease;
+		}
+
+		body.dark-mode .footer-simple {
+			background: var(--bg-dark);
+		}
+
+		.footer-simple p {
+			margin: 0;
+			font-size: 0.875rem;
+		}
+
+		/* Modales en modo oscuro */
+		body.dark-mode .modal-content {
+			background: var(--card-bg-dark);
+			border-color: var(--border-dark);
+			color: var(--text-dark);
+		}
+		body.dark-mode .modal-header {
+			background: var(--card-bg-dark);
+			border-color: var(--border-dark);
+			color: var(--text-dark);
+		}
+		body.dark-mode .modal-header .modal-title { color: var(--text-dark); }
+		body.dark-mode .modal-body { color: var(--text-dark); }
+		body.dark-mode .modal-footer {
+			background: var(--card-bg-dark);
+			border-color: var(--border-dark);
+		}
+		body.dark-mode .modal .btn-secondary {
+			background: #4a5568;
+			border-color: #4a5568;
+			color: var(--text-dark);
+		}
+		body.dark-mode .modal .btn-secondary:hover {
+			background: #2d3748;
+			border-color: #2d3748;
+			color: #fff;
+		}
+		.form-check-input { cursor: pointer; }
+		.form-check-label { cursor: pointer; color: var(--text-light); }
+		body.dark-mode .form-check-label { color: var(--text-dark); }
+		.terms-link { color: var(--primary-orange); font-weight: 600; text-decoration: none; }
+		.terms-link:hover { text-decoration: underline; }
+		#termsModal .modal-dialog { max-width: 95%; margin: 1rem auto; }
+		#termsModal .modal-content { height: 100%; }
+		#termsModal .modal-body { padding: 0; overflow: hidden; height: calc(100% - 60px); }
+		#termsModal iframe { width: 100%; height: 100%; border: none; }
+		body.dark-mode .modal .btn-close { filter: invert(1); opacity: 0.8; }
+	</style>
+</head>
+
+<body>
+	<!-- Theme Toggle -->
+	<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+		<i class="ri-moon-line" id="themeIcon"></i>
+	</button>
+
+	<!-- Navbar -->
+	<nav class="navbar navbar-expand-lg navbar-custom">
+		<div class="container">
+			<a class="navbar-brand" href="/">
+				<img src="/assets/images/logotextdark.svg" alt="BidiPago" class="logo-light">
+				<img src="/assets/images/biglogo.svg" alt="BidiPago" class="logo-dark">
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto align-items-center">
+					<li class="nav-item">
+						<a class="nav-link" href="/">Inicio</a>
+					</li>
+					<li class="nav-item">
+						<a class="btn-login" href="/login">Ingresar</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Main Register Container -->
+	<div class="register-container" id="registerFormWrapper">
+		<div class="register-wrapper">
+			<!-- Left Side - Card Preview -->
+			<div class="register-left">
+				<div class="card-preview">
+					<div class="card-header">
+						<div class="card-logo">BIDIPAGO</div>
+						<i class="ri-notification-3-line" style="font-size: 1.5rem;"></i>
+					</div>
+					<div class="card-balance">
+						<div class="card-balance-label">TU BALANCE</div>
+						<div class="card-balance-amount">$***** USDT</div>
+						<div class="card-balance-fiat">$0.00</div>
+					</div>
+					<div class="card-actions">
+						<div class="card-btn">Agregar</div>
+						<div class="card-btn">Retirar</div>
+						<div class="card-btn">Transferir</div>
+					</div>
+				</div>
+				<div style="margin-top: 2rem;">
+					<h2 class="card-title">Disfruta de BidiPago</h2>
+					<p class="card-description">
+						BidiPago te permite comprar, vender y transferir USDT/USDC de forma instantánea, con escrow interno que protege tus transacciones P2P. Integramos múltiples servicios para que aproveches al máximo tus USDT, USDC y BiUSD: ahorro colaborativo, recompensas de staking, gift cards y recargas, todo desde tu cuenta.
+					</p>
+				</div>
+			</div>
+
+			<!-- Right Side - Register Form -->
+			<div class="register-right">
+				<div class="register-form-container">
+					<h1 class="register-form-title">CREAR CUENTA</h1>
+					<p class="register-form-subtitle">Regístrate para comenzar a usar BidiPago</p>
+
+					<form id="registerForm">
+						<!-- Área para mostrar mensajes de error -->
+						<div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;">
+							<span id="errorMessage"></span>
+						</div>
+
+						<!-- Área para mostrar mensajes de éxito -->
+						<div id="successAlert" class="alert alert-success" role="alert" style="display: none;">
+							<span id="successMessage"></span>
+						</div>
+
+						<div class="form-group">
+							<label for="email">Email</label>
+							<input class="form-control" type="email" name="email" id="email" placeholder="ejemplo@gmail.com" required>
+						</div>
+
+						<div class="form-group">
+							<label for="password">Contraseña</label>
+							<div class="password-input-wrapper" style="position: relative;">
+								<input class="form-control" type="password" name="password" id="password" placeholder="Mínimo 8 caracteres" required style="padding-right: 45px;">
+								<button type="button" class="password-toggle-btn" id="passwordToggle" aria-label="Mostrar contraseña"
+									style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px;">
+									<i class="ri-eye-off-line" id="passwordToggleIcon" style="font-size: 1.25rem;"></i>
+								</button>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="confirmPassword">Confirmar Contraseña</label>
+							<div class="password-input-wrapper" style="position: relative;">
+								<input class="form-control" type="password" name="confirmPassword" id="confirmPassword" placeholder="Repite tu contraseña" required style="padding-right: 45px;">
+								<button type="button" class="password-toggle-btn" id="confirmPasswordToggle" aria-label="Mostrar contraseña"
+									style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px;">
+									<i class="ri-eye-off-line" id="confirmPasswordToggleIcon" style="font-size: 1.25rem;"></i>
+								</button>
+							</div>
+							<div class="password-badges" id="passwordBadges">
+								<span class="password-badge pending" id="badgeLength"><i class="ri-circle-line" id="badgeLengthIcon"></i> Mínimo 8 caracteres</span>
+								<span class="password-badge pending" id="badgeMatch"><i class="ri-circle-line" id="badgeMatchIcon"></i> Las contraseñas coinciden</span>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" name="acceptTerms" id="acceptTerms" required>
+								<label class="form-check-label" for="acceptTerms">
+									He leído y acepto los <a href="#" id="openTermsLink" class="terms-link">Términos y Condiciones</a>
+								</label>
+							</div>
+						</div>
+
+						<button class="btn-register" type="submit" id="submitBtn" disabled>
+							Registrarse
+						</button>
+
+						<p class="login-link">
+							¿Ya tienes una cuenta? <a href="/login">Inicia sesión</a>
+						</p>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal Términos y Condiciones -->
+	<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 95%; height: 85vh;">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="termsModalLabel">Términos y Condiciones de BidiPago</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<iframe src="/terms?embed=1" title="Términos y Condiciones"></iframe>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Footer -->
+	<footer class="footer-simple">
+		<div class="container">
+			<p>© 2024 BidiPago - Todos los derechos reservados</p>
+		</div>
+	</footer>
+
+	<!-- Scripts -->
+	<script src="/assets/js/jquery.min.js"></script>
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+	<script src="/assets/js/meanmenu.min.js"></script>
+
+	<!-- reCAPTCHA v3 -->
+	<script>
+		(function() {
+			fetch('/api/config/recaptcha-v3').then(r => r.json()).then(data => {
+				if (data.siteKey) {
+					var s = document.createElement('script');
+					s.src = 'https://www.google.com/recaptcha/api.js?render=' + data.siteKey;
+					s.async = true;
+					document.head.appendChild(s);
+					window.RECAPTCHA_V3_SITE_KEY = data.siteKey;
+				}
+			}).catch(function(){});
+		})();
+	</script>
+
+	<!-- Script de registro y tema -->
+	<script>
+		// Theme Management (logos precargados, switcheo vía CSS)
+		const themeToggle = document.getElementById('themeToggle');
+		const themeIcon = document.getElementById('themeIcon');
+		const body = document.body;
+
+		function loadTheme() {
+			const savedTheme = localStorage.getItem('theme');
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+			if (isDark) {
+				body.classList.add('dark-mode');
+				themeIcon.className = 'ri-sun-line';
+			} else {
+				body.classList.remove('dark-mode');
+				themeIcon.className = 'ri-moon-line';
+			}
+		}
+
+		themeToggle.addEventListener('click', () => {
+			body.classList.toggle('dark-mode');
+			const isDark = body.classList.contains('dark-mode');
+			localStorage.setItem('theme', isDark ? 'dark' : 'light');
+			themeIcon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
+		});
+
+		loadTheme();
+
+		// Registration functionality
+		document.addEventListener('DOMContentLoaded', async function () {
+			// Términos y Condiciones modal
+			document.getElementById('openTermsLink')?.addEventListener('click', function(e) {
+				e.preventDefault();
+				new bootstrap.Modal(document.getElementById('termsModal')).show();
+			});
+			document.getElementById('acceptTerms')?.addEventListener('change', function() {
+				document.getElementById('submitBtn').disabled = !this.checked;
+			});
+			const registerFormWrapper = document.getElementById('registerFormWrapper');
+			const registerForm = document.getElementById('registerForm');
+			const errorAlert = document.getElementById('errorAlert');
+			const errorMessage = document.getElementById('errorMessage');
+			const successAlert = document.getElementById('successAlert');
+			const successMessage = document.getElementById('successMessage');
+			const submitBtn = document.getElementById('submitBtn');
+
+			registerFormWrapper.classList.add('hidden');
+
+			async function checkExistingSession() {
+				const accessToken = localStorage.getItem('accessToken');
+
+				if (!accessToken) {
+					registerFormWrapper.classList.remove('hidden');
+					return;
+				}
+
+				try {
+					const response = await fetch('/api/auth/me', {
+						method: 'GET',
+						headers: {
+							'Authorization': 'Bearer ' + accessToken,
+							'Content-Type': 'application/json'
+						}
+					});
+
+					if (response.ok) {
+						window.location.href = '/dashboard';
+						return;
+					} else if (response.status === 401 || response.status === 403) {
+						localStorage.removeItem('accessToken');
+						localStorage.removeItem('refreshToken');
+						registerFormWrapper.classList.remove('hidden');
+					} else {
+						console.warn('Error al verificar sesión:', response.status, response.statusText);
+						registerFormWrapper.classList.remove('hidden');
+					}
+				} catch (error) {
+					console.warn('Error de conexión al verificar sesión:', error);
+					registerFormWrapper.classList.remove('hidden');
+				}
+			}
+
+			await checkExistingSession();
+
+			// Toggle visibilidad contraseña
+			['password', 'confirmPassword'].forEach(fieldId => {
+				const input = document.getElementById(fieldId);
+				const toggle = document.getElementById(fieldId + 'Toggle');
+				const icon = document.getElementById(fieldId + 'ToggleIcon');
+				if (toggle && input && icon) {
+					toggle.addEventListener('click', function () {
+						const isPassword = input.type === 'password';
+						input.type = isPassword ? 'text' : 'password';
+						icon.className = isPassword ? 'ri-eye-line' : 'ri-eye-off-line';
+						toggle.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+					});
+				}
+			});
+
+			// Badges dinámicos: longitud y coincidencia
+			function updatePasswordBadges() {
+				const pwd = document.getElementById('password').value;
+				const conf = document.getElementById('confirmPassword').value;
+				const badgeLength = document.getElementById('badgeLength');
+				const badgeLengthIcon = document.getElementById('badgeLengthIcon');
+				const badgeMatch = document.getElementById('badgeMatch');
+				const badgeMatchIcon = document.getElementById('badgeMatchIcon');
+				if (!badgeLength || !badgeMatch) return;
+				// Longitud
+				const lenOk = pwd.length >= 8;
+				badgeLength.className = 'password-badge ' + (lenOk ? 'valid' : 'pending');
+				badgeLengthIcon.className = lenOk ? 'ri-checkbox-circle-fill' : 'ri-circle-line';
+				// Coincidencia
+				let matchState = 'pending';
+				if (conf.length > 0) matchState = pwd === conf ? 'valid' : 'invalid';
+				badgeMatch.className = 'password-badge ' + matchState;
+				badgeMatchIcon.className = matchState === 'valid' ? 'ri-checkbox-circle-fill' : (matchState === 'invalid' ? 'ri-close-circle-fill' : 'ri-circle-line');
+			}
+			document.getElementById('password').addEventListener('input', updatePasswordBadges);
+			document.getElementById('confirmPassword').addEventListener('input', updatePasswordBadges);
+
+			registerForm.addEventListener('submit', async function (e) {
+				e.preventDefault();
+
+				errorAlert.style.display = 'none';
+				successAlert.style.display = 'none';
+
+				const email = document.getElementById('email').value.trim();
+				const password = document.getElementById('password').value;
+				const confirmPassword = document.getElementById('confirmPassword').value;
+				const acceptTerms = document.getElementById('acceptTerms')?.checked;
+
+				if (!acceptTerms) {
+					showError('Debes aceptar los Términos y Condiciones para registrarte');
+					return;
+				}
+				if (!email || !password || !confirmPassword) {
+					showError('Por favor, completa todos los campos');
+					return;
+				}
+
+				if (!email.includes('@')) {
+					showError('Por favor, ingresa un email válido');
+					return;
+				}
+
+				if (password.length < 8) {
+					showError('La contraseña debe tener al menos 8 caracteres');
+					return;
+				}
+
+				if (password !== confirmPassword) {
+					showError('Las contraseñas no coinciden');
+					return;
+				}
+
+				submitBtn.disabled = true;
+				submitBtn.textContent = 'Registrando...';
+
+				try {
+					var recaptchaToken = null;
+					if (window.RECAPTCHA_V3_SITE_KEY) {
+						if (typeof grecaptcha !== 'undefined') {
+							await new Promise(function(r) { grecaptcha.ready(r); });
+							recaptchaToken = await grecaptcha.execute(window.RECAPTCHA_V3_SITE_KEY, { action: 'register' });
+						} else {
+							showError('Verificación de seguridad cargando. Espera un momento e intenta de nuevo.');
+							submitBtn.disabled = false;
+							submitBtn.textContent = 'Registrarse';
+							return;
+						}
+					}
+					var body = { email: email, password: password };
+					if (recaptchaToken) body.recaptchaToken = recaptchaToken;
+					const response = await fetch('/api/auth/register', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(body)
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						window.location.href = '/login?registered=true';
+					} else {
+						const errorMsg = data.message || data.error || 'Error al registrar usuario';
+						showError(errorMsg);
+						submitBtn.disabled = false;
+						submitBtn.textContent = 'Registrarse';
+					}
+				} catch (error) {
+					console.error('Error en registro:', error);
+					showError('Error de conexión. Por favor, intenta nuevamente.');
+					submitBtn.disabled = false;
+					submitBtn.textContent = 'Registrarse';
+				}
+			});
+
+			function showError(message) {
+				errorMessage.textContent = message;
+				errorAlert.style.display = 'block';
+			}
+		});
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+    <link rel="stylesheet" href="/web/css/p2p-order-taken-modal.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>P2P Trading - BidiPago</title>
+
+    <style>
+        /* Sidebar styles - igual que dashboard.html */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        /* Main content area - igual que dashboard.html */
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        .dashboard-main.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        /* Estilos específicos P2P */
+        .p2p-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .p2p-header h1 {
+            color: #333;
+            margin: 0;
+        }
+
+        .btn-create-order {
+            background: #ee6a3e;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-create-order:hover:not(:disabled) {
+            background: #d85a2e;
+        }
+
+        .btn-create-order:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .filters-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: end;
+            max-width: 480px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .filter-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            color: #333;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+            height: 42px;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #ee6a3e;
+        }
+
+        /* Badge informativo Mi Libro de Órdenes */
+        .my-orders-book-badge {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: linear-gradient(135deg, #fff5f0 0%, #ffebe3 100%);
+            border: 1px solid rgba(238, 106, 62, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            line-height: 1.45;
+            color: #5c3d2e;
+            box-shadow: 0 1px 4px rgba(238, 106, 62, 0.08);
+        }
+
+        .my-orders-book-badge .badge-text {
+            flex: 1;
+            padding-right: 4px;
+        }
+
+        .my-orders-book-badge .badge-close {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: rgba(238, 106, 62, 0.2);
+            color: #c54e26;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .my-orders-book-badge .badge-close:hover {
+            background: rgba(238, 106, 62, 0.35);
+            color: #a63d1a;
+        }
+
+        .orders-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .order-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .order-card:hover {
+            border-color: #ee6a3e;
+            box-shadow: 0 5px 15px rgba(238, 106, 62, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .order-type {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .order-type.buy {
+            background: #ee6a3e;
+            color: #fff;
+        }
+
+        .order-type.sell {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .order-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .order-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .order-detail-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .order-detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* Estilos para Mis Órdenes P2P */
+        .order-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .order-item:hover {
+            border-color: #ee6a3e;
+            box-shadow: 0 5px 15px rgba(238, 106, 62, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .order-item .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .order-item .order-type {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .order-item .order-type i {
+            font-size: 20px;
+        }
+
+        .order-item.buy .order-type {
+            color: #ee6a3e;
+        }
+
+        .order-item.sell .order-type {
+            color: #dc3545;
+        }
+
+        .order-item .order-details {
+            margin-bottom: 15px;
+        }
+
+        .order-item .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .order-item .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .order-item .detail-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .order-item .detail-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .order-item .order-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-success {
+            background: #ee6a3e;
+            color: #fff;
+        }
+
+        .badge-secondary {
+            background: #6c757d;
+            color: #fff;
+        }
+
+        .badge-danger {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .btn-take-order {
+            flex: 1;
+            background: #ee6a3e;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-take-order:hover {
+            background: #d85a2e;
+        }
+
+        .btn-take-order:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 2% auto;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            width: 95%;
+            max-width: 900px;
+            color: #333;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close {
+            color: #999;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+            color: #333;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ee6a3e;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .alert-success {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .alert-info {
+            background: #17a2b8;
+            color: #fff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Pantalla de Selección Inicial */
+        .p2p-selection-screen {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .selection-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .selection-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .selection-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .selection-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .selection-card {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-card:hover {
+            border-color: #ee6a3e;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(238, 106, 62, 0.2);
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 36px;
+        }
+
+        .selection-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .selection-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .p2p-view {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .btn-back {
+            background: #6c757d;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 15px;
+            font-weight: 600;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+        }
+
+        /* Estilos para Cambio Rápido con Cards */
+        .quick-trade-step {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .quick-trade-step h2 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .step-header h2 {
+            margin: 0;
+            flex: 1;
+        }
+
+        .btn-back-small {
+            background: #6c757d;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .btn-back-small:hover {
+            background: #5a6268;
+        }
+
+        .operation-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .operation-card {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .operation-card:hover {
+            border-color: #ee6a3e;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(238, 106, 62, 0.2);
+        }
+
+        .operation-card.selected {
+            border-color: #ee6a3e;
+            background: #fff5f2;
+        }
+
+        .card-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 32px;
+        }
+
+        .card-icon.buy {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+        }
+
+        .card-icon.sell {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        }
+
+        .operation-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .operation-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .crypto-cards,
+        .fiat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .crypto-card,
+        .fiat-card {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .crypto-card:hover,
+        .fiat-card:hover {
+            border-color: #ee6a3e;
+            transform: translateY(-3px);
+            box-shadow: 0 3px 10px rgba(238, 106, 62, 0.2);
+        }
+
+        .crypto-card.selected,
+        .fiat-card.selected {
+            border-color: #ee6a3e;
+            background: #fff5f2;
+        }
+
+        .crypto-card h4,
+        .fiat-card h4 {
+            color: #333;
+            margin: 10px 0 5px;
+            font-size: 1.1rem;
+        }
+
+        .crypto-card img {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .fiat-card .flag-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .crypto-card .balance {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        .payment-methods-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .payment-method-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .payment-method-item h5 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .payment-method-item p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Badge cuando no hay método de pago configurado */
+        .no-payment-methods-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: #fff8f0;
+            border: 1px solid #ffc9a0;
+            border-radius: 8px;
+            color: #b45309;
+            font-size: 0.95rem;
+            margin-top: 10px;
+        }
+
+        .no-payment-methods-badge i {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .no-payment-methods-badge a {
+            color: #ee6a3e;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .no-payment-methods-badge a:hover {
+            text-decoration: underline;
+        }
+
+        /* Estilos para colapsable de tasas sugeridas */
+        .suggested-rates-collapse {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggested-rates-collapse>div {
+            padding: 20px;
+        }
+
+        .suggested-rates-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .suggested-rates-table th,
+        .suggested-rates-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .suggested-rates-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .suggested-rates-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                width: 200px;
+            }
+
+            .dashboard-main {
+                margin-left: 200px;
+            }
+
+            .dashboard-sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-main.sidebar-collapsed {
+                margin-left: 0;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Dashboard Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p" class="active"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Dashboard Content -->
+    <div class="dashboard-main" id="dashboardMain">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="ri-menu-line"></i>
+        </button>
+
+        <!-- Pantalla de Selección Inicial -->
+        <div id="p2pSelectionScreen" class="p2p-selection-screen">
+            <div class="selection-header">
+                <h1>P2P Trading</h1>
+            </div>
+
+            <!-- My P2P Profile Card (Selection Screen) -->
+            <div class="my-p2p-profile-card"
+                style="max-width: 1000px; margin: 0 auto 30px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 60px; height: 60px; background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; font-weight: bold;">
+                        <span class="p2p-profile-initials">--</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 18px; color: #333;">Mi Perfil de Comerciante</h3>
+                        <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                            <i class="ri-star-fill" style="color: #ffc107;"></i>
+                            <span class="p2p-profile-rating" style="font-weight: 700; color: #333;">0.00</span>
+                            <span style="color: #666; font-size: 13px;">(<span class="p2p-profile-votes">0</span>
+                                votos)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+                    <div class="text-center">
+                        <div style="font-size: 20px; font-weight: 700; color: #333;" class="p2p-profile-total-trades">0
+                        </div>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Órdenes Totales</div>
+                    </div>
+                    <div class="text-center">
+                        <div style="font-size: 20px; font-weight: 700; color: #28a745;" class="p2p-profile-completion">
+                            0%</div>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Completado</div>
+                    </div>
+                    <div class="text-center">
+                        <div style="font-size: 20px; font-weight: 700; color: #333;" class="p2p-profile-avg-time">0 min
+                        </div>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Tiempo Prom.</div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="selection-instructions"
+                style="text-align: center; color: #666; font-size: 1.05em; margin: 20px auto 30px auto; max-width: 700px;">
+                Selecciona la opción que más te guste, intercambia rápidamente o ingresa a la zona de cajeros y crea la
+                orden a tu medida
+            </p>
+
+            <div class="selection-cards">
+                <div class="selection-card" onclick="selectP2PMode('quick')">
+                    <div class="card-icon">
+                        <i class="ri-flashlight-line"></i>
+                    </div>
+                    <h3>P2P Cambio Rápido</h3>
+                    <p>Intercambio automático con la mejor oferta disponible</p>
+                </div>
+                <div class="selection-card" onclick="selectP2PMode('cashier')" style="border: 2px solid #ddd;">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);">
+                        <i class="ri-store-3-line"></i>
+                    </div>
+                    <h3>Zona Cajero</h3>
+                    <p>Atiende solicitudes de cambio rapido en tiempo real y revisa tu historial de trades</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista de Cambio Rápido -->
+        <div id="quickTradeView" class="p2p-view" style="display: none;">
+            <div class="p2p-header">
+                <button class="btn-back" onclick="goBackToSelection()">
+                    <i class="ri-arrow-left-line"></i> Volver
+                </button>
+                <h1>P2P Cambio Rápido</h1>
+            </div>
+
+            <!-- Paso 1: Seleccionar Tipo de Operación -->
+            <div id="quickTradeStep1" class="quick-trade-step">
+                <h2>¿Qué deseas hacer?</h2>
+                <div class="operation-cards">
+                    <div class="operation-card" onclick="selectQuickTradeOperation('BUY')">
+                        <div class="card-icon buy">
+                            <i class="ri-shopping-cart-line"></i>
+                        </div>
+                        <h3>Comprar Crypto</h3>
+                        <p>Compra criptomonedas con moneda fiat</p>
+                    </div>
+                    <div class="operation-card" onclick="selectQuickTradeOperation('SELL')">
+                        <div class="card-icon sell">
+                            <i class="ri-money-dollar-circle-line"></i>
+                        </div>
+                        <h3>Vender Crypto</h3>
+                        <p>Vende tus criptomonedas por moneda fiat</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Seleccionar Criptomoneda (para Vender) -->
+            <div id="quickTradeStep2Sell" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(1)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>Selecciona la criptomoneda a vender</h2>
+                </div>
+                <div id="cryptoCardsSell" class="crypto-cards">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando criptomonedas disponibles...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 3: Monto en Crypto (para Vender) -->
+            <div id="quickTradeStep3Sell" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(2)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>¿Cuánto deseas vender?</h2>
+                </div>
+                <div class="form-group">
+                    <label id="quickTradeAmountLabelSell">Monto en <span id="selectedCryptoSell"></span> *</label>
+                    <input type="number" id="quickTradeAmountSell" step="0.00000001" required>
+                    <small style="color: #666;">Disponible: <span id="availableBalanceSell">0</span> <span
+                            id="availableBalanceCryptoSell"></span></small>
+                    <div id="sellAmountError"
+                        style="display: none; color: #dc3545; margin-top: 5px; font-size: 0.9rem;"></div>
+                </div>
+                <div id="volatileConversionSell"
+                    style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                    <p><strong>Equivalente en USD:</strong> $<span id="usdEquivalentSell">0.00</span></p>
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 5px;">Se descontará: <span
+                            id="cryptoToDeductSell">0</span> <span id="cryptoToDeductCryptoSell"></span></p>
+                </div>
+                <button class="btn-create-order" onclick="continueQuickTradeSell()"
+                    style="width: 100%; margin-top: 20px;">
+                    Continuar
+                </button>
+            </div>
+
+            <!-- Paso 4: Seleccionar Fiat (para Vender - Estables) -->
+            <div id="quickTradeStep4SellStable" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(3)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>Selecciona la moneda fiat</h2>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <!-- Suggested Rates Section (Sell Stable) -->
+                    <div id="suggestedRatesContainerQTSell"
+                        style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="font-weight: 600; color: #333; margin: 0;">Tasas de Referencia</label>
+                            <span style="font-size: 12px; color: #666;">(Haz clic para usar)</span>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <!-- Market Average Badge -->
+                            <div onclick="showMarketDetails()"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">Promedio Mercado
+                                </div>
+                                <div style="font-size: 16px; font-weight: 700; color: #1a73e8; margin-top: 4px;">
+                                    <span class="marketRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-global-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+
+                            <!-- BidiPago Average Badge -->
+                            <div onclick="applySuggestedRate('internal', 'SELL')"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">P2P BidiPago</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #ee6a3e; margin-top: 4px;">
+                                    <span class="internalRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-group-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="noPaymentMethodsBadgeSellFiatStep" class="no-payment-methods-badge" style="display: none; margin-bottom: 16px;">
+                    <i class="ri-information-line"></i>
+                    <span>Debes asociar un método de pago que corresponda con la moneda fiat seleccionada (<span id="noPmBadgeSellFiatCode">VES</span>) para poder avanzar. <a href="/p2p/payment-methods">Agregar método de pago</a></span>
+                </div>
+                <button id="btnSearchBestOfferSell" class="btn-create-order" onclick="executeQuickTradeSell()"
+                    style="width: 100%; margin-bottom: 20px; display: none;">
+                    <i class="ri-search-line"></i> Buscar Mejor Oferta
+                </button>
+                <div id="fiatCardsSell" class="fiat-cards">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando monedas fiat...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 5: Tasa Definida (para Vender) -->
+            <div id="quickTradeStep5SellStable" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goBackToStep4Sell()">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>Define tu tasa de venta</h2>
+                </div>
+                <div class="form-group">
+                    <label>Tasa deseada (<span id="fiatSymbolSellRate"></span>/<span id="cryptoSymbolSellRate"></span>)
+                        *</label>
+                    <input type="number" id="quickTradeRateSell" step="0.01" required oninput="validateSellRateInput()"
+                        placeholder="Ingresa tu tasa deseada">
+                    <small id="rateValidationMessage" style="color: #666; display: block; margin-top: 5px;">
+                        Define el precio al que quieres vender tus criptomonedas.
+                    </small>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <!-- Suggested Rates Section (Sell Step 5 Reference) -->
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="font-weight: 600; color: #333; margin: 0;">Tasas de Referencia</label>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div onclick="showMarketDetails()"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">Promedio Mercado
+                                </div>
+                                <div style="font-size: 16px; font-weight: 700; color: #1a73e8; margin-top: 4px;">
+                                    <span class="marketRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-global-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+                            <div onclick="applySuggestedRate('internal', 'SELL')"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">P2P BidiPago</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #ee6a3e; margin-top: 4px;">
+                                    <span class="internalRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-group-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Section (Sell) -->
+                <div id="paymentMethodsSectionSell" style="display: none; margin-bottom: 20px;">
+                    <label style="font-weight: 600; color: #333; margin-bottom: 10px; display: block;">
+                        <i class="ri-bank-card-line"></i> Selecciona cómo deseas recibir tu pago
+                    </label>
+                    <div id="paymentMethodsListSell"
+                        style="display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                        <!-- Payment methods will be rendered here -->
+                    </div>
+                    <small style="color: #666; display: block; margin-top: 8px;">
+                        El cajero te pagará a través del método que selecciones.
+                    </small>
+                </div>
+
+                <button id="btnSearchBestOffer" class="btn-create-order" onclick="executeQuickTradeSell()"
+                    style="width: 100%; margin-bottom: 20px;" disabled>
+                    <i class="ri-search-line"></i> Buscar Mejor Oferta
+                </button>
+            </div>
+
+            <!-- Paso 2: Seleccionar Moneda Fiat (para Comprar) -->
+            <!-- Paso 2: Seleccionar Criptomoneda (para Comprar) - NUEVO ORDEN -->
+            <div id="quickTradeStep2Buy" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(1)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>¿Qué criptomoneda deseas comprar?</h2>
+                </div>
+                <div id="cryptoCardsBuy" class="crypto-cards">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando criptomonedas disponibles...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 3: Seleccionar Fiat (para Comprar) - CON TASAS -->
+            <div id="quickTradeStep3Buy" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(2)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>Selecciona la moneda fiat</h2>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <!-- Suggested Rates Section (Buy) -->
+                    <div id="suggestedRatesContainerQTBuy"
+                        style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="font-weight: 600; color: #333; margin: 0;">Tasas de Referencia</label>
+                            <span style="font-size: 12px; color: #666;">(Haz clic para usar)</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div onclick="showMarketDetails()"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">Promedio Mercado
+                                </div>
+                                <div style="font-size: 16px; font-weight: 700; color: #1a73e8; margin-top: 4px;">
+                                    <span class="marketRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-global-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+                            <div onclick="applySuggestedRate('internal', 'BUY')"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">P2P BidiPago</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #ee6a3e; margin-top: 4px;">
+                                    <span class="internalRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-group-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="noPaymentMethodsBadgeBuyFiatStep" class="no-payment-methods-badge" style="display: none; margin-bottom: 16px;">
+                    <i class="ri-information-line"></i>
+                    <span>Debes asociar un método de pago que corresponda con la moneda fiat seleccionada (<span id="noPmBadgeBuyFiatCode">VES</span>) para poder avanzar. <a href="/p2p/payment-methods">Agregar método de pago</a></span>
+                </div>
+                <button id="btnContinueAfterFiatBuy" class="btn-create-order" onclick="continueAfterFiatBuy()"
+                    style="width: 100%; margin-bottom: 20px; display: none;">
+                    Continuar
+                </button>
+                <div id="fiatCardsBuy" class="fiat-cards">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando monedas fiat...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 4: Monto de Crypto (para Comprar) - NUEVO -->
+            <div id="quickTradeStep4BuyAmount" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(3)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>¿Cuánto deseas comprar?</h2>
+                </div>
+                <div class="form-group">
+                    <label id="quickTradeAmountLabelBuy">Monto en <span id="selectedCryptoBuy"></span> *</label>
+                    <input type="number" id="quickTradeAmountBuy" step="0.01" required>
+                    <small id="quickTradeBuyFiatEquivalent" class="text-muted" style="display:none; margin-top:6px; font-size:0.9rem;">≈ <span id="quickTradeBuyFiatValue">0</span> <span id="quickTradeBuyFiatSymbol"></span> (promedio mercado)</small>
+                </div>
+                <button class="btn-create-order" onclick="continueQuickTradeBuy()"
+                    style="width: 100%; margin-top: 20px;">
+                    Continuar
+                </button>
+            </div>
+
+            <!-- Paso 4: Tasa y Métodos de Pago (para Comprar - Estables) -->
+            <div id="quickTradeStep4BuyStable" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(3)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>Configura tu orden</h2>
+                </div>
+                <div class="form-group">
+                    <label>Tasa deseada (<span id="fiatSymbolBuy"></span>/<span id="cryptoSymbolBuy"></span>) *</label>
+                    <input type="number" id="quickTradeRateBuy" step="0.01" required>
+                </div>
+                <div style="margin-top: 20px;">
+                    <!-- Suggested Rates Section (Buy Stable) -->
+                    <div id="suggestedRatesContainerQTBuy"
+                        style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="font-weight: 600; color: #333; margin: 0;">Tasas de Referencia</label>
+                            <span style="font-size: 12px; color: #666;">(Haz clic para usar)</span>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div onclick="showMarketDetails()"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">Promedio Mercado
+                                </div>
+                                <div style="font-size: 16px; font-weight: 700; color: #1a73e8; margin-top: 4px;">
+                                    <span class="marketRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-global-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+
+                            <div onclick="applySuggestedRate('internal', 'BUY')"
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">P2P BidiPago</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #ee6a3e; margin-top: 4px;">
+                                    <span class="internalRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                                <i class="ri-group-line"
+                                    style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="paymentMethodsSectionBuy" style="margin-top: 20px; display: none;">
+                    <label>Métodos de Pago Disponibles:</label>
+                    <div id="noPaymentMethodsBadgeBuy" class="no-payment-methods-badge" style="display: none;">
+                        <i class="ri-error-warning-line"></i>
+                        <span>No hay método de pago configurado.</span>
+                        <a href="/p2p/payment-methods">Agregar método de pago</a>
+                    </div>
+                    <div id="paymentMethodsListBuy" class="payment-methods-list">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+                <button id="btnSearchBestOfferBuyStable" class="btn-create-order" onclick="executeQuickTradeBuy()"
+                    style="width: 100%; margin-top: 20px;">
+                    <i class="ri-search-line"></i> Buscar Mejor Oferta
+                </button>
+            </div>
+
+            <!-- Paso 5: Conversión (para Comprar - Volátiles) -->
+            <div id="quickTradeStep4BuyVolatile" class="quick-trade-step" style="display: none;">
+                <div class="step-header">
+                    <button class="btn-back-small" onclick="goToQuickTradeStep(4)">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h2>Resumen de tu compra</h2>
+                </div>
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 5px; margin-bottom: 20px;">
+                    <p><strong>Monto a comprar:</strong> <span id="cryptoAmountBuy">0</span> <span
+                            id="cryptoSymbolBuyVolatile"></span></p>
+                    <p><strong>Equivalente en fiat:</strong> <span id="fiatAmountBuy">0</span> <span
+                            id="fiatSymbolBuyVolatile"></span></p>
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 10px;">Precio basado en mercado actual</p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <!-- Suggested Rates Section (Buy Volatile) - Reference Only -->
+                    <div id="suggestedRatesContainerQTBuyVolatile"
+                        style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="font-weight: 600; color: #333; margin: 0;">Tasas de Referencia</label>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">Promedio Mercado
+                                </div>
+                                <div style="font-size: 16px; font-weight: 700; color: #1a73e8; margin-top: 4px;">
+                                    <span class="marketRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                            </div>
+                            <div
+                                style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; position: relative; overflow: hidden;">
+                                <div style="font-size: 11px; color: #666; text-transform: uppercase;">P2P BidiPago</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #ee6a3e; margin-top: 4px;">
+                                    <span class="internalRateValueQT">--</span> <span class="fiatSymbolDisplay"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="paymentMethodsSectionBuyVolatile" style="margin-top: 20px; display: none;">
+                    <label>Métodos de Pago Disponibles:</label>
+                    <div id="noPaymentMethodsBadgeBuyVolatile" class="no-payment-methods-badge" style="display: none;">
+                        <i class="ri-error-warning-line"></i>
+                        <span>No hay método de pago configurado.</span>
+                        <a href="/p2p/payment-methods">Agregar método de pago</a>
+                    </div>
+                    <div id="paymentMethodsListBuyVolatile" class="payment-methods-list">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+                <button id="btnSearchBestOfferBuyVolatile" class="btn-create-order" onclick="executeQuickTradeBuy()"
+                    style="width: 100%; margin-top: 20px;">
+                    <i class="ri-search-line"></i> Buscar Mejor Oferta
+                </button>
+            </div>
+
+            <!-- Resultado -->
+            <div id="quickTradeResult" style="display: none; margin-top: 30px;"></div>
+        </div>
+
+        <!-- Modal de Tasas Sugeridas -->
+        <div id="suggestedRatesModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); border-bottom: 1px solid #e2e8f0; padding: 20px 24px;">
+                        <h5 class="modal-title" style="font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 10px;">
+                            <i class="ri-line-chart-line" style="color: #ee6a3e;"></i> Tasas Sugeridas en Mercado
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeSuggestedRatesModal()">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div id="suggestedRatesContent">
+                            <div class="loading">
+                                <i class="ri-loader-4-line"></i> Cargando tasas...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmación Quick Trade -->
+        <div id="quickTradeOrderModal" class="modal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2><i class="ri-checkbox-circle-line" style="color: #ee6a3e;"></i> Orden Encontrada</h2>
+                    <span class="close" onclick="closeQuickTradeOrderModal()">&times;</span>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <div id="quickTradeOrderDetails">
+                        <div class="loading">
+                            <i class="ri-loader-4-line"></i> Cargando detalles...
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 30px;">
+                        <button id="confirmTakeQuickTradeOrderBtn" onclick="confirmTakeQuickTradeOrder()"
+                            class="btn-create-order" style="flex: 1; background: #ee6a3e;">
+                            <i class="ri-check-line"></i> Tomar Orden
+                        </button>
+                        <button onclick="closeQuickTradeOrderModal()"
+                            style="flex: 1; background: #6c757d; color: #fff; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista de Libro de Órdenes (Clásico) -->
+        <div id="classicOrdersView" class="p2p-view" style="display: none;">
+            <div class="p2p-header">
+                <button class="btn-back" onclick="goBackToSelection()">
+                    <i class="ri-arrow-left-line"></i> Volver
+                </button>
+                <h1>P2P Clásico - Libro de Órdenes</h1>
+                <button class="btn-create-order" onclick="showCreateOrderModal()">
+                    <i class="ri-add-line"></i> Crear Orden
+                </button>
+            </div>
+
+            <!-- My P2P Profile Card (Classic View) -->
+            <div class="my-p2p-profile-card"
+                style="background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 60px; height: 60px; background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; font-weight: bold;">
+                        <span class="p2p-profile-initials">--</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 18px; color: #333;">Mi Perfil de Comerciante</h3>
+                        <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                            <i class="ri-star-fill" style="color: #ffc107;"></i>
+                            <span class="p2p-profile-rating" style="font-weight: 700; color: #333;">0.00</span>
+                            <span style="color: #666; font-size: 13px;">(<span class="p2p-profile-votes">0</span>
+                                votos)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+                    <div class="text-center">
+                        <div style="font-size: 20px; font-weight: 700; color: #333;" class="p2p-profile-total-trades">0
+                        </div>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Órdenes Totales</div>
+                    </div>
+                    <div class="text-center">
+                        <div style="font-size: 20px; font-weight: 700; color: #28a745;" class="p2p-profile-completion">
+                            0%
+                        </div>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Completado</div>
+                    </div>
+                    <div class="text-center">
+                        <div style="font-size: 20px; font-weight: 700; color: #333;" class="p2p-profile-avg-time">0 min
+                        </div>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Tiempo Prom.</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Filters: Tengo / Quiero UI -->
+            <div class="filters-section"
+                style="background: transparent; box-shadow: none; padding: 0; margin-bottom: 30px;">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 900px; margin: 0 auto; flex-wrap: wrap;">
+
+                    <!-- Tengo Section -->
+                    <div style="flex: 1; min-width: 250px;">
+                        <label
+                            style="display: block; font-size: 18px; font-weight: 600; color: #0b0e11; margin-bottom: 10px;">Tengo:</label>
+                        <div class="custom-select-wrapper" id="tengoDropdownWrapper" style="position: relative;">
+                            <div class="custom-select-trigger" onclick="toggleDropdown('tengo')"
+                                style="background: #fff; border: 1px solid #eaecef; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 56px;">
+                                <div style="display: flex; align-items: center; gap: 10px;" id="tengoSelectedContent">
+                                    <!-- Dynamic Content -->
+                                    <span style="color: #666;">Seleccionar...</span>
+                                </div>
+                                <i class="ri-arrow-down-s-line" style="font-size: 20px; color: #848e9c;"></i>
+                            </div>
+                            <div class="custom-options" id="tengoOptions"
+                                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #eaecef; border-radius: 12px; margin-top: 8px; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+                                <!-- Options populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Swap Button -->
+                    <div style="display: flex; align-items: flex-end; padding-bottom: 5px;">
+                        <button onclick="swapTengoQuiero()"
+                            style="width: 48px; height: 48px; border-radius: 50%; background: #ee6a3e; border: none; color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(238, 106, 62, 0.3); transition: transform 0.2s;">
+                            <i class="ri-arrow-left-right-line"></i>
+                        </button>
+                    </div>
+
+                    <!-- Quiero Section -->
+                    <div style="flex: 1; min-width: 250px;">
+                        <label
+                            style="display: block; font-size: 18px; font-weight: 600; color: #0b0e11; margin-bottom: 10px;">Quiero:</label>
+                        <div class="custom-select-wrapper" id="quieroDropdownWrapper" style="position: relative;">
+                            <div class="custom-select-trigger" onclick="toggleDropdown('quiero')"
+                                style="background: #fff; border: 1px solid #eaecef; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 56px;">
+                                <div style="display: flex; align-items: center; gap: 10px;" id="quieroSelectedContent">
+                                    <!-- Dynamic Content -->
+                                    <span style="color: #666;">Seleccionar...</span>
+                                </div>
+                                <i class="ri-arrow-down-s-line" style="font-size: 20px; color: #848e9c;"></i>
+                            </div>
+                            <div class="custom-options" id="quieroOptions"
+                                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #eaecef; border-radius: 12px; margin-top: 8px; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+                                <!-- Options populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Extra Filters (Amount/Method) Placeholder if needed in future, hidden for now based on req -->
+                <div class="filters-row" style="margin-top: 20px; display: none;">
+                    <!-- Legacy selects hidden/removed -->
+                    <select id="filterType" style="display: none;">
+                        <option value="BUY">Buy</option>
+                        <option value="SELL">Sell</option>
+                    </select>
+                    <select id="filterCrypto" style="display: none;"></select>
+                    <select id="filterFiat" style="display: none;"></select>
+                </div>
+            </div>
+
+
+            <!-- Alert container -->
+            <div id="alertContainer"></div>
+
+            <!-- Orders List -->
+            <div class="orders-list" id="ordersList">
+                <div class="empty-state">
+                    <i class="ri-loader-4-line"></i>
+                    <p>Cargando órdenes...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista de Mis Órdenes P2P -->
+        <div id="myOrdersView" class="p2p-view" style="display: none;">
+            <div class="p2p-header">
+                <button class="btn-back" onclick="goBackToSelection()">
+                    <i class="ri-arrow-left-line"></i> Volver
+                </button>
+                <h1>Mis Órdenes P2P</h1>
+            </div>
+
+            <!-- Badge informativo (solo visible en Mi Libro de Órdenes, cerrable) -->
+            <div id="myOrdersBookBadge" class="my-orders-book-badge" style="display: none;" role="status">
+                <span class="badge-text">Las órdenes que creas en tu libro estarán disponibles para intercambiar con los usuarios que soliciten Cambio Rápido y no haya cajeros disponibles.</span>
+                <button type="button" class="badge-close" onclick="dismissMyOrdersBookBadge()" aria-label="Cerrar">×</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label>Tipo</label>
+                        <select id="myOrdersFilterType" onchange="loadMyOrders()">
+                            <option value="">Todos</option>
+                            <option value="BUY">Comprar</option>
+                            <option value="SELL">Vender</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Estado</label>
+                        <select id="myOrdersFilterStatus" onchange="loadMyOrders()">
+                            <option value="">Todos</option>
+                            <option value="PENDING">Pendiente</option>
+                            <option value="TAKEN">Tomada</option>
+                            <option value="CANCELLED">Cancelada</option>
+                            <option value="EXPIRED">Expirada</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert container -->
+            <div id="myOrdersAlertContainer"></div>
+
+            <!-- My Orders List -->
+            <div class="orders-list" id="myOrdersList">
+                <div class="empty-state">
+                    <i class="ri-loader-4-line"></i>
+                    <p>Cargando tus órdenes...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmación para Cancelar Orden -->
+        <div id="cancelOrderModal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Confirmar Cancelación</h2>
+                    <span class="close" onclick="closeCancelOrderModal()">&times;</span>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <i class="ri-error-warning-line"
+                            style="font-size: 48px; color: #ffc107; margin-bottom: 15px;"></i>
+                        <h3 style="margin: 0 0 10px 0; color: #333;">¿Estás seguro?</h3>
+                        <p style="color: #666; margin: 0;">¿Deseas cancelar esta orden P2P? Esta acción no se puede
+                            deshacer.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                        <button onclick="closeCancelOrderModal()"
+                            style="background: #6c757d; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            No, mantener orden
+                        </button>
+                        <button id="confirmCancelOrderBtn"
+                            style="background: #dc3545; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            Sí, cancelar orden
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Order Modal (Refactorizado con Cards) -->
+        <div id="createOrderModal" class="modal">
+            <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2>Crear Nueva Orden P2P</h2>
+                    <span class="close" onclick="closeCreateOrderModal()">&times;</span>
+                </div>
+
+                <div id="createOrderContent">
+                    <!-- Paso 1: Seleccionar Tipo de Operación -->
+                    <div id="createOrderStep1" class="quick-trade-step">
+                        <h2>¿Qué tipo de orden deseas crear?</h2>
+                        <div class="operation-cards">
+                            <div class="operation-card" data-type="BUY" onclick="selectCreateOrderType('BUY', this)">
+                                <div class="card-icon buy">
+                                    <i class="ri-shopping-cart-line"></i>
+                                </div>
+                                <h3>Comprar Crypto</h3>
+                                <p>Publica una orden para comprar criptomonedas</p>
+                            </div>
+                            <div class="operation-card" data-type="SELL" onclick="selectCreateOrderType('SELL', this)">
+                                <div class="card-icon sell">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                </div>
+                                <h3>Vender Crypto</h3>
+                                <p>Publica una orden para vender tus criptomonedas</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Seleccionar Criptomoneda (para Vender) -->
+                    <div id="createOrderStep2Sell" class="quick-trade-step" style="display: none;">
+                        <div class="step-header">
+                            <button class="btn-back-small" onclick="goToCreateOrderStep(1)">
+                                <i class="ri-arrow-left-line"></i>
+                            </button>
+                            <h2>Selecciona la criptomoneda a vender</h2>
+                        </div>
+                        <div id="createOrderCryptoCardsSell" class="crypto-cards">
+                            <div class="loading">
+                                <i class="ri-loader-4-line"></i> Cargando criptomonedas disponibles...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Seleccionar Criptomoneda (para Comprar) -->
+                    <div id="createOrderStep2Buy" class="quick-trade-step" style="display: none;">
+                        <div class="step-header">
+                            <button class="btn-back-small" onclick="goToCreateOrderStep(1)">
+                                <i class="ri-arrow-left-line"></i>
+                            </button>
+                            <h2>¿Qué criptomoneda deseas comprar?</h2>
+                        </div>
+                        <div id="createOrderCryptoCardsBuy" class="crypto-cards">
+                            <div class="loading">
+                                <i class="ri-loader-4-line"></i> Cargando criptomonedas disponibles...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 3: Seleccionar Moneda Fiat -->
+                    <div id="createOrderStep3" class="quick-trade-step" style="display: none;">
+                        <div class="step-header">
+                            <button class="btn-back-small" onclick="goToCreateOrderStep(2)">
+                                <i class="ri-arrow-left-line"></i>
+                            </button>
+                            <h2>Selecciona la moneda fiat</h2>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <button class="btn-secondary" onclick="toggleSuggestedRatesCollapse()" style="width: 100%;">
+                                <i class="ri-line-chart-line"></i> <span id="suggestedRatesToggleText">Ver</span> Tasas
+                                Sugeridas en Mercado
+                                <i class="ri-arrow-down-s-line" id="suggestedRatesToggleIcon"
+                                    style="margin-left: 5px;"></i>
+                            </button>
+                        </div>
+                        <div id="suggestedRatesCollapse" class="suggested-rates-collapse" style="display: none;">
+                            <div id="suggestedRatesCollapseContent">
+                                <div class="loading">
+                                    <i class="ri-loader-4-line"></i> Cargando tasas...
+                                </div>
+                            </div>
+                        </div>
+                        <div id="createOrderFiatCards" class="fiat-cards" style="margin-top: 20px;">
+                            <div class="loading">
+                                <i class="ri-loader-4-line"></i> Cargando monedas fiat...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 4: Monto y Tasa -->
+                    <div id="createOrderStep4" class="quick-trade-step" style="display: none;">
+                        <div class="step-header">
+                            <button class="btn-back-small" onclick="goToCreateOrderStep(3)">
+                                <i class="ri-arrow-left-line"></i>
+                            </button>
+                            <h2>Configura tu orden</h2>
+                        </div>
+                        <div class="form-group">
+                            <label id="createOrderAmountLabel">Monto *</label>
+                            <div style="position: relative;">
+                                <input type="number" id="createOrderAmount" step="0.00000001" required
+                                    style="padding-right: 60px;">
+                                <button type="button" id="btnMaxCreateOrder" onclick="setMaxCreateOrderAmount()"
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none; color: #ee6a3e; font-weight: 600; cursor: pointer; display: none;">MAX</button>
+                            </div>
+                            <small style="color: #666;" id="createOrderAmountHint"></small>
+                            <div id="createOrderAmountError"
+                                style="display: none; color: #dc3545; margin-top: 5px; font-size: 0.9rem;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Tasa (<span id="createOrderFiatSymbol"></span>/<span
+                                    id="createOrderCryptoSymbol"></span>) *</label>
+                            <input type="number" id="createOrderRate" step="0.01" required
+                                oninput="validateCreateOrderAmount()" onchange="validateCreateOrderAmount()">
+                            <small style="color: #999;">Ej: 38.5 (si 1 BTC = 38.5 VES)</small>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn-secondary" onclick="toggleSuggestedRatesCollapse()" style="width: 100%;">
+                                <i class="ri-line-chart-line"></i> <span id="suggestedRatesToggleTextStep4">Ver</span>
+                                Tasas Sugeridas en Mercado
+                                <i class="ri-arrow-down-s-line" id="suggestedRatesToggleIconStep4"
+                                    style="margin-left: 5px;"></i>
+                            </button>
+                        </div>
+                        <div id="suggestedRatesCollapseStep4" class="suggested-rates-collapse" style="display: none;">
+                            <div id="suggestedRatesCollapseContentStep4">
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <!-- Market Average Badge -->
+                                    <div id="marketRateBadge" onclick="toggleMarketDetailsAccordion()"
+                                        style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                        <div style="font-size: 11px; color: #666; text-transform: uppercase;">Promedio
+                                            Mercado</div>
+                                        <div
+                                            style="font-size: 16px; font-weight: 700; color: #1a73e8; margin-top: 4px;">
+                                            <span id="marketRateValue">--</span> <span id="marketRateFiatSymbol">VES</span>
+                                        </div>
+                                        <i class="ri-global-line"
+                                            style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                                    </div>
+
+                                    <!-- BidiPago Average Badge -->
+                                    <div id="internalRateBadge" onclick="applySuggestedRate('internal')"
+                                        style="flex: 1; min-width: 140px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;">
+                                        <div style="font-size: 11px; color: #666; text-transform: uppercase;">P2P
+                                            BidiPago</div>
+                                        <div
+                                            style="font-size: 16px; font-weight: 700; color: #ee6a3e; margin-top: 4px;">
+                                            <span id="internalRateValue">--</span> <span id="internalRateFiatSymbol">VES</span>
+                                        </div>
+                                        <i class="ri-group-line"
+                                            style="position: absolute; right: 10px; top: 10px; color: #e9ecef; font-size: 24px;"></i>
+                                    </div>
+                                </div>
+                                <div style="text-align: right; margin-top: 8px;">
+                                    <small style="font-size: 11px; color: #888;">* Haz clic en "Promedio Mercado" para ver detalles de exchanges</small>
+                                </div>
+                                
+                                <!-- Acordeón de detalles de exchanges -->
+                                <div id="marketDetailsAccordion" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                                    <div id="marketDetailsAccordionContent" style="max-height: 300px; overflow-y: auto;">
+                                        <!-- El contenido se carga dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>Monto Mínimo (opcional)</label>
+                            <input type="number" id="createOrderMinAmount" step="0.00000001"
+                                oninput="validateMinMaxAmounts()">
+                            <small style="color: #999;" id="createOrderMinAmountHint"></small>
+                        </div>
+                        <div class="form-group">
+                            <label>Monto Máximo (opcional)</label>
+                            <input type="number" id="createOrderMaxAmount" step="0.00000001"
+                                oninput="validateMinMaxAmounts()">
+                            <small style="color: #999;" id="createOrderMaxAmountHint"></small>
+                        </div>
+                        <button class="btn-create-order" onclick="continueCreateOrder()"
+                            style="width: 100%; margin-top: 20px;">
+                            Continuar
+                        </button>
+                    </div>
+
+                    <!-- Paso 5: Métodos de Pago y Términos -->
+                    <div id="createOrderStep5" class="quick-trade-step" style="display: none;">
+                        <div class="step-header">
+                            <button class="btn-back-small" onclick="goToCreateOrderStep(4)">
+                                <i class="ri-arrow-left-line"></i>
+                            </button>
+                            <h2>Finalizar orden</h2>
+                        </div>
+                        <div class="form-group">
+                            <label>Métodos de Pago</label>
+                            <div id="createOrderPaymentMethodsList" class="payment-methods-list">
+                                <div class="loading">
+                                    <i class="ri-loader-4-line"></i> Cargando métodos de pago...
+                                </div>
+                            </div>
+                            <small style="color: #999;">Selecciona los métodos de pago que aceptas para esta
+                                orden</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Términos y Condiciones (opcional)</label>
+                            <textarea id="createOrderTerms" placeholder="Términos específicos de esta orden..."
+                                rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Ventana de Pago del Trade (minutos) *</label>
+                            <select id="createOrderPaymentWindow" required
+                                style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;">
+                                <option value="15">15 minutos</option>
+                                <option value="30">30 minutos</option>
+                                <option value="45">45 minutos</option>
+                                <option value="60">60 minutos</option>
+                            </select>
+                            <small style="color: #999;">Tiempo máximo para que la contraparte complete el pago una vez
+                                tomado el trade.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Expira en (horas) *</label>
+                            <input type="number" id="createOrderExpiresHours" value="24" min="1" max="168" required>
+                        </div>
+                        <div id="createOrderErrorStep5" class="alert alert-danger"
+                            style="display: none; padding: 10px; margin-top: 15px; margin-bottom: 5px; font-size: 14px;">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" onclick="submitCreateOrder()" class="btn-create-order"
+                                style="flex: 1;">Crear Orden</button>
+                            <button type="button" onclick="closeCreateOrderModal()"
+                                style="flex: 1; background: #555; color: #fff; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Take Order Modal -->
+        <div id="takeOrderModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Tomar Orden</h2>
+                    <span class="close" onclick="closeTakeOrderModal()">&times;</span>
+                </div>
+                <form id="takeOrderForm" onsubmit="handleTakeOrder(event)">
+                    <div id="takeOrderError" class="alert alert-danger"
+                        style="display: none; padding: 10px; margin-bottom: 15px; font-size: 14px;"></div>
+                    <div id="takeOrderDetails"></div>
+                    <div id="takeOrderTerms"
+                        style="margin-bottom: 20px; padding: 15px; background: #fff5f2; border: 1px solid #ee6a3e; border-radius: 5px; display: none;">
+                        <h4 style="margin: 0 0 10px 0; color: #cc5a33; font-size: 14px;">Términos y Condiciones del
+                            Maker:</h4>
+                        <p id="takeTermsText" style="margin: 0; white-space: pre-wrap; color: #333; font-size: 13px;">
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto a Tomar *</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="takeAmount" step="0.00000001" required style="flex: 1;">
+                            <button type="button" class="btn-secondary" onclick="setTakeMaxAmount()"
+                                style="padding: 10px 15px; height: 100%; margin: 0;">MAX</button>
+                        </div>
+                        <small style="color: #999;" id="takeAmountHint"></small>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn-create-order" style="flex: 1;">Tomar Orden</button>
+                        <button type="button" onclick="closeTakeOrderModal()"
+                            style="flex: 1; background: #555; color: #fff; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Vista de Zona Cajero -->
+        <div id="cashierZoneView" class="p2p-view" style="display: none;">
+            <div class="p2p-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center;">
+                    <button class="btn-back" onclick="goBackToSelection()">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                    <h1>Zona de Cajeros</h1>
+                </div>
+                <div>
+                    <button onclick="loadLiveRequests()" class="btn-secondary"
+                        style="background: #e9ecef; color: #495057; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
+                        <i class="ri-refresh-line"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs de Zona Cajero -->
+            <div class="cashier-tabs"
+                style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+                <button class="tab-btn active" onclick="switchCashierTab('live')" id="tabBtnLive"
+                    style="padding: 10px 20px; border: none; background: transparent; border-bottom: 2px solid #ee6a3e; font-weight: 600; color: #ee6a3e; cursor: pointer;">Solicitudes
+                    en Vivo</button>
+                <button class="tab-btn" onclick="switchCashierTab('book')" id="tabBtnBook"
+                    style="padding: 10px 20px; border: none; background: transparent; border-bottom: 2px solid transparent; font-weight: 600; color: #666; cursor: pointer;">Mi
+                    Libro
+                    de Órdenes</button>
+                <button class="tab-btn" onclick="switchCashierTab('myorders')" id="tabBtnMyOrders"
+                    style="padding: 10px 20px; border: none; background: transparent; border-bottom: 2px solid transparent; font-weight: 600; color: #666; cursor: pointer;">Historial
+                    de Órdenes</button>
+                <button class="tab-btn" onclick="switchCashierTab('otc')" id="tabBtnOtc"
+                    style="padding: 10px 20px; border: none; background: transparent; border-bottom: 2px solid transparent; font-weight: 600; color: #666; cursor: pointer;">Mercado
+                    OTC Express</button>
+            </div>
+
+            <!-- Content: Live Requests -->
+            <div id="cashierLiveContent">
+                <div id="liveRequestsList" style="display: grid; gap: 15px;">
+                    <!-- Requests injected here -->
+                    <div class="empty-state">
+                        <i class="ri-loader-4-line" style="animation: spin 1s infinite linear;"></i>
+                        <p>Cargando solicitudes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content: Order Book (Placeholder for JS injection) -->
+            <div id="cashierBookContent" style="display: none;"></div>
+
+            <!-- Content: My Orders (Placeholder for JS injection) -->
+            <div id="cashierMyOrdersContent" style="display: none;"></div>
+
+            <!-- Content: Mercado OTC Express -->
+            <div id="cashierOtcContent" style="display: none;">
+                <div class="otc-express-card" style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+                    <p class="otc-express-desc" style="color: #4a5568; line-height: 1.6; margin-bottom: 20px;">
+                        A través del <strong>Mercado OTC Express</strong> podrás ser proveedor de liquidez de BidiPago,
+                        apoyando con operaciones de Depósito y Retiro aportando moneda fiat.
+                        Esta zona es exclusiva para usuarios con <strong>KYC L4 (Nivel 4)</strong>.
+                        <br><br>
+                        <strong>Sin comisiones:</strong> Todas las operaciones en este mercado están exentas al 100% de comisión para ti.
+                        Incluso podrás generar ganancias con las operaciones realizadas.
+                    </p>
+                    <div id="otcEligibilityBadge" style="margin-bottom: 20px;"></div>
+                    <div id="otcActionButton" style="margin-top: 16px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Searching Match Modal -->
+        <!-- Searching Match Modal -->
+        <div id="searchingModal" class="modal"
+            style="display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5);">
+            <div class="modal-content"
+                style="max-width: 600px; padding: 40px; text-align: center; border-radius: 15px; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+
+                <h2 style="font-size: 24px; font-weight: 700; color: #1a202c; margin-bottom: 10px;">Buscando
+                    compañero</h2>
+                <div id="searchingStatusParams" style="color: #718096; margin-bottom: 30px; display: none;"></div>
+
+                <!-- Illustration (Placeholder using Icons/CSS to mimic Cloud+Globe) -->
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 40px 0;">
+                    <!-- User Cloud -->
+                    <div style="position: relative;">
+                        <i class="ri-cloud-fill" style="font-size: 80px; color: #ee6a3e;"></i>
+                        <div
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%); background: #c54e26; border-radius: 4px; padding: 2px 6px;">
+                            <i class="ri-money-dollar-circle-fill" style="color: #fff; font-size: 24px;"></i>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #4a5568;">Tú</div>
+                    </div>
+
+                    <!-- Connection Dots -->
+                    <div class="connection-dots" style="display: flex; gap: 5px;">
+                        <span
+                            style="width: 6px; height: 6px; background: #ee6a3e; border-radius: 50%; animation: pulse 1.5s infinite;"></span>
+                        <span
+                            style="width: 6px; height: 6px; background: #ee6a3e; border-radius: 50%; animation: pulse 1.5s infinite 0.2s;"></span>
+                        <span
+                            style="width: 6px; height: 6px; background: #ee6a3e; border-radius: 50%; animation: pulse 1.5s infinite 0.4s;"></span>
+                    </div>
+
+                    <!-- World/Network -->
+                    <div style="position: relative;">
+                        <i class="ri-earth-fill" style="font-size: 80px; color: #ee6a3e;"></i>
+                        <!-- Markers -->
+                        <i class="ri-map-pin-fill"
+                            style="position: absolute; top: 20%; left: 30%; color: #fff; font-size: 12px;"></i>
+                        <i class="ri-map-pin-fill"
+                            style="position: absolute; top: 60%; left: 70%; color: #fff; font-size: 12px;"></i>
+                        <div style="margin-top: 10px; font-size: 12px; color: #4a5568;">Mercado de Cajeros BidiPago
+                        </div>
+                    </div>
+                </div>
+
+                <p id="searchingHelpText" style="color: #a0aec0; font-size: 14px; margin-bottom: 30px;">
+                    1. Una vez encontrado, los fondos en BidiPago de tu cajero serán retenidos para ti.
+                </p>
+
+                <div style="margin-bottom: 20px;">
+                    <span id="searchingTimer" style="font-size: 18px; font-weight: 600; color: #ee6a3e;">00:00</span>
+                </div>
+
+                <button onclick="cancelSearchRequest()" class="btn-cancel-search"
+                    style="background: transparent; border: 1px solid #e53e3e; color: #e53e3e; padding: 10px 30px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Cancelar
+                </button>
+
+                <style>
+                    @keyframes pulse {
+                        0% {
+                            opacity: 0.3;
+                            transform: scale(0.8);
+                        }
+
+                        50% {
+                            opacity: 1;
+                            transform: scale(1.2);
+                        }
+
+                        100% {
+                            opacity: 0.3;
+                            transform: scale(0.8);
+                        }
+                    }
+                </style>
+            </div>
+        </div>
+
+        <!-- Modal de Sesión Expirada -->
+        <div id="sessionExpiredModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="sessionExpiredModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #FFF5F5 0%, #FED7D7 100%); border-bottom: 1px solid #FEB2B2; padding: 20px 24px;">
+                        <h5 class="modal-title" id="sessionExpiredModalLabel" style="font-weight: 700; color: #C53030; display: flex; align-items: center; gap: 10px;">
+                            <i class="ri-time-line" style="font-size: 1.5em; color: #E53E3E;"></i> Sesión Expirada
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="hideSessionExpiredModal()">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body p-4 text-center">
+                        <div style="font-size: 3.5em; color: #E53E3E; margin-bottom: 15px;">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <p style="font-size: 1.1em; color: #2D3748; line-height: 1.6; margin-bottom: 25px;">
+                            Tu sesión ha expirado por seguridad. Por favor, inicia sesión nuevamente para continuar.
+                        </p>
+                        <p style="font-size: 0.9em; color: #718096; margin-bottom: 0;">
+                            Serás redirigido al inicio de sesión en unos segundos...
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="border-top: none; padding: 20px 24px; justify-content: center;">
+                        <button type="button" class="btn btn-primary" onclick="window.location.href='/login'" style="border-radius: 10px; padding: 10px 20px; font-weight: 600; background-color: #E53E3E; border-color: #E53E3E;">
+                            Ir al Inicio de Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Orden P2P tomada -->
+        <div id="p2pOrderTakenModalContainer">
+            <div class="p2p-order-taken-overlay">
+                <div class="p2p-order-taken-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header-bar">
+                        <h4><i class="ri-exchange-line"></i> ¡Tu orden fue tomada!</h4>
+                        <button type="button" class="modal-close-btn" aria-label="Cerrar">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="trade-summary">Alguien tomó tu orden P2P. Revisa los detalles y continúa con el trade.</p>
+                        <div class="trade-row"><span class="label">Tipo</span><span class="value trade-type">-</span></div>
+                        <div class="trade-row"><span class="label">Par</span><span class="value trade-asset">-</span></div>
+                        <div class="trade-row"><span class="label">Crypto</span><span class="value trade-amount">-</span></div>
+                        <div class="trade-row"><span class="label">Fiat</span><span class="value trade-fiat">-</span></div>
+                        <div class="trade-row"><span class="label">Tomada por</span><span class="value trade-taker">-</span></div>
+                        <a href="#" class="btn-go-trade">Ir al Trade</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="/assets/js/jquery.min.js"></script>
+        <script src="/assets/js/bootstrap.bundle.min.js"></script>
+        <!-- Modal de Error: Solicitud Activa -->
+        <div id="activeRequestErrorModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="activeRequestErrorModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #FFF5F5 0%, #FED7D7 100%); border-bottom: 1px solid #FEB2B2; padding: 20px 24px;">
+                        <h5 class="modal-title" id="activeRequestErrorModalLabel" style="font-weight: 700; color: #C53030; display: flex; align-items: center; gap: 10px;">
+                            <i class="ri-error-warning-line" style="font-size: 1.5em; color: #E53E3E;"></i> Solicitud Activa
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="hideActiveRequestErrorModal()">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body p-4" style="text-align: center;">
+                        <div style="font-size: 3.5rem; color: #FEB2B2; margin-bottom: 20px;">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <h4 style="margin-bottom: 15px; font-weight: 700; color: #2D3748;">Ya tienes una solicitud activa</h4>
+                        <p id="activeRequestErrorMessage" style="color: #718096; font-size: 1rem; line-height: 1.6; margin-bottom: 25px;">
+                            Ya tienes una solicitud de búsqueda activa. Por favor, espera a que termine o cancélala antes de crear una nueva.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #E2E8F0; padding: 20px 24px; display: flex; justify-content: center; gap: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="hideActiveRequestErrorModal()" style="border-radius: 10px; padding: 10px 24px; font-weight: 600;">
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+        <script src="/web/js/p2p-order-taken-modal.js"></script>
+        <script src="/web/js/p2p.js?v=3.6"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (localStorage.getItem('accessToken') && typeof initOrderTakenModal === 'function') {
+                    var modal = initOrderTakenModal({ tradeViewUrl: function(id) { return '/p2p-trade?tradeId=' + id; } });
+                    if (modal) modal.checkAndShow();
+                }
+            });
+        </script>
+</body>
+
+</html>

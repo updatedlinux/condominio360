@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/assets/css/remixicon.css">
+	<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon_io/favicon-32x32.png">
+	<title>Contacto - BidiPago</title>
+	<style>
+		:root {
+			--primary-orange: #ee6a3e;
+			--primary-orange-light: #ff8c5a;
+			--bg-light: #f8f9fa;
+			--bg-dark: #1a202c;
+			--text-light: #1a202c;
+			--text-dark: #f7fafc;
+			--card-bg-light: #fff;
+			--card-bg-dark: #2d3748;
+			--border-light: #e2e8f0;
+			--border-dark: #4a5568;
+		}
+		body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text-light); line-height: 1.6; background: var(--bg-light); transition: all 0.3s; }
+		body.dark-mode { background: var(--bg-dark); color: var(--text-dark); }
+		.theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 1001; background: var(--card-bg-light); border: 2px solid var(--border-light); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+		body.dark-mode .theme-toggle { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.theme-toggle i { font-size: 1.5rem; color: var(--primary-orange); }
+		.navbar-custom { background: var(--card-bg-light); padding: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; transition: all 0.3s; }
+		body.dark-mode .navbar-custom { background: var(--card-bg-dark); }
+		.navbar-custom .nav-link { color: var(--text-light); font-weight: 500; margin: 0 0.75rem; }
+		body.dark-mode .navbar-custom .nav-link { color: var(--text-dark); }
+		.navbar-custom .nav-link:hover, .navbar-custom .nav-link.active { color: var(--primary-orange); }
+		.btn-primary-custom { background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; text-decoration: none; border: none; transition: all 0.3s; cursor: pointer; }
+		.btn-primary-custom:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(238, 106, 62, 0.3); color: #fff; }
+		.section-label { color: #ee6a3e; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+		.section-heading { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+		.section-desc { color: #718096; font-size: 1.05rem; }
+		body.dark-mode .section-desc { color: #a0aec0; }
+		body.dark-mode .section-heading { color: var(--text-dark); }
+		.footer-border { border-top: 1px solid var(--border-light); }
+		body.dark-mode .footer-border { border-color: var(--border-dark); }
+		.navbar-custom .navbar-brand img { height: 50px; }
+		.navbar-custom .navbar-brand .logo-dark { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-light { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-dark { display: inline; }
+		.navbar-custom .btn-login { color: var(--text-light); text-decoration: none; font-weight: 500; margin-right: 1rem; }
+		body.dark-mode .navbar-custom .btn-login { color: var(--text-dark); }
+		.navbar-custom .btn-register { background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%); color: #fff; padding: 0.5rem 1.5rem; border-radius: 8px; font-weight: 600; text-decoration: none; }
+		.navbar-custom .container { flex-wrap: wrap; }
+		.navbar-custom .navbar-nav { flex-wrap: wrap; }
+		.navbar-custom .nav-item .nav-link { margin: 0 0.4rem; font-size: 0.9rem; white-space: nowrap; }
+		@media (max-width: 1199px) {
+			#headerRatesCarousel { display: none !important; }
+			.navbar-custom .nav-item .nav-link { margin: 0 0.5rem; }
+		}
+		@media (max-width: 991px) {
+			.navbar-collapse { padding: 1rem 0; }
+			.navbar-nav .nav-item { margin-bottom: 0.25rem; }
+		}
+		.header-rates-carousel { min-height: 36px; flex-direction: column; }
+		.header-rates-title { font-size: 0.7rem; font-weight: 600; color: var(--text-light); opacity: 0.9; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+		body.dark-mode .header-rates-title { color: var(--text-dark); }
+		.header-rates-track { display: flex; gap: 1.25rem; align-items: center; overflow-x: auto; scroll-behavior: smooth; padding: 0.25rem 0; scrollbar-width: none; -ms-overflow-style: none; }
+		.header-rates-track::-webkit-scrollbar { display: none; }
+		.header-rate-item { flex: 0 0 auto; text-align: center; white-space: nowrap; }
+		.header-rate-item .pair { font-size: 0.7rem; color: var(--text-light); opacity: 0.9; }
+		body.dark-mode .header-rate-item .pair { color: var(--text-dark); }
+		.header-rate-item .value { font-size: 0.95rem; font-weight: 700; color: var(--primary-orange); }
+		.header-rate-item .value.loading { font-weight: 400; opacity: 0.7; }
+		/* Contact form */
+		.contact-card { background: var(--card-bg-light); border-radius: 16px; padding: 2rem; border: 1px solid var(--border-light); max-width: 560px; margin: 0 auto; }
+		body.dark-mode .contact-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.contact-icon { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; margin: 0 auto 1.5rem; }
+		.contact-form .form-label { font-weight: 600; color: var(--text-light); }
+		body.dark-mode .contact-form .form-label { color: var(--text-dark); }
+		.contact-form .form-control {
+			border-radius: 12px; border: 1px solid var(--border-light); background: var(--card-bg-light); color: var(--text-light);
+		}
+		body.dark-mode .contact-form .form-control {
+			background: #374151; border-color: #4b5563; color: #f3f4f6;
+		}
+		body.dark-mode .contact-form .form-control::placeholder { color: #9ca3af; }
+		.contact-form textarea.form-control { min-height: 140px; resize: vertical; }
+		.btn-scroll-top { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(238, 106, 62, 0.4); z-index: 999; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s, transform 0.2s; }
+		.btn-scroll-top.visible { opacity: 1; visibility: visible; }
+		.btn-scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(238, 106, 62, 0.5); }
+		.btn-scroll-top i { font-size: 1.5rem; }
+		@media (max-width: 767px) {
+			.theme-toggle { top: 0.5rem; right: 0.5rem; width: 44px; height: 44px; }
+			.navbar .navbar-toggler { margin-right: 50px; }
+			.contact-card { padding: 1.5rem; }
+			.section-heading { font-size: 1.5rem; }
+		}
+		@media (max-width: 575px) {
+			.navbar-custom .navbar-brand img { height: 40px; }
+			.navbar-custom .nav-link { font-size: 0.85rem; }
+			.btn-primary-custom { padding: 0.6rem 1.25rem; font-size: 0.9rem; }
+		}
+		/* Chat en Vivo card */
+		.contact-options { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1000px; margin: 0 auto 2rem; }
+		.contact-options .contact-card { max-width: none; }
+		@media (max-width: 768px) { .contact-options { grid-template-columns: 1fr; } }
+		.chat-card {
+			background: var(--card-bg-light);
+			border-radius: 16px;
+			padding: 2rem;
+			border: 1px solid var(--border-light);
+			text-align: center;
+			transition: all 0.3s;
+		}
+		body.dark-mode .chat-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.chat-card-icon { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; margin: 0 auto 1rem; }
+		.chat-card h3 { font-size: 1.25rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.5rem; }
+		body.dark-mode .chat-card h3 { color: var(--text-dark); }
+		.chat-card p { font-size: 0.95rem; color: #718096; margin-bottom: 1.25rem; }
+		body.dark-mode .chat-card p { color: #a0aec0; }
+		.chat-card .btn-chat { margin-top: 0.5rem; }
+		/* Redes Sociales en chat-card */
+		.chat-social { border-top: 1px solid var(--border-light); }
+		body.dark-mode .chat-social { border-color: var(--border-dark); }
+		.chat-social-title { font-size: 1rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.35rem; }
+		body.dark-mode .chat-social-title { color: var(--text-dark); }
+		.chat-social-desc { font-size: 0.85rem; color: #718096; margin-bottom: 1rem; }
+		body.dark-mode .chat-social-desc { color: #a0aec0; }
+		.chat-social-icons { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+		.chat-social-icons .social-icon {
+			display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px;
+			background: rgba(238, 106, 62, 0.1); color: var(--primary-orange); font-size: 1.25rem;
+			transition: all 0.2s;
+		}
+		.chat-social-icons .social-icon:hover { transform: translateY(-2px); opacity: 0.9; }
+		/* Modo claro: iconos con colores de marca */
+		.chat-social-icons .social-icon.social-x { color: #000; background: rgba(0,0,0,0.06); }
+		.chat-social-icons .social-icon.social-instagram { color: #E4405F; background: rgba(228,64,95,0.1); }
+		.chat-social-icons .social-icon.social-linkedin { color: #0A66C2; background: rgba(10,102,194,0.1); }
+		.chat-social-icons .social-icon.social-youtube { color: #FF0000; background: rgba(255,0,0,0.1); }
+		/* Modo oscuro: todos naranja BidiPago */
+		body.dark-mode .chat-social-icons .social-icon { color: var(--primary-orange) !important; background: rgba(238, 106, 62, 0.15) !important; }
+		/* Modal dark mode */
+		body.dark-mode .modal-content { background: var(--card-bg-dark); border-color: var(--border-dark); color: var(--text-dark); }
+		body.dark-mode .modal-header { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		body.dark-mode .modal-body { color: var(--text-dark); }
+		body.dark-mode .modal .btn-close { filter: invert(1); opacity: 0.8; }
+		body.dark-mode .modal .border-top { border-color: var(--border-dark) !important; }
+		.arsys-logo-light { display: block; }
+		.arsys-logo-dark { display: none; }
+		body.dark-mode .arsys-logo-light { display: none; }
+		body.dark-mode .arsys-logo-dark { display: block; }
+	</style>
+</head>
+<body>
+	<button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema"><i class="ri-moon-line" id="themeIcon"></i></button>
+	<nav class="navbar navbar-expand-lg navbar-custom">
+		<div class="container d-flex align-items-center flex-wrap">
+			<a class="navbar-brand" href="/">
+				<img src="/assets/images/logotextdark.svg" alt="BidiPago" class="logo-light">
+				<img src="/assets/images/biglogo.svg" alt="BidiPago" class="logo-dark">
+			</a>
+			<div id="headerRatesCarousel" class="header-rates-carousel flex-grow-1 d-none d-lg-flex justify-content-center" style="max-width: 480px; margin-left: 3rem; margin-right: 2rem;">
+				<div class="header-rates-title">Tasas de Mercado:</div>
+				<div class="header-rates-track" id="headerRatesTrack"></div>
+			</div>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto align-items-center">
+					<li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+					<li class="nav-item"><a class="nav-link" href="/faq">Ayuda</a></li>
+					<li class="nav-item"><a class="nav-link active" href="/contact">Contacto</a></li>
+					<li class="nav-item"><a class="nav-link btn-login" href="/login">Ingresar</a></li>
+					<li class="nav-item"><a class="nav-link btn-register" href="/register">Registrarme</a></li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container py-5">
+		<div class="text-center mb-4">
+			<div class="section-label">Escríbenos</div>
+			<h1 class="section-heading">Contacto</h1>
+			<p class="section-desc mx-auto" style="max-width: 600px;">¿Tienes alguna duda, sugerencia o necesitas ayuda? Elige una de las siguientes opciones.</p>
+		</div>
+
+		<div class="contact-options">
+			<div class="chat-card">
+				<div class="chat-card-icon"><i class="ri-customer-service-2-line"></i></div>
+				<h3>Chat en Vivo</h3>
+				<p>Habla con nuestro equipo de soporte en tiempo real para resolver tus dudas rápidamente.</p>
+				<button type="button" class="btn-primary-custom btn-chat" onclick="openChatModal(); return false;">Iniciar Chat</button>
+				<div class="chat-social mt-4 pt-4">
+					<h4 class="chat-social-title">Redes Sociales</h4>
+					<p class="chat-social-desc">También nos puedes seguir en nuestras redes sociales para estar al día con novedades y soporte.</p>
+					<div class="chat-social-icons">
+						<a href="https://x.com/bidipago" target="_blank" rel="noopener noreferrer" class="social-icon social-x" aria-label="X (Twitter)"><i class="ri-twitter-x-line"></i></a>
+						<a href="https://instagram.com/bidipago" target="_blank" rel="noopener noreferrer" class="social-icon social-instagram" aria-label="Instagram"><i class="ri-instagram-line"></i></a>
+						<a href="https://linkedin.com/company/bidipago" target="_blank" rel="noopener noreferrer" class="social-icon social-linkedin" aria-label="LinkedIn"><i class="ri-linkedin-box-line"></i></a>
+						<a href="https://youtube.com/@bidipago" target="_blank" rel="noopener noreferrer" class="social-icon social-youtube" aria-label="YouTube"><i class="ri-youtube-line"></i></a>
+					</div>
+				</div>
+			</div>
+			<div class="contact-card" style="margin: 0;">
+			<div class="contact-icon"><i class="ri-mail-send-line"></i></div>
+			<form id="contactForm" class="contact-form">
+				<div class="row g-3">
+					<div class="col-md-6">
+						<label for="nombre" class="form-label">Nombre</label>
+						<input type="text" class="form-control" id="nombre" name="nombre" placeholder="Tu nombre" required>
+					</div>
+					<div class="col-md-6">
+						<label for="apellido" class="form-label">Apellido</label>
+						<input type="text" class="form-control" id="apellido" name="apellido" placeholder="Tu apellido" required>
+					</div>
+					<div class="col-12">
+						<label for="email" class="form-label">Correo electrónico</label>
+						<input type="email" class="form-control" id="email" name="email" placeholder="ejemplo@correo.com" required>
+					</div>
+					<div class="col-12">
+						<label for="solicitud" class="form-label">Tu solicitud</label>
+						<textarea class="form-control" id="solicitud" name="solicitud" rows="5" placeholder="Describe tu consulta, sugerencia o problema..." required></textarea>
+					</div>
+					<div class="col-12 d-flex justify-content-center">
+						<div id="recaptchaContainer"></div>
+					</div>
+					<div class="col-12 text-center pt-2">
+						<button type="submit" class="btn-primary-custom" id="contactSubmitBtn">Enviar solicitud</button>
+					</div>
+				</div>
+			</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal Chat Próximamente -->
+	<div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+				<div class="modal-header border-0 pb-0">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body text-center pt-0 pb-4">
+					<div class="mb-3"><i class="ri-chat-smile-2-line" style="font-size: 4rem; color: #ee6a3e;"></i></div>
+					<h4 class="mb-3" style="font-weight: 700;">Próximamente</h4>
+					<p class="mb-2">El chat de soporte estará disponible pronto.</p>
+					<div class="mt-3 pt-3 border-top">
+						<p style="font-size: 0.95rem; margin-bottom: 10px;">Mientras tanto, contáctanos vía Whatsapp:</p>
+						<a href="https://wa.link/bidipago" target="_blank" rel="noopener" class="btn btn-support" style="background: #25D366; border: none; padding: 10px 25px; display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; font-weight: 600; color: #fff; text-decoration: none;">
+							<i class="ri-whatsapp-line" style="font-size: 1.2rem;"></i> Whatsapp
+						</a>
+					</div>
+					<div class="mt-4 pt-4 border-top d-flex flex-column align-items-center">
+						<p class="small mb-2" style="opacity: 0.85;">Potenciado por Assistant360 un producto de:</p>
+						<img src="/assets/arsysintela/svgMAIN-intelalogo.svg" alt="Arsys Intela" class="arsys-logo-light" style="height: 30px; opacity: 0.8;">
+						<img src="/assets/arsysintela/main-intelawhite.svg" alt="Arsys Intela" class="arsys-logo-dark" style="height: 30px; opacity: 0.9;">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<footer class="py-4 mt-5 footer-border">
+		<div class="container text-center section-desc">
+			<p class="mb-0">BidiPago - Plataforma para usuarios de Latinoamérica y el Caribe</p>
+			<a href="/" class="btn-primary-custom mt-3 d-inline-block" style="text-decoration:none">Volver al inicio</a>
+		</div>
+	</footer>
+
+	<button class="btn-scroll-top" id="btnScrollTop" aria-label="Subir"><i class="ri-arrow-up-s-line"></i></button>
+
+	<script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+	<script>
+		// Theme
+		const themeToggle = document.getElementById('themeToggle');
+		const themeIcon = document.getElementById('themeIcon');
+		function loadTheme() {
+			const savedTheme = localStorage.getItem('theme');
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+			if (isDark) {
+				document.body.classList.add('dark-mode');
+				themeIcon.className = 'ri-sun-line';
+			} else {
+				document.body.classList.remove('dark-mode');
+				themeIcon.className = 'ri-moon-line';
+			}
+		}
+		themeToggle.addEventListener('click', () => {
+			document.body.classList.toggle('dark-mode');
+			const isDark = document.body.classList.contains('dark-mode');
+			localStorage.setItem('theme', isDark ? 'dark' : 'light');
+			themeIcon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
+		});
+		loadTheme();
+
+		// Header rates
+		async function loadHeaderRates() {
+			const track = document.getElementById('headerRatesTrack');
+			if (!track) return;
+			track.innerHTML = ['VES/USDT','COP/USDT','ARS/USDT','MXN/USDT'].map(p =>
+				`<div class="header-rate-item"><div class="pair">${p}</div><div class="value loading">—</div></div>`
+			).join('');
+			try {
+				const res = await fetch('/api/prices/landing');
+				const data = await res.json();
+				if (data.success && data.rates) {
+					data.rates.forEach((r, i) => {
+						const items = track.querySelectorAll('.header-rate-item');
+						const valEl = items[i]?.querySelector('.value');
+						if (valEl) {
+							valEl.classList.remove('loading');
+							valEl.textContent = r.rate != null
+								? new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(r.rate)
+								: '—';
+						}
+					});
+				}
+			} catch (e) { console.warn('Header rates:', e); }
+		}
+		loadHeaderRates();
+		setInterval(loadHeaderRates, 5 * 60 * 1000);
+
+		function openChatModal() {
+			var modal = new bootstrap.Modal(document.getElementById('chatModal'));
+			modal.show();
+		}
+
+		// reCAPTCHA v2
+		let recaptchaWidgetId = null;
+		window.onRecaptchaLoad = function() {
+			fetch('/api/config/recaptcha')
+				.then(r => r.json())
+				.then(data => {
+					if (data.siteKey && typeof grecaptcha !== 'undefined') {
+						recaptchaWidgetId = grecaptcha.render('recaptchaContainer', {
+							sitekey: data.siteKey,
+							theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light',
+							callback: function() { /* opcional: habilitar botón al completar */ }
+						});
+					}
+				})
+				.catch(() => {});
+		};
+
+		// Contact form - envío por API (servidor)
+		document.getElementById('contactForm').addEventListener('submit', async function(e) {
+			e.preventDefault();
+			const form = this;
+			const btn = form.querySelector('button[type="submit"]');
+			const originalText = btn.textContent;
+
+			const recaptchaResponse = typeof grecaptcha !== 'undefined' && recaptchaWidgetId != null
+				? grecaptcha.getResponse(recaptchaWidgetId) : '';
+			if (recaptchaResponse === '' && recaptchaWidgetId != null) {
+				const prevMsg = form.querySelector('.contact-form-message');
+				if (prevMsg) prevMsg.remove();
+				const msg = document.createElement('div');
+				msg.className = 'contact-form-message mt-3 p-3 rounded alert-danger';
+				msg.style.background = 'rgba(239, 68, 68, 0.15)';
+				msg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+				msg.style.color = 'inherit';
+				msg.textContent = 'Por favor, completa la verificación "No soy un robot".';
+				form.appendChild(msg);
+				return;
+			}
+
+			btn.disabled = true;
+			btn.textContent = 'Enviando...';
+			// Ocultar mensajes previos
+			const prevMsg = form.querySelector('.contact-form-message');
+			if (prevMsg) prevMsg.remove();
+			try {
+				const res = await fetch('/api/contact', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						nombre: document.getElementById('nombre').value.trim(),
+						apellido: document.getElementById('apellido').value.trim(),
+						email: document.getElementById('email').value.trim(),
+						solicitud: document.getElementById('solicitud').value.trim(),
+						recaptchaToken: recaptchaResponse || undefined
+					})
+				});
+				const data = await res.json();
+				const msg = document.createElement('div');
+				msg.className = 'contact-form-message mt-3 p-3 rounded';
+				if (data.success) {
+					msg.classList.add('alert-success');
+					msg.style.background = 'rgba(34, 197, 94, 0.15)';
+					msg.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+					msg.style.color = 'inherit';
+					msg.textContent = data.message || 'Tu solicitud ha sido enviada. Te responderemos a la brevedad.';
+					form.reset();
+					if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId != null) {
+						grecaptcha.reset(recaptchaWidgetId);
+					}
+				} else {
+					msg.classList.add('alert-danger');
+					msg.style.background = 'rgba(239, 68, 68, 0.15)';
+					msg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+					msg.style.color = 'inherit';
+					msg.textContent = data.error || 'Error al enviar. Inténtalo de nuevo.';
+				}
+				form.appendChild(msg);
+			} catch (err) {
+				const msg = document.createElement('div');
+				msg.className = 'contact-form-message mt-3 p-3 rounded alert-danger';
+				msg.style.background = 'rgba(239, 68, 68, 0.15)';
+				msg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+				msg.style.color = 'inherit';
+				msg.textContent = 'Error de conexión. Por favor, verifica tu conexión e inténtalo de nuevo.';
+				form.appendChild(msg);
+			} finally {
+				btn.disabled = false;
+				btn.textContent = originalText;
+			}
+		});
+
+		// Botón subir
+		const btnScrollTop = document.getElementById('btnScrollTop');
+		if (btnScrollTop) {
+			window.addEventListener('scroll', () => {
+				btnScrollTop.classList.toggle('visible', window.scrollY > 300);
+			});
+			btnScrollTop.addEventListener('click', () => {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			});
+		}
+	</script>
+</body>
+</html>

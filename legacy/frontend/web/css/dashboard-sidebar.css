@@ -1,0 +1,182 @@
+/**
+ * Sidebar del dashboard - Estilo curvo y suave (alineado con login)
+ * Usar en todas las páginas que incluyen el menú lateral.
+ */
+:root {
+	--sidebar-primary: #ee6a3e;
+	--sidebar-primary-light: #ff8c5a;
+	--sidebar-bg: #0f0e0e;
+	--sidebar-bg-hover: #1a1919;
+	--sidebar-submenu-bg: #1a1a1a;
+	--sidebar-border: rgba(255, 255, 255, 0.06);
+}
+
+/* Contenedor del sidebar - bordes curvos a la derecha y sombra suave */
+.dashboard-sidebar {
+	position: fixed;
+	left: 0;
+	top: 0;
+	height: 100vh;
+	width: 250px;
+	background-color: var(--sidebar-bg);
+	color: #fff;
+	padding: 20px 0;
+	transition: transform 0.3s ease, box-shadow 0.3s ease;
+	z-index: 1000;
+	overflow-y: auto;
+	border-radius: 0 20px 20px 0;
+	box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-sidebar.collapsed {
+	transform: translateX(-100%);
+	box-shadow: none;
+}
+
+/* Botón hamburguesa - redondeado y suave */
+.sidebar-toggle {
+	position: fixed;
+	left: 10px;
+	top: 70px;
+	z-index: 1001;
+	background: var(--sidebar-bg);
+	color: #fff;
+	border: none;
+	padding: 10px 15px;
+	cursor: pointer;
+	border-radius: 12px;
+	transition: background 0.2s ease, box-shadow 0.2s ease;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-toggle:hover {
+	background: var(--sidebar-bg-hover);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Cabecera del sidebar */
+.sidebar-header {
+	padding: 20px;
+	border-bottom: 1px solid var(--sidebar-border);
+	margin: 0 12px 20px;
+	border-radius: 12px;
+	text-align: center;
+}
+
+.sidebar-header img {
+	height: 50px;
+	width: auto;
+	max-width: 100%;
+}
+
+/* Lista del menú */
+.sidebar-menu {
+	list-style: none;
+	padding: 0 12px;
+	margin: 0;
+}
+
+.sidebar-menu li {
+	margin: 0 0 4px 0;
+}
+
+/* Enlaces como "pills" redondeados */
+.sidebar-menu a {
+	display: block;
+	padding: 12px 16px;
+	color: #fff;
+	text-decoration: none;
+	transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+	border-radius: 10px;
+}
+
+.sidebar-menu a:hover {
+	background-color: var(--sidebar-bg-hover);
+}
+
+.sidebar-menu a.active {
+	background: linear-gradient(135deg, var(--sidebar-primary) 0%, var(--sidebar-primary-light) 100%);
+	color: #fff;
+	box-shadow: 0 4px 16px rgba(238, 106, 62, 0.35);
+}
+
+.sidebar-menu a.active:hover {
+	box-shadow: 0 6px 20px rgba(238, 106, 62, 0.4);
+}
+
+.sidebar-menu i {
+	margin-right: 10px;
+	width: 20px;
+}
+
+/* Submenú con bordes redondeados */
+.sidebar-submenu {
+	list-style: none;
+	padding: 8px 0 8px 12px;
+	margin: 4px 0 4px 12px;
+	background: var(--sidebar-submenu-bg);
+	border-radius: 12px;
+	border-left: 2px solid var(--sidebar-border);
+}
+
+.sidebar-submenu li {
+	margin: 0;
+}
+
+.sidebar-submenu a {
+	padding: 10px 16px;
+	font-size: 0.9rem;
+	color: #ccc;
+	border-radius: 8px;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-submenu a:hover {
+	background: rgba(255, 255, 255, 0.05);
+	color: #fff;
+}
+
+.sidebar-menu > li:hover .sidebar-submenu {
+	display: block !important;
+}
+
+/* Área principal */
+.dashboard-main {
+	margin-left: 250px;
+	padding: 20px;
+	transition: margin-left 0.3s ease, padding-left 0.3s ease;
+}
+
+.dashboard-main.sidebar-collapsed {
+	margin-left: 0;
+	padding-left: 56px; /* Espacio para el botón hamburguesa y que no tape "Hola" */
+	transition: margin-left 0.3s ease, padding-left 0.3s ease;
+}
+
+/* Responsive: sidebar oculto por defecto en móvil */
+@media (max-width: 768px) {
+	.dashboard-sidebar {
+		width: 260px;
+		border-radius: 0 20px 20px 0;
+		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+	}
+
+	.dashboard-sidebar.collapsed {
+		transform: translateX(-100%);
+	}
+
+	.dashboard-main {
+		margin-left: 0;
+	}
+
+	.dashboard-main.sidebar-collapsed {
+		margin-left: 0;
+	}
+}
+
+/* Compatibilidad con páginas que usan .show en móvil (ej. support) */
+@media (max-width: 768px) {
+	.dashboard-sidebar.show {
+		transform: translateX(0);
+	}
+}

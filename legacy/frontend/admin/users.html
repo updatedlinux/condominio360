@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Usuarios</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* Custom sidebar colors - orange/black */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+
+        .user-info-card {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-info-card h5 {
+            opacity: 0.8;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .user-info-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0;
+        }
+
+        .balance-card {
+            background: white;
+            border: 1px solid #e3e6f0;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            min-height: 160px;
+        }
+        .balance-card .balance-locked-row {
+            min-height: 1.6rem;
+            margin-top: 4px;
+            position: relative;
+        }
+        .balance-card .locked-breakdown-trigger {
+            cursor: pointer;
+            margin-left: 4px;
+            opacity: 0.85;
+        }
+        .balance-card .locked-breakdown-popover {
+            display: none;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 100%;
+            margin-bottom: 6px;
+            background: #333;
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            white-space: nowrap;
+            z-index: 1050;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        .balance-card .locked-breakdown-popover.show { display: block; }
+        .balance-card .locked-breakdown-popover::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border: 6px solid transparent;
+            border-top-color: #333;
+        }
+
+        .balance-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .balance-card img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
+        }
+
+        .balance-card .amount {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2e59d9;
+        }
+
+        .balance-card .locked {
+            font-size: 0.75rem;
+            color: #858796;
+        }
+
+        .balance-card .asset-name {
+            font-size: 0.85rem;
+            color: #5a5c69;
+            margin-top: 5px;
+        }
+
+        .transaction-row {
+            border-bottom: 1px solid #eee;
+            padding: 8px 0;
+        }
+
+        .transaction-row:last-child {
+            border-bottom: none;
+        }
+
+        .tx-credit {
+            color: #1cc88a;
+        }
+
+        .tx-debit {
+            color: #e74a3b;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'users';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-2 text-gray-800">Usuarios</h1>
+                    <p class="mb-4">Gestión de usuarios registrados en la plataforma.</p>
+
+                    <!-- Filtro 2FA -->
+                    <div class="mb-3">
+                        <span class="mr-2">Mostrar:</span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary active" id="filterAllBtn" onclick="setUserFilter('all')">Todos</button>
+                            <button type="button" class="btn btn-outline-primary" id="filter2FABtn" onclick="setUserFilter('2fa')">Con 2FA</button>
+                        </div>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Lista de Usuarios</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Email</th>
+                                            <th>Nombre</th>
+                                            <th>Rol</th>
+                                            <th>Nivel KYC</th>
+                                            <th>2FA</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- User Details Modal -->
+    <div class="modal fade" id="userDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-user mr-2"></i>Detalles del Usuario</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- User Info Header -->
+                    <div class="user-info-card">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h5>Usuario</h5>
+                                <h4 id="detailUserName">-</h4>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>Email</h5>
+                                <h4 id="detailUserEmail" style="font-size: 0.95rem; word-break: break-all;">-</h4>
+                            </div>
+                            <div class="col-md-2">
+                                <h5>Nivel KYC</h5>
+                                <h4 id="detailKycLevel">-</h4>
+                            </div>
+                            <div class="col-md-2">
+                                <h5>Estado</h5>
+                                <h4><span id="detailUserStatus" class="badge">-</span></h4>
+                            </div>
+                            <div class="col-md-1">
+                                <h5>2FA</h5>
+                                <h4><span id="detailUser2FA" class="badge">-</span></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Personal Data -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="cursor: pointer;" data-toggle="collapse"
+                            data-target="#personalDataSection">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-user-edit mr-2"></i>Datos Personales
+                                <i class="fas fa-chevron-down float-right"></i>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="personalDataSection">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Nombre Completo:</strong> <span id="detailFullName">-</span></p>
+                                        <p><strong>Documento:</strong> <span id="detailDocNumber">-</span></p>
+                                        <p><strong>Teléfono:</strong> <span id="detailPhone">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>País:</strong> <span id="detailCountry">-</span></p>
+                                        <p><strong>Ciudad:</strong> <span id="detailCity">-</span></p>
+                                        <p><strong>Fecha Nacimiento:</strong> <span id="detailDOB">-</span></p>
+                                    </div>
+                                </div>
+                                <p><strong>Dirección:</strong> <span id="detailAddress">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balances Section -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-wallet mr-2"></i>Balances
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="balancesContainer">
+                                <div class="col-12 text-center text-muted">Cargando balances...</div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Suspend/Activate, Inject Balance, Disable 2FA -->
+                    <div class="mb-3 d-flex flex-wrap gap-2">
+                        <button id="toggleStatusBtn" class="btn btn-danger" onclick="toggleUserStatus()">
+                            <i class="fas fa-ban mr-1"></i><span id="toggleStatusText">Suspender Usuario</span>
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="openInjectBalanceModal()">
+                            <i class="fas fa-syringe mr-1"></i>Inyección manual de balances
+                        </button>
+                        <button id="disable2FABtn" type="button" class="btn btn-warning" onclick="adminDisable2FA()" style="display: none;">
+                            <i class="fas fa-shield-alt mr-1"></i>Desactivar 2FA
+                        </button>
+                    </div>
+
+                    <!-- Transactions Section (Collapsible with Tabs) -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="cursor: pointer;" data-toggle="collapse"
+                            data-target="#transactionsSection">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-history mr-2"></i>Historial de Transacciones
+                                <i class="fas fa-chevron-down float-right"></i>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="transactionsSection">
+                            <div class="card-body">
+                                <!-- Export Controls -->
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <label>Desde:</label>
+                                        <input type="date" id="exportDateFrom" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Hasta:</label>
+                                        <input type="date" id="exportDateTo" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Tipo:</label>
+                                        <select id="exportType" class="form-control form-control-sm">
+                                            <option value="">Todas</option>
+                                            <option value="deposit">Depósitos</option>
+                                            <option value="withdrawal">Retiros</option>
+                                            <option value="p2p">P2P</option>
+                                            <option value="san">SAN</option>
+                                            <option value="transfer">Transferencias</option>
+                                            <option value="conversion">Conversiones</option>
+                                            <option value="airtime">Recargas</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button class="btn btn-success btn-sm" onclick="exportTransactions()">
+                                            <i class="fas fa-file-excel mr-1"></i>Exportar Excel
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Transaction Tabs -->
+                                <ul class="nav nav-tabs" id="txTabs" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="deposit-tab" data-toggle="tab" href="#depositTx"
+                                            role="tab" onclick="loadTransactions('deposit')">Depósitos</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="withdrawal-tab" data-toggle="tab" href="#withdrawalTx"
+                                            role="tab" onclick="loadTransactions('withdrawal')">Retiros</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="p2p-tab" data-toggle="tab" href="#p2pTx" role="tab"
+                                            onclick="loadTransactions('p2p')">P2P</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="san-tab" data-toggle="tab" href="#sanTx" role="tab"
+                                            onclick="loadTransactions('san')">SAN</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="transfer-tab" data-toggle="tab" href="#transferTx"
+                                            role="tab" onclick="loadTransactions('transfer')">Transferencias</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="conversion-tab" data-toggle="tab" href="#conversionTx"
+                                            role="tab" onclick="loadTransactions('conversion')">Conversiones</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="invest-tab" data-toggle="tab" href="#investTx" role="tab"
+                                            onclick="loadTransactions('invest')">BidiInvest</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="airtime-tab" data-toggle="tab" href="#airtimeTx" role="tab"
+                                            onclick="loadTransactions('airtime')">Recargas</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content p-3 border border-top-0" id="txTabContent">
+                                    <div class="tab-pane fade show active" id="depositTx" role="tabpanel">
+                                        <div id="depositTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="withdrawalTx" role="tabpanel">
+                                        <div id="withdrawalTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="p2pTx" role="tabpanel">
+                                        <div id="p2pTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="conversionTx" role="tabpanel">
+                                        <div id="conversionTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="sanTx" role="tabpanel">
+                                        <div id="sanTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="transferTx" role="tabpanel">
+                                        <div id="transferTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="investTx" role="tabpanel">
+                                        <div id="investTxList">Cargando...</div>
+                                    </div>
+                                    <div class="tab-pane fade" id="airtimeTx" role="tabpanel">
+                                        <div id="airtimeTxList">Cargando...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- SAN Groups Section -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="cursor: pointer;" data-toggle="collapse"
+                            data-target="#sanGroupsSection">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-users mr-2"></i>Grupos SAN
+                                <i class="fas fa-chevron-down float-right"></i>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="sanGroupsSection">
+                            <div class="card-body">
+                                <div id="sanGroupsContainer">Cargando...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- BidiInvest Rooms Section -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="cursor: pointer;" data-toggle="collapse"
+                            data-target="#investRoomsSection">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-chart-line mr-2"></i>Salas de Inversión - BidiInvest
+                                <i class="fas fa-chevron-down float-right"></i>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="investRoomsSection">
+                            <div class="card-body">
+                                <div id="investRoomsContainer">Cargando...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Blocking Trades Section (Hidden by default) -->
+                <div class="card mb-3 d-none" id="blockingTradesCard">
+                    <div class="card-header bg-warning text-white">
+                        <h6 class="m-0 font-weight-bold">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Trades P2P Activos (Bloqueando Suspensión)
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID Trade</th>
+                                        <th>Estado</th>
+                                        <th>Contraparte</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="blockingTradesTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-2 text-muted small">
+                            Estos trades deben finalizarse antes de que la suspensión sea efectiva.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Inject Balance Modal -->
+    <div class="modal fade" id="injectBalanceModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-syringe mr-2"></i>Inyección manual de balances</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Se acreditará el monto como <strong>depósito</strong> en la wallet del usuario. Redes: USDT=TRC20, USDC=BSC, BiUSD=Unknown, BTC/ETH/LTC=red única.</p>
+                    <div class="form-group">
+                        <label>Moneda</label>
+                        <select id="injectAssetSymbol" class="form-control" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="USDT">USDT (TRC20)</option>
+                            <option value="USDC">USDC (BSC)</option>
+                            <option value="BIUSD">BiUSD</option>
+                            <option value="BTC">BTC</option>
+                            <option value="ETH">ETH</option>
+                            <option value="LTC">LTC</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto</label>
+                        <input type="number" id="injectAmount" class="form-control" step="any" min="0.00000001" placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="injectBalanceSubmitBtn" onclick="submitInjectBalance()">
+                        <i class="fas fa-check mr-1"></i>Aplicar inyección
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">¿Listo para salir?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" si estás listo para terminar tu sesión actual.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <a class="btn btn-primary" href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        let currentUserId = null;
+        let currentUserData = null;
+        let dataTableInstance = null;
+        let userFilter = 'all'; // 'all' | '2fa'
+
+        // Coin logo map
+        const coinLogos = {
+            'USDT': 'assets/coins/usdt.svg',
+            'USDC': 'assets/coins/usdc.svg',
+            'BIUSD': 'assets/coins/biusd.svg',
+            'BTC': 'assets/coins/btc.svg',
+            'ETH': 'assets/coins/eth.svg',
+            'LTC': 'assets/coins/ltc.svg',
+        };
+
+        function escapeHtml(text) {
+            if (!text) return text;
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        const transactionTypeLabels = {
+            'deposit': 'Depósito Cripto',
+            'fiat_deposit': 'Depósito Fiat (PayPal/Tarjeta)',
+            'otc_credit': 'Depósito Fiat (OTC moneda nacional)',
+            'otc_escrow_lock': 'Reserva OTC (fondos reservados)',
+            'otc_escrow_release': 'Retiro Fiat OTC',
+            'otc_platform_receive': 'Transferencia proveniente del usuario tomador',
+            'otc_platform_send': 'Transferencia OTC al solicitante',
+            'fiat_deposit_fee': 'Comisión Depósito Fiat',
+            'withdrawal': 'Retiro Completado',
+            'withdrawal_request': 'Solicitud de Retiro',
+            'withdrawal_refund': 'Reembolso de Retiro',
+            'p2p_escrow_lock': 'Fondos de Orden P2P Bloqueados',
+            'p2p_escrow_release': 'Fondos de Orden P2P Liberado',
+            'p2p_escrow_refund': 'Reembolso de P2P',
+            'p2p_trade': 'Comercio P2P',
+            'p2p_fee': 'Comisiones por uso de P2P',
+            'internal_transfer_debit': 'Débito por Transferencia Interna',
+            'internal_transfer_credit': 'Crédito por Transferencia Interna',
+            'conversion_debit': 'Débito por Conversión',
+            'conversion_credit': 'Crédito por Conversión',
+            'conversion_fee': 'Comisión por Conversión',
+            'san_contribution': 'Aporte SAN',
+            'san_contribution_fee': 'Comisión Aporte SAN',
+            'san_payout': 'Pago Turno SAN',
+            'san_cover_debit': 'Cobro Cobertura SAN',
+            'san_recovery': 'Recuperación Deuda SAN',
+            'invest_lock': 'Inversión BidiInvest (fondos bloqueados)',
+            'invest_return': 'Retorno de capital BidiInvest',
+            'invest_profit': 'Intereses BidiInvest',
+            'invest_fee': 'Comisión salida BidiInvest',
+            'invest_payout': 'Pago BidiInvest',
+            'airtime_debit': 'Recarga Telefónica',
+            'airtime_fee': 'Comisión Recarga',
+            'airtime_fee_reversal': 'Reversión Comisión Recarga'
+        };
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        if (!AdminConfig.checkAuth()) {
+            // Redirect handled
+        } else {
+            loadUsers();
+        }
+
+        function setUserFilter(filter) {
+            userFilter = filter;
+            document.getElementById('filterAllBtn').classList.toggle('active', filter === 'all');
+            document.getElementById('filter2FABtn').classList.toggle('active', filter === '2fa');
+            loadUsers();
+        }
+
+        async function loadUsers() {
+            try {
+                const params = new URLSearchParams({ _t: Date.now() });
+                if (userFilter === '2fa') params.set('twoFactor', 'active');
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users?${params}`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    AdminConfig.handleApiError(401);
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error cargando usuarios');
+
+                const data = await response.json();
+                const users = Array.isArray(data) ? data : (data.users || []);
+
+                // Destroy existing DataTable BEFORE modifying DOM
+                if (dataTableInstance) {
+                    dataTableInstance.destroy();
+                    dataTableInstance = null;
+                }
+
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+
+                users.forEach(user => {
+                    const isActive = user.isActive !== false;
+                    const twoFA = user.twoFactorEnabled ? '<span class="badge badge-info"><i class="fas fa-shield-alt mr-1"></i>Activo</span>' : '<span class="badge badge-secondary">No</span>';
+                    const row = `
+                        <tr>
+                            <td>${user.id.substring(0, 8)}...</td>
+                            <td>${user.email}</td>
+                            <td>${user.profile ? (user.profile.firstName + ' ' + user.profile.lastName) : '-'}</td>
+                            <td>${user.role}</td>
+                            <td>${user.kycStatus?.currentLevel || 'NONE'}</td>
+                            <td>${twoFA}</td>
+                            <td>${user.suspensionRequested ? '<span class="badge badge-warning">Susp. Pendiente</span>' : (isActive ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Suspendido</span>')}</td>
+                            <td>
+                                <button class="btn btn-info btn-sm" onclick="viewDetails('${user.id}')" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${isActive ?
+                            `<button class="btn btn-danger btn-sm" onclick="quickSuspend('${user.id}')" title="Suspender">
+                                        <i class="fas fa-ban"></i>
+                                    </button>` :
+                            `<button class="btn btn-success btn-sm" onclick="quickActivate('${user.id}')" title="Activar">
+                                        <i class="fas fa-check"></i>
+                                    </button>`
+                        }
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+                dataTableInstance = $('#dataTable').DataTable({
+                    language: { emptyTable: "No hay usuarios registrados" },
+                    order: [[6, "asc"]] // Estado (Activo primero)
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar los usuarios', 'error');
+            }
+        }
+
+        async function viewDetails(userId) {
+            currentUserId = userId;
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users/${userId}`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (!response.ok) throw new Error('Error cargando detalles');
+
+                const data = await response.json();
+                currentUserData = data;
+
+                const user = data.user;
+                const profile = user.profile || {};
+                const kycStatus = user.kycStatus || {};
+
+                // Populate header
+                const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Sin nombre';
+                document.getElementById('detailUserName').textContent = fullName;
+                document.getElementById('detailUserEmail').textContent = user.email;
+                document.getElementById('detailKycLevel').textContent = kycStatus.currentLevel || 'NONE';
+
+                const statusBadge = document.getElementById('detailUserStatus');
+                if (user.suspensionRequested) {
+                    statusBadge.textContent = 'Susp. Pendiente';
+                    statusBadge.className = 'badge badge-warning';
+                } else {
+                    statusBadge.textContent = user.isActive !== false ? 'Activo' : 'Suspendido';
+                    statusBadge.className = `badge ${user.isActive !== false ? 'badge-success' : 'badge-danger'}`;
+                }
+
+                // 2FA badge and button
+                const twoFABadge = document.getElementById('detailUser2FA');
+                const disable2FABtn = document.getElementById('disable2FABtn');
+                if (user.twoFactorEnabled) {
+                    twoFABadge.textContent = 'Activo';
+                    twoFABadge.className = 'badge badge-info';
+                    if (disable2FABtn) { disable2FABtn.style.display = 'inline-block'; }
+                } else {
+                    twoFABadge.textContent = 'No';
+                    twoFABadge.className = 'badge badge-secondary';
+                    if (disable2FABtn) { disable2FABtn.style.display = 'none'; }
+                }
+
+                // Update toggle button
+                const toggleBtn = document.getElementById('toggleStatusBtn');
+                const toggleText = document.getElementById('toggleStatusText');
+                if (user.isActive !== false) {
+                    toggleBtn.className = 'btn btn-danger';
+                    toggleText.textContent = 'Suspender Usuario';
+                } else {
+                    toggleBtn.className = 'btn btn-success';
+                    toggleText.textContent = 'Activar Usuario';
+                }
+
+                // Hide toggle for admins
+                if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+                    toggleBtn.style.display = 'none';
+                } else {
+                    toggleBtn.style.display = 'inline-block';
+                }
+
+                // Populate personal data
+                document.getElementById('detailFullName').textContent = fullName !== 'Sin nombre' ? fullName : '-';
+                document.getElementById('detailDocNumber').textContent = profile.nationalIdNumber || '-';
+                document.getElementById('detailPhone').textContent = kycStatus.phoneNumber || profile.phone || '-';
+                document.getElementById('detailCountry').textContent = profile.country || '-';
+                document.getElementById('detailCity').textContent = profile.city || '-';
+                document.getElementById('detailDOB').textContent = profile.dateOfBirth
+                    ? new Date(profile.dateOfBirth).toLocaleDateString('es-ES') : '-';
+                document.getElementById('detailAddress').textContent =
+                    [profile.addressLine1, profile.addressLine2].filter(Boolean).join(', ') || '-';
+
+                // Render balances
+                renderBalances(data.wallets || []);
+
+                // Load deposit transactions first
+                loadTransactions('deposit');
+
+                // Show modal
+                // Show modal
+                renderSanGroups(data.sanGroups || []);
+                renderInvestRooms(data.investRooms || []);
+
+                // Render blocking trades (if suspension requested)
+                const blockingCard = document.getElementById('blockingTradesCard');
+                const blockingBody = document.getElementById('blockingTradesTableBody');
+                if (user.suspensionRequested && data.blockingTrades && data.blockingTrades.length > 0) {
+                    blockingCard.classList.remove('d-none');
+                    let rows = '';
+                    data.blockingTrades.forEach(t => {
+                        rows += `<tr>
+                            <td>${t.id ? t.id.substring(0, 8) + '...' : '-'}</td>
+                            <td>${t.status}</td>
+                            <td>${t.counterparty || 'N/A'}</td>
+                        </tr>`;
+                    });
+                    blockingBody.innerHTML = rows;
+                } else {
+                    blockingCard.classList.add('d-none');
+                    if (blockingBody) blockingBody.innerHTML = '';
+                }
+
+                $('#userDetailsModal').modal('show');
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar los detalles', 'error');
+            }
+        }
+
+        function renderSanGroups(groups) {
+            const container = document.getElementById('sanGroupsContainer');
+
+            if (!groups || groups.length === 0) {
+                container.innerHTML = '<div class="alert alert-info mb-0">El usuario no está asociado a ningún grupo SAN.</div>';
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Grupo</th>
+                                <th>Estado Grupo</th>
+                                <th>Monto Total</th>
+                                <th>Aporte</th>
+                                <th>Frecuencia</th>
+                                <th>Estado Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            groups.forEach(group => {
+                const statusBadge = getSanGroupStatusBadge(group.status);
+                const userStatusBadge = group.userStatus === 'Active' ? 'success' : 'secondary';
+                // Calculate total amount if maxParticipants is available, otherwise just show estimate
+                const totalAmount = group.maxParticipants ? (parseFloat(group.contributionAmount) * group.maxParticipants).toFixed(2) : (parseFloat(group.contributionAmount) * 10).toFixed(2);
+
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(group.name)}</strong></td>
+                        <td><span class="badge badge-${statusBadge.class}">${statusBadge.text}</span></td>
+                        <td>${totalAmount} BiUSD</td>
+                        <td>${group.contributionAmount} BiUSD</td>
+                        <td>${group.periodicity === 'weekly' ? 'Semanal' : 'Mensual'}</td>
+                        <td><span class="badge badge-${userStatusBadge}">${group.userStatus}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function getSanGroupStatusBadge(status) {
+            switch (status) {
+                case 'active': return { class: 'success', text: 'Activo' };
+                case 'pending': return { class: 'warning', text: 'Pendiente' };
+                case 'completed': return { class: 'info', text: 'Completado' };
+                case 'cancelled': return { class: 'danger', text: 'Cancelado' };
+                default: return { class: 'secondary', text: status };
+            }
+        }
+
+        function renderInvestRooms(rooms) {
+            const container = document.getElementById('investRoomsContainer');
+
+            if (!rooms || rooms.length === 0) {
+                container.innerHTML = '<div class="alert alert-info mb-0">El usuario no forma parte de ninguna sala de inversión BidiInvest.</div>';
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Sala</th>
+                                <th>Plan</th>
+                                <th>Monto</th>
+                                <th>Retorno Bruto</th>
+                                <th>Retorno Neto</th>
+                                <th>Estado Sala</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            rooms.forEach(room => {
+                const roomStatusBadge = getInvestRoomStatusBadge(room.status);
+                const statusBadge = room.participantStatus === 'ACTIVE' ? 'success' :
+                    (room.participantStatus === 'PENDING' ? 'warning' : 'secondary');
+
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(room.name)}</strong></td>
+                        <td>${room.planName}</td>
+                        <td>$${room.amount.toFixed(2)}</td>
+                        <td>$${room.grossReturn.toFixed(2)}</td>
+                        <td><strong>$${room.netReturn.toFixed(2)}</strong></td>
+                        <td><span class="badge badge-${roomStatusBadge.class}">${roomStatusBadge.text}</span></td>
+                        <td><span class="badge badge-${statusBadge}">${room.participantStatus}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function getInvestRoomStatusBadge(status) {
+            switch (status?.toLowerCase()) {
+                case 'active': return { class: 'success', text: 'Activa' };
+                case 'registration': return { class: 'info', text: 'Registro' };
+                case 'draft': return { class: 'secondary', text: 'Borrador' };
+                case 'liquidated': return { class: 'primary', text: 'Liquidada' };
+                case 'cancelled': return { class: 'danger', text: 'Cancelada' };
+                default: return { class: 'secondary', text: status };
+            }
+        }
+
+        function renderBalances(wallets) {
+            const container = document.getElementById('balancesContainer');
+
+            // Aggregate by asset (balance, locked, lockedBreakdown)
+            const aggregated = {};
+            Object.keys(coinLogos).forEach(asset => {
+                aggregated[asset] = { balance: 0, locked: 0, lockedBreakdown: { p2p: 0, san: 0, invest: 0 } };
+            });
+
+            if (wallets && wallets.length > 0) {
+                wallets.forEach(w => {
+                    const normalizedSymbol = w.assetSymbol?.toUpperCase();
+                    if (aggregated[normalizedSymbol]) {
+                        aggregated[normalizedSymbol].balance += parseFloat(w.balance) || 0;
+                        aggregated[normalizedSymbol].locked += parseFloat(w.lockedBalance) || 0;
+                        if (w.lockedBreakdown) {
+                            aggregated[normalizedSymbol].lockedBreakdown.p2p += parseFloat(w.lockedBreakdown.p2p) || 0;
+                            aggregated[normalizedSymbol].lockedBreakdown.san += parseFloat(w.lockedBreakdown.san) || 0;
+                            aggregated[normalizedSymbol].lockedBreakdown.invest += parseFloat(w.lockedBreakdown.invest) || 0;
+                        }
+                    }
+                });
+            }
+
+            let html = '';
+            Object.keys(coinLogos).forEach(asset => {
+                const logoUrl = coinLogos[asset];
+                const data = aggregated[asset];
+                const bd = data.lockedBreakdown || { p2p: 0, san: 0, invest: 0 };
+                const breakdownLines = [];
+                if (bd.p2p > 0) breakdownLines.push('P2P: ' + bd.p2p.toFixed(8));
+                if (bd.san > 0) breakdownLines.push('BidiSAN: ' + bd.san.toFixed(8));
+                if (bd.invest > 0) breakdownLines.push('BidiInvest: ' + bd.invest.toFixed(8));
+                const breakdownHtml = breakdownLines.length > 0
+                    ? breakdownLines.map(l => '<div>' + l + '</div>').join('')
+                    : '<div class="text-white-50">Sin desglose</div>';
+                const lockedRow = data.locked > 0
+                    ? '<span class="locked">🔒 ' + data.locked.toFixed(8) + ' bloqueado</span><span class="locked-breakdown-trigger" role="button" aria-label="Ver detalle bloqueados">ⓘ</span><div class="locked-breakdown-popover">' + breakdownHtml + '</div>'
+                    : '&nbsp;';
+                html += `
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="balance-card">
+                            <img src="${logoUrl}" alt="${asset}" onerror="this.src='assets/coins/usdt.svg'">
+                            <div class="amount">${data.balance.toFixed(8)}</div>
+                            <div class="asset-name">${asset}</div>
+                            <div class="balance-locked-row">${lockedRow}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function loadTransactions(type) {
+            const container = document.getElementById(`${type}TxList`);
+            container.innerHTML = '<div class="text-center text-muted">Cargando...</div>';
+
+            try {
+                const response = await fetch(
+                    `${AdminConfig.API_URL}/admin/users/${currentUserId}/transactions?type=${type}&limit=30`,
+                    { headers: AdminConfig.getAuthHeaders() }
+                );
+
+                if (!response.ok) throw new Error('Error');
+
+                const data = await response.json();
+                const transactions = data.transactions || [];
+
+                if (transactions.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted">No hay transacciones</div>';
+                    return;
+                }
+
+                let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th style="width: 30px;"></th><th>Fecha</th><th>Tipo</th><th>Moneda</th><th>Monto</th></tr></thead><tbody>';
+                transactions.forEach(tx => {
+                    const isCredit = tx.direction === 'credit';
+                    let meta = typeof tx.metadata === 'string' ? JSON.parse(tx.metadata) : (tx.metadata || {});
+
+                    let detailsHtml = '';
+                    if (tx.type === 'internal_transfer_debit') {
+                        detailsHtml = `<strong>Destino:</strong> ${meta.recipientEmail || 'N/A'}`;
+                    } else if (tx.type === 'internal_transfer_credit') {
+                        detailsHtml = `<strong>Origen:</strong> ${meta.senderEmail || 'N/A'}`;
+                    } else if (tx.type.startsWith('conversion_')) {
+                        // Lógica específica para Conversiones
+                        if (tx.type === 'conversion_debit') {
+                            detailsHtml = `
+                                <div><strong>Convertido a:</strong> ${meta.toAmount || '?'} ${meta.toAsset || '?'}</div>
+                                <div><strong>Tasa de Cambio:</strong> ${meta.exchangeRate || '?'}</div>
+                            `;
+                        } else if (tx.type === 'conversion_credit') {
+                            detailsHtml = `
+                                <div><strong>Proveniente de:</strong> ${meta.fromAmount || '?'} ${meta.fromAsset || '?'}</div>
+                                <div><strong>Tasa de Cambio:</strong> ${meta.exchangeRate || '?'}</div>
+                            `;
+                        } else if (tx.type === 'conversion_fee') {
+                            detailsHtml = `
+                                <div><strong>Comisión:</strong> ${(meta.feePercent * 100).toFixed(2)}%</div>
+                                <div><strong>Par:</strong> ${meta.fromAsset || '?'}/${meta.toAsset || '?'}</div>
+                            `;
+                        } else {
+                            detailsHtml = `<strong>Detalles:</strong> ${JSON.stringify(meta)}`;
+                        }
+
+                    } else if (tx.type === 'fiat_deposit') {
+                        detailsHtml = `<strong>Origen:</strong> PayPal / Tarjeta (PayPal)`;
+                        if (meta.amountPaidUsd) detailsHtml += `<br/><strong>Pagado USD:</strong> $${Number(meta.amountPaidUsd).toFixed(2)}`;
+                        if (meta.paypalOrderId) detailsHtml += `<br/><strong>Order ID PayPal:</strong> ${meta.paypalOrderId}`;
+                    } else if (tx.type === 'otc_credit') {
+                        detailsHtml = `<strong>Origen:</strong> OTC BidiPago Express (moneda nacional)`;
+                        if (meta.otcOrderId) detailsHtml += `<br/><strong>Orden OTC:</strong> ${meta.otcOrderId}`;
+                        if (meta.paymentReference) detailsHtml += `<br/><strong>Referencia:</strong> ${meta.paymentReference}`;
+                    } else if (tx.type === 'otc_platform_receive') {
+                        detailsHtml = `<strong>Origen:</strong> Usuario tomador (OTC)`;
+                        if (meta.fromTakerUserId) detailsHtml += `<br/><strong>Tomador ID:</strong> ${meta.fromTakerUserId.substring(0, 8)}...`;
+                        if (meta.otcOrderId) detailsHtml += `<br/><strong>Orden OTC:</strong> ${meta.otcOrderId}`;
+                    } else if (tx.type === 'otc_platform_send') {
+                        detailsHtml = `<strong>Destino:</strong> Usuario solicitante (OTC)`;
+                        if (meta.toRequesterUserId) detailsHtml += `<br/><strong>Solicitante ID:</strong> ${meta.toRequesterUserId.substring(0, 8)}...`;
+                        if (meta.otcOrderId) detailsHtml += `<br/><strong>Orden OTC:</strong> ${meta.otcOrderId}`;
+                    } else if (tx.type.startsWith('san_')) {
+                        // Lógica específica para SAN
+                        let sanDetails = [];
+
+                        // Grupo
+                        if (meta.sanGroupName) {
+                            sanDetails.push(`<strong>Grupo:</strong> ${meta.sanGroupName}`);
+                        } else if (meta.sanGroupId) {
+                            sanDetails.push(`<strong>Grupo:</strong> ${meta.sanGroupId.substring(0, 8)}...`);
+                        }
+
+                        if (meta.period) sanDetails.push(`<strong>Periodo:</strong> ${meta.period}`);
+
+                        // Participante
+                        if (meta.participantEmail) {
+                            sanDetails.push(`<strong>Participante:</strong> ${meta.participantEmail}`);
+                        } else if (meta.participantId) {
+                            sanDetails.push(`<strong>Participante:</strong> ${meta.participantId.substring(0, 8)}...`);
+                        }
+
+                        // Beneficiario
+                        if (meta.beneficiaryEmail) {
+                            sanDetails.push(`<strong>Beneficiario:</strong> ${meta.beneficiaryEmail}`);
+                        } else if (meta.beneficiaryId) {
+                            sanDetails.push(`<strong>Beneficiario:</strong> ${meta.beneficiaryId.substring(0, 8)}...`);
+                        }
+
+                        // Usuario Moroso
+                        if (meta.defaultedUserEmail) {
+                            sanDetails.push(`<strong>Usuario Moroso:</strong> ${meta.defaultedUserEmail}`);
+                        } else if (meta.defaultedUserId) {
+                            sanDetails.push(`<strong>Usuario Moroso:</strong> ${meta.defaultedUserId.substring(0, 8)}...`);
+                        }
+
+                        if (meta.reason) sanDetails.push(`<strong>Razón:</strong> ${meta.reason}`);
+                        if (meta.status) sanDetails.push(`<strong>Estado:</strong> ${meta.status}`);
+
+                        detailsHtml = sanDetails.join('<br/>');
+                        if (!detailsHtml) detailsHtml = `<strong>Detalles:</strong> ${JSON.stringify(meta)}`;
+                    } else if (tx.type.startsWith('invest_')) {
+                        // BidiInvest
+                        let investDetails = [];
+                        if (meta.roomName) investDetails.push(`<strong>Sala:</strong> ${meta.roomName}`);
+                        else if (meta.roomId) investDetails.push(`<strong>Sala ID:</strong> ${meta.roomId.substring(0, 8)}...`);
+                        if (meta.planName) investDetails.push(`<strong>Plan:</strong> ${meta.planName}`);
+                        if (meta.participantId) investDetails.push(`<strong>Participante:</strong> ${meta.participantId.substring(0, 8)}...`);
+                        detailsHtml = investDetails.length ? investDetails.join('<br/>') : `<strong>Detalles:</strong> ${JSON.stringify(meta)}`;
+                    }
+
+                    const referenceHtml = `<strong>ID Operación:</strong> ${tx.reference || 'N/A'}`;
+                    const fullDetails = detailsHtml ? `${detailsHtml}<br/>${referenceHtml}` : referenceHtml;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <button class="btn btn-sm btn-link p-0" type="button" data-toggle="collapse" data-target="#txDetails${tx.id}" aria-expanded="false">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </td>
+                            <td>${new Date(tx.createdAt).toLocaleString('es-ES')}</td>
+                            <td>${transactionTypeLabels[tx.type] || tx.type}</td>
+                            <td>${tx.assetSymbol}</td>
+                            <td class="${isCredit ? 'tx-credit' : 'tx-debit'}">
+                                ${isCredit ? '+' : '-'}${Number(tx.amount).toFixed(4)}
+                            </td>
+                        </tr>
+                        <tr class="collapse" id="txDetails${tx.id}">
+                            <td colspan="5" class="bg-light p-3 border-top-0">
+                                <div class="small">
+                                    ${fullDetails}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+
+            } catch (error) {
+                container.innerHTML = '<div class="text-center text-danger">Error al cargar</div>';
+            }
+        }
+
+        async function toggleUserStatus() {
+            if (!currentUserData) return;
+
+            const isActive = currentUserData.user.isActive !== false;
+            // Si está activo pero tiene suspensión pendiente, la acción sigue siendo "suspender" (o tal vez "forzar"? no, logic backend maneja)
+            // Si isActive es true, queremos suspender.
+
+            const action = isActive ? 'suspender' : 'activar';
+            let warningText = `El usuario será ${isActive ? 'suspendido' : 'activado'}.`;
+            if (isActive) {
+                warningText += " Todas las órdenes P2P PENDIENTES y retiros PENDIENTES serán cancelados inmediatamente.";
+            }
+
+            const result = await Swal.fire({
+                title: `¿${isActive ? 'Suspender' : 'Activar'} usuario?`,
+                text: warningText,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: isActive ? '#d33' : '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: `Sí, ${action}`
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users/${currentUserId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        ...AdminConfig.getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isActive: !isActive })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Check logic errors
+                    if (data.error === 'No se puede suspender al usuario') {
+                        // SAN Blocking or similar
+                        throw new Error(data.message || data.error);
+                    }
+                    throw new Error(data.message || 'Error desconocido');
+                }
+
+                // Handle Success Cases
+                if (data.status === 'PENDING_SUSPENSION') {
+                    let tradesList = '<ul>';
+                    if (data.activeTrades) {
+                        data.activeTrades.forEach(t => {
+                            tradesList += `<li>Trade ${t.id.substring(0, 8)}... (${t.status})</li>`;
+                        });
+                    }
+                    tradesList += '</ul>';
+
+                    await Swal.fire({
+                        title: 'Suspensión Pendiente',
+                        html: `El usuario tiene trades P2P activos. Se ha marcado para <b>suspensión automática</b> una vez finalicen.<br/><br/>
+                                Se han cancelado sus órdenes pendientes y retiros.<br/>
+                                <div class="text-left mt-3 small text-muted">${tradesList}</div>`,
+                        icon: 'info'
+                    });
+                } else {
+                    Swal.fire('Éxito', data.message || `Usuario ${isActive ? 'suspendido' : 'activado'}`, 'success');
+                }
+
+                $('#userDetailsModal').modal('hide');
+                loadUsers();
+
+            } catch (error) {
+                Swal.fire('No se pudo procesar', error.message, 'error');
+            }
+        }
+
+        function openInjectBalanceModal() {
+            if (!currentUserId) return;
+            document.getElementById('injectAssetSymbol').value = '';
+            document.getElementById('injectAmount').value = '';
+            $('#injectBalanceModal').modal('show');
+        }
+
+        async function adminDisable2FA() {
+            if (!currentUserId) return;
+            const result = await Swal.fire({
+                title: '¿Desactivar 2FA?',
+                text: 'Se desactivará la autenticación de dos factores para este usuario. Podrá volver a activarla desde su Perfil y Seguridad.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f0ad4e',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, desactivar'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users/${currentUserId}/disable-2fa`, {
+                    method: 'POST',
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Error al desactivar 2FA');
+                Swal.fire('Éxito', '2FA desactivado correctamente para el usuario.', 'success');
+                if (currentUserData?.user) currentUserData.user.twoFactorEnabled = false;
+                document.getElementById('detailUser2FA').textContent = 'No';
+                document.getElementById('detailUser2FA').className = 'badge badge-secondary';
+                document.getElementById('disable2FABtn').style.display = 'none';
+                loadUsers(); // Refresh table
+            } catch (err) {
+                Swal.fire('Error', err.message || 'No se pudo desactivar 2FA', 'error');
+            }
+        }
+
+        async function submitInjectBalance() {
+            if (!currentUserId) return;
+            const assetSymbol = document.getElementById('injectAssetSymbol').value.trim();
+            const amountRaw = document.getElementById('injectAmount').value.trim();
+            const amount = parseFloat(amountRaw);
+            if (!assetSymbol || !amountRaw || isNaN(amount) || amount <= 0) {
+                Swal.fire('Error', 'Seleccione moneda e ingrese un monto válido.', 'error');
+                return;
+            }
+            const btn = document.getElementById('injectBalanceSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...';
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users/${currentUserId}/inject-balance`, {
+                    method: 'POST',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ assetSymbol, amount })
+                });
+                const data = await response.json();
+                if (response.status === 401) { AdminConfig.handleApiError(401); return; }
+                if (!response.ok) throw new Error(data.message || data.error || 'Error al inyectar');
+                Swal.fire('Éxito', `Se acreditaron ${amount} ${assetSymbol} como depósito.`, 'success');
+                $('#injectBalanceModal').modal('hide');
+                viewDetails(currentUserId);
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check mr-1"></i>Aplicar inyección';
+            }
+        }
+
+        async function quickSuspend(userId) {
+            const result = await Swal.fire({
+                title: '¿Suspender usuario?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sí, suspender'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users/${userId}/status`, {
+                    method: 'PATCH',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isActive: false })
+                });
+                if (!response.ok) throw new Error('Error');
+                Swal.fire('Éxito', 'Usuario suspendido', 'success');
+                loadUsers();
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo suspender', 'error');
+            }
+        }
+
+        async function quickActivate(userId) {
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/users/${userId}/status`, {
+                    method: 'PATCH',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isActive: true })
+                });
+                if (!response.ok) throw new Error('Error');
+                Swal.fire('Éxito', 'Usuario activado', 'success');
+                loadUsers();
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo activar', 'error');
+            }
+        }
+
+        async function exportTransactions() {
+            const type = document.getElementById('exportType').value;
+            const dateFrom = document.getElementById('exportDateFrom').value;
+            const dateTo = document.getElementById('exportDateTo').value;
+
+            try {
+                let url = `${AdminConfig.API_URL}/admin/users/${currentUserId}/transactions?limit=1000`;
+                if (type) url += `&type=${type}`;
+
+                const response = await fetch(url, { headers: AdminConfig.getAuthHeaders() });
+                if (!response.ok) throw new Error('Error');
+
+                let data = await response.json();
+                let transactions = data.transactions || [];
+
+                // Filter by date if specified
+                if (dateFrom) {
+                    const from = new Date(dateFrom);
+                    transactions = transactions.filter(t => new Date(t.createdAt) >= from);
+                }
+                if (dateTo) {
+                    const to = new Date(dateTo);
+                    to.setHours(23, 59, 59);
+                    transactions = transactions.filter(t => new Date(t.createdAt) <= to);
+                }
+
+                if (transactions.length === 0) {
+                    Swal.fire('Info', 'No hay transacciones para exportar', 'info');
+                    return;
+                }
+
+                // Create Excel
+                const wsData = transactions.map(t => ({
+                    'Fecha': new Date(t.createdAt).toLocaleString('es-ES'),
+                    'Tipo': t.type,
+                    'Moneda': t.assetSymbol,
+                    'Monto': Number(t.amount).toFixed(4),
+                    'Dirección': t.direction,
+                    'Referencia': t.reference || '-'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Transacciones');
+                XLSX.writeFile(wb, `transacciones_${currentUserId.substring(0, 8)}_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+                Swal.fire('Éxito', 'Archivo descargado', 'success');
+
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo exportar', 'error');
+            }
+        }
+
+        // Popover desglose de bloqueados: clic en ⓘ abre/cierra; clic fuera cierra
+        $(document).on('click', function (e) {
+            var trigger = $(e.target).closest('.locked-breakdown-trigger')[0];
+            if (trigger) {
+                e.preventDefault();
+                e.stopPropagation();
+                var popover = $(trigger).next('.locked-breakdown-popover')[0];
+                if (popover) {
+                    $('.locked-breakdown-popover.show').not(popover).removeClass('show');
+                    $(popover).toggleClass('show');
+                }
+            } else if (!$(e.target).closest('.locked-breakdown-popover').length) {
+                $('.locked-breakdown-popover.show').removeClass('show');
+            }
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="es-ES">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Depositar - BidiPago</title>
+
+    <style>
+        /* Reutilizar estilos del dashboard */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Estilos específicos para depósito */
+        .deposit-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .deposit-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .deposit-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #ee6a3e;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(238, 106, 62, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .conversion-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .deposit-address-section {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+
+        .deposit-address-section.active {
+            display: block;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .qr-code-container canvas {
+            border: 5px solid #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .address-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ee6a3e;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .status-badge.waiting {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-badge.confirming {
+            background: #17a2b8;
+            color: #fff;
+        }
+
+        .status-badge.confirmed,
+        .status-badge.finished {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .status-badge.expired,
+        .status-badge.failed {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .deposit-history {
+            margin-top: 30px;
+        }
+
+        .deposit-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .deposit-item-info {
+            flex: 1;
+        }
+
+        .deposit-item-info strong {
+            color: #333;
+        }
+
+        .deposit-item-info small {
+            color: #666;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .deposit-item-clickable {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .deposit-item-clickable:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .countdown-timer {
+            margin-left: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ee6a3e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes otcPulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Estilos para métodos de depósito - Cards independientes */
+        .deposit-method-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .deposit-method-card:hover:not(.disabled) {
+            border-color: #ee6a3e;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(238, 106, 62, 0.15);
+        }
+
+        .deposit-method-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .deposit-method-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .deposit-method-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .deposit-method-icon.crypto {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+        }
+
+        .deposit-method-icon.fiat {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+        }
+
+        .deposit-method-info {
+            flex: 1;
+        }
+
+        .deposit-method-info h3 {
+            color: #333;
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+        }
+
+        .deposit-method-info p {
+            color: #666;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .deposit-method-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .active-badge {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .coming-soon-badge {
+            background: #ffc107;
+            color: #000;
+        }
+
+        /* Selector de moneda estilo móvil */
+        .asset-selector-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fff;
+            min-height: 48px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .asset-selector-trigger:hover:not(.disabled) {
+            border-color: #ee6a3e;
+            background: #fffbf8;
+        }
+        .asset-selector-trigger.disabled { cursor: not-allowed; }
+        .asset-selector-trigger:focus {
+            outline: none;
+            border-color: #ee6a3e;
+            box-shadow: 0 0 0 2px rgba(238, 106, 62, 0.2);
+        }
+        .asset-icon-small { width: 28px; height: 28px; object-fit: contain; margin-right: 12px; flex-shrink: 0; }
+        .asset-selector-trigger .selector-label { flex: 1; min-width: 0; text-align: left; font-weight: 600; color: #333; }
+        .asset-selector-trigger .selector-label.unselected { color: #333 !important; font-weight: 500; font-size: 0.95rem; opacity: 1; }
+        .asset-selector-trigger .selector-inner { flex: 1; min-width: 0; display: flex; align-items: center; }
+        .asset-selector-trigger .selector-chevron { color: #999; font-size: 1.2rem; }
+        .crypto-selector-modal .modal-content { border-radius: 12px; overflow: hidden; }
+        .crypto-selector-modal .list-group-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border: none; border-bottom: 1px solid #eee; }
+        .crypto-selector-modal .list-group-item:last-child { border-bottom: none; }
+        .crypto-selector-modal .list-group-item:hover { background: #f8f9fa; }
+        .crypto-selector-modal .list-group-item.selected { background: #fff8f3; }
+        .crypto-selector-modal .crypto-selector-icon { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+        .crypto-selector-modal .crypto-selector-check { margin-left: auto; color: #ee6a3e; }
+
+        /* Estilos para métodos Fiat detallados - Lista vertical */
+        .fiat-methods-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .fiat-method-item {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .fiat-method-item:hover:not(.disabled) {
+            border-color: #ee6a3e;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(238, 106, 62, 0.15);
+        }
+
+        .fiat-method-item.disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .fiat-method-item-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+            background: #f8f9fa;
+        }
+
+        .fiat-method-item-icon i {
+            color: #ee6a3e;
+        }
+
+        .fiat-method-item-icon.paypal {
+            background: #e7f0f8;
+        }
+
+        .fiat-method-item-icon.paypal i {
+            color: #0070ba;
+        }
+
+        .fiat-method-item-icon.card {
+            background: #e8e9f0;
+        }
+
+        .fiat-method-item-icon.card i {
+            color: #1a1f71;
+        }
+
+        .fiat-method-item-icon.zelle {
+            background: #f3e8ff;
+        }
+
+        .fiat-method-item-icon.zelle i {
+            color: #6d1ed4;
+        }
+
+        .fiat-method-item-icon.national {
+            background: #fff3e8;
+        }
+
+        .fiat-method-item-icon.national i {
+            color: #ee6a3e;
+        }
+
+        .fiat-method-item-content {
+            flex: 1;
+        }
+
+        .fiat-method-item-content h4 {
+            color: #333;
+            margin: 0 0 5px 0;
+            font-size: 1.1rem;
+        }
+
+        .fiat-method-item-content p {
+            color: #666;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .fiat-method-item-badge {
+            flex-shrink: 0;
+        }
+
+        .coming-soon-tag,
+        .available-tag {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .coming-soon-tag {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .available-tag {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination-controls button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background: #ee6a3e;
+            color: #fff;
+            border-color: #ee6a3e;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls .page-info {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit" class="active"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <div class="deposit-container">
+            <!-- Selección de Métodos de Depósito -->
+            <div class="deposit-card" id="depositTypeSelection">
+                <h2><i class="ri-wallet-3-line"></i> Depositar Fondos</h2>
+                <p style="color: #666; margin-bottom: 30px;">Selecciona el método de depósito que deseas utilizar</p>
+
+                <!-- Métodos Crypto -->
+                <div class="deposit-method-card" onclick="selectDepositType('crypto')">
+                    <div class="deposit-method-content">
+                        <div class="deposit-method-icon crypto">
+                            <i class="ri-bit-coin-line"></i>
+                        </div>
+                        <div class="deposit-method-info">
+                            <h3>Criptomonedas</h3>
+                            <p>Deposita usando USDT, USDC, BTC, LTC, ETH y más</p>
+                        </div>
+                        <div class="deposit-method-badge active-badge">
+                            <i class="ri-check-line"></i> Disponible
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métodos Fiat -->
+                <div class="deposit-method-card" id="depositTypeFiatCard" onclick="selectDepositType('fiat')">
+                    <div class="deposit-method-content">
+                        <div class="deposit-method-icon fiat">
+                            <i class="ri-bank-line"></i>
+                        </div>
+                        <div class="deposit-method-info">
+                            <h3>Moneda Fiat</h3>
+                            <p>Deposita con tu moneda nacional, PayPal, tarjeta de crédito/débito, y Zelle</p>
+                        </div>
+                        <div class="deposit-method-badge active-badge" id="fiatMethodBadge">
+                            <i class="ri-check-line"></i> Disponible
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selección de Métodos Fiat -->
+            <div class="deposit-card" id="fiatMethodsSection" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h3><i class="ri-bank-line"></i> Métodos de Depósito Fiat</h3>
+                    <button type="button" class="btn-secondary" onclick="goBackToDepositTypeSelection()">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                </div>
+                <p style="color: #666; margin-bottom: 30px;">Selecciona el método con el que deseas depositar</p>
+                <div id="fiatMethodsError" class="alert alert-danger" style="display: none; margin-bottom: 20px;"></div>
+                <div class="fiat-methods-list">
+                    <div id="nationalFiatCardsWrapper"></div>
+                    <div class="fiat-method-item disabled">
+                        <div class="fiat-method-item-icon">
+                            <i class="ri-money-dollar-circle-line"></i>
+                        </div>
+                        <div class="fiat-method-item-content">
+                            <h4>Dinero en Efectivo</h4>
+                            <p>Deposita en efectivo en puntos de pago autorizados</p>
+                        </div>
+                        <div class="fiat-method-item-badge">
+                            <span class="coming-soon-tag">Próximamente</span>
+                        </div>
+                    </div>
+                    <div class="fiat-method-item" id="fiatMethodPayPal" data-code="PAYPAL" onclick="selectFiatMethod('PAYPAL')">
+                        <div class="fiat-method-item-icon paypal">
+                            <i class="ri-paypal-line"></i>
+                        </div>
+                        <div class="fiat-method-item-content">
+                            <h4>PayPal</h4>
+                            <p>Deposita usando tu cuenta de PayPal de forma segura</p>
+                        </div>
+                        <div class="fiat-method-item-badge" id="paypalBadge">
+                            <span class="available-tag">Disponible</span>
+                        </div>
+                    </div>
+                    <div class="fiat-method-item" id="fiatMethodCard" data-code="PAYPAL_CARD" onclick="selectFiatMethod('PAYPAL_CARD')">
+                        <div class="fiat-method-item-icon card">
+                            <i class="ri-bank-card-line"></i>
+                        </div>
+                        <div class="fiat-method-item-content">
+                            <h4>Tarjeta de Crédito/Débito</h4>
+                            <p>Deposita usando tu tarjeta bancaria Visa o Mastercard (PayPal)</p>
+                        </div>
+                        <div class="fiat-method-item-badge" id="cardBadge">
+                            <span class="available-tag">Disponible</span>
+                        </div>
+                    </div>
+                    <div class="fiat-method-item disabled">
+                        <div class="fiat-method-item-icon zelle">
+                            <i class="ri-exchange-funds-line"></i>
+                        </div>
+                        <div class="fiat-method-item-content">
+                            <h4>Zelle</h4>
+                            <p>Deposita usando Zelle desde tu cuenta bancaria</p>
+                        </div>
+                        <div class="fiat-method-item-badge">
+                            <span class="coming-soon-tag">Próximamente</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Depósito Fiat (PayPal / TDC-TDD) -->
+            <div class="deposit-card" id="fiatDepositSection" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h3><i class="ri-bank-line"></i> Depósito Fiat</h3>
+                    <button type="button" class="btn-secondary" onclick="goBackToFiatMethods()">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                </div>
+                <p style="color: #666; margin-bottom: 20px;">Indica el monto que deseas pagar, elige la moneda estable a recibir y paga con PayPal o tarjeta.</p>
+
+                <div id="fiatError" class="alert alert-danger" style="display: none;"></div>
+                <div id="fiatSuccess" class="alert alert-success" style="display: none;"></div>
+
+                <form id="fiatDepositForm">
+                    <div class="form-group">
+                        <label for="fiatAmountUsd">Monto a pagar (USD)</label>
+                        <input type="number" id="fiatAmountUsd" class="form-control" step="0.01" min="5" max="5000" required placeholder="Ej: 100.00" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1')">
+                        <small class="form-text text-muted">Mínimo 5 USD, máximo 5000 USD</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="fiatAsset">Recibir en</label>
+                        <div class="asset-selector-trigger" id="fiatAssetTrigger" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openFiatAssetSelector(); }">
+                            <div class="selector-inner">
+                                <img src="/assets/coins/usdt.svg" id="fiatAssetIcon" class="asset-icon-small" alt="">
+                                <span id="fiatAssetLabel" class="selector-label unselected">Haz clic para seleccionar la moneda</span>
+                            </div>
+                            <i class="ri-arrow-down-s-line selector-chevron"></i>
+                        </div>
+                        <input type="hidden" id="fiatAsset" name="fiatAsset" value="">
+                    </div>
+                    <div class="form-group" id="fiatCommissionNotice" style="background: #fff8f3; border-left: 4px solid #ee6a3e; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <strong><i class="ri-information-line"></i> Desglose</strong>
+                        <div id="fiatCommissionText" class="mt-2" style="font-size: 0.95rem;">
+                            <div>Monto a Depositar: <span id="fiatAmountLabel">0</span> USD</div>
+                            <div>Comisión PayPal (<span id="fiatPaypalPctLabel">—</span>): <span id="fiatPaypalFeeLabel">0</span> USD</div>
+                            <div>Comisión de Servicio (<span id="fiatServicePctLabel">—</span>): <span id="fiatServiceFeeLabel">0</span> USD</div>
+                            <div><strong>Monto a Acreditar: <span id="fiatNetLabel">0</span> USD</strong></div>
+                            <small class="text-muted d-block mt-2">El monto acreditable se convierte a crypto al tipo de cambio vigente al completar el pago.</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="fiatPayRedirectWrapper">
+                            <button type="submit" class="btn-primary" id="fiatPayPalBtn" style="background: #0070ba; border-color: #0070ba;">
+                                <i class="ri-paypal-line"></i> Pagar con PayPal
+                            </button>
+                        </div>
+                        <div id="paypalButtonsContainer" style="display: none; min-height: 45px;"></div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Depósito OTC Moneda Nacional -->
+            <div class="deposit-card" id="otcDepositSection" style="display: none;">
+                <div id="otcSuccessMessage" class="alert alert-success" style="display: none; margin-bottom: 20px;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h3><i class="ri-exchange-dollar-line"></i> Depósito en Moneda Nacional</h3>
+                    <button type="button" class="btn-secondary" onclick="goBackOtcToFiatMethods()">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                </div>
+                <p style="color: #666; margin-bottom: 20px;">Indica la cantidad de cripto que deseas recibir. Pagarás el equivalente en tu moneda local según la tasa de mercado.</p>
+
+                <div id="otcError" class="alert alert-danger" style="display: none;"></div>
+
+                <form id="otcDepositForm">
+                    <div class="form-group">
+                        <label>Moneda local</label>
+                        <div class="form-control" id="otcFiatDisplay" style="background: #f8f9fa; cursor: default;">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="otcCryptoAsset">Recibir en</label>
+                        <div class="asset-selector-trigger" id="otcCryptoAssetTrigger" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openOtcCryptoSelector(); }">
+                            <div class="selector-inner">
+                                <img src="/assets/coins/usdt.svg" id="otcCryptoAssetIcon" class="asset-icon-small" alt="">
+                                <span id="otcCryptoAssetLabel" class="selector-label unselected">Haz clic para seleccionar la moneda</span>
+                            </div>
+                            <i class="ri-arrow-down-s-line selector-chevron"></i>
+                        </div>
+                        <input type="hidden" id="otcCryptoAsset" name="otcCryptoAsset" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="otcCryptoAmount">Monto en cripto a recibir</label>
+                        <input type="number" id="otcCryptoAmount" class="form-control" step="0.01" min="0.01" required placeholder="Ej: 100.00" inputmode="decimal" oninput="scheduleOtcFiatUpdate()">
+                    </div>
+                    <div class="form-group" style="background: #fff8f3; border-left: 4px solid #ee6a3e; padding: 15px; border-radius: 4px;">
+                        <div><strong>Tasa:</strong> <span id="otcRateDisplay">—</span></div>
+                        <div class="mt-2"><strong>Total a pagar:</strong> <span id="otcFiatAmountDisplay" style="font-size: 1.1rem;">—</span></div>
+                    </div>
+                    <button type="button" class="btn-primary" id="otcContinueBtn" onclick="handleOtcContinue()">
+                        <i class="ri-arrow-right-line"></i> Continuar
+                    </button>
+                </form>
+            </div>
+
+            <!-- Formulario de Depósito Crypto -->
+            <div class="deposit-card" id="cryptoDepositForm" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2><i class="ri-bit-coin-line"></i> Depositar Criptomonedas</h2>
+                    <button type="button" class="btn-secondary" onclick="goBackToDepositTypeSelection()">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                </div>
+
+                <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+                <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+
+                <!-- Formulario de Depósito -->
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label for="payCurrency">Criptomoneda</label>
+                        <div class="asset-selector-trigger" id="payCurrencyTrigger" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openCryptoCurrencySelector(); }">
+                            <div class="selector-inner">
+                                <img src="/assets/coins/usdt.svg" id="payCurrencyIcon" class="asset-icon-small" alt="">
+                                <span id="payCurrencyLabel" class="selector-label unselected">Haz clic para seleccionar la moneda</span>
+                            </div>
+                            <i class="ri-arrow-down-s-line selector-chevron"></i>
+                        </div>
+                        <input type="hidden" id="payCurrency" name="payCurrency" value="">
+                        <div id="minAmountInfo" class="min-amount-info"
+                            style="display: none; margin-top: 8px; padding: 10px; background: #fff8f3; border-left: 3px solid #ee6a3e; border-radius: 4px; font-size: 0.9em;">
+                            <i class="ri-information-line" style="color: #ee6a3e; margin-right: 5px;"></i>
+                            <span id="minAmountText">Monto mínimo: --</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priceAmount">Monto en USD</label>
+                        <input type="number" id="priceAmount" class="form-control" step="0.01" min="1" required
+                            placeholder="Ej: 100.00">
+                        <div id="conversionInfo" class="conversion-info" style="display: none;"></div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <i class="ri-add-circle-line"></i> Crear Depósito
+                    </button>
+                </form>
+
+                <!-- Sección de Dirección y QR (se muestra después de crear depósito) -->
+                <div id="depositAddressSection" class="deposit-address-section">
+                    <h3>Envía el pago a esta dirección</h3>
+
+                    <div id="depositStatus" class="status-badge waiting">Esperando pago...</div>
+
+                    <div class="address-display" id="addressDisplay">
+                        <span id="payAddress"></span>
+                        <button class="copy-btn" onclick="copyAddress()">
+                            <i class="ri-file-copy-line"></i> Copiar
+                        </button>
+                    </div>
+
+                    <div class="qr-code-container">
+                        <div id="qrcode"></div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Importante:</strong> Envía exactamente <strong id="payAmountDisplay"></strong> de
+                        <strong id="payCurrencyDisplay"></strong>
+                        a la dirección mostrada. El depósito se confirmará automáticamente una vez recibido.
+                        <div id="depositDetails"
+                            style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1);">
+                            <div style="margin-bottom: 8px;"><strong>Monto a Acreditar:</strong> <span
+                                    id="creditedAmountDisplay"></span></div>
+                            <div><strong>Comisión de Servicio + Red:</strong> <span id="feeAmountDisplay"></span></div>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" onclick="checkDepositStatus()" id="checkStatusBtn">
+                        <i class="ri-refresh-line"></i> Verificar Estado
+                    </button>
+                </div>
+            </div>
+
+            <!-- Historial de Depósitos -->
+            <div class="deposit-card deposit-history">
+                <h2><i class="ri-history-line"></i> Historial de Depósitos</h2>
+                <div id="depositHistory">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Seleccionar Criptomoneda -->
+    <div class="modal fade crypto-selector-modal" id="cryptoCurrencyModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleccionar Criptomoneda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="cryptoCurrencyList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Seleccionar Moneda (Fiat) -->
+    <div class="modal fade crypto-selector-modal" id="fiatAssetModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Recibir en</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="fiatAssetList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal OTC Buscando disponibilidad (10 min) - estilo Cambio Rápido P2P, no se puede cerrar, persiste ante apagado -->
+    <div class="modal fade" id="otcSearchModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title"><i class="ri-search-line"></i> Buscando Disponibilidad OTC</h5>
+                    <span id="otcSearchTimer" class="badge bg-secondary fs-6">10:00</span>
+                </div>
+                <div class="modal-body text-center py-4" id="otcSearchContent">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 30px 0; flex-wrap: wrap;">
+                        <div>
+                            <i class="ri-cloud-fill" style="font-size: 64px; color: #ee6a3e;"></i>
+                            <div style="margin-top: 8px; font-size: 12px; color: #4a5568;">Tú</div>
+                        </div>
+                        <div class="connection-dots" style="display: flex; gap: 5px;">
+                            <span style="width: 8px; height: 8px; background: #ee6a3e; border-radius: 50%; animation: otcPulse 1.5s infinite;"></span>
+                            <span style="width: 8px; height: 8px; background: #ee6a3e; border-radius: 50%; animation: otcPulse 1.5s infinite 0.2s;"></span>
+                            <span style="width: 8px; height: 8px; background: #ee6a3e; border-radius: 50%; animation: otcPulse 1.5s infinite 0.4s;"></span>
+                        </div>
+                        <div>
+                            <i class="ri-earth-fill" style="font-size: 64px; color: #ee6a3e;"></i>
+                            <div style="margin-top: 8px; font-size: 12px; color: #4a5568;">Mercado OTC BidiPago</div>
+                        </div>
+                    </div>
+                    <p id="otcSearchStatus" style="color: #718096; margin-bottom: 20px;">Procesando tu solicitud...</p>
+                    <p class="text-muted small">Tienes 10 minutos. Si no hay disponibilidad, te invitamos a usar el Mercado P2P.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4" id="otcSearchFooter" style="display: none;">
+                    <a href="/p2p" class="btn btn-primary"><i class="ri-exchange-line"></i> Ir al Mercado P2P</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal OTC Instrucciones de pago + comprobante -->
+    <div class="modal fade" id="otcPaymentModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-bank-card-line"></i> Realizar Pago</h5>
+                </div>
+                <div class="modal-body" id="otcPaymentContent">
+                    <div id="otcPaymentStatusMsg" class="alert alert-info mb-3" style="display: none;">—</div>
+                    <p>Selecciona uno de los métodos de pago disponibles para tu moneda nacional.</p>
+                    <div id="otcPaymentMethodsSelector" class="mb-3" style="display: none;"></div>
+                    <div id="otcPaymentInstructions" class="alert alert-light border mt-3 mb-3" style="white-space: pre-wrap;">—</div>
+                    <div id="otcPaymentProofSection" class="mt-4">
+                        <label class="form-label fw-semibold"><i class="ri-file-upload-line"></i> Comprobante de Pago</label>
+                        <p class="text-muted small">Envía el pago y adjunta el comprobante para su verificación.</p>
+                        <div class="mb-3">
+                            <label class="form-label">Referencia de Pago <span class="text-muted">(opcional)</span></label>
+                            <input type="text" id="otcPaymentReference" class="form-control" placeholder="Nº de transacción, referencias, etc.">
+                        </div>
+                        <input type="file" id="otcPaymentProofFile" class="form-control" accept="image/*,.pdf">
+                        <button type="button" class="btn btn-primary mt-2" id="otcUploadProofBtn" onclick="submitOtcPaymentProof()">
+                            <i class="ri-upload-line"></i> Enviar Comprobante
+                        </button>
+                        <div id="otcProofUploaded" class="alert alert-success mt-2" style="display: none;">
+                            <i class="ri-checkbox-circle-fill"></i> Comprobante enviado.<br>
+                            <small class="mt-1 d-block">Un operador de BidiPago verificará tu comprobante en el Portal OTC y liberará los fondos. Puede tardar unos minutos.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal OTC Seleccionar Cripto -->
+    <div class="modal fade crypto-selector-modal" id="otcCryptoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Recibir en</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="otcCryptoList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/web/js/deposit.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+
+</html>

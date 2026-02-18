@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+		<!-- Links Of CSS File -->
+		<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+		<link rel="stylesheet" href="/assets/css/flaticon.css">
+		<link rel="stylesheet" href="/assets/css/remixicon.css">
+		<link rel="stylesheet" href="/assets/css/meanmenu.min.css">
+		<link rel="stylesheet" href="/assets/css/animate.min.css">
+		
+		<!-- Favicon -->
+		<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon_io/apple-touch-icon.png">
+		<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon_io/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon_io/favicon-16x16.png">
+		<link rel="manifest" href="assets/favicon_io/site.webmanifest">
+		<link rel="shortcut icon" href="assets/favicon_io/favicon.ico">
+		
+		<!-- Title -->
+		<title>BidiPago - Compra y vende dólares cripto | Envía remesas | Recarga servicios</title>
+
+		<!-- Estilos personalizados estilo AirTM con modo oscuro -->
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			:root {
+				--primary-orange: #ee6a3e;
+				--primary-orange-light: #ff8c5a;
+				--primary-purple-start: #667eea;
+				--primary-purple-end: #764ba2;
+				--bg-light: #f8f9fa;
+				--bg-dark: #1a202c;
+				--text-light: #1a202c;
+				--text-dark: #f7fafc;
+				--card-bg-light: #fff;
+				--card-bg-dark: #2d3748;
+				--border-light: #e2e8f0;
+				--border-dark: #4a5568;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+				color: var(--text-light);
+				line-height: 1.6;
+				background: var(--bg-light);
+				transition: background 0.3s ease, color 0.3s ease;
+			}
+
+			body.dark-mode {
+				background: var(--bg-dark);
+				color: var(--text-dark);
+			}
+
+			/* Theme Toggle */
+			.theme-toggle {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				z-index: 1001;
+				background: var(--card-bg-light);
+				border: 2px solid var(--border-light);
+				border-radius: 50%;
+				width: 50px;
+				height: 50px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				transition: all 0.3s;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+			}
+
+			body.dark-mode .theme-toggle {
+				background: var(--card-bg-dark);
+				border-color: var(--border-dark);
+			}
+
+			.theme-toggle:hover {
+				transform: scale(1.1);
+			}
+
+			.theme-toggle i {
+				font-size: 1.5rem;
+				color: var(--primary-orange);
+			}
+
+			/* Navbar */
+			.navbar-custom {
+				background: var(--card-bg-light);
+				padding: 1rem 0;
+				box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+				position: sticky;
+				top: 0;
+				z-index: 1000;
+				transition: background 0.3s ease, box-shadow 0.3s ease;
+			}
+
+			body.dark-mode .navbar-custom {
+				background: var(--card-bg-dark);
+				box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+			}
+
+			.navbar-custom .navbar-brand {
+				position: relative;
+				display: inline-block;
+			}
+
+			.navbar-custom .navbar-brand img {
+				height: 50px;
+			}
+
+			.navbar-custom .navbar-brand .logo-dark {
+				display: none;
+			}
+
+			body.dark-mode .navbar-custom .navbar-brand .logo-light {
+				display: none;
+			}
+
+			body.dark-mode .navbar-custom .navbar-brand .logo-dark {
+				display: inline;
+			}
+
+			.navbar-custom .nav-link {
+				color: var(--text-light);
+				font-weight: 500;
+				margin: 0 1rem;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .navbar-custom .nav-link {
+				color: var(--text-dark);
+			}
+
+			.navbar-custom .nav-link:hover {
+				color: var(--primary-orange);
+			}
+
+			.navbar-custom .btn-login {
+				color: var(--text-light);
+				text-decoration: none;
+				font-weight: 500;
+				margin-right: 1rem;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .navbar-custom .btn-login {
+				color: var(--text-dark);
+			}
+
+			.navbar-custom .btn-register {
+				background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%);
+				color: #fff;
+				border: none;
+				padding: 0.5rem 1.5rem;
+				border-radius: 8px;
+				font-weight: 600;
+				text-decoration: none;
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+
+			.navbar-custom .btn-register:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(238, 106, 62, 0.3);
+				color: #fff;
+			}
+
+			.navbar-custom .container { flex-wrap: wrap; }
+			.navbar-custom .navbar-nav { flex-wrap: wrap; }
+			.navbar-custom .nav-item .nav-link { margin: 0 0.4rem; font-size: 0.9rem; white-space: nowrap; }
+			@media (max-width: 1199px) {
+				#headerRatesCarousel { display: none !important; }
+				.navbar-custom .nav-item .nav-link { margin: 0 0.5rem; }
+			}
+			@media (max-width: 991px) {
+				.navbar-collapse { padding: 1rem 0; }
+				.navbar-nav .nav-item { margin-bottom: 0.25rem; }
+			}
+			@media (max-width: 767px) {
+				.navbar .navbar-toggler { margin-right: 50px; }
+			}
+			.header-rates-carousel { min-height: 36px; flex-direction: column; }
+			.header-rates-title { font-size: 0.7rem; font-weight: 600; color: var(--text-light); opacity: 0.9; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+			body.dark-mode .header-rates-title { color: var(--text-dark); }
+			.header-rates-track { display: flex; gap: 1.25rem; align-items: center; overflow-x: auto; scroll-behavior: smooth; padding: 0.25rem 0; scrollbar-width: none; -ms-overflow-style: none; }
+			.header-rates-track::-webkit-scrollbar { display: none; }
+			.header-rate-item { flex: 0 0 auto; text-align: center; white-space: nowrap; }
+			.header-rate-item .pair { font-size: 0.7rem; color: var(--text-light); opacity: 0.9; }
+			body.dark-mode .header-rate-item .pair { color: var(--text-dark); }
+			.header-rate-item .value { font-size: 0.95rem; font-weight: 700; color: var(--primary-orange); }
+			.header-rate-item .value.loading { font-weight: 400; opacity: 0.7; }
+
+			/* Hero Section */
+			.hero-section {
+				background: linear-gradient(135deg, var(--bg-light) 0%, var(--card-bg-light) 100%);
+				padding: 6rem 0;
+				position: relative;
+				overflow: hidden;
+				transition: background 0.3s ease;
+			}
+
+			body.dark-mode .hero-section {
+				background: linear-gradient(135deg, var(--bg-dark) 0%, #1a202c 100%);
+			}
+
+			.hero-section::before {
+				content: '';
+				position: absolute;
+				top: -50%;
+				right: -20%;
+				width: 800px;
+				height: 800px;
+				background: radial-gradient(circle, rgba(238, 106, 62, 0.1) 0%, transparent 70%);
+				border-radius: 50%;
+			}
+
+			.hero-content {
+				position: relative;
+				z-index: 1;
+			}
+
+			.hero-title {
+				font-size: 3.5rem;
+				font-weight: 700;
+				color: var(--text-light);
+				margin-bottom: 1.5rem;
+				line-height: 1.2;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .hero-title {
+				color: var(--text-dark);
+			}
+
+			.hero-subtitle {
+				font-size: 1.5rem;
+				color: #4a5568;
+				margin-bottom: 1rem;
+				font-weight: 500;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .hero-subtitle {
+				color: #a0aec0;
+			}
+
+			.hero-description {
+				font-size: 1.125rem;
+				color: #718096;
+				margin-bottom: 2.5rem;
+				max-width: 600px;
+				line-height: 1.8;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .hero-description {
+				color: #cbd5e0;
+			}
+
+			.hero-buttons {
+				display: flex;
+				gap: 1rem;
+				flex-wrap: wrap;
+				margin-bottom: 2rem;
+			}
+
+			.app-download-buttons {
+				display: flex;
+				gap: 1rem;
+				flex-wrap: wrap;
+				align-items: center;
+				margin-bottom: 2.5rem;
+			}
+
+			.app-download-btn {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.75rem;
+				padding: 0.75rem 1.25rem;
+				border-radius: 12px;
+				text-decoration: none;
+				transition: all 0.3s;
+				border: 2px solid var(--border-light);
+				background: var(--card-bg-light);
+				color: var(--text-light);
+			}
+
+			body.dark-mode .app-download-btn {
+				background: var(--card-bg-dark);
+				border-color: var(--border-dark);
+				color: var(--text-dark);
+			}
+
+			.app-download-btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+				border-color: var(--primary-orange);
+			}
+
+			body.dark-mode .app-download-btn:hover {
+				box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+			}
+
+			.app-download-btn i {
+				font-size: 1.5rem;
+				color: var(--primary-orange);
+			}
+
+			.app-download-btn-content {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+			}
+
+			.app-download-btn-label {
+				font-size: 0.75rem;
+				color: #718096;
+				line-height: 1;
+				margin-bottom: 0.25rem;
+			}
+
+			body.dark-mode .app-download-btn-label {
+				color: #a0aec0;
+			}
+
+			.app-download-btn-name {
+				font-size: 1rem;
+				font-weight: 600;
+				line-height: 1.2;
+			}
+
+			.btn-primary-custom {
+				background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+				color: #fff;
+				padding: 1rem 2rem;
+				border-radius: 12px;
+				font-weight: 600;
+				text-decoration: none;
+				transition: all 0.3s;
+				border: none;
+				font-size: 1rem;
+			}
+
+			.btn-primary-custom:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 8px 20px rgba(238, 106, 62, 0.3);
+				color: #fff;
+			}
+
+			.btn-secondary-custom {
+				background: #fff;
+				color: #ee6a3e;
+				padding: 1rem 2rem;
+				border-radius: 12px;
+				font-weight: 600;
+				text-decoration: none;
+				transition: all 0.3s;
+				border: 2px solid #ee6a3e;
+				font-size: 1rem;
+			}
+
+			.btn-secondary-custom:hover {
+				background: #ee6a3e;
+				color: #fff;
+				transform: translateY(-2px);
+			}
+
+			.hero-image {
+				position: relative;
+				z-index: 1;
+			}
+
+			.hero-image img,
+			.hero-image video {
+				max-width: 100%;
+				height: auto;
+				border-radius: 24px;
+				box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+				/* Bordes difuminados: suaviza solo los bordes, centro intacto */
+				-webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 78%, transparent 100%);
+				mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 78%, transparent 100%);
+				-webkit-mask-size: 100% 100%;
+				mask-size: 100% 100%;
+			}
+
+			.hero-image video {
+				display: block;
+				object-fit: contain;
+			}
+
+			/* Features Section */
+			.features-section {
+				padding: 5rem 0;
+				background: var(--card-bg-light);
+				transition: background 0.3s ease;
+			}
+
+			body.dark-mode .features-section {
+				background: var(--bg-dark);
+			}
+
+			.section-title {
+				text-align: center;
+				margin-bottom: 4rem;
+			}
+
+			.section-label {
+				color: #ee6a3e;
+				font-weight: 600;
+				font-size: 0.875rem;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+				margin-bottom: 0.5rem;
+			}
+
+			.section-heading {
+				font-size: 2.5rem;
+				font-weight: 700;
+				color: var(--text-light);
+				margin-bottom: 1rem;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .section-heading {
+				color: var(--text-dark);
+			}
+
+			.section-description {
+				font-size: 1.125rem;
+				color: #718096;
+				max-width: 700px;
+				margin: 0 auto;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .section-description {
+				color: #a0aec0;
+			}
+
+			.feature-card {
+				background: var(--card-bg-light);
+				border-radius: 16px;
+				padding: 2rem;
+				text-align: center;
+				transition: all 0.3s;
+				border: 1px solid var(--border-light);
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+			}
+
+			body.dark-mode .feature-card {
+				background: #2d3748;
+				border-color: #4a5568;
+			}
+
+			.feature-card:hover {
+				transform: translateY(-8px);
+				box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+				border-color: var(--primary-orange);
+			}
+
+			body.dark-mode .feature-card:hover {
+				box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+			}
+
+			.feature-icon {
+				width: 80px;
+				height: 80px;
+				margin: 0 auto 1.5rem;
+				background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+				border-radius: 20px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 2rem;
+				color: #fff;
+			}
+
+			.feature-title {
+				font-size: 1.5rem;
+				font-weight: 700;
+				color: var(--text-light);
+				margin-bottom: 1rem;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .feature-title {
+				color: #f7fafc;
+			}
+
+			.feature-description {
+				color: #718096;
+				line-height: 1.7;
+				transition: color 0.3s;
+				flex: 1;
+				margin-bottom: 0;
+			}
+
+			body.dark-mode .feature-description {
+				color: #cbd5e0;
+			}
+
+			/* Benefits Section */
+			.benefits-section {
+				padding: 5rem 0;
+				background: linear-gradient(135deg, var(--bg-light) 0%, var(--card-bg-light) 100%);
+				transition: background 0.3s ease;
+			}
+
+			body.dark-mode .benefits-section {
+				background: linear-gradient(135deg, var(--bg-dark) 0%, #1a202c 100%);
+			}
+
+			.benefit-item {
+				display: flex;
+				align-items: flex-start;
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+			}
+
+			.benefit-icon {
+				color: #ee6a3e;
+				font-size: 1.5rem;
+				flex-shrink: 0;
+			}
+
+			.benefit-text {
+				color: #4a5568;
+				font-size: 1.125rem;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .benefit-text {
+				color: #cbd5e0;
+			}
+
+			.benefits-hero-img {
+				max-width: 100%;
+				height: auto;
+				border-radius: 24px;
+				box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+				-webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 78%, transparent 100%);
+				mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 78%, transparent 100%);
+				-webkit-mask-size: 100% 100%;
+				mask-size: 100% 100%;
+			}
+
+			/* Transversal Section (Right to Left layout) */
+			.transversal-section {
+				padding: 5rem 0;
+				background: var(--card-bg-light);
+				transition: background 0.3s ease;
+			}
+
+			body.dark-mode .transversal-section {
+				background: #1a202c;
+			}
+
+			.transversal-section .section-label,
+			.transversal-section .section-heading,
+			.transversal-section .benefit-item {
+				transition: color 0.3s;
+			}
+
+			.transversal-desc {
+				color: #718096;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .transversal-desc {
+				color: #a0aec0;
+			}
+
+			/* Steps Section */
+			.steps-section {
+				padding: 5rem 0;
+				background: var(--card-bg-light);
+				transition: background 0.3s ease;
+			}
+
+			body.dark-mode .steps-section {
+				background: var(--bg-dark);
+			}
+
+			.step-card {
+				text-align: center;
+				padding: 1.5rem;
+			}
+
+			.step-number {
+				width: 60px;
+				height: 60px;
+				margin: 0 auto 1.5rem;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1.5rem;
+				font-weight: 700;
+				color: #fff;
+			}
+
+			.step-title {
+				font-size: 1.25rem;
+				font-weight: 700;
+				color: var(--text-light);
+				margin-bottom: 0.75rem;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .step-title {
+				color: var(--text-dark);
+			}
+
+			.step-description {
+				color: #718096;
+				line-height: 1.7;
+				transition: color 0.3s;
+			}
+
+			body.dark-mode .step-description {
+				color: #a0aec0;
+			}
+
+			/* CTA Section */
+			.cta-section {
+				padding: 5rem 0;
+				background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+				color: #fff;
+				text-align: center;
+				position: relative;
+				overflow: hidden;
+			}
+
+			.cta-section::before {
+				content: '';
+				position: absolute;
+				top: -50%;
+				right: -20%;
+				width: 600px;
+				height: 600px;
+				background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+				border-radius: 50%;
+			}
+
+			.cta-content {
+				position: relative;
+				z-index: 1;
+			}
+
+			.cta-title {
+				font-size: 2.5rem;
+				font-weight: 700;
+				margin-bottom: 1rem;
+			}
+
+			.cta-description {
+				font-size: 1.25rem;
+				margin-bottom: 2.5rem;
+				opacity: 0.95;
+			}
+
+			.cta-buttons {
+				display: flex;
+				gap: 1rem;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+
+			.btn-white {
+				background: #fff;
+				color: #ee6a3e;
+				padding: 1rem 2rem;
+				border-radius: 12px;
+				font-weight: 600;
+				text-decoration: none;
+				transition: all 0.3s;
+			}
+
+			.btn-white:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+				color: #ee6a3e;
+			}
+
+			.btn-outline-white {
+				background: transparent;
+				color: #fff;
+				padding: 1rem 2rem;
+				border-radius: 12px;
+				font-weight: 600;
+				text-decoration: none;
+				transition: all 0.3s;
+				border: 2px solid #fff;
+			}
+
+			.btn-outline-white:hover {
+				background: #fff;
+				color: #ee6a3e;
+				transform: translateY(-2px);
+			}
+
+			/* Footer */
+			.footer-section {
+				background: #1a202c;
+				color: #a0aec0;
+				padding: 4rem 0 2rem;
+			}
+
+			.footer-logo img {
+				height: 40px;
+				margin-bottom: 1rem;
+			}
+
+			.footer-description {
+				margin-bottom: 1.5rem;
+				line-height: 1.7;
+			}
+
+			.footer-title {
+				color: #fff;
+				font-weight: 700;
+				margin-bottom: 1rem;
+			}
+
+			.footer-links {
+				list-style: none;
+				padding: 0;
+			}
+
+			.footer-links li {
+				margin-bottom: 0.5rem;
+			}
+
+			.footer-links a {
+				color: #a0aec0;
+				text-decoration: none;
+				transition: color 0.3s;
+			}
+
+			.footer-links a:hover {
+				color: #ee6a3e;
+			}
+
+			.social-links {
+				display: flex;
+				gap: 1rem;
+				margin-top: 1rem;
+			}
+
+			.social-links a {
+				width: 40px;
+				height: 40px;
+				background: #2d3748;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #a0aec0;
+				text-decoration: none;
+				transition: all 0.3s;
+			}
+
+			.social-links a:hover {
+				background: #ee6a3e;
+				color: #fff;
+				transform: translateY(-2px);
+			}
+
+			.copyright {
+				background: #0f1419;
+				color: #718096;
+				padding: 1.5rem 0;
+				text-align: center;
+				font-size: 0.875rem;
+			}
+
+			/* Botón subir */
+			.btn-scroll-top {
+				position: fixed;
+				bottom: 1.5rem;
+				right: 1.5rem;
+				width: 48px;
+				height: 48px;
+				border-radius: 50%;
+				background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%);
+				color: #fff;
+				border: none;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				box-shadow: 0 4px 12px rgba(238, 106, 62, 0.4);
+				z-index: 999;
+				opacity: 0;
+				visibility: hidden;
+				transition: opacity 0.3s, visibility 0.3s, transform 0.2s;
+			}
+			.btn-scroll-top.visible { opacity: 1; visibility: visible; }
+			.btn-scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(238, 106, 62, 0.5); }
+			.btn-scroll-top i { font-size: 1.5rem; }
+
+			/* Responsive */
+			@media (max-width: 768px) {
+				.hero-title {
+					font-size: 2.5rem;
+				}
+
+				.hero-subtitle {
+					font-size: 1.25rem;
+				}
+
+				.section-heading {
+					font-size: 2rem;
+				}
+
+				.cta-title {
+					font-size: 2rem;
+				}
+
+				.theme-toggle {
+					top: 0.5rem;
+					right: 0.5rem;
+					width: 45px;
+					height: 45px;
+				}
+			}
+
+			/* Separar botones de imágenes en vista móvil */
+			@media (max-width: 991px) {
+				.hero-content {
+					margin-bottom: 2.5rem;
+				}
+				.benefits-section .row > .col-lg-6:first-child {
+					margin-bottom: 2.5rem;
+				}
+				.transversal-section .row > .col-lg-6.order-1.order-lg-2 {
+					margin-bottom: 2.5rem;
+				}
+			}
+		</style>
+    </head>
+
+    <body>
+		<!-- Theme Toggle -->
+		<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+			<i class="ri-moon-line" id="themeIcon"></i>
+		</button>
+
+		<!-- Navbar -->
+		<nav class="navbar navbar-expand-lg navbar-custom">
+			<div class="container d-flex align-items-center flex-wrap">
+				<a class="navbar-brand" href="/">
+					<img src="/assets/images/logotextdark.svg" alt="BidiPago" class="logo-light">
+					<img src="/assets/images/biglogo.svg" alt="BidiPago" class="logo-dark">
+				</a>
+				<div id="headerRatesCarousel" class="header-rates-carousel flex-grow-1 d-none d-lg-flex justify-content-center" style="max-width: 480px; margin-left: 3rem; margin-right: 2rem;">
+					<div class="header-rates-title">Tasas de Mercado:</div>
+					<div class="header-rates-track" id="headerRatesTrack"></div>
+				</div>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="navbarNav">
+					<ul class="navbar-nav ms-auto align-items-center">
+						<li class="nav-item">
+							<a class="nav-link" href="/">Inicio</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/faq">Ayuda</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/contact">Contacto</a>
+						</li>
+						<li class="nav-item">
+							<a class="btn-login" href="/login">Ingresar</a>
+						</li>
+						<li class="nav-item">
+							<a class="btn-register" href="/register">Registrarme</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+
+		<!-- Hero Section -->
+		<section class="hero-section">
+			<div class="container">
+				<div class="row align-items-center">
+					<div class="col-lg-6 hero-content">
+						<h1 class="hero-title">BidiPago</h1>
+						<h2 class="hero-subtitle">Compra y vende dólares cripto</h2>
+						<p class="hero-description">
+							Envía remesas, recarga servicios y gestiona tus stablecoins (USDT/USDC) de forma segura. Plataforma P2P con múltiples servicios pensada para usuarios de Latinoamérica: Tu dinero, a tu manera.
+						</p>
+						<div class="hero-buttons">
+							<a href="/register" class="btn-primary-custom">Registrarme</a>
+							<a href="/login" class="btn-secondary-custom">Ingresar</a>
+						</div>
+						<div class="app-download-buttons">
+							<a href="#" class="app-download-btn" aria-label="Descargar en Google Play">
+								<i class="ri-google-play-fill"></i>
+								<div class="app-download-btn-content">
+									<span class="app-download-btn-label">DISPONIBLE EN</span>
+									<span class="app-download-btn-name">Google Play</span>
+								</div>
+							</a>
+							<a href="#" class="app-download-btn" aria-label="Descargar en App Store">
+								<i class="ri-apple-fill"></i>
+								<div class="app-download-btn-content">
+									<span class="app-download-btn-label">Descárgalo en el</span>
+									<span class="app-download-btn-name">App Store</span>
+								</div>
+							</a>
+						</div>
+					</div>
+					<div class="col-lg-6 hero-image">
+						<video src="/assets/images/herolandingvideo.mp4" autoplay muted loop playsinline width="800" height="760" aria-label="BidiPago"></video>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Features Section -->
+		<section class="features-section">
+			<div class="container">
+				<div class="section-title">
+					<div class="section-label">Características</div>
+					<h2 class="section-heading">¿Por qué elegir BidiPago?</h2>
+					<p class="section-description">
+						Una plataforma diseñada para darte control total sobre tus fondos cripto, con servicios pensados para usuarios de Latinoamérica y el Caribe.
+					</p>
+				</div>
+				<div class="row align-items-stretch">
+					<div class="col-lg-3 col-md-6 mb-4 d-flex">
+						<div class="feature-card w-100">
+							<div class="feature-icon">
+								<i class="flaticon-exchange"></i>
+							</div>
+							<h3 class="feature-title">Mercado P2P</h3>
+							<p class="feature-description">
+								Compra o vende USDT/USDC y cambia a moneda local de manera rápida y segura a través de nuestra plataforma P2P integrada.
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4 d-flex">
+						<div class="feature-card w-100">
+							<div class="feature-icon">
+								<i class="flaticon-wallet"></i>
+							</div>
+							<h3 class="feature-title">Depósitos y Retiros</h3>
+							<p class="feature-description">
+								Gestiona tus USDT y USDC en múltiples redes: Polygon, BSC, TRC20, Base. Depósitos y retiros on-chain seguros.
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4 d-flex">
+						<div class="feature-card w-100">
+							<div class="feature-icon">
+								<i class="flaticon-phone-call"></i>
+							</div>
+							<h3 class="feature-title">Recargas y Servicios</h3>
+							<p class="feature-description">
+								Recarga servicios telefónicos, compra giftcards y participa en grupos de ahorro rotativo (BidiSan).
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4 d-flex">
+						<div class="feature-card w-100">
+							<div class="feature-icon">
+								<i class="flaticon-target"></i>
+							</div>
+							<h3 class="feature-title">Para Latinoamérica</h3>
+							<p class="feature-description">
+								Plataforma diseñada específicamente para las necesidades de usuarios en toda Latinoamérica y el Caribe.
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Benefits Section -->
+		<section class="benefits-section">
+			<div class="container">
+				<div class="row align-items-center">
+					<div class="col-lg-6">
+						<div class="section-label">Rápido y Seguro</div>
+						<h2 class="section-heading" style="text-align: left; margin-bottom: 1.5rem;">Una forma rápida y segura de gestionar tus stablecoins</h2>
+						<p style="color: #718096; margin-bottom: 2rem; font-size: 1.125rem;">
+							BidiPago te permite comprar, vender y transferir USDT/USDC de forma instantánea, con escrow interno que protege tus transacciones P2P.
+						</p>
+						<div class="row">
+							<div class="col-md-6">
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Control total de tus fondos</span>
+								</div>
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Escrow automático en P2P</span>
+								</div>
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Múltiples redes soportadas</span>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Recargas telefónicas instantáneas</span>
+								</div>
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Wallet custodial segura</span>
+								</div>
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Transparencia total</span>
+								</div>
+							</div>
+						</div>
+						<div style="margin-top: 2rem;">
+							<a href="/register" class="btn-primary-custom">Empezar ahora</a>
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<img src="/assets/images/rapidoyseguro.svg" alt="BidiPago - Rápido y seguro" class="benefits-hero-img" width="860" height="600">
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Servicios Transversales Section (Right to Left: imagen izq, texto der) -->
+		<section class="transversal-section">
+			<div class="container">
+				<div class="row align-items-center">
+					<div class="col-lg-6 order-2 order-lg-1">
+						<img src="/assets/images/allinone.svg" alt="BidiPago - Todo en una sola plataforma" class="benefits-hero-img" width="860" height="600">
+					</div>
+					<div class="col-lg-6 order-1 order-lg-2">
+						<div class="section-label">Todo en una sola plataforma</div>
+						<h2 class="section-heading" style="text-align: left; margin-bottom: 1.5rem;">Más que una wallet: servicios que multiplican el valor de tus stablecoins</h2>
+						<p class="transversal-desc" style="margin-bottom: 2rem; font-size: 1.125rem;">
+							BidiPago integra múltiples servicios para que aproveches al máximo tus USDT, USDC y BiUSD: ahorro colaborativo, recompensas de staking, giftcards y recargas, todo desde tu cuenta.
+						</p>
+						<div class="row">
+							<div class="col-md-6">
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Ahorro colaborativo BidiSAN</span>
+								</div>
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Staking con BiUSD (Recompensas)</span>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Giftcards</span>
+								</div>
+								<div class="benefit-item">
+									<i class="ri-checkbox-circle-fill benefit-icon"></i>
+									<span class="benefit-text">Recargas de saldo</span>
+								</div>
+							</div>
+						</div>
+						<div style="margin-top: 2rem;">
+							<a href="/explorar-servicios" class="btn-primary-custom">Explorar servicios</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Steps Section -->
+		<section class="steps-section">
+			<div class="container">
+				<div class="section-title">
+					<div class="section-label">Cómo funciona</div>
+					<h2 class="section-heading">Comienza en 4 pasos simples</h2>
+					<p class="section-description">
+						Regístrate, verifica tu cuenta, conecta tu wallet y comienza a usar BidiPago.
+					</p>
+				</div>
+				<div class="row">
+					<div class="col-lg-3 col-md-6 mb-4">
+						<div class="step-card">
+							<div class="step-number">1</div>
+							<h3 class="step-title">Crea tu cuenta</h3>
+							<p class="step-description">
+								Regístrate con tu email y crea una contraseña segura. Tu cuenta se crea en segundos.
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4">
+						<div class="step-card">
+							<div class="step-number">2</div>
+							<h3 class="step-title">Deposita fondos</h3>
+							<p class="step-description">
+								Deposita USDT o USDC desde cualquier wallet externa a tu cuenta BidiPago.
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4">
+						<div class="step-card">
+							<div class="step-number">3</div>
+							<h3 class="step-title">Intercambia P2P</h3>
+							<p class="step-description">
+								Compra o vende stablecoins con otros usuarios de forma segura mediante escrow.
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4">
+						<div class="step-card">
+							<div class="step-number">4</div>
+							<h3 class="step-title">Usa servicios</h3>
+							<p class="step-description">
+								Recarga servicios, compra giftcards o participa en grupos de ahorro rotativo.
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- CTA Section -->
+		<section class="cta-section">
+			<div class="container">
+				<div class="cta-content">
+					<h2 class="cta-title">¿Listo para comenzar?</h2>
+					<p class="cta-description">
+						Únete a BidiPago y comienza a gestionar tus stablecoins de forma segura. Crea tu cuenta en menos de un minuto y accede a todos nuestros servicios.
+					</p>
+					<div class="cta-buttons">
+						<a href="/register" class="btn-white">Regístrate ya</a>
+						<a href="/login" class="btn-outline-white">Ya tengo cuenta</a>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Footer -->
+		<footer class="footer-section">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-3 col-md-6 mb-4">
+						<div class="footer-logo">
+							<a href="/">
+								<img src="/assets/images/biglogo.svg" alt="BidiPago" id="footerLogo">
+							</a>
+						</div>
+						<p class="footer-description">
+							BidiPago - Plataforma para usuarios de Latinoamérica y el Caribe
+						</p>
+						<div class="social-links">
+							<a href="https://facebook.com/" target="_blank"><i class="flaticon-facebook"></i></a>
+							<a href="https://instagram.com/" target="_blank"><i class="flaticon-instagram"></i></a>
+							<a href="https://twitter.com/" target="_blank"><i class="flaticon-twitter"></i></a>
+							<a href="https://linkedin.com/" target="_blank"><i class="flaticon-linkedin"></i></a>
+						</div>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4">
+						<h4 class="footer-title">Enlaces Rápidos</h4>
+						<ul class="footer-links">
+							<li><a href="/">Inicio</a></li>
+							<li><a href="/login">Ingresar</a></li>
+							<li><a href="/register">Registrarse</a></li>
+							<li><a href="/faq">Preguntas Frecuentes</a></li>
+						</ul>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4">
+						<h4 class="footer-title">Centro de Ayuda</h4>
+						<ul class="footer-links">
+							<li><a href="/contact">Contacto</a></li>
+							<li><a href="/faq">Ayuda</a></li>
+							<li><a href="/privacy-policy">Política de Privacidad</a></li>
+							<li><a href="/terms">Términos y Condiciones</a></li>
+						</ul>
+					</div>
+					<div class="col-lg-3 col-md-6 mb-4">
+						<h4 class="footer-title">Información de Contacto</h4>
+						<ul class="footer-links">
+							<li>
+								<i class="flaticon-email"></i>
+								<a href="mailto:soporte@bidipago.com">soporte@bidipago.com</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</footer>
+
+		<!-- Copyright -->
+		<div class="copyright">
+			<div class="container">
+				<p>© 2024 BidiPago - Todos los derechos reservados</p>
+			</div>
+		</div>
+
+		<button class="btn-scroll-top" id="btnScrollTop" aria-label="Subir"><i class="ri-arrow-up-s-line"></i></button>
+
+		<!-- Scripts -->
+		<script src="/assets/js/jquery.min.js"></script>
+		<script src="/assets/js/bootstrap.bundle.min.js"></script>
+		<script src="/assets/js/meanmenu.min.js"></script>
+		<script src="/assets/js/wow.js"></script>
+		<script src="/assets/js/appear.min.js"></script>
+		<script src="/assets/js/custom.js"></script>
+
+		<!-- Theme Management Script -->
+		<script>
+			// Theme Management
+			const themeToggle = document.getElementById('themeToggle');
+			const themeIcon = document.getElementById('themeIcon');
+			const footerLogo = document.getElementById('footerLogo');
+			const body = document.body;
+
+			// Cargar tema guardado o usar preferencia del sistema
+			// Logo navbar: ambos imgs en DOM (logo-light / logo-dark), cambio instantáneo vía CSS
+			function loadTheme() {
+				const savedTheme = localStorage.getItem('theme');
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+				
+				if (isDark) {
+					body.classList.add('dark-mode');
+					themeIcon.className = 'ri-sun-line';
+					if (footerLogo) footerLogo.src = '/assets/images/biglogo.svg';
+				} else {
+					body.classList.remove('dark-mode');
+					themeIcon.className = 'ri-moon-line';
+					if (footerLogo) footerLogo.src = '/assets/images/biglogo.svg';
+				}
+			}
+
+			// Toggle theme
+			themeToggle.addEventListener('click', () => {
+				body.classList.toggle('dark-mode');
+				const isDark = body.classList.contains('dark-mode');
+				
+				if (isDark) {
+					localStorage.setItem('theme', 'dark');
+					themeIcon.className = 'ri-sun-line';
+					if (footerLogo) footerLogo.src = '/assets/images/biglogo.svg';
+				} else {
+					localStorage.setItem('theme', 'light');
+					themeIcon.className = 'ri-moon-line';
+					if (footerLogo) footerLogo.src = '/assets/images/biglogo.svg';
+				}
+			});
+
+			// Cargar tema al inicio
+			loadTheme();
+
+			// Carrusel de tasas en el header (público, sin auth)
+			async function loadHeaderRates() {
+				const track = document.getElementById('headerRatesTrack');
+				if (!track) return;
+				track.innerHTML = ['VES/USDT','COP/USDT','ARS/USDT','MXN/USDT'].map(p =>
+					`<div class="header-rate-item"><div class="pair">${p}</div><div class="value loading">—</div></div>`
+				).join('');
+				try {
+					const res = await fetch('/api/prices/landing');
+					const data = await res.json();
+					if (data.success && data.rates) {
+						data.rates.forEach((r, i) => {
+							const items = track.querySelectorAll('.header-rate-item');
+							const valEl = items[i]?.querySelector('.value');
+							if (valEl) {
+								valEl.classList.remove('loading');
+								valEl.textContent = r.rate != null
+									? new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(r.rate)
+									: '—';
+							}
+						});
+					}
+				} catch (e) {
+					console.warn('Header rates:', e);
+				}
+			}
+			loadHeaderRates();
+			setInterval(loadHeaderRates, 5 * 60 * 1000);
+
+			// Botón subir
+			const btnScrollTop = document.getElementById('btnScrollTop');
+			if (btnScrollTop) {
+				window.addEventListener('scroll', () => {
+					btnScrollTop.classList.toggle('visible', window.scrollY > 300);
+				});
+				btnScrollTop.addEventListener('click', () => {
+					window.scrollTo({ top: 0, behavior: 'smooth' });
+				});
+			}
+		</script>
+    </body>
+</html>

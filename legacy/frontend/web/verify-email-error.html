@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Error de Verificación - BidiPago</title>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .verification-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .error-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #dc3545 0%, #e57373 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            color: #fff;
+        }
+        
+        .verification-container h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .verification-container p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        .error-message {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+        
+        .error-message p {
+            margin: 0;
+            color: #856404;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(238, 106, 62, 0.3);
+            color: #fff;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: #fff;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .verification-container {
+                padding: 30px 20px;
+            }
+            
+            .verification-container h1 {
+                font-size: 1.5rem;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="error-icon">
+            <i class="ri-close-circle-fill"></i>
+        </div>
+        
+        <h1>Error al verificar email</h1>
+        
+        <p>El enlace de verificación es inválido o ha expirado.</p>
+        
+        <div class="error-message" id="errorDetails">
+            <p id="errorText">
+                Por favor, solicita un nuevo correo de verificación desde tu cuenta.
+            </p>
+        </div>
+        
+        <div class="btn-group">
+            <a href="/dashboard" class="btn btn-primary">
+                <i class="ri-home-line"></i> Ir al Dashboard
+            </a>
+            <a href="/login" class="btn btn-secondary">
+                <i class="ri-mail-send-line"></i> Solicitar nuevo correo
+            </a>
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 0.9rem; color: #999;">
+            <i class="ri-information-line"></i> 
+            Si ya iniciaste sesión, puedes usar el botón "Reenviar correo" en tu perfil.
+        </p>
+    </div>
+    
+    <script>
+        // Mostrar mensaje específico según el motivo del error
+        const urlParams = new URLSearchParams(window.location.search);
+        const reason = urlParams.get('reason');
+        
+        const errorText = document.getElementById('errorText');
+        
+        if (reason === 'invalid_token') {
+            errorText.textContent = 'El token de verificación es inválido o ha expirado. Por favor, solicita un nuevo correo de verificación.';
+        } else if (reason === 'missing_token') {
+            errorText.textContent = 'No se proporcionó un token de verificación. Por favor, verifica que el enlace esté completo.';
+        } else if (reason === 'user_not_found') {
+            errorText.textContent = 'No se encontró el usuario asociado a este token. Por favor, contacta con soporte.';
+        } else {
+            errorText.textContent = 'Ocurrió un error al verificar tu correo electrónico. Por favor, intenta nuevamente o contacta con soporte.';
+        }
+    </script>
+</body>
+</html>
+

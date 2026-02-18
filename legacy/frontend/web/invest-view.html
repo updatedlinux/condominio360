@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <title>Mi Staking - BidiPago</title>
+
+    <style>
+        /* Reutilizar estilos básicos */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .invest-view-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .invest-summary-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            border-top: 5px solid #2196F3;
+        }
+
+        .room-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .plan-badge {
+            background: #e3f2fd;
+            color: #1976D2;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .metric-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .metric-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .metric-value.profit {
+            color: #4CAF50;
+        }
+
+        .metric-value.capital {
+            color: #2196F3;
+        }
+
+        .timeline-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .timeline-dates {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .progress-container {
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #2196F3, #64B5F6);
+            width: 0%;
+            transition: width 1s ease;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest" class="active"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="#" id="logoutBtnSidebar"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <div class="dashboard-main">
+        <div class="invest-view-container">
+            <div style="margin-bottom: 20px;">
+                <a href="/invest" class="btn btn-outline-secondary btn-sm">
+                    <i class="ri-arrow-left-line"></i> Volver a Salas
+                </a>
+            </div>
+
+            <div id="loading" class="loading">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p>Cargando tu staking...</p>
+            </div>
+
+            <div id="investContent" style="display: none;">
+                <div class="invest-summary-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h1 class="room-title" id="roomName">-</h1>
+                            <div>
+                                <span class="plan-badge" id="planName">-</span>
+                                <span class="status-badge active" id="statusBadge">Activa</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <small class="text-muted d-block">ID Participación</small>
+                            <span class="font-weight-bold" id="participantId">#...</span>
+                        </div>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-value capital" id="investAmount">-</div>
+                            <div class="metric-label">Capital Invertido</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value profit" id="netProfit">-</div>
+                            <div class="metric-label">Ganancia Neta Esperada</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="totalReceive">-</div>
+                            <div class="metric-label">Total a Recibir</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="exitFee">-</div>
+                            <div class="metric-label">Comisión Servicio (1%)</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-section">
+                        <h5 style="margin-bottom: 15px;">Progreso del Plazo</h5>
+                        <div class="timeline-dates">
+                            <div id="preRegistroLabel" class="mb-1 w-100" style="display: none;">Pre-registro: <strong id="preRegistroDates">-</strong></div>
+                            <div class="d-flex justify-content-between w-100">
+                                <span>Inicio del staking: <strong id="startDate">-</strong></span>
+                                <span>Fin Estimado: <strong id="endDate">-</strong></span>
+                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="text-center mt-2 text-muted">
+                            <small id="daysRemaining">– días restantes</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="ri-information-line"></i>
+                    Los fondos serán liberados automáticamente al finalizar el plazo.
+                    El capital retornará a tu Billetera BiUSD y la ganancia estara disponible para que la conviertas en
+                    el Conversor de Monedas.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/web/js/invest-view.js"></script>
+</body>
+
+</html>

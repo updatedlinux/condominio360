@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+
+    <!-- Modal TyC removed from head -->
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>BidiInvest - Staking con Recompensas - BidiPago</title>
+
+    <style>
+        /* Reutilizar estilos del dashboard */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Estilos específicos para BidiInvest */
+        .invest-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .invest-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .invest-hero {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .invest-hero h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+            color: #fff;
+        }
+
+        .invest-hero p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .invest-stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .invest-stat-item {
+            text-align: center;
+        }
+
+        .invest-stat-item .number {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .invest-stat-item .label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .eligibility-banner {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .eligibility-banner.eligible {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+
+        .eligibility-banner.not-eligible {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+
+        .eligibility-banner .close-banner {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.7;
+            padding: 0;
+            margin-left: 15px;
+        }
+
+        .eligibility-banner .close-banner:hover {
+            opacity: 1;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        /* Plan Cards */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .plan-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .plan-card:hover {
+            border-color: #2196F3;
+            box-shadow: 0 4px 20px rgba(33, 150, 243, 0.15);
+        }
+
+        .plan-card.conservador {
+            border-top: 4px solid #4CAF50;
+        }
+
+        .plan-card.arriesgado {
+            border-top: 4px solid #FF9800;
+        }
+
+        .plan-card.agresivo {
+            border-top: 4px solid #F44336;
+        }
+
+        .plan-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .plan-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin: 0 0 5px 0;
+        }
+
+        .plan-return {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .plan-return span {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .plan-details {
+            margin: 20px 0;
+        }
+
+        .plan-detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .plan-detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .plan-detail-item .label {
+            color: #666;
+        }
+
+        .plan-detail-item .value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .plan-description {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Room Cards */
+        .room-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .room-card:hover {
+            border-color: #2196F3;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .room-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+
+        .room-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .room-badge.registration {
+            background: #e3f2fd;
+            color: #1976D2;
+        }
+
+        .room-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .room-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .room-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .room-info-item i {
+            color: #2196F3;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* Investment Cards (My Investments) */
+        .investment-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .investment-card.active {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .investment-card.liquidated {
+            border-left: 4px solid #2196F3;
+        }
+
+        .investment-amount {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .investment-profit {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+
+        .btn-outline-primary {
+            background: transparent;
+            color: #2196F3;
+            border: 1px solid #2196F3;
+        }
+
+        .btn-light {
+            background: #fff;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-outline-light {
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Modal */
+        .invest-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+            display: none;
+        }
+
+        .invest-modal-backdrop.show {
+            display: block;
+        }
+
+        .modal-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 1051;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h5 {
+            margin: 0;
+            color: #fff !important;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #fff !important;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #2196F3;
+            outline: none;
+        }
+
+        .projection-summary {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .projection-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .projection-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .projection-row.profit .value {
+            color: #4CAF50;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #1976D2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        /* Limit bar */
+        .limit-bar-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .limit-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .limit-bar-fill {
+            height: 100%;
+            background: #fff;
+            transition: width 0.3s;
+        }
+
+        .limit-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .room-info {
+                grid-template-columns: 1fr;
+            }
+
+            .plans-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest" class="active"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="#" id="logoutBtnSidebar"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <div class="invest-container">
+            <!-- Hero Section -->
+            <div class="invest-hero">
+                <h1>📈 BidiInvest</h1>
+                <p>Staking a plazo fijo con recompensas. Elige tu plan, haz staking y recibe tus
+                    recompensas al vencer el plazo.</p>
+                <div class="invest-stats">
+                    <div class="invest-stat-item">
+                        <div class="number" id="activeInvestments">-</div>
+                        <div class="label">Staking Activo</div>
+                    </div>
+                    <div class="invest-stat-item">
+                        <div class="number" id="totalReturns">-</div>
+                        <div class="label">Ganancia Esperada</div>
+                    </div>
+                    <div class="invest-stat-item">
+                        <div class="number" id="lockedBalance">-</div>
+                        <div class="label">Balance Bloqueado</div>
+                    </div>
+                </div>
+                <!-- Limit Bar -->
+                <div class="limit-bar-container">
+                    <div style="margin-bottom: 5px;">Límite Bimestral</div>
+                    <div class="limit-bar">
+                        <div class="limit-bar-fill" id="limitBarFill" style="width: 0%"></div>
+                    </div>
+                    <div class="limit-text">
+                        <span id="limitUsed">$0 usados</span>
+                        <span id="limitRemaining">$1,500 disponibles</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eligibility Banner -->
+            <div id="eligibilityBanner" class="eligibility-banner" style="display: none;"></div>
+
+            <!-- Available Rooms Section -->
+            <div class="invest-card">
+                <div class="section-header">
+                    <h3><i class="ri-door-open-line"></i> Salas Disponibles</h3>
+                </div>
+                <div id="roomsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Buscando salas disponibles...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plans Section (Collapsible) -->
+            <div class="invest-card">
+                <div class="section-header"
+                    style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                    onclick="togglePlansSection()">
+                    <h3><i class="ri-funds-line"></i> Planes de Staking</h3>
+                    <i class="ri-arrow-up-s-line" id="plansToggleIcon"
+                        style="font-size: 1.5rem; transition: transform 0.3s;"></i>
+                </div>
+                <div id="plansContainer" class="plans-grid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando planes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Investments Section -->
+            <div class="invest-card">
+                <div class="section-header">
+                    <h3><i class="ri-safe-2-line"></i> Recompensas de Staking</h3>
+                </div>
+                <div id="investmentsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando staking...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div class="invest-modal-backdrop" id="joinModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h5><i class="ri-add-circle-line"></i> Unirse a Sala</h5>
+                <button class="modal-close" onclick="hideJoinModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="joinModalContent">
+                    <div class="form-group">
+                        <label>Sala</label>
+                        <input type="text" class="form-control" id="joinRoomName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto a hacer Staking (BiUSD)</label>
+                        <input type="number" class="form-control" id="joinAmount" placeholder="Ingresa el monto"
+                            min="10" step="1" oninput="updateProjection()">
+                        <small id="amountRange" class="text-muted"></small>
+                    </div>
+                    <div class="projection-summary" id="projectionSummary" style="display: none;">
+                        <h6 style="margin-bottom: 15px; color: #333;">Proyección de Recompensas</h6>
+                        <div class="projection-row">
+                            <span class="label">Capital inicial</span>
+                            <span class="value" id="projCapital">-</span>
+                        </div>
+                        <div class="projection-row">
+                            <span class="label">Rendimiento bruto</span>
+                            <span class="value" id="projGross">-</span>
+                        </div>
+                        <div class="projection-row">
+                            <span class="label">Comisión de salida (1%)</span>
+                            <span class="value" id="projFee">-</span>
+                        </div>
+                        <div class="projection-row profit">
+                            <span class="label">Ganancia neta</span>
+                            <span class="value" id="projNet">-</span>
+                        </div>
+                        <div class="projection-row">
+                            <span class="label">Total a recibir</span>
+                            <span class="value" id="projTotal">-</span>
+                        </div>
+                        <div class="projection-row">
+                            <span class="label">Plazo (días hábiles)</span>
+                            <span class="value" id="projDays">-</span>
+                        </div>
+                    </div>
+                    <div class="alert-info">
+                        <strong>Importante:</strong>
+                        <ul style="margin: 10px 0 0 20px; padding: 0;">
+                            <li>El capital estará bloqueado durante todo el plazo</li>
+                            <li>La ganancia neta se depositará en tu balance bloqueado</li>
+                            <li>Una vez cobres tus ganancias, las mismas solo podras convertirlas a otras Criptos,
+                                usando el Conversor de Monedas de BidiPago.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-outline-primary" onclick="hideJoinModal()">Cancelar</button>
+                <button class="btn-sm btn-primary" id="joinBtn" onclick="proceedToTyc()">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="invest-modal-backdrop" id="successModal">
+        <div class="modal-container">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h5><i class="ri-checkbox-circle-line"></i> ¡Éxito!</h5>
+                <button class="modal-close" onclick="hideSuccessModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="font-size: 4rem; color: #28a745; margin-bottom: 15px;">
+                    <i class="ri-checkbox-circle-fill"></i>
+                </div>
+                <p id="successMessage" style="color: #333; font-size: 1.1rem; margin-bottom: 20px;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-primary" onclick="hideSuccessModal()">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="invest-modal-backdrop" id="errorModal">
+        <div class="modal-container">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                <h5><i class="ri-error-warning-line"></i> Error</h5>
+                <button class="modal-close" onclick="hideErrorModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="font-size: 4rem; color: #dc3545; margin-bottom: 15px;">
+                    <i class="ri-close-circle-fill"></i>
+                </div>
+                <p id="errorMessage" style="color: #333; font-size: 1.1rem; margin-bottom: 20px;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-primary" onclick="hideErrorModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KYC Required Modal -->
+    <div class="invest-modal-backdrop" id="kycRequiredModal">
+        <div class="modal-container">
+            <div class="modal-header" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);">
+                <h5><i class="ri-shield-check-line"></i> Requisito de KYC</h5>
+                <button class="modal-close" onclick="hideKycModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="font-size: 4rem; color: #2196F3; margin-bottom: 15px;">
+                    <i class="ri-lock-2-line"></i>
+                </div>
+                <h4 style="margin-bottom: 15px; color: #333;">Acceso Restringido</h4>
+                <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
+                    Para participar en BidiInvest, es necesario tener un nivel de verificación <strong>L3
+                        (Avanzado)</strong> o superior.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-outline-primary" onclick="hideKycModal()">Cancelar</button>
+                <a href="/profile" class="btn-sm btn-primary"
+                    style="text-decoration: none; display: inline-flex; align-items: center;">
+                    Subir Nivel de KYC <i class="ri-arrow-right-line" style="margin-left: 5px;"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- TyC Custom Modal -->
+    <div class="invest-modal-backdrop" id="tycModal">
+        <div class="modal-container" style="max-width: 800px;">
+            <div class="modal-header">
+                <h5><i class="ri-file-list-3-line"></i> Términos y Condiciones BidiInvest</h5>
+                <button class="modal-close" onclick="hideTycModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="tycContentScroll" class="tyc-content p-3 border rounded bg-light"
+                    style="max-height: 400px; overflow-y: auto; font-size: 0.9rem; margin-bottom: 20px;">
+                    <h5 class="text-center mb-4">TÉRMINOS Y CONDICIONES - BIDIINVEST</h5>
+                    <p><strong>Versión:</strong> 1.0<br><strong>Operador:</strong>
+                        BidiPago<br><strong>Jurisdicción:</strong> Estado de Delaware, EE. UU.</p>
+                    <hr>
+                    <h6>1. ACEPTACIÓN DE LOS TÉRMINOS</h6>
+                    <p>1.1. El presente documento establece los términos y condiciones de uso ("Términos" o "TyC")
+                        aplicables al producto de Staking con Recompensas denominado <strong>BidiInvest</strong>, operado por
+                        <strong>BidiPago</strong>.
+                    </p>
+                    <p>1.2. El acceso y uso de BidiInvest implica la <strong>aceptación plena y sin
+                            reservas</strong> de estos TyC. Al unirse a una sala de staking de BidiInvest, el
+                        usuario declara haber leído, entendido y aceptado estos Términos.</p>
+                    <p>1.3. Si el usuario no acepta estos TyC, no deberá usar ni intentar usar BidiInvest.</p>
+
+                    <h6>2. DEFINICIONES</h6>
+                    <p>2.1. <strong>BidiPago:</strong> Plataforma tecnológica que ofrece servicios de gestión de
+                        activos digitales.</p>
+                    <p>2.2. <strong>BidiInvest:</strong> Módulo de Staking a plazo fijo exclusivo para BiUSD.</p>
+                    <p>2.3. <strong>BiUSD:</strong> Unidad digital interna con paridad 1:1 con USDT.</p>
+                    <p>2.4. <strong>Usuario:</strong> Persona verificada (KYC L3) que participa en BidiInvest.</p>
+                    <p>2.5. <strong>Sala de Staking ("Sala"):</strong> Estructura colectiva de staking con fecha
+                        de inicio y fin definidas en días hábiles de EE. UU.</p>
+                    <p>2.7. <strong>Balance BiUSD Bloqueado por BidiInvest:</strong> Saldo bloqueado donde se acreditan
+                        las ganancias netas.</p>
+
+                    <h6>3. NATURALEZA DEL PRODUCTO</h6>
+                    <p>3.1. BidiInvest es un producto de Staking a plazo fijo y de riesgo. No es una cuenta de
+                        ahorro ni un depósito bancario asegurado.</p>
+                    <p>3.3. BidiInvest <strong>no es</strong> un esquema Ponzi. Los pagos se basan en actividad
+                        económica real.</p>
+
+                    <h6>4. ELEGIBILIDAD Y KYC</h6>
+                    <p>4.1. El acceso a BidiInvest es <strong>exclusivo</strong> para usuarios que hayan alcanzado
+                        satisfactoriamente el nivel de verificación <strong>KYC L3</strong>.</p>
+                    <p>4.2. BidiPago podrá, a su sola discreción, denegar, suspender o cancelar el acceso a BidiInvest a
+                        cualquier usuario que:</p>
+                    <ul>
+                        <li>Incumpla estos TyC.</li>
+                        <li>Presente inconsistencias o indicios de fraude en su información KYC.</li>
+                        <li>Sea sospechoso de actividades ilícitas, incluyendo pero no limitado a lavado de dinero o
+                            financiamiento del terrorismo.</li>
+                    </ul>
+                    <p>4.3. El usuario reconoce y acepta que el cumplimiento de las normas de prevención de lavado de
+                        activos y financiamiento del terrorismo puede requerir restricciones y reportes a autoridades
+                        competentes.</p>
+
+                    <h6>5. PLANES DE STAKING</h6>
+                    <ul>
+                        <li><strong>Conservador:</strong> 7 días hábiles, 5% rendimiento bruto.</li>
+                        <li><strong>Arriesgado:</strong> 15 días hábiles, 12% rendimiento bruto.</li>
+                        <li><strong>Agresivo:</strong> 45 días hábiles, 35% rendimiento bruto.</li>
+                    </ul>
+                    <p>5.2. Los plazos se cuentan en días hábiles de EE. UU. (lunes a viernes, excepto feriados).
+                    </p>
+
+                    <h6>6. SALAS DE STAKING</h6>
+                    <p>6.3. Al iniciar la Sala, el capital se <strong>bloquea</strong> por todo el plazo y no puede
+                        retirarse anticipadamente.</p>
+
+                    <h6>7. LÍMITES POR USUARIO</h6>
+                    <p>7.1. Solo un (1) staking activo a la vez.</p>
+                    <p>7.2. Límite global de volumen de <strong>1.500 BiUSD</strong> cada 2 meses (capital +
+                        ganancias).</p>
+
+                    <h6>8. COMISIONES Y LIQUIDACIÓN</h6>
+                    <p>8.2. Se aplica una <strong>comisión de salida del 1%</strong> sobre el total (capital +
+                        ganancia bruta).</p>
+                    <p>8.3. Distribución:
+                    <ul>
+                        <li>Capital inicial -> Wallet Principal en BiUSD (Disponible).</li>
+                        <li>Ganancia Neta -> Balance BiUSD Bloqueado por BidiInvest.</li>
+                    </ul>
+                    </p>
+
+                    <h6>9. Balance BiUSD Bloqueado por BidiInvest</h6>
+                    <p>9.3. La única acción permitida es el uso del <strong>conversor de monedas interno</strong>
+                        (1% comisión adicional por conversión).</p>
+                    <p>No se permite re-staking directo ni retiros directos de este saldo.</p>
+
+                    <h6>10. COOLDOWN</h6>
+                    <p>10.1. Tras la liquidación, aplica un periodo de espera de <strong>48 horas</strong> antes de
+                        poder unirse a una nueva sala.</p>
+
+                    <h6>11. PROYECTOR DE RECOMPENSAS DE STAKING</h6>
+                    <p>11.1. Antes de confirmar su participación en una Sala, el usuario tendrá acceso al
+                        <strong>Proyector de Recompensas de Staking</strong>, que mostrará de manera clara y previa:
+                    </p>
+                    <ul>
+                        <li>Monto de BiUSD a hacer staking.</li>
+                        <li>Plan seleccionado (Conservador, Arriesgado o Agresivo).</li>
+                        <li>Fechas estimadas de inicio y liquidación (en días hábiles de EE. UU.).</li>
+                        <li>Ganancia bruta esperada.</li>
+                        <li>Comisión de salida del 1% sobre el total (capital + ganancia).</li>
+                        <li>Ganancia neta esperada a ser depositada en el Balance BiUSD Bloqueado por BidiInvest.</li>
+                        <li>Recordatorio de que la ganancia solo puede utilizarse mediante conversión a otras monedas
+                            con el conversor (1% de comisión).</li>
+                    </ul>
+                    <p>11.2. Al confirmar, el usuario reconoce que la información mostrada por el Proyector:</p>
+                    <ul>
+                        <li>Es una <strong>proyección</strong> sujeta a riesgo de mercado.</li>
+                        <li>Puede diferir de los resultados finales en función de condiciones excepcionales o
+                            situaciones de fuerza mayor, según se establezca en estos TyC.</li>
+                    </ul>
+
+                    <h6>12. RIESGOS</h6>
+                    <p>12.1. El usuario reconoce el riesgo de pérdida parcial o total del capital. BidiPago no se
+                        hace responsable por fluctuaciones de mercado o fuerza mayor tales como: Depeg de Criptomonedas
+                        estables como USDT o USDC, Fluctuaciones volatiles de monedas como Bitcoin (BTC), Litecoin,
+                        (LTC), ETH (Ethereum).</p>
+                    <p>BidiPago garantiza el pago de los intereses generados por su staking bajo el esquema del
+                        plan seleccionado, sin embargo el usuario entiende que posterior a la conversion, el valor puede
+                        subir y bajar en dependencia de la criptomoneda seleccionada. BidiPago no es responsable de las
+                        acciones realizadas por el usuario con sus ganancias una vez convertidas, podra hacer uso de las
+                        mismas a traves del producto P2P, BidiSAN o inclusive retirarlas del ecosistema.</p>
+
+                    <h6>13. DECLARACIÓN DE NO PONZI</h6>
+                    <p>13.1. Los rendimientos provienen de actividad económica real (trading, préstamos, Finanzas
+                        Decentralizadas, Brokers de Inversion en Bolsa entre otros...) y no dependen de la entrada de
+                        nuevos usuarios. En ese sentido no se permite el interes compuesto directo de las ganancias.</p>
+                    <p>El usuario entiende que la sostenibilidad del modelo:</p>
+                    <ul>
+                        <li>Se apoya en la gestión interna de riesgos de BidiPago.</li>
+                        <li>Se refuerza por:
+                            <ul>
+                                <li>Los límites por usuario.</li>
+                                <li>La prohibición de interés compuesto directo.</li>
+                                <li>El bloqueo de ganancias.</li>
+                                <li>La conversión obligatoria.</li>
+                                <li>El cooldown de 48 horas.</li>
+                                <li>El uso de días hábiles y calendario estructurado.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h6>14. MODIFICACIONES A LOS TÉRMINOS</h6>
+                    <p>14.1. BidiPago podrá modificar estos TyC en cualquier momento, por razones de:</p>
+                    <ul>
+                        <li>Cambios normativos o regulatorios.</li>
+                        <li>Ajustes en la gestión de riesgos.</li>
+                        <li>Mejoras operativas o de seguridad.</li>
+                        <li>Cambios en las condiciones de mercado.</li>
+                    </ul>
+                    <p>14.2. Las modificaciones serán comunicadas al usuario por los medios habituales de BidiPago
+                        (notificaciones en la plataforma, correo electrónico u otros).</p>
+                    <p>14.3. La participación en nuevas Salas de staking después de la fecha de entrada en vigor de
+                        las modificaciones implicará la <strong>aceptación</strong> de los nuevos TyC.</p>
+
+                    <hr>
+                    <p class="text-center small text-muted">Al marcar la casilla, usted confirma que ha leído y
+                        acepta estos términos en su totalidad.</p>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button type="button" class="btn-sm btn-outline-primary" onclick="readFast()">
+                        <i class="ri-arrow-down-double-line"></i> Lectura Rápida
+                    </button>
+
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="acceptTycCheck">
+                        <label class="form-check-label" for="acceptTycCheck">He leído y acepto los Términos</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-outline-primary" onclick="hideTycModal()">Cancelar</button>
+                <button class="btn-sm btn-primary" id="confirmJoinBtn" disabled>Confirmar y hacer Staking</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/web/js/invest.js?v=1.0"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function togglePlansSection() {
+            const container = document.getElementById('plansContainer');
+            const icon = document.getElementById('plansToggleIcon');
+
+            if (container.style.display === 'none') {
+                container.style.display = 'grid';
+                icon.style.transform = 'rotate(0deg)';
+                icon.className = 'ri-arrow-up-s-line';
+            } else {
+                container.style.display = 'none';
+                icon.style.transform = 'rotate(180deg)';
+                icon.className = 'ri-arrow-down-s-line';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            window.location.href = '/login';
+        }
+
+        document.getElementById('logoutBtnSidebar').addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/assets/css/flaticon.css">
+	<link rel="stylesheet" href="/assets/css/remixicon.css">
+	<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon_io/favicon-32x32.png">
+	<title>Explorar Servicios - BidiPago</title>
+	<style>
+		:root {
+			--primary-orange: #ee6a3e;
+			--primary-orange-light: #ff8c5a;
+			--bg-light: #f8f9fa;
+			--bg-dark: #1a202c;
+			--text-light: #1a202c;
+			--text-dark: #f7fafc;
+			--card-bg-light: #fff;
+			--card-bg-dark: #2d3748;
+			--border-light: #e2e8f0;
+			--border-dark: #4a5568;
+		}
+		body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text-light); line-height: 1.6; background: var(--bg-light); transition: all 0.3s; }
+		body.dark-mode { background: var(--bg-dark); color: var(--text-dark); }
+		.theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 1001; background: var(--card-bg-light); border: 2px solid var(--border-light); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+		body.dark-mode .theme-toggle { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.theme-toggle i { font-size: 1.5rem; color: var(--primary-orange); }
+		.navbar-custom { background: var(--card-bg-light); padding: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; transition: all 0.3s; }
+		body.dark-mode .navbar-custom { background: var(--card-bg-dark); }
+		.navbar-custom .nav-link { color: var(--text-light); font-weight: 500; margin: 0 0.75rem; }
+		body.dark-mode .navbar-custom .nav-link { color: var(--text-dark); }
+		.navbar-custom .nav-link:hover { color: var(--primary-orange); }
+		.btn-primary-custom { background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; text-decoration: none; border: none; transition: all 0.3s; }
+		.btn-primary-custom:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(238, 106, 62, 0.3); color: #fff; }
+		.service-section { padding: 4rem 0; background: transparent; }
+		body.dark-mode .service-section { background: transparent; }
+		.service-card { background: var(--card-bg-light); border-radius: 16px; padding: 2rem; border: 1px solid var(--border-light); transition: all 0.3s; height: 100%; }
+		body.dark-mode .service-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.service-icon { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: #fff; margin-bottom: 1rem; }
+		.section-label { color: #ee6a3e; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+		.section-heading { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+		.section-desc { color: #718096; font-size: 1.05rem; }
+		body.dark-mode .section-desc { color: #a0aec0; }
+		body.dark-mode .section-heading { color: var(--text-dark); }
+		.crypto-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; background: rgba(238,106,62,0.1); border-radius: 8px; font-weight: 500; margin: 0.25rem; }
+		body.dark-mode .crypto-badge { background: rgba(238,106,62,0.2); }
+		/* Slideshow estilo "Supported payment types" */
+		.slideshow-container { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 140px; }
+		.slideshow-arrow { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-light); background: var(--card-bg-light); color: var(--text-light); font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+		body.dark-mode .slideshow-arrow { background: var(--card-bg-dark); border-color: var(--border-dark); color: var(--text-dark); }
+		.slideshow-arrow:hover { background: var(--primary-orange); color: #fff; border-color: var(--primary-orange); }
+		.slideshow-wrapper { flex: 1; overflow: hidden; }
+		.slideshow-track { display: flex; transition: transform 0.4s ease; }
+		.slideshow-slide { flex: 0 0 100%; display: flex; justify-content: center; align-items: stretch; gap: 0; padding: 1rem 0; }
+		.slideshow-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.75rem 0.5rem; background: transparent; border: none; flex: 1; min-width: 0; }
+		body.dark-mode .slideshow-item { background: transparent; }
+		.calculator-card { background: var(--card-bg-light); border-radius: 16px; padding: 2rem; border: 1px solid var(--border-light); min-height: 280px; }
+		body.dark-mode .calculator-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.plan-badge { padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin: 0.25rem; }
+		.plan-badge.conservador { background: #d4edda; color: #155724; }
+		body.dark-mode .plan-badge.conservador { background: rgba(40,167,69,0.3); color: #90ee90; }
+		.plan-badge.arriesgado { background: #fff3cd; color: #856404; }
+		body.dark-mode .plan-badge.arriesgado { background: rgba(255,193,7,0.3); color: #ffd93d; }
+		.plan-badge.agresivo { background: #f8d7da; color: #721c24; }
+		body.dark-mode .plan-badge.agresivo { background: rgba(220,53,69,0.3); color: #f5c6cb; }
+		.plan-badge.active { border: 2px solid var(--primary-orange); }
+		#amountError { color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem; }
+		body.dark-mode #amountError { color: #f5c6cb; }
+		.plan-limit-row { margin-bottom: 0.85rem; }
+		.plan-limit-row:last-child { margin-bottom: 0; }
+		.footer-border { border-top: 1px solid var(--border-light); }
+		body.dark-mode .footer-border { border-color: var(--border-dark); }
+		.navbar-custom .navbar-brand { position: relative; display: inline-block; }
+		.navbar-custom .navbar-brand img { height: 50px; }
+		.navbar-custom .navbar-brand .logo-dark { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-light { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-dark { display: inline; }
+		.navbar-custom .btn-login { color: var(--text-light); text-decoration: none; font-weight: 500; margin-right: 1rem; }
+		body.dark-mode .navbar-custom .btn-login { color: var(--text-dark); }
+		.navbar-custom .btn-register { background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%); color: #fff; padding: 0.5rem 1.5rem; border-radius: 8px; font-weight: 600; text-decoration: none; }
+		.navbar-custom .container { flex-wrap: wrap; }
+		.navbar-custom .navbar-nav { flex-wrap: wrap; }
+		.navbar-custom .nav-item .nav-link { margin: 0 0.4rem; font-size: 0.9rem; white-space: nowrap; }
+		@media (max-width: 1199px) {
+			#headerRatesCarousel { display: none !important; }
+			.navbar-custom .nav-item .nav-link { margin: 0 0.5rem; }
+		}
+		@media (max-width: 991px) {
+			.navbar-collapse { padding: 1rem 0; }
+			.navbar-nav .nav-item { margin-bottom: 0.25rem; }
+		}
+		@media (max-width: 767px) {
+			.navbar .navbar-toggler { margin-right: 50px; }
+		}
+		.header-rates-carousel { min-height: 36px; flex-direction: column; }
+		.header-rates-title { font-size: 0.7rem; font-weight: 600; color: var(--text-light); opacity: 0.9; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+		body.dark-mode .header-rates-title { color: var(--text-dark); }
+		.header-rates-track { display: flex; gap: 1.25rem; align-items: center; overflow-x: auto; scroll-behavior: smooth; padding: 0.25rem 0; scrollbar-width: none; -ms-overflow-style: none; }
+		.header-rates-track::-webkit-scrollbar { display: none; }
+		.header-rate-item { flex: 0 0 auto; text-align: center; white-space: nowrap; }
+		.header-rate-item .pair { font-size: 0.7rem; color: var(--text-light); opacity: 0.9; }
+		body.dark-mode .header-rate-item .pair { color: var(--text-dark); }
+		.header-rate-item .value { font-size: 0.95rem; font-weight: 700; color: var(--primary-orange); }
+		.header-rate-item .value.loading { font-weight: 400; opacity: 0.7; }
+		.slideshow-logo { width: 70px; height: 70px; object-fit: contain; padding: 0.25rem; display: block; }
+		body.dark-mode .slideshow-logo { filter: brightness(1.15) contrast(1.05); }
+		.slideshow-item .logo-fallback { font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem; text-align: center; }
+		.service-content { flex: 1; }
+		.service-visual { display: flex; align-items: center; justify-content: center; min-height: 280px; }
+		.service-visual img { max-height: 320px; width: auto; object-fit: contain; }
+		.service-p2p-img, .service-bidisan-img { border-radius: 24px; max-width: 100%; height: auto; object-fit: contain; }
+		.service-visual-card { background: var(--card-bg-light); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border-light); min-height: 280px; display: flex; align-items: center; justify-content: center; }
+		body.dark-mode .service-visual-card { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.service-visual-card.flex-column { align-items: stretch; justify-content: flex-start; }
+		.btn-scroll-top { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(238, 106, 62, 0.4); z-index: 999; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s, transform 0.2s; }
+		.btn-scroll-top.visible { opacity: 1; visibility: visible; }
+		.btn-scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(238, 106, 62, 0.5); }
+		.btn-scroll-top i { font-size: 1.5rem; }
+	</style>
+</head>
+<body>
+	<button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema"><i class="ri-moon-line" id="themeIcon"></i></button>
+	<nav class="navbar navbar-expand-lg navbar-custom">
+		<div class="container d-flex align-items-center flex-wrap">
+			<a class="navbar-brand" href="/">
+				<img src="/assets/images/logotextdark.svg" alt="BidiPago" class="logo-light">
+				<img src="/assets/images/biglogo.svg" alt="BidiPago" class="logo-dark">
+			</a>
+			<div id="headerRatesCarousel" class="header-rates-carousel flex-grow-1 d-none d-lg-flex justify-content-center" style="max-width: 480px; margin-left: 3rem; margin-right: 2rem;">
+				<div class="header-rates-title">Tasas de Mercado:</div>
+				<div class="header-rates-track" id="headerRatesTrack"></div>
+			</div>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto align-items-center">
+					<li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+					<li class="nav-item"><a class="nav-link" href="/faq">Ayuda</a></li>
+					<li class="nav-item"><a class="nav-link" href="/contact">Contacto</a></li>
+					<li class="nav-item"><a class="nav-link btn-login" href="/login">Ingresar</a></li>
+					<li class="nav-item"><a class="nav-link btn-register" href="/register">Registrarme</a></li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container py-5">
+		<div class="text-center mb-5">
+			<div class="section-label">Todos nuestros servicios</div>
+			<h1 class="section-heading">Explora todo lo que BidiPago tiene para ti</h1>
+			<p class="section-desc mx-auto" style="max-width: 600px;">Una plataforma integral para gestionar tus stablecoins, hacer staking, ahorrar y acceder a múltiples servicios desde una sola cuenta.</p>
+		</div>
+
+		<!-- P2P -->
+		<section class="service-section" id="p2p">
+			<div class="row align-items-start">
+				<div class="col-lg-6 mb-4 mb-lg-0 service-content">
+					<div class="service-icon"><i class="ri-exchange-dollar-line"></i></div>
+					<div class="section-label">Mercado P2P</div>
+					<h2 class="section-heading">P2P con Escrow automático y múltiples monedas</h2>
+					<p class="section-desc mb-3">Compra o vende criptomonedas y cambia a moneda local de manera rápida y segura. Nuestra plataforma P2P incluye escrow interno que protege tanto al comprador como al vendedor en cada transacción.</p>
+					<p class="section-desc mb-2"><strong>Monedas cripto disponibles:</strong></p>
+					<div class="mb-3">
+						<span class="crypto-badge">USDT</span>
+						<span class="crypto-badge">USDC</span>
+						<span class="crypto-badge">LTC</span>
+						<span class="crypto-badge">BTC</span>
+						<span class="crypto-badge">ETH</span>
+					</div>
+					<p class="section-desc mb-2"><strong>Monedas fiat:</strong> VES, USD, EUR, ARS, COP, MXN, BRL, CLP, PEN, BOB, UYU, DOP, PYG</p>
+					<p class="section-desc mb-3"><em>Tasas sugeridas:</em> Te mostramos la realidad del mercado según las principales exchanges. Creemos en la transparencia: ves de dónde vienen las tasas y tomas decisiones informadas.</p>
+					<a href="/register" class="btn-primary-custom d-inline-block">Empezar en P2P</a>
+				</div>
+				<div class="col-lg-6">
+					<div class="service-visual-card">
+						<img src="/assets/images/service-p2p.svg" alt="P2P BidiPago" class="img-fluid service-p2p-img" width="800" height="760">
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- BidiSAN -->
+		<section class="service-section" id="bidisan">
+			<div class="row align-items-start">
+				<div class="col-lg-6 order-lg-2 mb-4 mb-lg-0 service-content">
+					<div class="service-icon"><i class="ri-group-line"></i></div>
+					<div class="section-label">Ahorro colaborativo</div>
+					<h2 class="section-heading">BidiSAN - Ahorro colaborativo</h2>
+					<p class="section-desc mb-3">Te damos la posibilidad de hacer crecer tu dinero apoyándote en otros usuarios. Ahorra de forma colaborativa: un grupo de personas aporta una cuota fija por período y cada uno recibe su turno para cobrar el "pote" completo. Una forma tradicional y confiable de ahorrar en comunidad.</p>
+					<a href="/register" class="btn-primary-custom d-inline-block">Unirme a BidiSAN</a>
+				</div>
+				<div class="col-lg-6 order-lg-1">
+					<div class="service-visual-card">
+						<img src="/assets/images/bidisan.svg" alt="BidiSAN" class="img-fluid service-bidisan-img" width="860" height="600">
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- BidiInvest -->
+		<section class="service-section" id="bidiinvest">
+			<div class="row align-items-start">
+				<div class="col-lg-6 mb-4 mb-lg-0 service-content">
+					<div class="service-icon"><i class="ri-line-chart-line"></i></div>
+					<div class="section-label">Recompensas de Staking</div>
+					<h2 class="section-heading">BidiInvest - Staking con BiUSD</h2>
+					<p class="section-desc mb-3">Maximiza el potencial de tus ahorros con el programa de Staking de BiUSD. BidiInvest es la plataforma de crecimiento patrimonial de BidiPago: al colocar tus fondos, tus monedas contribuyen a la liquidez del ecosistema mientras tú recibes recompensas directas por tu lealtad. Asegura un crecimiento constante de tu capital bajo un esquema de plazo fijo con tasas competitivas. Ya sea que busques estabilidad a corto plazo o maximizar beneficios a largo plazo, hemos simplificado la experiencia para que cualquier usuario, sin importar su experiencia, pueda acceder a rendimientos atractivos.</p>
+					<p class="section-desc mb-3">Selecciona entre nuestros tres perfiles optimizados: el <strong>Plan Conservador</strong> para estabilidad, el <strong>Plan Arriesgado</strong> para un crecimiento acelerado, o el <strong>Plan Agresivo</strong> para obtener las máximas recompensas del mercado. Elige tu monto, define tu plazo y observa cómo crecen tus BiUSD. Simple, seguro y 100% transparente.</p>
+				</div>
+				<div class="col-lg-6">
+					<div class="calculator-card">
+						<h5 class="mb-3">Calculadora de recompensas de Staking</h5>
+						<p class="small section-desc mb-3">Selecciona un plan y el monto para ver tu proyección.</p>
+						<div id="planLimitsBox" class="mb-3 small" style="background: rgba(238,106,62,0.06); border-radius: 8px; padding: 0.75rem 1rem;"></div>
+						<div class="mb-3">
+							<label class="form-label">Plan</label>
+							<div id="planBadges"></div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label" for="investAmount">Monto (BiUSD)</label>
+							<input type="number" id="investAmount" class="form-control" placeholder="Ej: 50" min="10" step="1" value="50">
+							<div id="amountError" class="mt-1" style="display: none;"></div>
+						</div>
+						<div id="projectionBox" class="border rounded p-3 mb-3" style="background: rgba(238,106,62,0.05); display: none;">
+							<div class="d-flex justify-content-between small mb-1"><span>Capital</span><span id="projCapital">-</span></div>
+							<div class="d-flex justify-content-between small mb-1"><span>Recompensa bruta</span><span id="projGross">-</span></div>
+							<div class="d-flex justify-content-between small mb-1"><span>Comisión salida (1%)</span><span id="projFee">-</span></div>
+							<div class="d-flex justify-content-between fw-bold mt-2"><span>Total a recibir</span><span id="projTotal">-</span></div>
+							<div class="d-flex justify-content-between small mt-1"><span>Plazo</span><span id="projDays">-</span></div>
+						</div>
+						<a href="/register" class="btn-primary-custom d-inline-block">Hacer Staking con BidiInvest</a>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- GiftCards -->
+		<section class="service-section" id="giftcards">
+			<div class="row align-items-start">
+				<div class="col-lg-6 order-lg-2 mb-4 mb-lg-0 service-content">
+					<div class="service-icon"><i class="ri-gift-line"></i></div>
+					<div class="section-label">Compras</div>
+					<h2 class="section-heading">GiftCards</h2>
+					<p class="section-desc mb-3">Utiliza tu balance en BidiPago y adquiere la giftcard del servicio que desees de forma rápida y segura. Tenemos disponibles plataformas líderes en entretenimiento, tecnología y viajes.</p>
+					<a href="/register" class="btn-primary-custom d-inline-block">Ver GiftCards</a>
+				</div>
+				<div class="col-lg-6 order-lg-1">
+					<div class="service-visual-card flex-column align-items-stretch">
+						<p class="small section-desc mb-2 text-center">Plataformas disponibles</p>
+						<div class="slideshow-container" id="giftcardsSlideshow">
+							<button type="button" class="slideshow-arrow slideshow-prev" aria-label="Anterior">←</button>
+							<div class="slideshow-wrapper">
+								<div class="slideshow-track" id="giftcardsTrack"></div>
+							</div>
+							<button type="button" class="slideshow-arrow slideshow-next" aria-label="Siguiente">→</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Recargas -->
+		<section class="service-section" id="recargas">
+			<div class="row align-items-start">
+				<div class="col-lg-6 mb-4 mb-lg-0 service-content">
+					<div class="service-icon"><i class="ri-phone-line"></i></div>
+					<div class="section-label">Servicios</div>
+					<h2 class="section-heading">Recargas telefónicas</h2>
+					<p class="section-desc mb-3">Contamos con una amplia variedad de operadores disponibles en los países donde tenemos presencia. Recarga tu línea móvil usando tu balance en USDT, USDC o BiUSD. Rápido, seguro y sin salir de la app.</p>
+					<div class="mb-3">
+						<span class="crypto-badge">USDT</span>
+						<span class="crypto-badge">USDC</span>
+						<span class="crypto-badge">BiUSD</span>
+					</div>
+					<a href="/register" class="btn-primary-custom d-inline-block">Recargar ahora</a>
+				</div>
+				<div class="col-lg-6">
+					<div class="service-visual-card flex-column align-items-stretch">
+						<p class="small section-desc mb-2 text-center">Principales operadores</p>
+						<div class="slideshow-container" id="operatorsSlideshow">
+							<button type="button" class="slideshow-arrow slideshow-prev" aria-label="Anterior">←</button>
+							<div class="slideshow-wrapper">
+								<div class="slideshow-track" id="operatorsTrack"></div>
+							</div>
+							<button type="button" class="slideshow-arrow slideshow-next" aria-label="Siguiente">→</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<footer class="py-4 mt-5 footer-border">
+		<div class="container text-center section-desc">
+			<p class="mb-0">BidiPago - Plataforma para usuarios de Latinoamérica y el Caribe</p>
+			<a href="/" class="btn-primary-custom mt-3 d-inline-block">Volver al inicio</a>
+		</div>
+	</footer>
+
+	<button class="btn-scroll-top" id="btnScrollTop" aria-label="Subir"><i class="ri-arrow-up-s-line"></i></button>
+
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+	<script>
+		// Theme (mismo que index-3: localStorage 'theme')
+		const themeToggle = document.getElementById('themeToggle');
+		const themeIcon = document.getElementById('themeIcon');
+		function loadTheme() {
+			const savedTheme = localStorage.getItem('theme');
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+			if (isDark) {
+				document.body.classList.add('dark-mode');
+				themeIcon.className = 'ri-sun-line';
+			} else {
+				document.body.classList.remove('dark-mode');
+				themeIcon.className = 'ri-moon-line';
+			}
+		}
+		themeToggle.addEventListener('click', () => {
+			document.body.classList.toggle('dark-mode');
+			const isDark = document.body.classList.contains('dark-mode');
+			localStorage.setItem('theme', isDark ? 'dark' : 'light');
+			themeIcon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
+		});
+		loadTheme();
+
+		// Carrusel de tasas en el header (público, sin auth)
+		async function loadHeaderRates() {
+			const track = document.getElementById('headerRatesTrack');
+			if (!track) return;
+			track.innerHTML = ['VES/USDT','COP/USDT','ARS/USDT','MXN/USDT'].map(p => 
+				`<div class="header-rate-item"><div class="pair">${p}</div><div class="value loading">—</div></div>`
+			).join('');
+			try {
+				const res = await fetch('/api/prices/landing');
+				const data = await res.json();
+				if (data.success && data.rates) {
+					data.rates.forEach((r, i) => {
+						const items = track.querySelectorAll('.header-rate-item');
+						const valEl = items[i]?.querySelector('.value');
+						if (valEl) {
+							valEl.classList.remove('loading');
+							valEl.textContent = r.rate != null 
+								? new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(r.rate)
+								: '—';
+						}
+					});
+				}
+			} catch (e) {
+				console.warn('Header rates:', e);
+			}
+		}
+		loadHeaderRates();
+		setInterval(loadHeaderRates, 5 * 60 * 1000);
+
+		// Slideshow: 4 logos por slide, flechas y avance automático
+		const ITEMS_PER_SLIDE = 4;
+		const giftcardData = [
+			{ name: 'Netflix', file: 'netflix.svg' },
+			{ name: 'Apple', file: 'apple.svg' },
+			{ name: 'Nike', file: 'nike.svg' },
+			{ name: 'Airbnb', file: 'airbnb.svg' },
+			{ name: 'Google Play', file: 'googleplay.svg' },
+			{ name: 'Spotify', file: 'spotify.svg' },
+			{ name: 'Steam', file: 'steam.svg' },
+			{ name: 'Xbox', file: 'xbox.svg' },
+			{ name: 'PlayStation', file: 'playstation.svg' },
+			{ name: 'Amazon', file: 'amazon.svg' }
+		];
+		const operatorData = [
+			{ name: 'Movistar', file: 'movistar.svg' },
+			{ name: 'Claro', file: 'Claro.svg' },
+			{ name: 'Digitel', file: 'digitel.svg' },
+			{ name: 'Movilnet', file: 'movilnet.png' },
+			{ name: 'Tigo', file: 'tigo.svg' },
+			{ name: 'Personal', file: 'personal.svg' },
+			{ name: 'Entel', file: 'entel.svg' },
+			{ name: 'Telcel', file: 'telcel.svg' },
+			{ name: 'AT&T', file: 'AT&T.svg' },
+			{ name: 'Virgin Mobile', file: 'Virgin_Mobile.svg' }
+		];
+
+		function renderSlideshowItem(src, name, basePath) {
+			const url = basePath + encodeURIComponent(src);
+			return `<div class="slideshow-item">
+				<img class="slideshow-logo" src="${url}" alt="${name}" loading="eager" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+				<span class="logo-fallback" style="display:none;align-items:center;justify-content:center;min-height:70px;min-width:70px">${name}</span>
+			</div>`;
+		}
+
+		function buildSlides(data, basePath) {
+			const slides = [];
+			for (let i = 0; i < data.length; i += ITEMS_PER_SLIDE) {
+				const chunk = data.slice(i, i + ITEMS_PER_SLIDE);
+				const itemsHtml = chunk.map(d => renderSlideshowItem(d.file, d.name, basePath)).join('');
+				slides.push(`<div class="slideshow-slide">${itemsHtml}</div>`);
+			}
+			return slides.join('');
+		}
+
+		function initSlideshow(trackId, prevBtn, nextBtn, html, intervalMs) {
+			const track = document.getElementById(trackId);
+			const prev = document.querySelector(prevBtn);
+			const next = document.querySelector(nextBtn);
+			if (!track) return;
+			track.innerHTML = html;
+			const slides = track.querySelectorAll('.slideshow-slide');
+			if (slides.length === 0) return;
+			let idx = 0;
+			const wrapper = track.closest('.slideshow-wrapper');
+			if (!wrapper) return;
+
+			function goTo(i) {
+				idx = ((i % slides.length) + slides.length) % slides.length;
+				track.style.transform = `translateX(-${idx * 100}%)`;
+			}
+
+			if (prev) prev.addEventListener('click', () => goTo(idx - 1));
+			if (next) next.addEventListener('click', () => goTo(idx + 1));
+			setInterval(() => goTo(idx + 1), intervalMs || 3500);
+		}
+
+		initSlideshow('giftcardsTrack', '#giftcardsSlideshow .slideshow-prev', '#giftcardsSlideshow .slideshow-next',
+			buildSlides(giftcardData, '/assets/images/giftcards/'), 3500);
+		initSlideshow('operatorsTrack', '#operatorsSlideshow .slideshow-prev', '#operatorsSlideshow .slideshow-next',
+			buildSlides(operatorData, '/assets/images/operators/'), 3500);
+
+		// BidiInvest calculator
+		const EXIT_FEE_PERCENT = 0.01;
+		let plans = [];
+		let selectedPlan = null;
+
+		function calculateProjection(amount, plan) {
+			if (!plan || amount < plan.minAmount || amount > plan.maxAmount) return null;
+			const grossReturn = amount * (plan.grossReturnPercent / 100);
+			const totalBeforeFee = amount + grossReturn;
+			const exitFee = totalBeforeFee * EXIT_FEE_PERCENT;
+			const netReturn = grossReturn - exitFee;
+			const totalReceived = amount + netReturn;
+			return { amount, grossReturn, exitFee, netReturn, totalReceived, businessDays: plan.businessDays };
+		}
+
+		function formatBiUSD(n) { return new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' BiUSD'; }
+
+		async function loadPlans() {
+			try {
+				const res = await fetch('/api/invest/plans/public');
+				const data = await res.json();
+				if (data.success && data.plans && data.plans.length > 0) {
+					plans = data.plans;
+				} else {
+					plans = [
+						{ id: '1', name: 'conservador', displayName: 'Conservador', minAmount: 10, maxAmount: 50, grossReturnPercent: 5, businessDays: 7 },
+						{ id: '2', name: 'arriesgado', displayName: 'Arriesgado', minAmount: 55, maxAmount: 100, grossReturnPercent: 12, businessDays: 15 },
+						{ id: '3', name: 'agresivo', displayName: 'Agresivo', minAmount: 150, maxAmount: 500, grossReturnPercent: 35, businessDays: 45 }
+					];
+				}
+				renderPlanBadges();
+				selectedPlan = plans[0];
+				if (selectedPlan) {
+					document.getElementById('investAmount').min = selectedPlan.minAmount;
+					document.getElementById('investAmount').max = selectedPlan.maxAmount;
+					const v = parseFloat(document.getElementById('investAmount').value) || 50;
+					document.getElementById('investAmount').value = Math.min(Math.max(v, selectedPlan.minAmount), selectedPlan.maxAmount);
+				}
+				updateProjection();
+			} catch (e) {
+				plans = [
+					{ id: '1', name: 'conservador', displayName: 'Conservador', minAmount: 10, maxAmount: 50, grossReturnPercent: 5, businessDays: 7 },
+					{ id: '2', name: 'arriesgado', displayName: 'Arriesgado', minAmount: 55, maxAmount: 100, grossReturnPercent: 12, businessDays: 15 },
+					{ id: '3', name: 'agresivo', displayName: 'Agresivo', minAmount: 150, maxAmount: 500, grossReturnPercent: 35, businessDays: 45 }
+				];
+				renderPlanBadges();
+				selectedPlan = plans[0];
+				if (selectedPlan) {
+					document.getElementById('investAmount').min = selectedPlan.minAmount;
+					document.getElementById('investAmount').max = selectedPlan.maxAmount;
+				}
+				updateProjection();
+			}
+		}
+
+		function renderPlanLimits() {
+			const html = '<strong class="d-block mb-2">Límites por plan:</strong>' + plans.map(p => 
+				`<div class="plan-limit-row"><span class="plan-badge ${p.name}" style="cursor:default;">${p.displayName}: ${p.minAmount}-${p.maxAmount} BiUSD</span></div>`
+			).join('');
+			document.getElementById('planLimitsBox').innerHTML = html;
+		}
+
+		function renderPlanBadges() {
+			renderPlanLimits();
+			document.getElementById('planBadges').innerHTML = plans.map(p => 
+				`<span class="plan-badge ${p.name}" data-plan-id="${p.id}" data-min="${p.minAmount}" data-max="${p.maxAmount}" data-return="${p.grossReturnPercent}" data-days="${p.businessDays}">${p.displayName}</span>`
+			).join('');
+			document.querySelectorAll('.plan-badge').forEach(b => {
+				b.addEventListener('click', () => {
+					document.querySelectorAll('.plan-badge').forEach(x => x.classList.remove('active'));
+					b.classList.add('active');
+					selectedPlan = plans.find(pl => pl.id === b.dataset.planId) || {
+						minAmount: +b.dataset.min,
+						maxAmount: +b.dataset.max,
+						grossReturnPercent: +b.dataset.return,
+						businessDays: +b.dataset.days
+					};
+					const input = document.getElementById('investAmount');
+					input.min = selectedPlan.minAmount;
+					input.max = selectedPlan.maxAmount;
+					input.value = Math.min(Math.max(parseFloat(input.value) || 50, selectedPlan.minAmount), selectedPlan.maxAmount);
+					updateProjection();
+				});
+			});
+			if (plans[0]) { selectedPlan = plans[0]; document.querySelector('.plan-badge')?.classList.add('active'); }
+		}
+
+		function findPlanForAmount(amount) {
+			if (!amount || amount <= 0 || isNaN(amount) || !plans.length) return null;
+			return plans.find(p => amount >= (p.minAmount || 0) && amount <= (p.maxAmount || 0)) || null;
+		}
+
+		function getAmountValidationError(amount) {
+			if (!amount || amount <= 0 || isNaN(amount)) return null;
+			if (amount > 500) return 'El límite del plan agresivo es hasta 500 BiUSD';
+			if (findPlanForAmount(amount)) return null;
+			return 'Monto no válido para nuestros planes de Staking';
+		}
+
+		function setActivePlan(plan) {
+			selectedPlan = plan;
+			document.querySelectorAll('.plan-badge').forEach((b) => {
+				const isPlanBadge = b.dataset.planId !== undefined;
+				if (isPlanBadge && plan && String(plan.id) === String(b.dataset.planId)) {
+					b.classList.add('active');
+				} else if (isPlanBadge) {
+					b.classList.remove('active');
+				}
+			});
+			if (plan) {
+				const input = document.getElementById('investAmount');
+				input.min = plan.minAmount;
+				input.max = plan.maxAmount;
+			}
+		}
+
+		function updateProjection() {
+			const amount = parseFloat(document.getElementById('investAmount').value) || 0;
+			const input = document.getElementById('investAmount');
+			const errEl = document.getElementById('amountError');
+			const box = document.getElementById('projectionBox');
+			if (!plans.length) { errEl.style.display = 'none'; box.style.display = 'none'; return; }
+			// Si el monto encaja en algún plan, usar ese plan (auto-seleccionar si hace falta)
+			let p = findPlanForAmount(amount);
+			if (p && (!selectedPlan || p.id !== selectedPlan.id)) {
+				setActivePlan(p);
+			} else if (!p && selectedPlan && amount >= selectedPlan.minAmount && amount <= selectedPlan.maxAmount) {
+				p = selectedPlan;
+			}
+			const errMsg = getAmountValidationError(amount);
+			if (errMsg) {
+				errEl.textContent = errMsg;
+				errEl.style.display = 'block';
+				input.classList.add('is-invalid');
+				box.style.display = 'none';
+				return;
+			}
+			errEl.style.display = 'none';
+			input.classList.remove('is-invalid');
+			const planToUse = p || selectedPlan;
+			if (!planToUse) { box.style.display = 'none'; return; }
+			const proj = calculateProjection(amount, planToUse);
+			if (proj) {
+				box.style.display = 'block';
+				document.getElementById('projCapital').textContent = formatBiUSD(proj.amount);
+				document.getElementById('projGross').textContent = formatBiUSD(proj.grossReturn);
+				document.getElementById('projFee').textContent = formatBiUSD(proj.exitFee);
+				document.getElementById('projTotal').textContent = formatBiUSD(proj.totalReceived);
+				document.getElementById('projDays').textContent = proj.businessDays + ' días hábiles';
+			} else {
+				box.style.display = 'none';
+			}
+		}
+
+		document.getElementById('investAmount').addEventListener('input', updateProjection);
+		loadPlans();
+
+		// Botón subir
+		const btnScrollTop = document.getElementById('btnScrollTop');
+		if (btnScrollTop) {
+			window.addEventListener('scroll', () => {
+				btnScrollTop.classList.toggle('visible', window.scrollY > 300);
+			});
+			btnScrollTop.addEventListener('click', () => {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			});
+		}
+	</script>
+</body>
+</html>

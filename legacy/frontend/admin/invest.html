@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BidiPago Admin - BidiInvest">
+    <meta name="author" content="BidiPago">
+
+    <title>BidiPago Admin - BidiInvest</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/sb-admin-2.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+
+        .stat-card {
+            border-left-width: 4px;
+            border-left-style: solid;
+        }
+
+        .stat-card.primary {
+            border-left-color: #4e73df;
+        }
+
+        .stat-card.success {
+            border-left-color: #1cc88a;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f6c23e;
+        }
+
+        .stat-card.danger {
+            border-left-color: #e74a3b;
+        }
+
+        .stat-card.info {
+            border-left-color: #36b9cc;
+        }
+
+        .plan-card {
+            border-radius: 10px;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .plan-card.conservador {
+            border-left: 4px solid #1cc88a;
+        }
+
+        .plan-card.arriesgado {
+            border-left: 4px solid #f6c23e;
+        }
+
+        .plan-card.agresivo {
+            border-left: 4px solid #e74a3b;
+        }
+
+        .room-badge {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+        }
+
+        .room-badge.draft {
+            background: #6c757d;
+            color: white;
+        }
+
+        .room-badge.registration {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .room-badge.active {
+            background: #28a745;
+            color: white;
+        }
+
+        .room-badge.liquidated {
+            background: #007bff;
+            color: white;
+        }
+
+        .room-badge.cancelled {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'invest';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End Sidebar -->
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Admin</span>
+                                <img class="img-profile rounded-circle" src="img/undraw_profile.svg">
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End Topbar -->
+
+                <!-- Page Content -->
+                <div class="container-fluid">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h1 class="h3 mb-0 text-gray-800">Administración BidiInvest</h1>
+                            <p class="mb-0 text-muted">Gestión de salas de inversión</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showCreateRoomModal()">
+                            <i class="fas fa-plus mr-1"></i> Nueva Sala
+                        </button>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <div class="row" id="statsRow">
+                        <div class="col-12 text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plans Section -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Planes de Inversión</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="plansRow">
+                                <div class="col-12 text-center py-3">
+                                    <div class="spinner-border text-primary"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="card shadow mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="filterStatus">Estado</label>
+                                    <select id="filterStatus" class="form-control" onchange="loadRooms()">
+                                        <option value="">Todos</option>
+                                        <option value="DRAFT">Borrador</option>
+                                        <option value="REGISTRATION">Registro Abierto</option>
+                                        <option value="ACTIVE">Activas</option>
+                                        <option value="LIQUIDATED">Liquidadas</option>
+                                        <option value="CANCELLED">Canceladas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-secondary" onclick="resetFilters()">
+                                        <i class="fas fa-sync"></i> Reiniciar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rooms Table -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-primary">Salas de Inversión</h6>
+                            <span id="totalCount" class="badge badge-primary">0 salas</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover" id="roomsTable" width="100%">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Plan</th>
+                                            <th>Participantes</th>
+                                            <th>Capital</th>
+                                            <th>Registro</th>
+                                            <th>Inicio</th>
+                                            <th>Fin</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roomsTableBody">
+                                        <tr>
+                                            <td colspan="9" class="text-center py-4">
+                                                <div class="spinner-border text-primary"></div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">¿Listo para salir?</h5>
+                    <button class="close" type="button" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" para terminar la sesión.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <a class="btn btn-primary" href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Room Modal -->
+    <div class="modal fade" id="createRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle mr-2"></i>Crear Nueva Sala</h5>
+                    <button class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="roomPlanId"><strong>Plan de Inversión</strong></label>
+                        <select id="roomPlanId" class="form-control" required>
+                            <option value="">Seleccionar plan...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="roomName"><strong>Nombre de la Sala</strong></label>
+                        <input type="text" class="form-control" id="roomName" placeholder="Ej: Sala Enero 2026"
+                            required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" onclick="createRoom()">
+                        <i class="fas fa-plus mr-1"></i>Crear Sala
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activate Room Modal -->
+    <div class="modal fade" id="activateRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-calendar-check mr-2"></i>Activar Sala para Registro</h5>
+                    <button class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="activateRoomId">
+                    <p><strong>Sala:</strong> <span id="activateRoomName"></span></p>
+                    <div class="form-group">
+                        <label for="registrationStart"><strong>Inicio de Registro</strong></label>
+                        <input type="datetime-local" class="form-control" id="registrationStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registrationEnd"><strong>Fin de Registro</strong></label>
+                        <input type="datetime-local" class="form-control" id="registrationEnd" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="startDate"><strong>Fecha de Inicio de Inversión</strong></label>
+                        <input type="datetime-local" class="form-control" id="startDate" required>
+                        <small class="text-muted">Debe ser un día hábil (Lunes a Viernes, sin feriados US)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-info" onclick="activateRoom()">
+                        <i class="fas fa-check mr-1"></i>Activar Registro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Details Modal -->
+    <div class="modal fade" id="roomDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-chart-line mr-2"></i>Detalles de la Sala</h5>
+                    <button class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body" id="roomDetailsBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="roomDetailsFooter">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+
+    <script>
+        let plans = [];
+        let currentRoomId = null;
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        if (!AdminConfig.checkAuth()) {
+            // Redirect handled
+        } else {
+            loadPlans();
+            loadStats();
+            loadRooms();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterStatus').value = '';
+            loadRooms();
+        }
+
+        async function loadPlans() {
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/plans`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (response.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await response.json();
+                plans = data.plans || [];
+                renderPlans();
+                populatePlanSelect();
+            } catch (error) {
+                console.error('Error loading plans:', error);
+            }
+        }
+
+        function renderPlans() {
+            const row = document.getElementById('plansRow');
+            if (plans.length === 0) {
+                row.innerHTML = '<div class="col-12 text-center text-muted">No hay planes. <a href="#" onclick="seedPlans()">Sembrar planes por defecto</a></div>';
+                return;
+            }
+            row.innerHTML = plans.map(plan => `
+                <div class="col-md-4 mb-3">
+                    <div class="card plan-card h-100 ${plan.name.toLowerCase()}">
+                        <div class="card-body">
+                            <h5 class="card-title">${plan.displayName}</h5>
+                            <p class="text-muted mb-2">${plan.description || ''}</p>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Monto:</strong> $${plan.minAmount} - $${plan.maxAmount}</li>
+                                <li><strong>Retorno:</strong> ${plan.grossReturnPercent}% bruto</li>
+                                <li><strong>Plazo:</strong> ${plan.businessDays} días hábiles</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function populatePlanSelect() {
+            const select = document.getElementById('roomPlanId');
+            select.innerHTML = '<option value="">Seleccionar plan...</option>' +
+                plans.map(p => `<option value="${p.id}">${p.displayName} (${p.grossReturnPercent}%)</option>`).join('');
+        }
+
+        async function seedPlans() {
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/plans/seed`, {
+                    method: 'POST',
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (response.ok) {
+                    Swal.fire('Éxito', 'Planes creados', 'success');
+                    loadPlans();
+                } else {
+                    const data = await response.json();
+                    Swal.fire('Error', data.message || 'Error creando planes', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function loadStats() {
+            const row = document.getElementById('statsRow');
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (response.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await response.json();
+                const rooms = data.rooms || [];
+
+                const stats = {
+                    total: rooms.length,
+                    draft: rooms.filter(r => r.status === 'draft').length,
+                    registration: rooms.filter(r => r.status === 'registration').length,
+                    active: rooms.filter(r => r.status === 'active').length,
+                    liquidated: rooms.filter(r => r.status === 'liquidated').length,
+                };
+
+                row.innerHTML = `
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Salas</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.total}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card secondary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Borrador</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.draft}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card info shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Registro</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.registration}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card success shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Activas</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.active}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Liquidadas</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.liquidated}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                row.innerHTML = '<div class="col-12 text-center text-danger">Error cargando estadísticas</div>';
+            }
+        }
+
+        async function loadRooms() {
+            const status = document.getElementById('filterStatus').value;
+            let url = `${AdminConfig.API_URL}/admin/invest/rooms`;
+            if (status) url += `?status=${status}`;
+
+            const tbody = document.getElementById('roomsTableBody');
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+
+            try {
+                const response = await fetch(url, { headers: AdminConfig.getAuthHeaders() });
+                if (response.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await response.json();
+                const rooms = data.rooms || [];
+
+                document.getElementById('totalCount').textContent = `${rooms.length} salas`;
+
+                if (rooms.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay salas</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = rooms.map(room => `
+                    <tr>
+                        <td><strong>${escapeHtml(room.name)}</strong></td>
+                        <td>${room.plan?.displayName || 'N/A'}</td>
+                        <td>${room.participantCount || 0}</td>
+                        <td>$${(room.totalCapital || 0).toFixed(2)}</td>
+                        <td>${room.registrationStart ? formatDate(room.registrationStart) : '-'}</td>
+                        <td>${room.startDate ? formatDate(room.startDate) : '-'}</td>
+                        <td>${room.endDate ? formatDate(room.endDate) : '-'}</td>
+                        <td><span class="badge room-badge ${room.status.toLowerCase()}">${getStatusText(room.status)}</span></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-info" onclick="viewRoomDetails('${room.id}')" title="Ver">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${room.status?.toUpperCase() === 'DRAFT' ? `
+                                    <button class="btn btn-primary btn-sm ml-2" onclick="showActivateModal('${room.id}', '${escapeHtml(room.name)}')" title="Activar Registro">
+                                        <i class="fas fa-play mr-1"></i> Activar
+                                    </button>
+                                ` : ''}
+                                ${room.status === 'REGISTRATION' ? `
+                                    <button class="btn btn-success" onclick="closeRegistration('${room.id}')" title="Cerrar Registro">
+                                        <i class="fas fa-lock"></i>
+                                    </button>
+                                ` : ''}
+                                ${room.status === 'ACTIVE' ? `
+                                    <button class="btn btn-warning" onclick="liquidateRoom('${room.id}')" title="Liquidar">
+                                        <i class="fas fa-coins"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error cargando salas</td></tr>';
+            }
+        }
+
+        function getStatusText(status) {
+            const map = {
+                'DRAFT': 'Borrador',
+                'REGISTRATION': 'Registro',
+                'ACTIVE': 'Activa',
+                'LIQUIDATED': 'Liquidada',
+                'CANCELLED': 'Cancelada'
+            };
+            return map[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showCreateRoomModal() {
+            document.getElementById('roomName').value = '';
+            document.getElementById('roomPlanId').value = '';
+            $('#createRoomModal').modal('show');
+        }
+
+        async function createRoom() {
+            const planId = document.getElementById('roomPlanId').value;
+            const name = document.getElementById('roomName').value.trim();
+
+            if (!planId || !name) {
+                Swal.fire('Error', 'Complete todos los campos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms`, {
+                    method: 'POST',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ planId, name })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    Swal.fire('Éxito', 'Sala creada exitosamente', 'success');
+                    $('#createRoomModal').modal('hide');
+                    loadRooms();
+                    loadStats();
+                } else {
+                    Swal.fire('Error', data.message || 'Error creando sala', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        function showActivateModal(roomId, roomName) {
+            document.getElementById('activateRoomId').value = roomId;
+            document.getElementById('activateRoomName').textContent = roomName;
+
+            // Set default dates
+            const now = new Date();
+            const regEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
+            const startDate = new Date(regEnd.getTime() + 24 * 60 * 60 * 1000); // +1 day after regEnd
+
+            document.getElementById('registrationStart').value = now.toISOString().slice(0, 16);
+            document.getElementById('registrationEnd').value = regEnd.toISOString().slice(0, 16);
+            document.getElementById('startDate').value = startDate.toISOString().slice(0, 16);
+
+            $('#activateRoomModal').modal('show');
+        }
+
+        async function activateRoom() {
+            const roomId = document.getElementById('activateRoomId').value;
+            const registrationStart = document.getElementById('registrationStart').value;
+            const registrationEnd = document.getElementById('registrationEnd').value;
+            const startDate = document.getElementById('startDate').value;
+
+            if (!registrationStart || !registrationEnd || !startDate) {
+                Swal.fire('Error', 'Complete todas las fechas', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms/${roomId}/activate`, {
+                    method: 'PATCH',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registrationStart, registrationEnd, startDate })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    Swal.fire('Éxito', 'Sala activada para registro', 'success');
+                    $('#activateRoomModal').modal('hide');
+                    loadRooms();
+                    loadStats();
+                } else {
+                    Swal.fire('Error', data.message || 'Error activando sala', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function closeRegistration(roomId) {
+            const result = await Swal.fire({
+                title: '¿Cerrar registro?',
+                text: 'Se cerrará el registro y la sala comenzará su período de inversión.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cerrar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms/${roomId}/close-registration`, {
+                    method: 'PATCH',
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    Swal.fire('Éxito', 'Registro cerrado', 'success');
+                    loadRooms();
+                    loadStats();
+                } else {
+                    Swal.fire('Error', data.message || 'Error cerrando registro', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function liquidateRoom(roomId) {
+            const result = await Swal.fire({
+                title: '¿Liquidar sala?',
+                text: 'Se procesará la liquidación de todos los participantes. Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, liquidar',
+                confirmButtonColor: '#d33',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms/${roomId}/liquidate`, {
+                    method: 'POST',
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    Swal.fire('Éxito', data.message || 'Sala liquidada', 'success');
+                    loadRooms();
+                    loadStats();
+                } else {
+                    Swal.fire('Error', data.message || 'Error liquidando sala', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function viewRoomDetails(roomId) {
+            currentRoomId = roomId;
+            const body = document.getElementById('roomDetailsBody');
+            body.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            $('#roomDetailsModal').modal('show');
+
+            try {
+                // Get room and participants
+                const [roomRes, partRes] = await Promise.all([
+                    fetch(`${AdminConfig.API_URL}/invest/rooms/${roomId}`, { headers: AdminConfig.getAuthHeaders() }),
+                    fetch(`${AdminConfig.API_URL}/admin/invest/rooms/${roomId}/participants`, { headers: AdminConfig.getAuthHeaders() })
+                ]);
+
+                const roomData = await roomRes.json();
+                const partData = await partRes.json();
+                const room = roomData.room;
+                const participants = partData.participants || [];
+
+                body.innerHTML = `
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>${room.name}</h5>
+                            <p class="mb-1"><strong>Plan:</strong> ${room.plan?.displayName || 'N/A'}</p>
+                            <p class="mb-1"><strong>Estado:</strong> <span class="badge room-badge ${room.status.toLowerCase()}">${getStatusText(room.status)}</span></p>
+                            <p class="mb-1"><strong>Capital Total:</strong> $${(room.totalCapital || 0).toFixed(2)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Registro:</strong> ${formatDate(room.registrationStart)} - ${formatDate(room.registrationEnd)}</p>
+                            <p class="mb-1"><strong>Período:</strong> ${formatDate(room.startDate)} - ${formatDate(room.endDate)}</p>
+                            <p class="mb-1"><strong>Retorno:</strong> ${room.plan?.grossReturnPercent || 0}% bruto</p>
+                        </div>
+                    </div>
+                    <h6 class="font-weight-bold">Participantes (${participants.length})</h6>
+                    ${participants.length === 0 ? '<p class="text-muted">Sin participantes</p>' : `
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Monto</th>
+                                        <th>Retorno Bruto</th>
+                                        <th>Comisión</th>
+                                        <th>Retorno Neto</th>
+                                        <th>Estado</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${participants.map(p => `
+                                        <tr>
+                                            <td>${p.user?.email || 'N/A'}</td>
+                                            <td>$${p.amount?.toFixed(2) || '0.00'}</td>
+                                            <td>$${p.grossReturn?.toFixed(2) || '0.00'}</td>
+                                            <td>$${p.exitFee?.toFixed(2) || '0.00'}</td>
+                                            <td><strong>$${p.netReturn?.toFixed(2) || '0.00'}</strong></td>
+                                            <td><span class="badge badge-${p.status?.toUpperCase() === 'ACTIVE' ? 'success' : (p.status?.toUpperCase() === 'LIQUIDATED' ? 'primary' : 'secondary')}">${p.status}</span></td>
+                                            <td>${formatDate(p.joinedAt)}</td>
+                                            <td>
+                                                ${(['ACTIVE', 'PENDING'].includes(p.status?.toUpperCase())) && room.status?.toLowerCase() !== 'liquidated' ?
+                        `<button class="btn btn-danger btn-sm" onclick="removeParticipant('${roomId}', '${p.id}', '${p.user?.email || ''}')" title="Desincorporar">
+                                                        <i class="fas fa-user-minus"></i>
+                                                    </button>` : '-'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `}
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                body.innerHTML = '<div class="text-center text-danger">Error cargando detalles</div>';
+            }
+        }
+
+        async function removeParticipant(roomId, participantId, email) {
+            const result = await Swal.fire({
+                title: 'Desincorporar participante',
+                html: `
+                    <p>Se reembolsará el capital bloqueado de <strong>${escapeHtml(email)}</strong> y será removido de esta sala.</p>
+                    <p class="text-left mt-3 mb-1"><strong>Motivo de la desincorporación <span class="text-danger">*</span></strong></p>
+                `,
+                icon: 'warning',
+                input: 'textarea',
+                inputLabel: 'Indique el motivo (obligatorio). Se enviará al usuario por correo y WhatsApp/Telegram.',
+                inputPlaceholder: 'Ej: Solicitud del usuario, incumplimiento de normas, error de registro...',
+                inputAttributes: { 'aria-label': 'Motivo de la desincorporación', 'rows': 4 },
+                inputValidator: (value) => {
+                    if (!value || !String(value).trim()) return 'Debe indicar el motivo de la desincorporación';
+                    return null;
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, desincorporar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed || !result.value || !String(result.value).trim()) return;
+            const reason = String(result.value).trim();
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms/${roomId}/participants/${participantId}`, {
+                    method: 'DELETE',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Error desincorporando participante');
+                }
+
+                Swal.fire({
+                    title: 'Éxito',
+                    html: `Participante desincorporado.<br/>Monto reembolsado: <strong>$${data.refundedAmount?.toFixed(2) || '0.00'}</strong>`,
+                    icon: 'success'
+                });
+
+                // Refresh room details
+                viewRoomDetails(roomId);
+                // Refresh stats
+                loadStats();
+                loadRooms();
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Links Of CSS File -->
+	<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/assets/css/owl.theme.default.min.css">
+	<link rel="stylesheet" href="/assets/css/owl.carousel.min.css">
+	<link rel="stylesheet" href="/assets/css/flaticon.css">
+	<link rel="stylesheet" href="/assets/css/remixicon.css">
+	<link rel="stylesheet" href="/assets/css/meanmenu.min.css">
+	<link rel="stylesheet" href="/assets/css/animate.min.css">
+	<link rel="stylesheet" href="/assets/css/odometer.min.css">
+	<link rel="stylesheet" href="/assets/css/style.css">
+	<link rel="stylesheet" href="/assets/css/responsive.css">
+	<link rel="stylesheet" href="/web/css/onboarding.css">
+	<link rel="stylesheet" href="/web/css/p2p-order-taken-modal.css">
+
+	<!-- Favicon -->
+	<link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+	<link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+	<link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+	<!-- Title -->
+	<title>Dashboard - BidiPago</title>
+
+	<!-- Sidebar estilo curvo y suave (alineado con login) -->
+	<link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+	<!-- Estilos adicionales para el dashboard -->
+	<style>
+		/* Dashboard header */
+		.dashboard-header {
+			margin-bottom: 30px;
+			padding-bottom: 20px;
+			border-bottom: 1px solid #eee;
+		}
+
+		.dashboard-header h2 {
+			margin: 0;
+			color: #333;
+		}
+
+		.user-greeting {
+			margin-top: 10px;
+		}
+
+		.user-actions {
+			margin-top: 15px;
+		}
+
+		.user-actions .btn {
+			margin-right: 10px;
+		}
+
+		/* Wallet cards */
+		.wallet-card {
+			background: #fff;
+			border-radius: 10px;
+			padding: 20px;
+			margin-bottom: 20px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+			display: flex;
+			flex-direction: column;
+			min-height: 220px;
+		}
+		.wallet-card .wallet-balance { flex: 0 0 auto; }
+		.wallet-locked-row {
+			min-height: 1.75rem;
+			margin-top: 4px;
+			position: relative;
+		}
+		.locked-breakdown-trigger {
+			cursor: pointer;
+			margin-left: 4px;
+			opacity: 0.85;
+			user-select: none;
+		}
+		.locked-breakdown-trigger:hover { opacity: 1; }
+		.locked-breakdown-popover {
+			display: none;
+			position: absolute;
+			left: 0;
+			bottom: 100%;
+			margin-bottom: 6px;
+			background: #333;
+			color: #fff;
+			padding: 10px 12px;
+			border-radius: 8px;
+			font-size: 0.85rem;
+			line-height: 1.5;
+			white-space: nowrap;
+			z-index: 1050;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+		}
+		.locked-breakdown-popover.show { display: block; }
+		.locked-breakdown-popover::after {
+			content: '';
+			position: absolute;
+			top: 100%;
+			left: 20px;
+			border: 6px solid transparent;
+			border-top-color: #333;
+		}
+
+		.wallet-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 15px;
+		}
+
+		.wallet-header-left {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.wallet-icon {
+			width: 48px;
+			height: 48px;
+			flex-shrink: 0;
+		}
+
+		.wallet-asset {
+			font-size: 1.5rem;
+			font-weight: bold;
+			color: #333;
+		}
+
+		.wallet-network {
+			color: #666;
+			font-size: 0.9rem;
+		}
+
+		.wallet-balance {
+			font-size: 2rem;
+			font-weight: bold;
+			color: #ee6a3e;
+			margin: 10px 0;
+		}
+
+		.wallet-locked {
+			color: #999;
+			font-size: 0.9rem;
+		}
+
+
+		/* Loading state */
+		.loading {
+			text-align: center;
+			padding: 50px;
+		}
+
+		/* Error state */
+		.error-message {
+			background: #f8d7da;
+			color: #721c24;
+			padding: 15px;
+			border-radius: 5px;
+			margin: 20px 0;
+		}
+
+		/* Activity section with collapsible card */
+		.activity-section {
+			margin-top: 40px;
+		}
+
+		.activity-card {
+			background: #fff;
+			border-radius: 10px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+			overflow: hidden;
+		}
+
+		.activity-card-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 15px 20px;
+			background: linear-gradient(135deg, #ee6a3e 0%, #d45a32 100%);
+			color: #fff;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+
+		.activity-card-header:hover {
+			background: linear-gradient(135deg, #d45a32 0%, #c04e28 100%);
+		}
+
+		.activity-card-header h4 {
+			margin: 0;
+			font-size: 1.1rem;
+			font-weight: 600;
+		}
+
+		.activity-card-header .toggle-icon {
+			font-size: 1.2rem;
+			transition: transform 0.3s;
+		}
+
+		.activity-card-header.collapsed .toggle-icon {
+			transform: rotate(-90deg);
+		}
+
+		.activity-card-body {
+			padding: 20px;
+		}
+
+		.activity-filters {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-bottom: 20px;
+			align-items: flex-end;
+		}
+
+		.activity-filters .filter-group {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.activity-filters label {
+			font-size: 0.8rem;
+			color: #666;
+			margin-bottom: 0;
+		}
+
+		.activity-filters input[type="date"],
+		.activity-filters select {
+			padding: 6px 10px;
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			font-size: 0.9rem;
+		}
+
+		.activity-filters .btn-export {
+			background: #28a745;
+			color: #fff;
+			border: none;
+			padding: 8px 16px;
+			border-radius: 5px;
+			font-size: 0.85rem;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		.activity-filters .btn-export:hover {
+			background: #218838;
+		}
+
+		.activity-tabs {
+			display: flex;
+			flex-wrap: wrap;
+			border-bottom: 2px solid #eee;
+			margin-bottom: 15px;
+			gap: 5px;
+		}
+
+		.activity-tabs .tab-btn {
+			padding: 10px 15px;
+			background: none;
+			border: none;
+			color: #666;
+			font-size: 0.9rem;
+			cursor: pointer;
+			position: relative;
+			transition: color 0.3s;
+		}
+
+		.activity-tabs .tab-btn:hover {
+			color: #ee6a3e;
+		}
+
+		.activity-tabs .tab-btn.active {
+			color: #ee6a3e;
+			font-weight: 600;
+		}
+
+		.activity-tabs .tab-btn.active::after {
+			content: '';
+			position: absolute;
+			bottom: -2px;
+			left: 0;
+			width: 100%;
+			height: 2px;
+			background: #ee6a3e;
+		}
+
+		.activity-tab-content {
+			min-height: 200px;
+		}
+
+		.activity-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.9rem;
+		}
+
+		.activity-table th {
+			text-align: left;
+			padding: 10px;
+			background: #f8f9fa;
+			color: #666;
+			font-weight: 600;
+			border-bottom: 1px solid #eee;
+		}
+
+		.activity-table td {
+			padding: 12px 10px;
+			border-bottom: 1px solid #f0f0f0;
+			vertical-align: middle;
+		}
+
+		.activity-table tr:hover {
+			background: #fafafa;
+		}
+
+		.tx-credit {
+			color: #28a745;
+			font-weight: 600;
+		}
+
+		.tx-debit {
+			color: #dc3545;
+			font-weight: 600;
+		}
+
+		.activity-empty {
+			text-align: center;
+			padding: 40px 20px;
+			color: #999;
+		}
+
+		.activity-loading {
+			text-align: center;
+			padding: 40px 20px;
+			color: #666;
+		}
+
+		.activity-pagination {
+			display: flex;
+			justify-content: center;
+			gap: 10px;
+			margin-top: 20px;
+		}
+
+		.activity-pagination button {
+			padding: 8px 16px;
+			border: 1px solid #ddd;
+			background: #fff;
+			border-radius: 5px;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.activity-pagination button:hover:not(:disabled) {
+			border-color: #ee6a3e;
+			color: #ee6a3e;
+		}
+
+		.activity-pagination button:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.activity-pagination .page-info {
+			display: flex;
+			align-items: center;
+			font-size: 0.9rem;
+			color: #666;
+		}
+
+		@media (max-width: 768px) {
+			.activity-tabs .tab-btn {
+				padding: 8px 10px;
+				font-size: 0.8rem;
+			}
+
+			.activity-filters {
+				flex-direction: column;
+			}
+
+			.activity-table {
+				font-size: 0.8rem;
+			}
+
+			.activity-table th,
+			.activity-table td {
+				padding: 8px 6px;
+			}
+		}
+
+		/* Notification Bell Styles */
+		.notification-bell {
+			position: relative;
+			display: inline-block;
+			margin-left: 15px;
+			cursor: pointer;
+		}
+
+		.notification-bell .bell-icon {
+			font-size: 1.5rem;
+			color: #555;
+			transition: color 0.3s;
+		}
+
+		.notification-bell:hover .bell-icon {
+			color: #ee6a3e;
+		}
+
+		.notification-bell .badge {
+			position: absolute;
+			top: -5px;
+			right: -8px;
+			background: #dc3545;
+			color: white;
+			border-radius: 50%;
+			width: 18px;
+			height: 18px;
+			font-size: 0.7rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.notification-dropdown {
+			position: absolute;
+			top: 100%;
+			right: 0;
+			width: 320px;
+			max-height: 400px;
+			overflow-y: auto;
+			background: white;
+			border-radius: 8px;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+			z-index: 1000;
+			display: none;
+		}
+
+		.notification-dropdown.show {
+			display: block;
+		}
+
+		.notification-header {
+			padding: 12px 15px;
+			border-bottom: 1px solid #eee;
+			font-weight: 600;
+			color: #333;
+		}
+
+		.notification-item {
+			padding: 12px 15px;
+			border-bottom: 1px solid #f5f5f5;
+			cursor: pointer;
+			transition: background 0.2s;
+		}
+
+		.notification-item:hover {
+			background: #f8f9fa;
+		}
+
+		.notification-item.priority-high {
+			border-left: 3px solid #dc3545;
+		}
+
+		.notification-item.priority-medium {
+			border-left: 3px solid #ffc107;
+		}
+
+		.notification-item.priority-low {
+			border-left: 3px solid #28a745;
+		}
+
+		.notification-item .message {
+			font-size: 0.9rem;
+			color: #333;
+			margin-bottom: 5px;
+		}
+
+		.notification-item .meta {
+			font-size: 0.75rem;
+			color: #888;
+		}
+
+		.notification-dismiss-btn {
+			display: block;
+			margin-top: 8px;
+			padding: 4px 10px;
+			font-size: 0.75rem;
+			background: #e9ecef;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			color: #495057;
+		}
+		.notification-dismiss-btn:hover {
+			background: #dee2e6;
+		}
+
+		.notification-empty {
+			padding: 30px 15px;
+			text-align: center;
+			color: #888;
+		}
+
+		.notification-summary {
+			padding: 10px 15px;
+			background: #f8f9fa;
+			font-size: 0.8rem;
+			color: #666;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- Start Preloader Area -->
+	<div class="preloader" id="loader-style">
+		<div class="preloader-wrap">
+			<span></span>
+			<span></span>
+			<span></span>
+			<span></span>
+		</div>
+	</div>
+	<!-- End Preloader Area -->
+
+	<!-- Sidebar Toggle Button -->
+	<button class="sidebar-toggle" id="sidebarToggle">
+		<i class="ri-menu-line"></i>
+	</button>
+
+	<!-- Dashboard Sidebar -->
+	<aside class="dashboard-sidebar" id="dashboardSidebar">
+		<div class="sidebar-header">
+			<a href="/" style="display: inline-block;">
+				<img src="/assets/images/biglogo.svg" alt="BidiPago">
+			</a>
+		</div>
+		<ul class="sidebar-menu">
+			<li><a href="/dashboard" class="active"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+			<li>
+				<a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+				<ul class="sidebar-submenu" style="display: none;">
+					<li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+				</ul>
+			</li>
+			<li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+			<li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+			<li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+			<li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+			<li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+			<li>
+				<a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+				<ul class="sidebar-submenu" style="display: none;">
+					<li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+					</li>
+				</ul>
+			</li>
+			<li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+			<li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+			<li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+			<li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+			<li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+		</ul>
+	</aside>
+
+	<!-- Modal: Notificaciones in-app (admin broadcast) -->
+	<div id="broadcastNotificationModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header" style="border-bottom: 1px solid #eee;">
+					<h5 class="modal-title" id="broadcastNotificationTitle"><i class="ri-notification-3-line me-2"></i>Notificación</h5>
+					<button type="button" class="btn-close" id="broadcastNotificationCloseX" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<div id="broadcastNotificationBanner" style="display:none; margin-bottom: 16px;">
+						<img id="broadcastNotificationBannerImg" src="" alt="" style="width:100%; max-width:100%; max-height: 50vh; object-fit: contain; object-position: center; border-radius: 8px; display: block;">
+					</div>
+					<div id="broadcastNotificationBody" class="text-body"></div>
+				</div>
+				<div class="modal-footer d-flex flex-column align-items-stretch">
+					<div class="form-check mb-2">
+						<input type="checkbox" class="form-check-input" id="broadcastNotificationDontShowAgain">
+						<label class="form-check-label small" for="broadcastNotificationDontShowAgain">No deseo ver esta notificación nuevamente</label>
+					</div>
+					<div class="d-flex justify-content-between">
+						<button type="button" class="btn btn-outline-secondary" id="broadcastNotificationCloseBtn">Cerrar por ahora</button>
+						<button type="button" class="btn btn-primary" id="broadcastNotificationDismissBtn">Aceptar y no mostrar más</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal: Orden P2P tomada -->
+	<div id="p2pOrderTakenModalContainer">
+		<div class="p2p-order-taken-overlay">
+			<div class="p2p-order-taken-modal" onclick="event.stopPropagation()">
+				<div class="modal-header-bar">
+					<h4><i class="ri-exchange-line"></i> ¡Tu orden fue tomada!</h4>
+					<button type="button" class="modal-close-btn" aria-label="Cerrar">&times;</button>
+				</div>
+				<div class="modal-body">
+					<p class="trade-summary">Alguien tomó tu orden P2P. Revisa los detalles y continúa con el trade.</p>
+					<div class="trade-row"><span class="label">Tipo</span><span class="value trade-type">-</span></div>
+					<div class="trade-row"><span class="label">Par</span><span class="value trade-asset">-</span></div>
+					<div class="trade-row"><span class="label">Crypto</span><span class="value trade-amount">-</span></div>
+					<div class="trade-row"><span class="label">Fiat</span><span class="value trade-fiat">-</span></div>
+					<div class="trade-row"><span class="label">Tomada por</span><span class="value trade-taker">-</span></div>
+					<a href="#" class="btn-go-trade">Ir al Trade</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Main Dashboard Content -->
+	<div class="dashboard-main" id="dashboardMain">
+		<!-- Dashboard Header -->
+		<div class="dashboard-header">
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+				<h2 style="margin: 0;">Dashboard</h2>
+				<div class="notification-bell" id="notificationBell" onclick="toggleNotificationDropdown()"
+					style="display: none;">
+					<i class="ri-notification-3-line bell-icon"></i>
+					<span class="badge" id="notificationBadge" style="display: none;">0</span>
+					<div class="notification-dropdown" id="notificationDropdown">
+						<div class="notification-header">🔔 Alertas BidiSAN</div>
+						<div id="notificationList">
+							<div class="notification-empty">No hay notificaciones de BidiSAN en este momento</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="user-greeting" id="userGreeting">Cargando...</div>
+			<div class="user-actions" id="userActions" style="display: none; margin-top: 10px;">
+				<a href="/profile" class="btn btn-outline-primary btn-sm" style="margin-right: 10px;">
+					<i class="ri-user-line"></i> Mi Perfil
+				</a>
+				<a href="/profile" class="btn btn-outline-secondary btn-sm">
+					<i class="ri-shield-check-line"></i> Seguridad
+				</a>
+			</div>
+		</div>
+
+		<!-- Loading State -->
+		<div id="loadingState" class="loading">
+			<p>Cargando información...</p>
+		</div>
+
+		<!-- Error State -->
+		<div id="errorState" class="error-message" style="display: none;">
+			<p id="errorText"></p>
+		</div>
+
+		<!-- Wallets Container -->
+		<div id="walletsContainer" style="display: none;">
+			<h3 style="margin-bottom: 20px;">Consolidado</h3>
+			<div class="row" id="walletsRow">
+				<!-- Las wallets se insertarán aquí dinámicamente -->
+			</div>
+		</div>
+
+		<!-- Activity Section -->
+		<div class="activity-section" id="activitySection" style="display: none;">
+			<div class="activity-card">
+				<div class="activity-card-header collapsed" id="activityCardHeader" onclick="toggleActivitySection()">
+					<h4 style="color: #fff;"><i class="ri-history-line" style="margin-right: 8px;"></i>Actividad
+						Reciente</h4>
+					<i class="ri-arrow-down-s-line toggle-icon" style="color: #fff;"></i>
+				</div>
+				<div class="activity-card-body" id="activityCardBody" style="display: none;">
+					<!-- Filters -->
+					<div class="activity-filters">
+						<div class="filter-group">
+							<label>Desde:</label>
+							<input type="date" id="activityDateFrom">
+						</div>
+						<div class="filter-group">
+							<label>Hasta:</label>
+							<input type="date" id="activityDateTo">
+						</div>
+						<button class="btn-export" onclick="exportActivityToExcel()">
+							<i class="ri-file-excel-2-line"></i> Exportar Excel
+						</button>
+					</div>
+
+					<!-- Tabs -->
+					<div class="activity-tabs" id="activityTabs">
+						<button class="tab-btn active" data-type="deposit"
+							onclick="switchActivityTab('deposit')">Depósitos</button>
+						<button class="tab-btn" data-type="withdrawal"
+							onclick="switchActivityTab('withdrawal')">Retiros</button>
+						<button class="tab-btn" data-type="p2p" onclick="switchActivityTab('p2p')">P2P</button>
+						<button class="tab-btn" data-type="san" onclick="switchActivityTab('san')">SAN</button>
+						<button class="tab-btn" data-type="transfer"
+							onclick="switchActivityTab('transfer')">Transferencias</button>
+						<button class="tab-btn" data-type="conversion"
+							onclick="switchActivityTab('conversion')">Conversiones</button>
+						<button class="tab-btn" data-type="invest" onclick="switchActivityTab('invest')">BidiInvest</button>
+						<button class="tab-btn" data-type="giftcard" onclick="switchActivityTab('giftcard')">Gift
+							Cards</button>
+						<button class="tab-btn" data-type="airtime" onclick="switchActivityTab('airtime')">Recargas</button>
+					</div>
+
+					<!-- Tab Content -->
+					<div class="activity-tab-content" id="activityTabContent">
+						<div class="activity-loading">Cargando transacciones...</div>
+					</div>
+
+					<!-- Pagination -->
+					<div class="activity-pagination" id="activityPagination" style="display: none;">
+						<button id="activityPrevPage" onclick="changeActivityPage(-1)">&laquo; Anterior</button>
+						<span class="page-info" id="activityPageInfo">Página 1</span>
+						<button id="activityNextPage" onclick="changeActivityPage(1)">Siguiente &raquo;</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Links of JS File -->
+	<script src="/assets/js/jquery.min.js"></script>
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+	<script src="/assets/js/meanmenu.min.js"></script>
+	<script src="/assets/js/owl.carousel.min.js"></script>
+	<script src="/assets/js/wow.js"></script>
+	<script src="/web/js/kycTooltip.js"></script>
+	<script src="/assets/js/appear.min.js"></script>
+	<script src="/assets/js/odometer.min.js"></script>
+	<script src="/assets/js/form-validator.min.js"></script>
+	<script src="/assets/js/contact-form-script.js"></script>
+	<script src="/assets/js/custom.js"></script>
+	<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+	<script src="/web/js/onboarding.js"></script>
+	<script src="/web/js/p2p-order-taken-modal.js"></script>
+
+	<!-- Script del Dashboard -->
+	<script>
+		/**
+		 * FLUJO DEL DASHBOARD AL CARGAR:
+		 * 1. Al cargar la página, verificar si existe accessToken en localStorage
+		 * 2. Si NO hay token: redirigir a /login
+		 * 3. Si hay token:
+		 *    - Llamar a GET /api/me/kyc-dashboard con header Authorization: Bearer <token>
+		 *    - Verificar nivel KYC: si currentLevel === 'NONE', mostrar modal de onboarding
+		 *    - Si nivel es suficiente:
+		 *      - Mostrar nombre completo del usuario (o email si no hay nombre)
+		 *      - Renderizar wallets en cards
+		 *    - Si respuesta es 401/403:
+		 *      - Limpiar localStorage
+		 *      - Redirigir a /login
+		 * 
+		 * CONSTRUCCIÓN DE CARDS DE WALLETS:
+		 * - Los balances se agrupan por moneda (assetSymbol), sumando todas las redes
+		 * - Se crea una card por cada moneda soportada: USDT, USDC, BiUSD, BTC, ETH, LTC
+		 */
+
+		let onboardingModal = null;
+
+		document.addEventListener('DOMContentLoaded', function () {
+			// Toggle sidebar
+			const sidebarToggle = document.getElementById('sidebarToggle');
+			const dashboardSidebar = document.getElementById('dashboardSidebar');
+			const dashboardMain = document.getElementById('dashboardMain');
+
+			sidebarToggle.addEventListener('click', function () {
+				dashboardSidebar.classList.toggle('collapsed');
+				dashboardMain.classList.toggle('sidebar-collapsed');
+			});
+
+			// Logout
+			document.getElementById('logoutBtn').addEventListener('click', function (e) {
+				e.preventDefault();
+				localStorage.removeItem('accessToken');
+				localStorage.removeItem('refreshToken');
+				window.location.href = '/login';
+			});
+
+			// Inicializar modal de onboarding
+			onboardingModal = new OnboardingModal();
+
+			// Inicializar modal P2P "orden tomada"
+			window.p2pOrderTakenModal = initOrderTakenModal({
+				tradeViewUrl: (id) => '/p2p-trade?tradeId=' + id,
+			});
+
+			// Cargar datos del usuario
+			loadUserData();
+
+			// Inicializar tooltip KYC
+			setTimeout(() => {
+				initKycTooltip();
+			}, 1000);
+		});
+
+		async function loadUserData() {
+			// Leer accessToken de localStorage
+			const accessToken = localStorage.getItem('accessToken');
+
+			if (!accessToken) {
+				// No hay token: redirigir a login
+				window.location.href = '/login';
+				return;
+			}
+
+			try {
+				// Llamar a GET /api/me/kyc-dashboard para obtener toda la información
+				const response = await fetch('/api/me/kyc-dashboard', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${accessToken}`,
+						'Content-Type': 'application/json'
+					}
+				});
+
+				if (response.ok) {
+					const dashboardData = await response.json();
+
+					// Verificar si necesita onboarding
+					const currentLevel = dashboardData.kycStatus.currentLevel;
+					const emailVerified = dashboardData.kycStatus.emailVerified;
+
+					// Verificar si el perfil está completo
+					const profile = dashboardData.profile || {};
+					const profileComplete = !!(profile.firstName &&
+						profile.lastName &&
+						profile.dateOfBirth &&
+						profile.country &&
+						profile.state &&
+						profile.city &&
+						profile.addressLine1 &&
+						profile.nationalIdNumber);
+
+					// NO mostrar modal si:
+					// - El perfil está completo Y el email está verificado Y el nivel es L1+
+					const isComplete = profileComplete && emailVerified && (currentLevel === 'L1' || getLevelNumber(currentLevel) > 1);
+
+					// Mostrar modal si:
+					// 1. Nivel es NONE (sin email verificado)
+					// 2. O nivel es L1+ pero perfil incompleto
+					const needsOnboarding = !isComplete && ((currentLevel === 'NONE' && !emailVerified) ||
+						((currentLevel === 'L1' || getLevelNumber(currentLevel) > 1) && !profileComplete));
+
+					if (needsOnboarding) {
+						// Determinar qué paso mostrar
+						const initialStep = onboardingModal.determineInitialStep(dashboardData);
+
+						if (initialStep) {
+							onboardingModal.show(initialStep);
+							// Ocultar contenido del dashboard mientras está en onboarding
+							document.getElementById('dashboardMain').style.filter = 'blur(5px)';
+						} else {
+							// Asegurarse de que el modal esté oculto
+							onboardingModal.hide();
+						}
+					} else {
+						// Nivel KYC suficiente, mostrar dashboard normal
+						// Asegurarse de que el modal esté oculto
+						if (onboardingModal && onboardingModal.modal) {
+							onboardingModal.hide();
+							// Quitar blur del dashboard
+							const dashboardMain = document.getElementById('dashboardMain');
+							if (dashboardMain) {
+								dashboardMain.style.filter = 'none';
+							}
+						}
+
+						document.getElementById('loadingState').style.display = 'none';
+
+						// Mostrar saludo con nombre completo o email
+						const greeting = getGreeting(dashboardData.profile, dashboardData);
+						document.getElementById('userGreeting').innerHTML = greeting;
+
+						// Mostrar botones de acción si hay nombre
+						if (dashboardData.profile && (dashboardData.profile.firstName || dashboardData.profile.lastName)) {
+							document.getElementById('userActions').style.display = 'block';
+						}
+
+						// Show notification bell only for KYC L3 and L4 users (BidiSAN eligible)
+						const kycLevel = currentLevel;
+						if (kycLevel === 'L3' || kycLevel === 'L4') {
+							document.getElementById('notificationBell').style.display = 'inline-block';
+							loadNotifications();
+						}
+
+						// Obtener wallets desde /api/auth/me (necesitamos las wallets)
+						await loadWallets(accessToken);
+
+						// Mostrar sección de actividad y cargar datos
+						document.getElementById('activitySection').style.display = 'block';
+						loadActivityTransactions(); // Auto-load first tab
+
+						// Modal "Tu orden fue tomada" (P2P)
+						if (window.p2pOrderTakenModal) {
+							window.p2pOrderTakenModal.checkAndShow();
+						}
+
+						// Banner OTC pendiente: si tiene pago por completar, avisar
+						checkOtcPendingBanner(accessToken);
+
+						// Notificaciones in-app (admin broadcast)
+						checkBroadcastNotifications(accessToken);
+					}
+				} else if (response.status === 401 || response.status === 403) {
+					// Token inválido o expirado: limpiar y redirigir
+					localStorage.removeItem('accessToken');
+					localStorage.removeItem('refreshToken');
+					window.location.href = '/login';
+				} else {
+					// Otro error
+					showError('Error al cargar datos del usuario');
+				}
+			} catch (error) {
+				showError('Error de conexión. Por favor, intenta nuevamente.');
+			}
+		}
+
+		/**
+		 * Muestra banner si el usuario tiene un pago OTC pendiente (restauración ante recargas/caídas)
+		 */
+		async function checkOtcPendingBanner(accessToken) {
+			if (!accessToken) return;
+			try {
+				const res = await fetch('/api/otc/requester/active', {
+					headers: { 'Authorization': 'Bearer ' + accessToken }
+				});
+				if (!res.ok) return;
+				const data = await res.json();
+				if (!data.order || data.order.status !== 'WAITING_PAYMENT') return;
+				const main = document.getElementById('dashboardMain');
+				let banner = document.getElementById('otcPendingBanner');
+				if (!banner) {
+					banner = document.createElement('div');
+					banner.id = 'otcPendingBanner';
+					banner.className = 'alert alert-warning mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2';
+					banner.style.borderRadius = '0';
+					banner.innerHTML = '<span><i class="ri-bank-card-line me-2"></i>Tienes un depósito OTC pendiente. Sube tu comprobante para completar.</span>' +
+						'<a href="/deposit" class="btn btn-warning btn-sm">Ir a completar</a>';
+					main.insertBefore(banner, main.firstChild);
+				}
+				banner.style.display = '';
+			} catch (e) { /* silencioso */ }
+		}
+
+		/**
+		 * Verifica y muestra notificaciones in-app (admin broadcast)
+		 */
+		let broadcastNotificationQueue = [];
+		async function checkBroadcastNotifications(accessToken) {
+			if (!accessToken) return;
+			try {
+				const res = await fetch('/api/me/notifications', {
+					headers: { 'Authorization': 'Bearer ' + accessToken }
+				});
+				if (!res.ok) return;
+				const data = await res.json();
+				const notifications = data.notifications || [];
+				if (notifications.length === 0) return;
+				broadcastNotificationQueue = notifications;
+				showNextBroadcastNotification(accessToken);
+			} catch (e) { /* silencioso */ }
+		}
+
+		function showNextBroadcastNotification(accessToken) {
+			if (broadcastNotificationQueue.length === 0) return;
+			const n = broadcastNotificationQueue[0];
+			document.getElementById('broadcastNotificationTitle').textContent = n.title || 'Notificación';
+			document.getElementById('broadcastNotificationBody').innerHTML = (n.body || '').replace(/\n/g, '<br>');
+			const bannerEl = document.getElementById('broadcastNotificationBanner');
+			const bannerImg = document.getElementById('broadcastNotificationBannerImg');
+			if (n.imageUrl) {
+				bannerImg.src = n.imageUrl;
+				bannerEl.style.display = 'block';
+			} else {
+				bannerEl.style.display = 'none';
+			}
+			document.getElementById('broadcastNotificationDontShowAgain').checked = false;
+			const modalEl = document.getElementById('broadcastNotificationModal');
+			const modal = new bootstrap.Modal(modalEl);
+			let dismissedByUser = false;
+			function onModalHidden() {
+				modalEl.removeEventListener('hidden.bs.modal', onModalHidden);
+				// Siempre avanzar a la siguiente notificación (tanto "Cerrar por ahora" como "Aceptar y no mostrar más")
+				broadcastNotificationQueue = broadcastNotificationQueue.filter(x => x.id !== n.id);
+				if (broadcastNotificationQueue.length > 0) {
+					setTimeout(() => showNextBroadcastNotification(accessToken), 300);
+				}
+			}
+			modalEl.addEventListener('hidden.bs.modal', onModalHidden);
+			document.getElementById('broadcastNotificationDismissBtn').onclick = function () {
+				dismissedByUser = true;
+				fetch('/api/me/notifications/' + n.id + '/view', { method: 'POST', headers: { 'Authorization': 'Bearer ' + accessToken } }).catch(() => {});
+				modal.hide();
+			};
+			document.getElementById('broadcastNotificationCloseBtn').onclick = function () { modal.hide(); };
+			document.getElementById('broadcastNotificationCloseX').onclick = function () { modal.hide(); };
+			modal.show();
+		}
+
+		/**
+		 * Obtiene el saludo apropiado basado en el perfil del usuario
+		 */
+		function getGreeting(profile, dashboardData) {
+			if (profile.firstName && profile.lastName) {
+				return `<h3 style="margin: 0; color: #333;">Hola, ${profile.firstName} ${profile.lastName}</h3>`;
+			} else if (profile.firstName) {
+				return `<h3 style="margin: 0; color: #333;">Hola, ${profile.firstName}</h3>`;
+			} else {
+				// Si no hay nombre, usar email del profile
+				return `<h3 style="margin: 0; color: #333;">Hola, ${profile.email || 'Usuario'}</h3>`;
+			}
+		}
+
+		/**
+		 * Obtiene el número de nivel KYC
+		 */
+		function getLevelNumber(level) {
+			const levels = { 'NONE': 0, 'L1': 1, 'L2': 2, 'L3': 3, 'L4': 4 };
+			return levels[level] || 0;
+		}
+
+		/**
+		 * Carga las wallets del usuario desde /api/auth/me
+		 */
+		async function loadWallets(accessToken) {
+			try {
+				const response = await fetch('/api/auth/me', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${accessToken}`,
+						'Content-Type': 'application/json'
+					}
+				});
+
+				if (response.ok) {
+					const data = await response.json();
+					renderWallets(data.wallets || []);
+				}
+			} catch (error) {
+				// Error silencioso al cargar wallets
+			}
+		}
+
+		/**
+		 * Agregamos los balances por moneda (assetSymbol) independientemente de la red.
+		 * Las redes individuales se usarán más adelante para reportes, pero el usuario ve un total por moneda.
+		 * 
+		 * Monedas soportadas: USDT, USDC, BTC, ETH, LTC, BiUSD
+		 */
+		function renderWallets(wallets) {
+			const walletsRow = document.getElementById('walletsRow');
+			walletsRow.innerHTML = ''; // Limpiar contenido previo
+
+			// Monedas soportadas en el dashboard (orden de visualización)
+			const supportedAssets = ['USDT', 'USDC', 'BIUSD', 'BTC', 'ETH', 'LTC'];
+
+			// Agregar balances por moneda, sumando todas las redes
+			const aggregated = {};
+
+			for (const wallet of wallets) {
+				const symbol = wallet.assetSymbol.toUpperCase();
+
+				// Solo procesar monedas soportadas
+				if (!supportedAssets.includes(symbol)) {
+					continue;
+				}
+
+				// Inicializar si es la primera vez que vemos esta moneda
+				if (!aggregated[symbol]) {
+					aggregated[symbol] = {
+						balance: 0,
+						lockedBalance: 0,
+						lockedBreakdown: { p2p: 0, san: 0, invest: 0 }
+					};
+				}
+
+				// Sumar balances (convertir a número para evitar problemas de precisión)
+				aggregated[symbol].balance += Number(wallet.balance) || 0;
+				aggregated[symbol].lockedBalance += Number(wallet.lockedBalance) || 0;
+				// Acumular desglose de bloqueados (P2P, BidiSAN, BidiInvest)
+				if (wallet.lockedBreakdown) {
+					aggregated[symbol].lockedBreakdown.p2p += Number(wallet.lockedBreakdown.p2p) || 0;
+					aggregated[symbol].lockedBreakdown.san += Number(wallet.lockedBreakdown.san) || 0;
+					aggregated[symbol].lockedBreakdown.invest += Number(wallet.lockedBreakdown.invest) || 0;
+				}
+			}
+
+			// Renderizar una card por cada moneda soportada
+			// Mostramos todas las monedas soportadas, incluso si tienen balance 0
+			// Esto permite que el usuario vea todas las opciones disponibles
+			for (const symbol of supportedAssets) {
+				const assetData = aggregated[symbol] || { balance: 0, lockedBalance: 0, lockedBreakdown: { p2p: 0, san: 0, invest: 0 } };
+				const walletCard = createWalletCard(symbol, assetData);
+				walletsRow.appendChild(walletCard);
+			}
+
+			// Mostrar contenedor de wallets
+			document.getElementById('walletsContainer').style.display = 'block';
+		}
+
+		/**
+		 * Obtiene la ruta del icono SVG para una moneda
+		 * @param {string} assetSymbol - Símbolo de la moneda (USDT, USDC, BTC, etc.)
+		 * @returns {string} - Ruta al archivo SVG del icono
+		 */
+		function getCoinIconPath(assetSymbol) {
+			const iconMap = {
+				'USDT': 'usdt.svg',
+				'USDC': 'usdc.svg',
+				'BTC': 'btc.svg',
+				'ETH': 'eth.svg',
+				'LTC': 'ltc.svg',
+				'BIUSD': 'biusd.svg'
+			};
+
+			const iconFile = iconMap[assetSymbol] || 'usdt.svg'; // Default a USDT si no se encuentra
+			return `/assets/coins/${iconFile}`;
+		}
+
+		/**
+		 * Crea una card de wallet para una moneda agregada
+		 * @param {string} assetSymbol - Símbolo de la moneda (USDT, USDC, BTC, etc.)
+		 * @param {Object} assetData - Objeto con balance y lockedBalance agregados
+		 */
+		function createWalletCard(assetSymbol, assetData) {
+			// Crear elemento col
+			const col = document.createElement('div');
+			col.className = 'col-lg-4 col-md-6 col-sm-12';
+
+			// Formatear balances (8 decimales). balance = disponible, lockedBalance = bloqueado, total = balance + lockedBalance
+			const available = parseFloat(assetData.balance || 0);
+			const locked = parseFloat(assetData.lockedBalance || 0);
+			const total = available + locked;
+			const balanceStr = available.toFixed(8);
+			const lockedStr = locked.toFixed(8);
+			const totalStr = total.toFixed(8);
+
+			// Desglose de bloqueados para popover al clic (P2P, BidiSAN, BidiInvest)
+			const breakdown = assetData.lockedBreakdown || { p2p: 0, san: 0, invest: 0 };
+			const p2p = parseFloat(breakdown.p2p) || 0;
+			const san = parseFloat(breakdown.san) || 0;
+			const invest = parseFloat(breakdown.invest) || 0;
+			const breakdownLines = [];
+			if (p2p > 0) breakdownLines.push('P2P: ' + p2p.toFixed(8) + ' ' + assetSymbol);
+			if (san > 0) breakdownLines.push('BidiSAN: ' + san.toFixed(8) + ' ' + assetSymbol);
+			if (invest > 0) breakdownLines.push('BidiInvest: ' + invest.toFixed(8) + ' ' + assetSymbol);
+			const breakdownHtml = breakdownLines.length > 0
+				? breakdownLines.map(function (l) { return '<div>' + l + '</div>'; }).join('')
+				: '<div style="opacity:0.8">Sin desglose</div>';
+
+			// Obtener ruta del icono
+			const iconPath = getCoinIconPath(assetSymbol);
+
+			// Card con fila de bloqueado siempre presente para alineación; popover al clic en ⓘ
+			col.innerHTML = `
+					<div class="wallet-card">
+						<div class="wallet-header">
+							<div class="wallet-header-left">
+								<img src="${iconPath}" alt="${assetSymbol}" class="wallet-icon">
+								<div>
+									<div class="wallet-asset">${assetSymbol}</div>
+									<div class="wallet-network" style="color: #999; font-size: 0.85rem;">Disponible: ${balanceStr} ${assetSymbol}</div>
+								</div>
+							</div>
+						</div>
+						<div class="wallet-balance">${totalStr} ${assetSymbol}</div>
+						<div class="wallet-network" style="color: #666; font-size: 0.8rem;">Total (disponible + bloqueado)</div>
+						<div class="wallet-locked-row">
+							${locked > 0 ? '<span class="wallet-locked">Bloqueado: ' + lockedStr + ' ' + assetSymbol + '</span><span class="locked-breakdown-trigger" role="button" aria-label="Ver detalle bloqueados">ⓘ</span><div class="locked-breakdown-popover">' + breakdownHtml + '</div>' : '&nbsp;'}
+						</div>
+					</div>
+				`;
+
+			return col;
+		}
+
+		function showError(message) {
+			document.getElementById('loadingState').style.display = 'none';
+			document.getElementById('errorText').textContent = message;
+			document.getElementById('errorState').style.display = 'block';
+		}
+
+		// =====================
+		// Notification Bell Logic
+		// =====================
+		let notificationsLoaded = false;
+
+		function toggleNotificationDropdown() {
+			const dropdown = document.getElementById('notificationDropdown');
+			dropdown.classList.toggle('show');
+
+			if (!notificationsLoaded) {
+				loadNotifications();
+			}
+		}
+
+		// Close dropdown when clicking outside
+		document.addEventListener('click', function (e) {
+			const bell = document.getElementById('notificationBell');
+			const dropdown = document.getElementById('notificationDropdown');
+			if (bell && !bell.contains(e.target)) {
+				dropdown.classList.remove('show');
+			}
+			// Popover desglose de bloqueados: clic en ⓘ abre/cierra; clic fuera cierra
+			var trigger = e.target.closest('.locked-breakdown-trigger');
+			if (trigger) {
+				e.preventDefault();
+				e.stopPropagation();
+				var popover = trigger.nextElementSibling;
+				if (popover && popover.classList.contains('locked-breakdown-popover')) {
+					document.querySelectorAll('.locked-breakdown-popover.show').forEach(function (p) {
+						if (p !== popover) p.classList.remove('show');
+					});
+					popover.classList.toggle('show');
+				}
+			} else if (!e.target.closest('.locked-breakdown-popover')) {
+				document.querySelectorAll('.locked-breakdown-popover.show').forEach(function (p) { p.classList.remove('show'); });
+			}
+		});
+
+		async function loadNotifications() {
+			const token = localStorage.getItem('accessToken');
+			if (!token) return;
+
+			try {
+				const response = await fetch('/api/san/alerts', {
+					headers: { 'Authorization': `Bearer ${token}` }
+				});
+
+				if (!response.ok) {
+					throw new Error('Error fetching alerts');
+				}
+
+				const data = await response.json();
+				notificationsLoaded = true;
+				renderNotifications(data);
+			} catch (error) {
+				console.error('Error loading SAN alerts:', error);
+				document.getElementById('notificationList').innerHTML =
+					'<div class="notification-empty">Error al cargar alertas</div>';
+			}
+		}
+
+		async function dismissNotification(paymentId, ev) {
+			if (ev) ev.stopPropagation();
+			const token = localStorage.getItem('accessToken');
+			if (!token) return;
+			try {
+				const res = await fetch('/api/san/alerts/' + encodeURIComponent(paymentId) + '/dismiss', {
+					method: 'POST',
+					headers: { 'Authorization': 'Bearer ' + token }
+				});
+				if (!res.ok) return;
+				const list = document.getElementById('notificationList');
+				const badge = document.getElementById('notificationBadge');
+				const row = list.querySelector('[data-payment-id="' + paymentId.replace(/"/g, '\\"') + '"]');
+				if (row) row.remove();
+				const remaining = list.querySelectorAll('.notification-item');
+				const count = remaining.length;
+				if (badge) {
+					if (count > 0) {
+						badge.textContent = count > 9 ? '9+' : count;
+						badge.style.display = 'flex';
+					} else {
+						badge.style.display = 'none';
+						list.innerHTML = '<div class="notification-empty">🎉 No tienes alertas pendientes</div>';
+					}
+				}
+			} catch (e) {
+				console.warn('Dismiss failed:', e);
+			}
+		}
+
+		function renderNotifications(data) {
+			const list = document.getElementById('notificationList');
+			const badge = document.getElementById('notificationBadge');
+			const alerts = data.alerts || [];
+			const summary = data.summary || {};
+
+			// Update badge
+			const totalAlerts = alerts.length;
+			if (totalAlerts > 0) {
+				badge.textContent = totalAlerts > 9 ? '9+' : totalAlerts;
+				badge.style.display = 'flex';
+			} else {
+				badge.style.display = 'none';
+			}
+
+			// Render alerts
+			if (alerts.length === 0) {
+				list.innerHTML = '<div class="notification-empty">🎉 No tienes alertas pendientes</div>';
+				return;
+			}
+
+			let html = '';
+			for (const alert of alerts) {
+				const dueDate = new Date(alert.dueDate).toLocaleDateString('es-VE');
+				const pid = (alert.paymentId || '').replace(/"/g, '&quot;');
+				html += `
+					<div class="notification-item priority-${alert.priority}" data-payment-id="${pid}" onclick="window.location.href='/san'">
+						<div class="message">${alert.message}</div>
+						<div class="meta">
+							<span>${alert.type === 'PAYMENT_OVERDUE' ? '⚠️ EN MORA' : '📅 Vence: ' + dueDate}</span>
+							<span style="float: right;">${alert.amount.toFixed(2)} BiUSD</span>
+						</div>
+						<button type="button" class="notification-dismiss-btn" onclick="dismissNotification('${pid.replace(/'/g, "\\'")}', event)" title="Marcar como leído">Leído</button>
+					</div>
+				`;
+			}
+
+			// Add summary footer
+			if (summary.nextDueDate) {
+				const nextDate = new Date(summary.nextDueDate).toLocaleDateString('es-VE');
+				html += `<div class="notification-summary">Próximo pago: ${nextDate}</div>`;
+			}
+
+			list.innerHTML = html;
+		}
+
+		// Load notifications on page load (for badge count)
+		// REMOVED: Now called only for L3/L4 users from loadUserData()
+
+		// ==========================================
+		// Activity Section Functions
+		// ==========================================
+		let activityState = {
+			currentType: 'deposit',
+			currentPage: 0,
+			pageSize: 20,
+			totalItems: 0,
+			transactions: [],
+			isCollapsed: true
+		};
+
+		const transactionTypeLabels = {
+			'deposit': 'Depósito Cripto',
+			'fiat_deposit': 'Depósito Fiat',
+			'otc_credit': 'Depósito Fiat',
+			'otc_escrow_lock': 'Reserva OTC (fondos reservados)',
+			'otc_escrow_release': 'Retiro Fiat OTC',
+			'withdrawal': 'Retiro Completado',
+			'withdrawal_request': 'Solicitud de Retiro',
+			'withdrawal_refund': 'Reembolso de Retiro',
+			'p2p_escrow_lock': 'Fondos P2P Bloqueados',
+			'p2p_escrow_release': 'Fondos P2P Liberados',
+			'p2p_escrow_refund': 'Reembolso P2P',
+			'p2p_trade': 'Comercio P2P',
+			'p2p_fee': 'Comisión P2P',
+			'internal_transfer_debit': 'Débito Transferencia',
+			'internal_transfer_credit': 'Crédito Transferencia',
+			'conversion_debit': 'Débito Conversión',
+			'conversion_credit': 'Crédito Conversión',
+			'conversion_fee': 'Comisión Conversión',
+			'san_contribution': 'Aporte SAN',
+			'san_contribution_fee': 'Comisión Aporte SAN',
+			'san_payout': 'Pago Turno SAN',
+			'san_cover_debit': 'Cobro Cobertura SAN',
+			'san_recovery': 'Recuperación Deuda SAN',
+			'invest_lock': 'Inversión BidiInvest (fondos bloqueados)',
+			'invest_return': 'Retorno de capital BidiInvest',
+			'invest_profit': 'Intereses BidiInvest',
+			'invest_fee': 'Comisión salida BidiInvest',
+			'invest_payout': 'Pago BidiInvest'
+		};
+
+		function toggleActivitySection() {
+			const header = document.getElementById('activityCardHeader');
+			const body = document.getElementById('activityCardBody');
+			activityState.isCollapsed = !activityState.isCollapsed;
+
+			if (activityState.isCollapsed) {
+				header.classList.add('collapsed');
+				body.style.display = 'none';
+			} else {
+				header.classList.remove('collapsed');
+				body.style.display = 'block';
+				// Load data if not loaded
+				if (activityState.transactions.length === 0) {
+					loadActivityTransactions();
+				}
+			}
+		}
+
+		function switchActivityTab(type) {
+			// Update active tab
+			document.querySelectorAll('.activity-tabs .tab-btn').forEach(btn => {
+				btn.classList.remove('active');
+				if (btn.dataset.type === type) {
+					btn.classList.add('active');
+				}
+			});
+
+			activityState.currentType = type;
+			activityState.currentPage = 0;
+
+			if (type === 'giftcard') {
+				loadGiftcardHistory();
+			} else if (type === 'airtime') {
+				loadAirtimeHistory();
+			} else {
+				loadActivityTransactions();
+			}
+		}
+
+		async function loadActivityTransactions() {
+			const content = document.getElementById('activityTabContent');
+			content.innerHTML = '<div class="activity-loading">Cargando transacciones...</div>';
+
+			const accessToken = localStorage.getItem('accessToken');
+			if (!accessToken) return;
+
+			try {
+				const offset = activityState.currentPage * activityState.pageSize;
+				const response = await fetch(
+					`/api/me/transactions?type=${activityState.currentType}&limit=${activityState.pageSize}&offset=${offset}`,
+					{ headers: { 'Authorization': `Bearer ${accessToken}` } }
+				);
+
+				if (!response.ok) throw new Error('Error loading transactions');
+
+				const data = await response.json();
+				activityState.transactions = data.transactions || [];
+				activityState.totalItems = data.total || 0;
+
+				renderActivityTransactions();
+				updateActivityPagination();
+			} catch (error) {
+				content.innerHTML = '<div class="activity-empty">Error al cargar transacciones</div>';
+			}
+		}
+
+		async function loadGiftcardHistory() {
+			const content = document.getElementById('activityTabContent');
+			content.innerHTML = '<div class="activity-loading">Cargando historial de Gift Cards...</div>';
+
+			const accessToken = localStorage.getItem('accessToken');
+			if (!accessToken) return;
+
+			try {
+				const page = activityState.currentPage + 1;
+				const response = await fetch(
+					`/api/me/giftcard-history?page=${page}&limit=${activityState.pageSize}`,
+					{ headers: { 'Authorization': `Bearer ${accessToken}` } }
+				);
+
+				if (!response.ok) throw new Error('Error loading giftcard history');
+
+				const data = await response.json();
+				activityState.transactions = data.orders || [];
+				activityState.totalItems = data.total || 0;
+
+				renderGiftcardHistory();
+				updateActivityPagination();
+			} catch (error) {
+				content.innerHTML = '<div class="activity-empty">Error al cargar historial de Gift Cards</div>';
+			}
+		}
+
+		async function loadAirtimeHistory() {
+			const content = document.getElementById('activityTabContent');
+			content.innerHTML = '<div class="activity-loading">Cargando recargas...</div>';
+
+			const accessToken = localStorage.getItem('accessToken');
+			if (!accessToken) return;
+
+			try {
+				const page = activityState.currentPage + 1;
+				const response = await fetch(
+					`/api/recargas/orders?page=${page}&limit=${activityState.pageSize}`,
+					{ headers: { 'Authorization': `Bearer ${accessToken}` } }
+				);
+
+				if (!response.ok) throw new Error('Error loading recargas');
+
+				const data = await response.json();
+				activityState.transactions = data.orders || [];
+				activityState.totalItems = data.total || 0;
+
+				renderAirtimeHistory();
+				updateActivityPagination();
+			} catch (error) {
+				content.innerHTML = '<div class="activity-empty">Error al cargar recargas</div>';
+			}
+		}
+
+		function renderAirtimeHistory() {
+			const content = document.getElementById('activityTabContent');
+			const orders = activityState.transactions;
+
+			if (!orders || orders.length === 0) {
+				content.innerHTML = '<div class="activity-empty"><p>No tienes recargas aún</p></div>';
+				return;
+			}
+
+			const statusLabels = {
+				'PENDING': '<span style="color: #ffc107;">Pendiente</span>',
+				'SUCCESS': '<span style="color: #28a745;">Completado</span>',
+				'FAILED': '<span style="color: #dc3545;">Fallido</span>',
+				'REFUNDED': '<span style="color: #17a2b8;">Reembolsado</span>'
+			};
+
+			let html = `
+				<table class="activity-table">
+					<thead>
+						<tr>
+							<th>Fecha</th>
+							<th>Operador</th>
+							<th>Teléfono</th>
+							<th>Monto USD</th>
+							<th>Estado</th>
+						</tr>
+					</thead>
+					<tbody>
+			`;
+			orders.forEach(o => {
+				const date = new Date(o.createdAt).toLocaleString('es-VE');
+				const status = statusLabels[o.status] || o.status;
+				html += `
+					<tr>
+						<td>${date}</td>
+						<td>${(o.operatorName || 'Recarga').replace(/</g, '&lt;')}</td>
+						<td>${(o.recipientPhone || '—').replace(/</g, '&lt;')}</td>
+						<td>$${Number(o.amountUsd).toFixed(2)}</td>
+						<td>${status}</td>
+					</tr>
+				`;
+			});
+			html += '</tbody></table>';
+			content.innerHTML = html;
+		}
+
+		function renderActivityTransactions() {
+			const content = document.getElementById('activityTabContent');
+			const transactions = activityState.transactions;
+
+			if (!transactions || transactions.length === 0) {
+				content.innerHTML = '<div class="activity-empty"><p>No hay transacciones en esta categoría</p></div>';
+				return;
+			}
+
+			let html = `
+				<table class="activity-table">
+					<thead>
+						<tr>
+							<th>Fecha</th>
+							<th>Tipo</th>
+							<th>Moneda</th>
+							<th>Monto</th>
+						</tr>
+					</thead>
+					<tbody>
+			`;
+
+			transactions.forEach(tx => {
+				const isCredit = tx.direction === 'credit';
+				const date = new Date(tx.createdAt).toLocaleString('es-VE');
+				const typeLabel = transactionTypeLabels[tx.type] || tx.type;
+
+				html += `
+					<tr>
+						<td>${date}</td>
+						<td>${typeLabel}</td>
+						<td>${tx.assetSymbol}</td>
+						<td class="${isCredit ? 'tx-credit' : 'tx-debit'}">
+							${isCredit ? '+' : '-'}${Number(tx.amount).toFixed(4)}
+						</td>
+					</tr>
+				`;
+			});
+
+			html += '</tbody></table>';
+			content.innerHTML = html;
+		}
+
+		function renderGiftcardHistory() {
+			const content = document.getElementById('activityTabContent');
+			const orders = activityState.transactions;
+
+			if (!orders || orders.length === 0) {
+				content.innerHTML = '<div class="activity-empty"><p>No has comprado Gift Cards aún</p></div>';
+				return;
+			}
+
+			let html = `
+				<table class="activity-table">
+					<thead>
+						<tr>
+							<th>Fecha</th>
+							<th>Producto</th>
+							<th>Cantidad</th>
+							<th>Total USD</th>
+							<th>Estado</th>
+						</tr>
+					</thead>
+					<tbody>
+			`;
+
+			const statusLabels = {
+				'PENDING': '<span style="color: #ffc107;">Pendiente</span>',
+				'SUCCESS': '<span style="color: #28a745;">Completado</span>',
+				'FAILED': '<span style="color: #dc3545;">Fallido</span>',
+				'REFUNDED': '<span style="color: #17a2b8;">Reembolsado</span>'
+			};
+
+			orders.forEach(order => {
+				const date = new Date(order.createdAt).toLocaleString('es-VE');
+				const status = statusLabels[order.status] || order.status;
+
+				html += `
+					<tr>
+						<td>${date}</td>
+						<td>${order.productName}</td>
+						<td>${order.quantity}</td>
+						<td>$${Number(order.totalUsd).toFixed(2)}</td>
+						<td>${status}</td>
+					</tr>
+				`;
+			});
+
+			html += '</tbody></table>';
+			content.innerHTML = html;
+		}
+
+		function updateActivityPagination() {
+			const pagination = document.getElementById('activityPagination');
+			const prevBtn = document.getElementById('activityPrevPage');
+			const nextBtn = document.getElementById('activityNextPage');
+			const pageInfo = document.getElementById('activityPageInfo');
+
+			const totalPages = Math.ceil(activityState.totalItems / activityState.pageSize);
+
+			if (totalPages <= 1) {
+				pagination.style.display = 'none';
+				return;
+			}
+
+			pagination.style.display = 'flex';
+			pageInfo.textContent = `Página ${activityState.currentPage + 1} de ${totalPages}`;
+
+			prevBtn.disabled = activityState.currentPage === 0;
+			nextBtn.disabled = activityState.currentPage >= totalPages - 1;
+		}
+
+		function changeActivityPage(delta) {
+			const totalPages = Math.ceil(activityState.totalItems / activityState.pageSize);
+			const newPage = activityState.currentPage + delta;
+
+			if (newPage < 0 || newPage >= totalPages) return;
+
+			activityState.currentPage = newPage;
+
+			if (activityState.currentType === 'giftcard') {
+				loadGiftcardHistory();
+			} else {
+				loadActivityTransactions();
+			}
+		}
+
+		async function exportActivityToExcel() {
+			const accessToken = localStorage.getItem('accessToken');
+			if (!accessToken) return;
+
+			const dateFrom = document.getElementById('activityDateFrom').value;
+			const dateTo = document.getElementById('activityDateTo').value;
+
+			try {
+				let allData = [];
+
+				if (activityState.currentType === 'giftcard') {
+					// Fetch all giftcard orders
+					const response = await fetch(
+						`/api/me/giftcard-history?limit=500`,
+						{ headers: { 'Authorization': `Bearer ${accessToken}` } }
+					);
+					const data = await response.json();
+					allData = (data.orders || []).map(o => ({
+						'Fecha': new Date(o.createdAt).toLocaleString('es-VE'),
+						'Producto': o.productName,
+						'Cantidad': o.quantity,
+						'Total USD': o.totalUsd,
+						'Moneda Pago': o.walletCurrency,
+						'Estado': o.status
+					}));
+				} else {
+					// Fetch all transactions of current type
+					const response = await fetch(
+						`/api/me/transactions?type=${activityState.currentType}&limit=500`,
+						{ headers: { 'Authorization': `Bearer ${accessToken}` } }
+					);
+					const data = await response.json();
+					let transactions = data.transactions || [];
+
+					// Apply date filters
+					if (dateFrom) {
+						const from = new Date(dateFrom);
+						transactions = transactions.filter(t => new Date(t.createdAt) >= from);
+					}
+					if (dateTo) {
+						const to = new Date(dateTo);
+						to.setHours(23, 59, 59);
+						transactions = transactions.filter(t => new Date(t.createdAt) <= to);
+					}
+
+					allData = transactions.map(t => ({
+						'Fecha': new Date(t.createdAt).toLocaleString('es-VE'),
+						'Tipo': transactionTypeLabels[t.type] || t.type,
+						'Moneda': t.assetSymbol,
+						'Monto': Number(t.amount).toFixed(4),
+						'Dirección': t.direction === 'credit' ? 'Entrada' : 'Salida',
+						'Referencia': t.reference || '-'
+					}));
+				}
+
+				if (allData.length === 0) {
+					alert('No hay datos para exportar');
+					return;
+				}
+
+				// Create Excel
+				const ws = XLSX.utils.json_to_sheet(allData);
+				const wb = XLSX.utils.book_new();
+				XLSX.utils.book_append_sheet(wb, ws, activityState.currentType === 'giftcard' ? 'GiftCards' : 'Transacciones');
+
+				const fileName = activityState.currentType === 'giftcard'
+					? `giftcards_${new Date().toISOString().split('T')[0]}.xlsx`
+					: `transacciones_${activityState.currentType}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+				XLSX.writeFile(wb, fileName);
+			} catch (error) {
+				alert('Error al exportar: ' + error.message);
+			}
+		}
+
+		// Auto-load first tab when activity section is shown
+		// This is already handled by toggling or initial load
+	</script>
+</body>
+
+</html>

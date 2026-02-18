@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Auditoría Depósitos Fiat</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fd7e14 !important; }
+        .sidebar .sidebar-brand { color: #fd7e14 !important; }
+        .sidebar-divider { border-top: 1px solid rgba(253,126,20,0.3) !important; }
+        .sidebar-heading { color: #fd7e14 !important; }
+        .deposit-row-clickable { cursor: pointer; }
+        .deposit-row-clickable:hover { background-color: #f8f9fc !important; }
+        .webhook-payload { font-size: 0.75rem; max-height: 400px; overflow: auto; background: #f8f9fc; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body id="page-top">
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'fiat-deposits-audit';</script>
+        <script src="js/admin-sidebar.js"></script>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3"><i class="fa fa-bars"></i></button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="container-fluid">
+                    <h1 class="h3 mb-2 text-gray-800">Auditoría de Depósitos Fiat</h1>
+                    <p class="mb-4">Depósitos fiat: PayPal (webhook) y OTC BidiPago Express (moneda nacional). Filtra por Provider.</p>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <input type="text" id="filterEmail" class="form-control" placeholder="Buscar por correo..." onkeyup="if(event.key==='Enter')loadDeposits()">
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filterProvider" class="form-control" onchange="loadDeposits()">
+                                <option value="">Todos los providers</option>
+                                <option value="PAYPAL">PayPal</option>
+                                <option value="OTC">OTC BidiPago Express (moneda nacional)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filterStatus" class="form-control" onchange="loadDeposits()">
+                                <option value="">Todos los estados</option>
+                                <option value="finished">Completado</option>
+                                <option value="PENDING">Pendiente</option>
+                                <option value="FAILED">Fallido</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary" onclick="loadDeposits()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Depósitos Fiat</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Usuario</th>
+                                                    <th>Provider</th>
+                                                    <th>Asset</th>
+                                                    <th>Pagado USD</th>
+                                                    <th>Fee PayPal</th>
+                                                    <th>Fee Servicio</th>
+                                                    <th>Acreditado</th>
+                                                    <th>Estado</th>
+                                                    <th>Order ID</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="depositsBody"></tbody>
+                                        </table>
+                                    </div>
+                                    <nav class="mt-3"><ul class="pagination justify-content-center" id="pagination"></ul></nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto"><span>Copyright &copy; BidiPago 2026</span></div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal fade" id="webhookModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-invoice-dollar mr-2"></i>Detalle Depósito <span id="webhookModalDepositId"></span></h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="webhookModalContent">
+                        <div class="text-center text-muted py-4" id="webhookModalLoading"><div class="spinner-border" role="status"></div><p class="mt-2">Cargando...</p></div>
+                        <div id="webhookModalPayload" style="display:none;">
+                            <p class="small text-muted mb-2">Payload recibido de PayPal (PAYMENT.CAPTURE.COMPLETED):</p>
+                            <pre class="webhook-payload border" id="webhookPayloadPre"></pre>
+                            <p class="small text-muted mt-2"><i class="fas fa-info-circle mr-1"></i> Si PayPal cobró una comisión distinta a la estimada, puedes recalcular los fees desde este webhook.</p>
+                        </div>
+                        <div id="webhookModalOtcDetail" style="display:none;"></div>
+                        <div id="webhookModalNoData" style="display:none;" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <p>No hay datos de webhook guardados para este depósito. Puede que se haya confirmado desde el frontend (retorno de PayPal) en lugar del webhook.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" id="webhookRefreshFeesBtn" style="display:none;" onclick="refreshFeesFromWebhook()"><i class="fas fa-sync-alt mr-1"></i> Recalcular fees desde webhook</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="proofLightboxModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Comprobante de pago</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+                <div class="modal-body text-center p-0">
+                    <img id="proofLightboxImg" src="" alt="Comprobante" style="max-width:100%; height:auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Cerrar sesión</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+                <div class="modal-body">¿Desea cerrar sesión?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <a href="login.html" class="btn btn-primary" onclick="localStorage.removeItem('adminToken');localStorage.removeItem('adminUser');">Cerrar sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script>
+        if (!AdminConfig.checkAuth()) {}
+        const user = AdminConfig.getUser();
+        document.getElementById('adminEmail').textContent = user.email || 'Admin';
+
+        let currentPage = 1;
+        const limit = 25;
+
+        function formatDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleString('es');
+        }
+
+        function getOtcProofLink(url) {
+            if (!url || !String(url).trim()) return '—';
+            const u = String(url).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const isPdf = /\.pdf(\?|$)/i.test(url);
+            if (isPdf) {
+                return '<a href="' + u + '" target="_blank" rel="noopener" class="btn btn-sm btn-info"><i class="fas fa-file-pdf mr-1"></i>Abrir PDF</a>';
+            }
+            return '<a href="#" class="btn btn-sm btn-info proof-view-btn" data-url="' + u + '"><i class="fas fa-image mr-1"></i>Ver imagen</a>';
+        }
+
+        function showProofLightbox(url) {
+            const img = document.getElementById('proofLightboxImg');
+            const modal = $('#proofLightboxModal');
+            if (img && modal.length) {
+                img.src = url;
+                img.onerror = function () { img.src = ''; img.alt = 'No se pudo cargar'; };
+                modal.modal('show');
+            }
+        }
+
+        async function loadDeposits(page = 1) {
+            currentPage = page;
+            const provider = document.getElementById('filterProvider').value;
+            const status = document.getElementById('filterStatus').value;
+            const userEmail = (document.getElementById('filterEmail').value || '').trim();
+            let url = AdminConfig.API_URL + '/admin/fiat/deposits?page=' + page + '&limit=' + limit;
+            if (provider) url += '&provider=' + encodeURIComponent(provider);
+            if (status) url += '&status=' + encodeURIComponent(status);
+            if (userEmail) url += '&userEmail=' + encodeURIComponent(userEmail);
+            const res = await fetch(url, { headers: AdminConfig.getAuthHeaders() });
+            if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+            const data = await res.json();
+            const tbody = document.getElementById('depositsBody');
+            const deposits = data.deposits || [];
+            tbody.innerHTML = deposits.map(d => {
+                const isFinished = d.status === 'finished';
+                const isOtc = d.provider === 'OTC';
+                const rowClass = isFinished ? 'deposit-row-clickable' : '';
+                const rowAttrs = isFinished ? ` onclick="showWebhookModal('${d.id}')"` : '';
+                const feePaypal = isOtc ? '—' : '$' + parseFloat(d.paypalFeeAmount || 0).toFixed(2);
+                const orderId = isOtc ? 'N/A' : ((d.paypalOrderId || '—').length > 20 ? (d.paypalOrderId || '').substring(0, 20) + '...' : (d.paypalOrderId || '—'));
+                return `<tr class="${rowClass}" data-id="${d.id}"${rowAttrs}>
+                    <td>${formatDate(d.createdAt)}</td>
+                    <td><small>${d.userEmail || d.userId || '—'}</small></td>
+                    <td><span class="badge badge-${isOtc ? 'success' : 'info'}">${isOtc ? 'OTC BidiPago Express' : (d.provider || '—')}</span></td>
+                    <td>${d.asset || '—'}</td>
+                    <td>$${parseFloat(d.amountPaidUsd || 0).toFixed(2)}</td>
+                    <td>${feePaypal}</td>
+                    <td>$${parseFloat(d.serviceFeeAmount || 0).toFixed(2)}</td>
+                    <td>${parseFloat(d.creditedAmount || d.amount || 0).toFixed(8).replace(/\.?0+$/, '') || '0'} ${d.asset || ''}</td>
+                    <td><span class="badge badge-${d.status === 'finished' ? 'success' : d.status === 'FAILED' ? 'danger' : 'warning'}">${d.status || '—'}</span></td>
+                    <td><small>${orderId}</small>${isFinished && !isOtc ? ' <i class="fas fa-external-link-alt text-muted" style="font-size:0.7rem;"></i>' : ''}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="10" class="text-center text-muted">No hay depósitos fiat</td></tr>';
+
+            const pag = data.pagination || {};
+            const pagEl = document.getElementById('pagination');
+            if (pag.totalPages > 1) {
+                pagEl.innerHTML = `
+                    <li class="page-item ${pag.page <= 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadDeposits(${pag.page - 1});return false;">&laquo;</a></li>
+                    <li class="page-item active"><span class="page-link">${pag.page} / ${pag.totalPages}</span></li>
+                    <li class="page-item ${pag.page >= pag.totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadDeposits(${pag.page + 1});return false;">&raquo;</a></li>
+                `;
+            } else pagEl.innerHTML = '';
+        }
+
+        let currentWebhookDepositId = null;
+
+        async function showWebhookModal(depositId) {
+            currentWebhookDepositId = depositId;
+            document.getElementById('webhookModalDepositId').textContent = depositId.substring(0, 8);
+            document.getElementById('webhookModalLoading').style.display = 'block';
+            document.getElementById('webhookModalPayload').style.display = 'none';
+            document.getElementById('webhookModalOtcDetail').style.display = 'none';
+            document.getElementById('webhookModalNoData').style.display = 'none';
+            document.getElementById('webhookRefreshFeesBtn').style.display = 'none';
+            $('#webhookModal').modal('show');
+            try {
+                const res = await fetch(AdminConfig.API_URL + '/admin/fiat/deposits/' + depositId, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (res.status === 401) { AdminConfig.handleApiError(401); $('#webhookModal').modal('hide'); return; }
+                const d = await res.json();
+                document.getElementById('webhookModalLoading').style.display = 'none';
+                document.getElementById('webhookModalPayload').style.display = 'none';
+                document.getElementById('webhookModalOtcDetail').style.display = 'none';
+                document.getElementById('webhookRefreshFeesBtn').style.display = 'none';
+                document.getElementById('webhookModalNoData').style.display = 'none';
+                if (d.provider === 'OTC' && d.otcDetails) {
+                    const otc = d.otcDetails;
+                    const fiatFmt = (n) => Number(n).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const rateFmt = (n) => Number(n).toLocaleString('es', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                    document.getElementById('webhookModalOtcDetail').style.display = 'block';
+                    document.getElementById('webhookModalOtcDetail').innerHTML = `
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-success text-white"><i class="fas fa-exchange-alt mr-2"></i>OTC BidiPago Express — No aplica webhook</div>
+                            <div class="card-body">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr><td class="text-muted" style="width:180px;">Solicitante</td><td><strong>${(d.userEmail || '—').replace(/</g,'&lt;')}</strong></td></tr>
+                                    <tr><td class="text-muted">Tomador</td><td>${(otc.takerEmail || '—').replace(/</g,'&lt;')}</td></tr>
+                                    <tr><td class="text-muted">Monto fiat recibido</td><td><strong>${fiatFmt(otc.fiatAmount)} ${otc.fiatCurrency || ''}</strong></td></tr>
+                                    <tr><td class="text-muted">Tasa aplicada</td><td>1 ${otc.cryptoAsset || ''} = ${rateFmt(otc.rate)} ${otc.fiatCurrency || ''}</td></tr>
+                                    <tr><td class="text-muted">Monto crypto acreditado</td><td>${fiatFmt(otc.cryptoAmount)} ${otc.cryptoAsset || ''}</td></tr>
+                                    ${otc.paymentReference ? `<tr><td class="text-muted">Referencia de pago</td><td>${String(otc.paymentReference).replace(/</g,'&lt;')}</td></tr>` : ''}
+                                    ${otc.paymentProof ? `<tr><td class="text-muted">Comprobante</td><td>${getOtcProofLink(otc.paymentProof)}</td></tr>` : ''}
+                                    <tr><td class="text-muted">Completado</td><td>${otc.completedAt ? formatDate(otc.completedAt) : '—'}</td></tr>
+                                </table>
+                                <p class="small text-muted mt-2 mb-0"><i class="fas fa-info-circle mr-1"></i> La confirmación es manual desde el Portal OTC. No aplica webhook PayPal.</p>
+                            </div>
+                        </div>
+                    `;
+                } else if (d.provider === 'OTC') {
+                    document.getElementById('webhookModalNoData').style.display = 'block';
+                    document.getElementById('webhookModalNoData').innerHTML = '<i class="fas fa-exchange-alt fa-2x text-success mb-2"></i><p>Depósito OTC BidiPago Express</p><p class="small">No se encontraron detalles de la orden OTC.</p>';
+                } else if (d.paypalWebhookPayload) {
+                    document.getElementById('webhookPayloadPre').textContent = d.paypalWebhookPayload;
+                    document.getElementById('webhookModalPayload').style.display = 'block';
+                    document.getElementById('webhookRefreshFeesBtn').style.display = 'inline-block';
+                    document.getElementById('webhookModalNoData').style.display = 'none';
+                } else {
+                    document.getElementById('webhookModalNoData').innerHTML = '<i class="fas fa-info-circle fa-2x mb-2"></i><p>No hay datos de webhook guardados. Puede que se haya confirmado desde el frontend.</p>';
+                }
+            } catch (e) {
+                document.getElementById('webhookModalLoading').style.display = 'none';
+                document.getElementById('webhookModalNoData').style.display = 'block';
+                document.getElementById('webhookModalNoData').innerHTML = '<i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i><p>Error al cargar: ' + (e.message || '') + '</p>';
+            }
+        }
+
+        async function refreshFeesFromWebhook() {
+            if (!currentWebhookDepositId) return;
+            const btn = document.getElementById('webhookRefreshFeesBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-1"></span> Recalculando...';
+            try {
+                const res = await fetch(AdminConfig.API_URL + '/admin/fiat/deposits/' + currentWebhookDepositId + '/refresh-fees', {
+                    method: 'PATCH',
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                const data = await res.json();
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Recalcular fees desde webhook';
+                if (data.updated) {
+                    $('#webhookModal').modal('hide');
+                    loadDeposits(currentPage);
+                } else {
+                    alert(data.message || 'No se pudo extraer datos del webhook');
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Recalcular fees desde webhook';
+                alert('Error: ' + (e.message || ''));
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.proof-view-btn')) {
+                e.preventDefault();
+                const btn = e.target.closest('.proof-view-btn');
+                const url = btn && btn.getAttribute('data-url');
+                if (url) showProofLightbox(url);
+            }
+        });
+
+        loadDeposits();
+    </script>
+</body>
+</html>

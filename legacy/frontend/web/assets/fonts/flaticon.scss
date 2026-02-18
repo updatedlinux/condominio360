@@ -1,0 +1,293 @@
+$flaticon-font: "flaticon";
+
+@font-face {
+    font-family: $flaticon-font;
+    src: url("./flaticon.ttf?d12c95950a03e0e5fd0c1b8ad3d73792") format("truetype"),
+url("./flaticon.woff?d12c95950a03e0e5fd0c1b8ad3d73792") format("woff"),
+url("./flaticon.woff2?d12c95950a03e0e5fd0c1b8ad3d73792") format("woff2"),
+url("./flaticon.eot?d12c95950a03e0e5fd0c1b8ad3d73792#iefix") format("embedded-opentype"),
+url("./flaticon.svg?d12c95950a03e0e5fd0c1b8ad3d73792#flaticon") format("svg");
+}
+
+i[class^="flaticon-"]:before, i[class*=" flaticon-"]:before {
+    font-family: flaticon !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+$flaticon-map: (
+    "percentage": "\f101",
+    "pie-chart": "\f102",
+    "analytics": "\f103",
+    "fluctuation": "\f104",
+    "calculator": "\f105",
+    "contract": "\f106",
+    "buy": "\f107",
+    "auction": "\f108",
+    "point-of-service": "\f109",
+    "archives": "\f10a",
+    "analytics-1": "\f10b",
+    "sell": "\f10c",
+    "target": "\f10d",
+    "newspaper": "\f10e",
+    "donation": "\f10f",
+    "loss": "\f110",
+    "bank": "\f111",
+    "apple": "\f112",
+    "linkedin": "\f113",
+    "phone-call": "\f114",
+    "location-pin": "\f115",
+    "web": "\f116",
+    "calendar": "\f117",
+    "check-mark": "\f118",
+    "email": "\f119",
+    "star": "\f11a",
+    "cheque": "\f11b",
+    "twitter": "\f11c",
+    "instagram": "\f11d",
+    "facebook": "\f11e",
+    "oil": "\f11f",
+    "bar-chart": "\f120",
+    "abacus": "\f121",
+    "book": "\f122",
+    "time-is-money": "\f123",
+    "shield": "\f124",
+    "atm": "\f125",
+    "money": "\f126",
+    "analytics-2": "\f127",
+    "briefcase": "\f128",
+    "search": "\f129",
+    "levels": "\f12a",
+    "pin-code": "\f12b",
+    "loss-1": "\f12c",
+    "withdraw": "\f12d",
+    "money-1": "\f12e",
+    "exchange": "\f12f",
+    "user": "\f130",
+    "playstore": "\f131",
+    "right-arrow": "\f132",
+    "down-arrow": "\f133",
+    "left-quote": "\f134",
+    "wallet": "\f135",
+    "money-bag": "\f136",
+    "balance": "\f137",
+    "profits": "\f138",
+    "gold-ingot": "\f139",
+    "presentation": "\f13a",
+    "businessman": "\f13b",
+    "businessman-1": "\f13c",
+    "chat": "\f13d",
+    "bar-chart-1": "\f13e",
+    "purse": "\f13f",
+    "id-card": "\f140",
+    "payment-method": "\f141",
+    "money-2": "\f142",
+    "safebox": "\f143",
+);
+
+.flaticon-percentage:before {
+    content: map-get($flaticon-map, "percentage");
+}
+.flaticon-pie-chart:before {
+    content: map-get($flaticon-map, "pie-chart");
+}
+.flaticon-analytics:before {
+    content: map-get($flaticon-map, "analytics");
+}
+.flaticon-fluctuation:before {
+    content: map-get($flaticon-map, "fluctuation");
+}
+.flaticon-calculator:before {
+    content: map-get($flaticon-map, "calculator");
+}
+.flaticon-contract:before {
+    content: map-get($flaticon-map, "contract");
+}
+.flaticon-buy:before {
+    content: map-get($flaticon-map, "buy");
+}
+.flaticon-auction:before {
+    content: map-get($flaticon-map, "auction");
+}
+.flaticon-point-of-service:before {
+    content: map-get($flaticon-map, "point-of-service");
+}
+.flaticon-archives:before {
+    content: map-get($flaticon-map, "archives");
+}
+.flaticon-analytics-1:before {
+    content: map-get($flaticon-map, "analytics-1");
+}
+.flaticon-sell:before {
+    content: map-get($flaticon-map, "sell");
+}
+.flaticon-target:before {
+    content: map-get($flaticon-map, "target");
+}
+.flaticon-newspaper:before {
+    content: map-get($flaticon-map, "newspaper");
+}
+.flaticon-donation:before {
+    content: map-get($flaticon-map, "donation");
+}
+.flaticon-loss:before {
+    content: map-get($flaticon-map, "loss");
+}
+.flaticon-bank:before {
+    content: map-get($flaticon-map, "bank");
+}
+.flaticon-apple:before {
+    content: map-get($flaticon-map, "apple");
+}
+.flaticon-linkedin:before {
+    content: map-get($flaticon-map, "linkedin");
+}
+.flaticon-phone-call:before {
+    content: map-get($flaticon-map, "phone-call");
+}
+.flaticon-location-pin:before {
+    content: map-get($flaticon-map, "location-pin");
+}
+.flaticon-web:before {
+    content: map-get($flaticon-map, "web");
+}
+.flaticon-calendar:before {
+    content: map-get($flaticon-map, "calendar");
+}
+.flaticon-check-mark:before {
+    content: map-get($flaticon-map, "check-mark");
+}
+.flaticon-email:before {
+    content: map-get($flaticon-map, "email");
+}
+.flaticon-star:before {
+    content: map-get($flaticon-map, "star");
+}
+.flaticon-cheque:before {
+    content: map-get($flaticon-map, "cheque");
+}
+.flaticon-twitter:before {
+    content: map-get($flaticon-map, "twitter");
+}
+.flaticon-instagram:before {
+    content: map-get($flaticon-map, "instagram");
+}
+.flaticon-facebook:before {
+    content: map-get($flaticon-map, "facebook");
+}
+.flaticon-oil:before {
+    content: map-get($flaticon-map, "oil");
+}
+.flaticon-bar-chart:before {
+    content: map-get($flaticon-map, "bar-chart");
+}
+.flaticon-abacus:before {
+    content: map-get($flaticon-map, "abacus");
+}
+.flaticon-book:before {
+    content: map-get($flaticon-map, "book");
+}
+.flaticon-time-is-money:before {
+    content: map-get($flaticon-map, "time-is-money");
+}
+.flaticon-shield:before {
+    content: map-get($flaticon-map, "shield");
+}
+.flaticon-atm:before {
+    content: map-get($flaticon-map, "atm");
+}
+.flaticon-money:before {
+    content: map-get($flaticon-map, "money");
+}
+.flaticon-analytics-2:before {
+    content: map-get($flaticon-map, "analytics-2");
+}
+.flaticon-briefcase:before {
+    content: map-get($flaticon-map, "briefcase");
+}
+.flaticon-search:before {
+    content: map-get($flaticon-map, "search");
+}
+.flaticon-levels:before {
+    content: map-get($flaticon-map, "levels");
+}
+.flaticon-pin-code:before {
+    content: map-get($flaticon-map, "pin-code");
+}
+.flaticon-loss-1:before {
+    content: map-get($flaticon-map, "loss-1");
+}
+.flaticon-withdraw:before {
+    content: map-get($flaticon-map, "withdraw");
+}
+.flaticon-money-1:before {
+    content: map-get($flaticon-map, "money-1");
+}
+.flaticon-exchange:before {
+    content: map-get($flaticon-map, "exchange");
+}
+.flaticon-user:before {
+    content: map-get($flaticon-map, "user");
+}
+.flaticon-playstore:before {
+    content: map-get($flaticon-map, "playstore");
+}
+.flaticon-right-arrow:before {
+    content: map-get($flaticon-map, "right-arrow");
+}
+.flaticon-down-arrow:before {
+    content: map-get($flaticon-map, "down-arrow");
+}
+.flaticon-left-quote:before {
+    content: map-get($flaticon-map, "left-quote");
+}
+.flaticon-wallet:before {
+    content: map-get($flaticon-map, "wallet");
+}
+.flaticon-money-bag:before {
+    content: map-get($flaticon-map, "money-bag");
+}
+.flaticon-balance:before {
+    content: map-get($flaticon-map, "balance");
+}
+.flaticon-profits:before {
+    content: map-get($flaticon-map, "profits");
+}
+.flaticon-gold-ingot:before {
+    content: map-get($flaticon-map, "gold-ingot");
+}
+.flaticon-presentation:before {
+    content: map-get($flaticon-map, "presentation");
+}
+.flaticon-businessman:before {
+    content: map-get($flaticon-map, "businessman");
+}
+.flaticon-businessman-1:before {
+    content: map-get($flaticon-map, "businessman-1");
+}
+.flaticon-chat:before {
+    content: map-get($flaticon-map, "chat");
+}
+.flaticon-bar-chart-1:before {
+    content: map-get($flaticon-map, "bar-chart-1");
+}
+.flaticon-purse:before {
+    content: map-get($flaticon-map, "purse");
+}
+.flaticon-id-card:before {
+    content: map-get($flaticon-map, "id-card");
+}
+.flaticon-payment-method:before {
+    content: map-get($flaticon-map, "payment-method");
+}
+.flaticon-money-2:before {
+    content: map-get($flaticon-map, "money-2");
+}
+.flaticon-safebox:before {
+    content: map-get($flaticon-map, "safebox");
+}

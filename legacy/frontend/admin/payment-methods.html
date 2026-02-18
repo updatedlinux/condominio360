@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Métodos de Pago</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+
+    <style>
+        /* Custom sidebar colors - orange/black */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+
+        .field-row {
+            background-color: #f8f9fc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #e3e6f0;
+        }
+
+        .field-remove {
+            color: #e74a3b;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'payment-methods';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-2 text-gray-800">Definiciones de Métodos de Pago</h1>
+                    <p class="mb-4">Gestiona los métodos de pago disponibles para el módulo P2P.</p>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <button class="btn btn-primary mb-3" onclick="openCreateModal()">
+                                <i class="fas fa-plus"></i> Nuevo Método
+                            </button>
+                            <div class="card shadow mb-4">
+                                <div
+                                    class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap">
+                                    <h6 class="m-0 font-weight-bold text-primary">Listado de Métodos</h6>
+                                    <div class="form-inline mt-2 mt-md-0">
+                                        <input type="text" class="form-control bg-light border-0 small"
+                                            id="searchMethods" placeholder="Buscar por nombre o banco..."
+                                            aria-label="Search" onkeyup="handleSearch()">
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="methodsTable" width="100%"
+                                            cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Logo</th>
+                                                    <th>Código</th>
+                                                    <th>Nombre</th>
+                                                    <th>Moneda</th>
+                                                    <th>Estado</th>
+                                                    <th>Orden</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="methodsTableBody">
+                                                <!-- Dynamic Content -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Pagination Controls -->
+                                    <nav aria-label="Page navigation" class="mt-3">
+                                        <ul class="pagination justify-content-center" id="paginationControls">
+                                            <!-- Dynamic Content -->
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Method Modal -->
+    <div class="modal fade" id="methodModal" tabindex="-1" role="dialog" aria-labelledby="methodModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="methodModalLabel">Método de Pago</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="methodForm">
+                        <input type="hidden" id="methodId">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="code">Código (Único)</label>
+                                <input type="text" class="form-control" id="code" required
+                                    placeholder="ej. BANK_TRANSFER">
+                                <small class="form-text text-muted">No se puede cambiar una vez creado.</small>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="name">Nombre Mostrado</label>
+                                <input type="text" class="form-control" id="name" required
+                                    placeholder="ej. Transferencia Bancaria">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-12">
+                                <label for="currency">Moneda Asociada</label>
+                                <select class="form-control" id="currency" required>
+                                    <option value="">Cargando monedas...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="logoUpload">Logo</label>
+                                <div class="input-group mb-2">
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="logoUpload" accept="image/*">
+                                        <label class="custom-file-label" for="logoUpload" id="logoUploadLabel">Elegir
+                                            archivo...</label>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="logoUrl">
+                                <div class="text-center">
+                                    <img id="logoPreview" src="" alt="Logo Preview" class="img-fluid"
+                                        style="max-height: 60px; display: none;">
+                                </div>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label for="displayOrder">Orden</label>
+                                <input type="number" class="form-control" id="displayOrder" value="0">
+                            </div>
+                            <div class="form-group col-md-3 d-flex align-items-center">
+                                <div class="custom-control custom-checkbox mt-4">
+                                    <input type="checkbox" class="custom-control-input" id="isActive" checked>
+                                    <label class="custom-control-label" for="isActive">Activo</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="m-0">Configuración de Campos</h5>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addField()">
+                                <i class="fas fa-plus"></i> Agregar Campo
+                            </button>
+                        </div>
+
+                        <div id="fieldsContainer">
+                            <!-- Field Rows will be added here -->
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" type="button" onclick="saveMethod()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template for Field Row -->
+    <template id="fieldRowTemplate">
+        <div class="field-row">
+            <div class="form-row align-items-end">
+                <div class="form-group col-md-3">
+                    <label class="small">Nombre ID (key)</label>
+                    <input type="text" class="form-control form-control-sm field-name" placeholder="bankName" required>
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="small">Etiqueta</label>
+                    <input type="text" class="form-control form-control-sm field-label" placeholder="Nombre Banco"
+                        required>
+                </div>
+                <div class="form-group col-md-2">
+                    <label class="small">Tipo</label>
+                    <select class="form-control form-control-sm field-type" onchange="toggleOptions(this)">
+                        <option value="text">Texto</option>
+                        <option value="number">Número</option>
+                        <option value="select">Select</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <label class="small">Mapping</label>
+                    <select class="form-control form-control-sm field-mapping">
+                        <option value="field1">Field 1</option>
+                        <option value="field2">Field 2</option>
+                        <option value="field3">Field 3</option>
+                        <option value="field4">Field 4</option>
+                        <option value="details">Details (JSON)</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-1 text-center">
+                    <label class="small d-block">Req</label>
+                    <input type="checkbox" class="field-required">
+                </div>
+                <div class="form-group col-md-1">
+                    <div class="field-remove" onclick="removeField(this)">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row options-container" style="display:none;">
+                <div class="col-12">
+                    <label class="small">Opciones (separadas por coma)</label>
+                    <input type="text" class="form-control form-control-sm field-options"
+                        placeholder="Opción 1, Opción 2">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">¿Listo para salir?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" si estás listo para terminar tu sesión actual.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <a class="btn btn-primary" href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <!-- Page level script -->
+    <script src="js/payment-methods.js?v=2"></script>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        if (!AdminConfig.checkAuth()) {
+            // Redirect handled
+        } else {
+            // Load Admin Email if available (optional)
+            const user = AdminConfig.getUser();
+            if (user && user.email) {
+                document.getElementById('adminEmail').textContent = user.email;
+            }
+            loadMethods();
+            loadCurrencies();
+        }
+    </script>
+
+</body>
+
+</html>

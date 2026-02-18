@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Conversor de Monedas - BidiPago</title>
+
+    <style>
+        /* Sidebar styles (same as dashboard) */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Converter specific styles */
+        .converter-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .converter-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .converter-card h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .converter-card h2 i {
+            color: #ee6a3e;
+            font-size: 2rem;
+        }
+
+        /* Two column converter layout */
+        .converter-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .converter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .swap-btn-container {
+                transform: rotate(90deg);
+            }
+        }
+
+        .converter-side {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s;
+        }
+
+        .converter-side:focus-within {
+            border-color: #ee6a3e;
+        }
+
+        .converter-side-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .asset-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .asset-selector:hover {
+            border-color: #ee6a3e;
+        }
+
+        .asset-selector img {
+            width: 36px;
+            height: 36px;
+        }
+
+        .asset-selector .asset-info {
+            flex: 1;
+        }
+
+        .asset-selector .asset-symbol {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .asset-selector .asset-balance {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .asset-selector .dropdown-arrow {
+            color: #aaa;
+            font-size: 1.2rem;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: right;
+            background: #fff;
+        }
+
+        .amount-input:focus {
+            outline: none;
+            border-color: #ee6a3e;
+        }
+
+        .usd-equivalent {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #28a745;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* Swap button */
+        .swap-btn-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .swap-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border: none;
+            color: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(238, 106, 62, 0.3);
+        }
+
+        .swap-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 6px 20px rgba(238, 106, 62, 0.4);
+        }
+
+        /* Fee display */
+        .fee-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #fff5f0 0%, #fff9f7 100%);
+            border-radius: 10px;
+            border: 1px solid #ffcbb8;
+            margin-bottom: 25px;
+        }
+
+        .fee-display .fee-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .fee-display .fee-value {
+            font-weight: 700;
+            color: #ee6a3e;
+            font-size: 1rem;
+        }
+
+        .rate-display {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .rate-display strong {
+            color: #333;
+        }
+
+        /* Convert button */
+        .btn-convert {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-convert:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(238, 106, 62, 0.35);
+        }
+
+        .btn-convert:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d3f9d8;
+            color: #2b8a3e;
+            border: 1px solid #b2f2bb;
+        }
+
+        .alert-danger {
+            background: #ffe3e3;
+            color: #c92a2a;
+            border: 1px solid #ffc9c9;
+        }
+
+        /* Asset dropdown */
+        .asset-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .asset-dropdown.show {
+            display: block;
+        }
+
+        .asset-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .asset-dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .asset-dropdown-item img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .asset-dropdown-item .name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .asset-dropdown-item .balance {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .selector-wrapper {
+            position: relative;
+        }
+
+        /* History */
+        .history-card {
+            margin-top: 30px;
+        }
+
+        .history-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 18px 20px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .history-item .info {
+            flex: 1;
+        }
+
+        .history-item .conversion-flow {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-item .conversion-flow i {
+            color: #ee6a3e;
+        }
+
+        .history-item .date {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .history-item .amounts {
+            text-align: right;
+        }
+
+        .history-item .amount-from {
+            font-size: 0.9rem;
+            color: #c92a2a;
+        }
+
+        .history-item .amount-to {
+            font-weight: 700;
+            color: #2b8a3e;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ee6a3e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* BiUSD badge */
+        .biusd-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        /* Locked Balance Banner */
+        .locked-balance-banner {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            border: 2px solid #f4a460;
+            display: none;
+        }
+
+        .locked-balance-banner.show {
+            display: block;
+        }
+
+        .locked-balance-banner h4 {
+            color: #8b4513;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+        }
+
+        .locked-balance-banner h4 i {
+            font-size: 1.4rem;
+        }
+
+        .locked-balance-banner p {
+            color: #5d361a;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .locked-balance-banner .locked-amount {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #8b4513;
+        }
+
+        .locked-balance-banner .btn-use-locked {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .locked-balance-banner .btn-use-locked:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(238, 106, 62, 0.4);
+        }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination-controls button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background: #ee6a3e;
+            color: #fff;
+            border-color: #ee6a3e;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls .page-info {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter" class="active"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a>
+            </li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <div class="converter-container">
+            <!-- Converter Card -->
+            <div class="converter-card">
+                <h2><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</h2>
+
+                <!-- Locked Balance Banner -->
+                <div class="locked-balance-banner" id="lockedBalanceBanner">
+                    <h4><i class="ri-coins-line"></i> Ganancias de BidiInvest Disponibles</h4>
+                    <p>Tienes ganancias de tu staking pendientes por convertir. Conviértelas a otra moneda para
+                        poder usarlas.</p>
+                    <div class="locked-amount" id="lockedAmountDisplay">$0.00</div>
+                    <button class="btn-use-locked" onclick="useLockedBalance()">
+                        <i class="ri-exchange-funds-line"></i> Usar Balance Bloqueado
+                    </button>
+                </div>
+
+                <div id="errorMessage" class="alert alert-danger"></div>
+                <div id="successMessage" class="alert alert-success"></div>
+
+                <!-- Converter Grid -->
+                <div class="converter-grid">
+                    <!-- From Side -->
+                    <div class="converter-side">
+                        <div class="converter-side-label">Tienes</div>
+                        <div class="selector-wrapper">
+                            <div class="asset-selector" id="fromAssetSelector" onclick="toggleDropdown('from')">
+                                <img src="/assets/coins/usdt.svg" alt="" id="fromAssetIcon">
+                                <div class="asset-info">
+                                    <div class="asset-symbol" id="fromAssetSymbol">USDT</div>
+                                    <div class="asset-balance">Balance: <span id="fromAssetBalance">0.00</span></div>
+                                </div>
+                                <i class="ri-arrow-down-s-line dropdown-arrow"></i>
+                            </div>
+                            <div class="asset-dropdown" id="fromDropdown"></div>
+                        </div>
+                        <input type="number" class="amount-input" id="fromAmount" placeholder="0.00" step="0.00000001"
+                            min="0">
+                        <div class="usd-equivalent" id="fromUsdEquivalent">≈ $0.00 USD</div>
+                    </div>
+
+                    <!-- Swap Button -->
+                    <div class="swap-btn-container">
+                        <button class="swap-btn" onclick="swapAssets()" title="Intercambiar">
+                            <i class="ri-arrow-left-right-line"></i>
+                        </button>
+                    </div>
+
+                    <!-- To Side -->
+                    <div class="converter-side">
+                        <div class="converter-side-label">Recibirás</div>
+                        <div class="selector-wrapper">
+                            <div class="asset-selector" id="toAssetSelector">
+                                <img src="/assets/coins/biusd.svg" alt="" id="toAssetIcon">
+                                <div class="asset-info">
+                                    <div class="asset-symbol" id="toAssetSymbol">BiUSD</div>
+                                    <div class="asset-balance">Balance: <span id="toAssetBalance">0.00</span></div>
+                                </div>
+                                <i class="ri-arrow-down-s-line dropdown-arrow" id="toDropdownArrow"
+                                    style="display: none;"></i>
+                            </div>
+                            <div class="asset-dropdown" id="toDropdown"></div>
+                        </div>
+                        <input type="number" class="amount-input" id="toAmount" placeholder="0.00" readonly
+                            style="background: #f0f0f0;">
+                        <div class="usd-equivalent" id="toUsdEquivalent">≈ $0.00 USD</div>
+                    </div>
+                </div>
+
+                <!-- Fee Display -->
+                <div class="fee-display">
+                    <span class="fee-label"><i class="ri-percent-line"></i> Comisión de conversión</span>
+                    <span class="fee-value" id="feeAmount">1% (0.00)</span>
+                </div>
+
+                <!-- Rate Display -->
+                <div class="rate-display" id="rateDisplay">
+                    Tasa: <strong>1 USDT = 1 BiUSD</strong>
+                </div>
+
+                <!-- Convert Button -->
+                <button class="btn-convert" id="convertBtn" onclick="executeConversion()" disabled>
+                    <i class="ri-exchange-funds-line"></i> Convertir Ahora
+                </button>
+            </div>
+
+            <!-- History Card -->
+            <div class="converter-card history-card">
+                <h3><i class="ri-history-line"></i> Historial de Conversiones</h3>
+                <div id="historyContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/jquery.min.js"></script>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // State
+        let wallets = {};
+        let selectedFromAsset = 'USDT';
+        let selectedToAsset = 'BIUSD';
+        let currentQuote = null;
+        let lockedBalanceAmount = 0; // Track locked balance from investments
+        let historyCurrentPage = 1;  // Current page for history pagination
+        let historyTotalPages = 1;   // Total pages
+        const HISTORY_PAGE_SIZE = 5; // Items per page
+        const FEE_PERCENT = 0.01; // 1%
+
+        // Supported assets for conversion
+        const CONVERTIBLE_ASSETS = ['USDT', 'USDC', 'BIUSD', 'BTC', 'ETH', 'LTC'];
+
+        // Asset icons mapping
+        const ASSET_ICONS = {
+            'USDT': '/assets/coins/usdt.svg',
+            'USDC': '/assets/coins/usdc.svg',
+            'BIUSD': '/assets/coins/biusd.svg',
+            'BTC': '/assets/coins/btc.svg',
+            'ETH': '/assets/coins/eth.svg',
+            'LTC': '/assets/coins/ltc.svg'
+        };
+
+        // Init
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            loadWallets();
+            loadHistory();
+            loadLockedBalance(); // Load locked balance from investments
+
+            // Listen for amount changes
+            document.getElementById('fromAmount').addEventListener('input', debounce(updateQuote, 300));
+        });
+
+        // Toggle sidebar
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+        });
+
+        // Debounce helper
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Load locked balance from BidiInvest
+        async function loadLockedBalance() {
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch('/api/invest/locked-balance', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+
+                // Only show banner for PROFITS (ganancias), not locked capital (staking activo)
+                if (data.success && data.lockedProfits > 0) {
+                    lockedBalanceAmount = data.lockedProfits;
+                    document.getElementById('lockedAmountDisplay').textContent = '$' + lockedBalanceAmount.toFixed(2);
+                    document.getElementById('lockedBalanceBanner').classList.add('show');
+                } else {
+                    lockedBalanceAmount = 0;
+                    document.getElementById('lockedBalanceBanner').classList.remove('show');
+                }
+            } catch (error) {
+                console.error('Error loading locked balance:', error);
+            }
+        }
+
+        // Use locked balance - auto-select BiUSD and set the amount
+        function useLockedBalance() {
+            if (lockedBalanceAmount <= 0) return;
+
+            // Select BiUSD as source (locked balance is in BiUSD)
+            selectAsset('from', 'BIUSD');
+
+            // Set the locked amount
+            document.getElementById('fromAmount').value = lockedBalanceAmount.toFixed(2);
+
+            // Trigger quote update
+            updateQuote();
+
+            // Scroll to the converter form
+            document.querySelector('.converter-grid').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Load wallets
+        async function loadWallets() {
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Error cargando wallets');
+
+                const data = await response.json();
+
+                // Aggregate balances by asset
+                wallets = {};
+                for (const asset of CONVERTIBLE_ASSETS) {
+                    wallets[asset] = { balance: 0, symbol: asset };
+                }
+
+                for (const wallet of (data.wallets || [])) {
+                    const symbol = wallet.assetSymbol;
+                    if (CONVERTIBLE_ASSETS.includes(symbol)) {
+                        wallets[symbol].balance += Number(wallet.balance) || 0;
+                    }
+                }
+
+                // Update UI
+                updateAssetDisplay('from', selectedFromAsset);
+                updateAssetDisplay('to', selectedToAsset);
+                populateDropdowns();
+            } catch (error) {
+                console.error('Error loading wallets:', error);
+                showError('Error al cargar los balances');
+            }
+        }
+
+        // Populate dropdowns based on conversion rules:
+        // - FROM non-BiUSD → TO must be BiUSD (no dropdown needed)
+        // - FROM BiUSD → TO can be any other asset
+        function populateDropdowns() {
+            const fromDropdown = document.getElementById('fromDropdown');
+            const toDropdown = document.getElementById('toDropdown');
+            const toSelector = document.getElementById('toAssetSelector');
+            const toDropdownArrow = document.getElementById('toDropdownArrow');
+
+            fromDropdown.innerHTML = '';
+            toDropdown.innerHTML = '';
+
+            // FROM dropdown: Show all assets with balance (user can select any)
+            for (const asset of CONVERTIBLE_ASSETS) {
+                const balance = wallets[asset]?.balance || 0;
+
+                // Only show assets with balance > 0 for FROM, OR BiUSD (even with 0)
+                if (balance > 0 || asset === 'BIUSD') {
+                    fromDropdown.innerHTML += `
+                        <div class="asset-dropdown-item" onclick="selectAsset('from', '${asset}')">
+                            <img src="${ASSET_ICONS[asset]}" alt="${asset}">
+                            <div>
+                                <div class="name">${asset}</div>
+                                <div class="balance">Balance: ${formatNumber(balance, 8)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // TO dropdown depends on FROM selection
+            if (selectedFromAsset === 'BIUSD') {
+                // FROM is BiUSD → TO can be any OTHER asset
+                toDropdownArrow.style.display = 'block';
+                toSelector.onclick = () => toggleDropdown('to');
+                toSelector.style.cursor = 'pointer';
+
+                for (const asset of CONVERTIBLE_ASSETS) {
+                    if (asset === 'BIUSD') continue; // Can't convert BiUSD to BiUSD
+                    const balance = wallets[asset]?.balance || 0;
+                    toDropdown.innerHTML += `
+                        <div class="asset-dropdown-item" onclick="selectAsset('to', '${asset}')">
+                            <img src="${ASSET_ICONS[asset]}" alt="${asset}">
+                            <div>
+                                <div class="name">${asset}</div>
+                                <div class="balance">Balance: ${formatNumber(balance, 8)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                // FROM is NOT BiUSD → TO must be BiUSD (no dropdown)
+                selectedToAsset = 'BIUSD';
+                toDropdownArrow.style.display = 'none';
+                toSelector.onclick = null;
+                toSelector.style.cursor = 'default';
+                updateAssetDisplay('to', 'BIUSD');
+            }
+        }
+
+        // Toggle dropdown
+        function toggleDropdown(which) {
+            // Only allow 'to' dropdown if FROM is BiUSD
+            if (which === 'to' && selectedFromAsset !== 'BIUSD') {
+                return;
+            }
+
+            const dropdown = document.getElementById(which + 'Dropdown');
+            const isOpen = dropdown.classList.contains('show');
+
+            // Close all dropdowns
+            document.querySelectorAll('.asset-dropdown').forEach(d => d.classList.remove('show'));
+
+            if (!isOpen) {
+                dropdown.classList.add('show');
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.selector-wrapper')) {
+                document.querySelectorAll('.asset-dropdown').forEach(d => d.classList.remove('show'));
+            }
+        });
+
+        // Select asset
+        function selectAsset(which, asset) {
+            if (which === 'from') {
+                selectedFromAsset = asset;
+                // If FROM is not BiUSD, TO must be BiUSD
+                if (asset !== 'BIUSD') {
+                    selectedToAsset = 'BIUSD';
+                } else {
+                    // If FROM becomes BiUSD, set TO to first non-BiUSD asset
+                    selectedToAsset = CONVERTIBLE_ASSETS.find(a => a !== 'BIUSD') || 'USDT';
+                }
+                updateAssetDisplay('to', selectedToAsset);
+            } else {
+                // Only allow selecting TO if FROM is BiUSD
+                if (selectedFromAsset === 'BIUSD') {
+                    selectedToAsset = asset;
+                }
+            }
+
+            updateAssetDisplay(which, which === 'from' ? selectedFromAsset : selectedToAsset);
+            populateDropdowns();
+            document.querySelectorAll('.asset-dropdown').forEach(d => d.classList.remove('show'));
+            updateQuote();
+        }
+
+        // Update asset display
+        function updateAssetDisplay(which, asset) {
+            const balance = wallets[asset]?.balance || 0;
+
+            document.getElementById(which + 'AssetIcon').src = ASSET_ICONS[asset];
+            document.getElementById(which + 'AssetSymbol').textContent = asset;
+            document.getElementById(which + 'AssetBalance').textContent = formatNumber(balance, 8);
+        }
+
+        // Swap assets
+        function swapAssets() {
+            // Can only swap if current FROM is BiUSD (so it becomes TO)
+            // OR if current TO is BiUSD (so it becomes FROM)
+            // This effectively swaps direction: Asset→BiUSD becomes BiUSD→Asset
+
+            const temp = selectedFromAsset;
+            selectedFromAsset = selectedToAsset;
+            selectedToAsset = temp;
+
+            // Ensure the rule is still followed after swap
+            if (selectedFromAsset !== 'BIUSD' && selectedToAsset !== 'BIUSD') {
+                // This shouldn't happen, but fallback
+                selectedToAsset = 'BIUSD';
+            }
+
+            updateAssetDisplay('from', selectedFromAsset);
+            updateAssetDisplay('to', selectedToAsset);
+            populateDropdowns();
+
+            // Clear amount
+            document.getElementById('fromAmount').value = '';
+            updateQuote();
+        }
+
+        // Update quote
+        async function updateQuote() {
+            const amount = parseFloat(document.getElementById('fromAmount').value);
+
+            if (!amount || amount <= 0) {
+                document.getElementById('toAmount').value = '';
+                document.getElementById('fromUsdEquivalent').textContent = '≈ $0.00 USD';
+                document.getElementById('toUsdEquivalent').textContent = '≈ $0.00 USD';
+                document.getElementById('feeAmount').textContent = '1% (0.00)';
+                document.getElementById('convertBtn').disabled = true;
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch(`/api/converter/quote?fromAsset=${selectedFromAsset}&toAsset=${selectedToAsset}&amount=${amount}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error getting quote');
+                }
+
+                const quote = await response.json();
+                currentQuote = quote;
+
+                // Update UI
+                document.getElementById('toAmount').value = formatNumber(quote.toAmount, 8);
+                // Use USD values from API (properly calculated on backend)
+                document.getElementById('fromUsdEquivalent').textContent = `≈ $${formatNumber(quote.fromUsdValue, 2)} USD`;
+                document.getElementById('toUsdEquivalent').textContent = `≈ $${formatNumber(quote.toUsdValue, 2)} USD`;
+                document.getElementById('feeAmount').textContent = `1% (${formatNumber(quote.feeAmount, 8)} ${selectedFromAsset})`;
+                document.getElementById('rateDisplay').innerHTML = `Tasa: <strong>1 ${selectedFromAsset} = ${formatNumber(quote.exchangeRate, 8)} ${selectedToAsset}</strong>`;
+
+                // Enable button if sufficient balance
+                const balance = wallets[selectedFromAsset]?.balance || 0;
+                document.getElementById('convertBtn').disabled = amount > balance;
+
+            } catch (error) {
+                console.error('Error getting quote:', error);
+                showError(error.message);
+            }
+        }
+
+        // Execute conversion
+        async function executeConversion() {
+            const amount = parseFloat(document.getElementById('fromAmount').value);
+
+            if (!amount || amount <= 0) {
+                showError('Por favor ingresa un monto válido');
+                return;
+            }
+
+            const balance = wallets[selectedFromAsset]?.balance || 0;
+            if (amount > balance) {
+                showError('Balance insuficiente');
+                return;
+            }
+
+            const btn = document.getElementById('convertBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ri-loader-4-line"></i> Procesando...';
+
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch('/api/converter/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fromAsset: selectedFromAsset,
+                        toAsset: selectedToAsset,
+                        amount: amount
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Error en la conversión');
+                }
+
+                showSuccess(`¡Conversión exitosa! Convertiste ${formatNumber(result.conversion.fromAmount, 8)} ${result.conversion.fromAsset} a ${formatNumber(result.conversion.toAmount, 8)} ${result.conversion.toAsset}`);
+
+                // Reset form
+                document.getElementById('fromAmount').value = '';
+                document.getElementById('toAmount').value = '';
+                document.getElementById('toUsdEquivalent').textContent = '≈ $0.00 USD';
+                document.getElementById('fromUsdEquivalent').textContent = '≈ $0.00 USD';
+                document.getElementById('feeAmount').textContent = '1% (0.00)';
+
+                // Reload data and update UI with new balances
+                await loadWallets();
+                // Update display with fresh balance data
+                updateAssetDisplay('from', selectedFromAsset);
+                updateAssetDisplay('to', selectedToAsset);
+                populateDropdowns();
+                await loadHistory();
+                await loadLockedBalance(); // Refresh locked balance banner
+
+            } catch (error) {
+                console.error('Error converting:', error);
+                showError(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ri-exchange-funds-line"></i> Convertir Ahora';
+            }
+        }
+
+        // Load history with pagination
+        async function loadHistory(page = 1) {
+            const container = document.getElementById('historyContainer');
+            historyCurrentPage = page;
+            const offset = (page - 1) * HISTORY_PAGE_SIZE;
+
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch(`/api/converter/history?limit=${HISTORY_PAGE_SIZE}&offset=${offset}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Error cargando historial');
+
+                const data = await response.json();
+                historyTotalPages = Math.ceil(data.total / HISTORY_PAGE_SIZE) || 1;
+
+                if (data.conversions.length === 0 && page === 1) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="ri-exchange-dollar-line"></i>
+                            <p>No tienes conversiones aún</p>
+                            <small>Tus conversiones aparecerán aquí</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = data.conversions.map(c => `
+                    <div class="history-item">
+                        <div class="info">
+                            <div class="conversion-flow">
+                                ${c.fromAsset} <i class="ri-arrow-right-line"></i> ${c.toAsset}
+                            </div>
+                            <div class="date">${formatDate(c.createdAt)}</div>
+                        </div>
+                        <div class="amounts">
+                            <div class="amount-from">-${formatNumber(c.fromAmount, 8)} ${c.fromAsset}</div>
+                            <div class="amount-to">+${formatNumber(c.toAmount, 8)} ${c.toAsset}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add pagination controls if more than 1 page
+                if (historyTotalPages > 1) {
+                    html += `
+                        <div class="pagination-controls">
+                            <button onclick="loadHistory(${page - 1})" ${page <= 1 ? 'disabled' : ''}>
+                                <i class="ri-arrow-left-s-line"></i> Anterior
+                            </button>
+                            <span class="page-info">Página ${page} de ${historyTotalPages}</span>
+                            <button onclick="loadHistory(${page + 1})" ${page >= historyTotalPages ? 'disabled' : ''}>
+                                Siguiente <i class="ri-arrow-right-s-line"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading history:', error);
+                container.innerHTML = '<p style="text-align: center; color: #999;">Error al cargar historial</p>';
+            }
+        }
+
+        // Helpers
+        function formatNumber(num, decimals) {
+            return parseFloat(num || 0).toFixed(decimals).replace(/\.?0+$/, '') || '0';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('es-VE', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+    </script>
+</body>
+
+</html>

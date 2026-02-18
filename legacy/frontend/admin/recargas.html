@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Recargas Telefónicas</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fd7e14 !important; }
+        .sidebar .sidebar-brand { color: #fd7e14 !important; }
+        .sidebar-divider { border-top: 1px solid rgba(253,126,20,0.3) !important; }
+        .sidebar-heading { color: #fd7e14 !important; }
+        pre.webhook-payload { font-size: 0.75rem; max-height: 300px; overflow: auto; background: #f8f9fc; padding: 12px; border-radius: 6px; }
+    </style>
+</head>
+<body id="page-top">
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'recargas';</script>
+        <script src="js/admin-sidebar.js"></script>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Cerrar Sesión</a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="container-fluid">
+                    <h1 class="h3 mb-2 text-gray-800">Recargas Telefónicas</h1>
+                    <p class="mb-4">Historial de recargas de saldo (Reloadly Airtime) y eventos webhook.</p>
+
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between flex-wrap">
+                            <h6 class="m-0 font-weight-bold text-primary">Recargas realizadas (20 por página)</h6>
+                            <div class="d-flex align-items-center flex-wrap mt-2 mt-md-0">
+                                <input type="text" id="filterUserEmail" class="form-control form-control-sm mr-2" placeholder="Buscar por correo de usuario" style="max-width: 220px;" onkeypress="if(event.key==='Enter') doSearch();">
+                                <button class="btn btn-sm btn-outline-secondary mr-2" onclick="doSearch()" title="Buscar"><i class="fas fa-search"></i></button>
+                                <button class="btn btn-sm btn-primary" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm" width="100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Usuario</th>
+                                            <th>Operador</th>
+                                            <th>Teléfono</th>
+                                            <th>Monto USD</th>
+                                            <th>Estado</th>
+                                            <th>Webhook</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ordersTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div id="ordersPagination" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="sticky-footer bg-white">
+                    <div class="container my-auto">
+                        <div class="copyright text-center my-auto"><span>Copyright &copy; BidiPago 2026</span></div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Cerrar sesión</h5><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+                <div class="modal-body">¿Está seguro de que desea cerrar sesión?</div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="logout()">Cerrar sesión</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Detalle de recarga</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>ID:</strong> <span id="detailId"></span></p>
+                            <p class="mb-1"><strong>Usuario:</strong> <span id="detailUser"></span></p>
+                            <p class="mb-1"><strong>Operador:</strong> <span id="detailOperator"></span></p>
+                            <p class="mb-1"><strong>Teléfono:</strong> <span id="detailPhone"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Monto USD:</strong> <span id="detailAmount"></span></p>
+                            <p class="mb-1"><strong>Moneda pagada:</strong> <span id="detailCurrency"></span></p>
+                            <p class="mb-1"><strong>Estado:</strong> <span id="detailStatus"></span></p>
+                            <p class="mb-1"><strong>Fecha:</strong> <span id="detailDate"></span></p>
+                            <p class="mb-1"><strong>Webhook recibido:</strong> <span id="detailWebhookAt"></span></p>
+                            <p class="mb-1"><strong>Estado proveedor:</strong> <span id="detailProviderStatus"></span></p>
+                        </div>
+                    </div>
+                    <h6 class="font-weight-bold">Evento / Respuesta Reloadly (webhook o top-up)</h6>
+                    <pre class="webhook-payload" id="detailWebhookPayload">-</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="js/recargas-admin.js"></script>
+</body>
+</html>

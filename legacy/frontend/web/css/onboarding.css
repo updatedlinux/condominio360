@@ -1,0 +1,210 @@
+/**
+ * Estilos para el Modal de Onboarding
+ * Modal restrictivo con fondo blur que no se puede cerrar hasta completar
+ */
+
+.onboarding-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: none; /* Oculto por defecto, se mostrará con JS */
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.onboarding-modal-overlay.show {
+  display: flex;
+}
+
+.onboarding-modal-container {
+  background: #fff;
+  border-radius: 15px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.onboarding-modal-header {
+  padding: 25px 30px;
+  border-bottom: 2px solid #f0f0f0;
+  background: linear-gradient(135deg, #0f0e0e 0%, #1a1a1a 100%);
+  color: #fff;
+  border-radius: 15px 15px 0 0;
+}
+
+.onboarding-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.onboarding-progress {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #ee6a3e;
+  font-weight: 500;
+}
+
+.onboarding-modal-body {
+  padding: 30px;
+}
+
+.onboarding-step h4 {
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.onboarding-step .text-muted {
+  margin-bottom: 25px;
+  display: block;
+}
+
+.onboarding-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.onboarding-modal-footer .btn {
+  min-width: 150px;
+  padding: 10px 20px;
+  font-weight: 500;
+}
+
+/* Estilos para formularios */
+.onboarding-step .form-label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.onboarding-step .form-control {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 15px;
+  transition: all 0.3s;
+}
+
+.onboarding-step .form-control:focus {
+  border-color: #ee6a3e;
+  box-shadow: 0 0 0 0.2rem rgba(238, 106, 62, 0.25);
+}
+
+.onboarding-step .form-control.is-invalid {
+  border-color: #dc3545;
+}
+
+.onboarding-step .invalid-feedback {
+  display: block;
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 5px;
+}
+
+/* Botones */
+.btn-primary {
+  background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+  border: none;
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #d85a2e 0%, #ee7a4a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(238, 106, 62, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline-secondary {
+  border: 2px solid #6c757d;
+  color: #6c757d;
+  background: transparent;
+  transition: all 0.3s;
+}
+
+.btn-outline-secondary:hover {
+  background: #6c757d;
+  color: #fff;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+}
+
+.alert-info {
+  background: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  color: #004085;
+}
+
+.alert-info i {
+  margin-right: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .onboarding-modal-container {
+    max-width: 100%;
+    margin: 10px;
+    border-radius: 10px;
+  }
+  
+  .onboarding-modal-header {
+    padding: 20px;
+    border-radius: 10px 10px 0 0;
+  }
+  
+  .onboarding-modal-body {
+    padding: 20px;
+  }
+  
+  .onboarding-modal-footer {
+    flex-direction: column;
+  }
+  
+  .onboarding-modal-footer .btn {
+    width: 100%;
+  }
+}
+
+/* Animación de entrada */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.onboarding-modal-container {
+  animation: fadeIn 0.3s ease-out;
+}
+

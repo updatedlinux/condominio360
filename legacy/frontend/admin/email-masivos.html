@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Email Masivos</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fd7e14 !important; }
+        .sidebar .sidebar-brand { color: #fd7e14 !important; }
+        .sidebar-divider { border-top: 1px solid rgba(253,126,20,0.3) !important; }
+        .sidebar-heading { color: #fd7e14 !important; }
+        .banner-preview { max-height: 120px; border-radius: 6px; }
+        .recipient-list { max-height: 220px; overflow-y: auto; font-size: 0.85rem; }
+        .poll-badge { font-size: 0.75rem; }
+        .campaign-item-collapsed { cursor: pointer; }
+        .campaign-item-collapsed .chevron { transition: transform 0.2s; }
+        .campaign-item-collapsed.expanded .chevron { transform: rotate(180deg); }
+        .campaign-item-collapsed [role="button"]:hover { background: rgba(0,0,0,0.03); border-radius: 4px; }
+    </style>
+</head>
+<body id="page-top">
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'email-masivos';</script>
+        <script src="js/admin-sidebar.js"></script>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Cerrar Sesión</a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="container-fluid">
+                    <h1 class="h3 mb-2 text-gray-800">Email Masivos (Campañas)</h1>
+                    <p class="mb-4">Crea campañas de correo masivo. Segmenta por KYC y país como las notificaciones push. Programa fecha y hora de envío. Los correos se envían en lotes de 30 cada 2 minutos.</p>
+
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Nueva campaña</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="campaignForm">
+                                        <input type="hidden" id="editId" value="">
+                                        <div class="form-group">
+                                            <label>Título *</label>
+                                            <input type="text" class="form-control" id="inputTitle" required maxlength="255" placeholder="Ej: Nuevo servicio disponible">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Asunto del correo *</label>
+                                            <input type="text" class="form-control" id="inputSubject" required maxlength="255" placeholder="Lo que verá el usuario en su bandeja">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Contenido (cuerpo del correo) *</label>
+                                            <textarea class="form-control" id="inputBody" rows="4" required placeholder="Escribe el mensaje..."></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Imagen de cabecera (opcional)</label>
+                                            <div class="d-flex align-items-center">
+                                                <input type="file" class="form-control-file" id="inputBannerFile" accept="image/*" onchange="handleBannerSelect()">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm ml-2" onclick="clearBanner()" title="Quitar imagen">✕</button>
+                                            </div>
+                                            <div id="bannerPreview" class="mt-2" style="display:none;">
+                                                <img id="bannerPreviewImg" src="" alt="Banner" class="banner-preview img-thumbnail">
+                                            </div>
+                                            <input type="hidden" id="inputImageUrl" value="">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Fecha y hora de envío</label>
+                                            <small class="form-text text-muted d-block">Opcional. Si vacío, se envía al programar</small>
+                                            <input type="datetime-local" class="form-control" id="inputScheduledAt">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Segmentación KYC</label>
+                                            <small class="form-text text-muted">Vacío = todos los niveles</small>
+                                            <div class="d-flex flex-wrap">
+                                                <label class="mr-3"><input type="checkbox" name="kyc" value="NONE"> NONE</label>
+                                                <label class="mr-3"><input type="checkbox" name="kyc" value="L1"> L1</label>
+                                                <label class="mr-3"><input type="checkbox" name="kyc" value="L2"> L2</label>
+                                                <label class="mr-3"><input type="checkbox" name="kyc" value="L3"> L3</label>
+                                                <label><input type="checkbox" name="kyc" value="L4"> L4</label>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="selectAllKyc(true)">Todos</button> |
+                                            <button type="button" class="btn btn-sm btn-link p-0 mt-1" onclick="selectAllKyc(false)">Ninguno (todos)</button>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Segmentación por país</label>
+                                            <small class="form-text text-muted">Vacío = todos los países</small>
+                                            <select id="inputCountries" class="form-control" multiple size="6">
+                                                <option value="VES">Venezuela (VES)</option>
+                                                <option value="COP">Colombia (COP)</option>
+                                                <option value="ARS">Argentina (ARS)</option>
+                                                <option value="CLP">Chile (CLP)</option>
+                                                <option value="MXN">México (MXN)</option>
+                                                <option value="BRL">Brasil (BRL)</option>
+                                                <option value="PEN">Perú (PEN)</option>
+                                                <option value="BOB">Bolivia (BOB)</option>
+                                                <option value="UYU">Uruguay (UYU)</option>
+                                                <option value="DOP">República Dominicana (DOP)</option>
+                                                <option value="PYG">Paraguay (PYG)</option>
+                                            </select>
+                                            <small class="form-text text-muted">Ctrl+clic para varios. Vacío = todos.</small>
+                                        </div>
+                                        <div class="d-flex">
+                                            <button type="submit" class="btn btn-primary" id="btnSubmit">
+                                                <i class="fas fa-save mr-1"></i> Guardar borrador
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary ml-2" onclick="resetForm()">Cancelar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold text-primary">Campañas</h6>
+                                    <select id="filterStatus" class="form-control form-control-sm" style="max-width:140px" onchange="loadCampaigns()">
+                                        <option value="">Todas</option>
+                                        <option value="DRAFT">Borradores</option>
+                                        <option value="SCHEDULED">Programadas</option>
+                                        <option value="SENDING">Enviando</option>
+                                        <option value="COMPLETED">Completadas</option>
+                                        <option value="CANCELLED">Canceladas</option>
+                                    </select>
+                                </div>
+                                <div class="card-body">
+                                    <div id="campaignsList"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="sticky-footer bg-white">
+                    <div class="container my-auto">
+                        <div class="copyright text-center my-auto"><span>Copyright &copy; BidiPago 2026</span></div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Cerrar sesión</h5><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+                <div class="modal-body">¿Está seguro?</div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button><a href="login.html" class="btn btn-primary" onclick="localStorage.removeItem('adminToken');localStorage.removeItem('adminUser');">Cerrar sesión</a></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmModal" tabindex="-1" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalTitle"><i class="fas fa-question-circle text-primary mr-2"></i>Confirmar</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body" id="confirmModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmModalOkBtn">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="alertModal" tabindex="-1" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalTitle"><i class="fas fa-info-circle text-primary mr-2"></i>Información</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body" id="alertModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="alertModalOkBtn">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Detalle de campaña (enviados / pendientes / fallidos) con polling -->
+    <div class="modal fade" id="campaignDetailModal" tabindex="-1" data-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope-open-text mr-2"></i>
+                        <span id="detailCampaignTitle">Campaña</span>
+                        <span class="badge badge-secondary ml-2 poll-badge" id="detailStatusBadge">—</span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" onclick="closeDetailModal()"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <span class="text-muted">Total:</span> <strong id="detailTotal">0</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-success">Enviados:</span> <strong id="detailSent">0</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-warning">Pendientes:</span> <strong id="detailPending">0</strong>
+                        </div>
+                        <div class="col">
+                            <span class="text-danger">Fallidos:</span> <strong id="detailFailed">0</strong>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-success"><i class="fas fa-check-circle mr-1"></i> Enviados</h6>
+                            <div id="detailSentList" class="recipient-list list-group list-group-flush small"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-warning"><i class="fas fa-clock mr-1"></i> Pendientes</h6>
+                            <div id="detailPendingList" class="recipient-list list-group list-group-flush small"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-danger"><i class="fas fa-exclamation-circle mr-1"></i> Fallidos</h6>
+                            <div id="detailFailedList" class="recipient-list list-group list-group-flush small"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeDetailModal()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script>
+        if (!AdminConfig.checkAuth()) {}
+        document.getElementById('adminEmail').textContent = AdminConfig.getUser().email || 'Admin';
+
+        const API = AdminConfig.API_URL + '/admin/email-campaigns';
+        let campaignsCache = [];
+        let detailPollInterval = null;
+        let listPollInterval = null;
+        let currentDetailCampaignId = null;
+
+        function showConfirmModal(message, title) {
+            return new Promise(function (resolve) {
+                document.getElementById('confirmModalTitle').innerHTML = '<i class="fas fa-question-circle text-primary mr-2"></i>' + (title || 'Confirmar');
+                document.getElementById('confirmModalBody').textContent = message;
+                const modal = $('#confirmModal');
+                const okBtn = document.getElementById('confirmModalOkBtn');
+                function done(result) {
+                    modal.off('hidden.bs.modal', handler);
+                    modal.modal('hide');
+                    resolve(result);
+                }
+                function handler() { done(false); }
+                modal.one('hidden.bs.modal', handler);
+                okBtn.onclick = function () { done(true); };
+                modal.modal('show');
+            });
+        }
+
+        function showAlertModal(message, title) {
+            return new Promise(function (resolve) {
+                document.getElementById('alertModalTitle').innerHTML = '<i class="fas fa-info-circle text-primary mr-2"></i>' + (title || 'Información');
+                document.getElementById('alertModalBody').textContent = message;
+                $('#alertModal').modal('show').one('hidden.bs.modal', function () { resolve(); });
+            });
+        }
+
+        function getFormData() {
+            const kyc = Array.from(document.querySelectorAll('input[name="kyc"]:checked')).map(c => c.value);
+            const countries = Array.from(document.getElementById('inputCountries').selectedOptions).map(o => o.value);
+            const scheduledVal = document.getElementById('inputScheduledAt').value;
+            return {
+                title: document.getElementById('inputTitle').value.trim(),
+                subject: document.getElementById('inputSubject').value.trim(),
+                body: document.getElementById('inputBody').value.trim(),
+                imageUrl: document.getElementById('inputImageUrl').value || null,
+                targetingKycLevels: kyc.length ? kyc : null,
+                targetingCountries: countries.length ? countries : null,
+                scheduledAt: scheduledVal ? new Date(scheduledVal).toISOString() : null
+            };
+        }
+
+        function toDatetimeLocal(d) {
+            if (!d) return '';
+            const dt = new Date(d);
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const day = String(dt.getDate()).padStart(2, '0');
+            const h = String(dt.getHours()).padStart(2, '0');
+            const min = String(dt.getMinutes()).padStart(2, '0');
+            return y + '-' + m + '-' + day + 'T' + h + ':' + min;
+        }
+
+        function setFormData(c) {
+            document.getElementById('editId').value = c.id || '';
+            document.getElementById('inputTitle').value = c.title || '';
+            document.getElementById('inputSubject').value = c.subject || '';
+            document.getElementById('inputBody').value = c.body || '';
+            document.getElementById('inputImageUrl').value = c.imageUrl || '';
+            document.getElementById('inputScheduledAt').value = toDatetimeLocal(c.scheduledAt);
+            document.querySelectorAll('input[name="kyc"]').forEach(x => { x.checked = false; });
+            (c.targetingKycLevels || []).forEach(v => {
+                const el = document.querySelector('input[name="kyc"][value="' + v + '"]');
+                if (el) el.checked = true;
+            });
+            const sel = document.getElementById('inputCountries');
+            Array.from(sel.options).forEach(o => { o.selected = (c.targetingCountries || []).includes(o.value); });
+            if (c.imageUrl) {
+                document.getElementById('bannerPreviewImg').src = c.imageUrl;
+                document.getElementById('bannerPreview').style.display = 'block';
+            } else {
+                document.getElementById('bannerPreview').style.display = 'none';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('editId').value = '';
+            document.getElementById('inputScheduledAt').value = '';
+            document.getElementById('campaignForm').reset();
+            document.getElementById('inputImageUrl').value = '';
+            document.getElementById('bannerPreview').style.display = 'none';
+            document.getElementById('inputBannerFile').value = '';
+            document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save mr-1"></i> Guardar borrador';
+        }
+
+        function selectAllKyc(checked) {
+            document.querySelectorAll('input[name="kyc"]').forEach(c => { c.checked = checked; });
+        }
+
+        async function handleBannerSelect() {
+            const file = document.getElementById('inputBannerFile').files[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.append('banner', file);
+            try {
+                const res = await fetch(API + '/upload-banner', {
+                    method: 'POST',
+                    headers: { 'Authorization': AdminConfig.getAuthHeaders().Authorization },
+                    body: fd
+                });
+                if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await res.json();
+                if (data.url) {
+                    document.getElementById('inputImageUrl').value = data.url;
+                    document.getElementById('bannerPreviewImg').src = data.url;
+                    document.getElementById('bannerPreview').style.display = 'block';
+                } else {
+                    showAlertModal(data.error || 'Error al subir imagen', 'Error');
+                }
+            } catch (e) {
+                showAlertModal('Error: ' + (e.message || e), 'Error');
+            }
+        }
+
+        function clearBanner() {
+            document.getElementById('inputImageUrl').value = '';
+            document.getElementById('inputBannerFile').value = '';
+            document.getElementById('bannerPreview').style.display = 'none';
+        }
+
+        document.getElementById('campaignForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const data = getFormData();
+            if (!data.title || !data.subject || !data.body) {
+                showAlertModal('Título, asunto y cuerpo son obligatorios', 'Campos requeridos');
+                return;
+            }
+            const editId = document.getElementById('editId').value;
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            try {
+                const url = editId ? API + '/' + editId : API;
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.status === 401) { AdminConfig.handleApiError(401); btn.disabled = false; return; }
+                const result = await res.json();
+                if (result.error) {
+                    showAlertModal(result.error, 'Error');
+                } else {
+                    resetForm();
+                    loadCampaigns();
+                }
+            } catch (err) {
+                showAlertModal('Error: ' + (err.message || err), 'Error');
+            }
+            btn.disabled = false;
+        });
+
+        const statusLabels = { DRAFT: 'Borrador', SCHEDULED: 'Programada', SENDING: 'Enviando', COMPLETED: 'Completada', CANCELLED: 'Cancelada' };
+        const statusBadgeClass = { DRAFT: 'secondary', SCHEDULED: 'info', SENDING: 'primary', COMPLETED: 'success', CANCELLED: 'danger' };
+
+        async function loadCampaigns(skipListPollingStart) {
+            const status = document.getElementById('filterStatus').value;
+            let url = API + '?page=1&limit=50';
+            if (status) url += '&status=' + encodeURIComponent(status);
+            const res = await fetch(url, { headers: AdminConfig.getAuthHeaders() });
+            if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+            const data = await res.json();
+            const list = document.getElementById('campaignsList');
+            const items = (campaignsCache = data.campaigns || []);
+            if (items.length === 0) {
+                list.innerHTML = '<p class="text-muted">No hay campañas</p>';
+                stopListPolling();
+                return;
+            }
+            list.innerHTML = items.map(c => {
+                const kyc = (c.targetingKycLevels || []).join(', ') || 'Todos';
+                const countries = (c.targetingCountries || []).join(', ') || 'Todos';
+                const schedStr = c.scheduledAt ? new Date(c.scheduledAt).toLocaleString('es') : '—';
+                const badgeClass = statusBadgeClass[c.status] || 'secondary';
+                const label = statusLabels[c.status] || c.status;
+                const isCollapsed = c.status === 'COMPLETED' || c.status === 'CANCELLED';
+                const collapseId = 'collapse-camp-' + c.id;
+                if (isCollapsed) {
+                    return `
+                    <div class="border rounded mb-2 campaign-item-collapsed" data-id="${c.id}">
+                        <div class="d-flex justify-content-between align-items-center p-3" role="button" onclick="toggleCampaignExpand('${c.id}')">
+                            <strong class="text-muted">${escapeHtml(c.title)}</strong>
+                            <span>
+                                <span class="badge badge-${badgeClass}">${label}</span>
+                                <i class="fas fa-chevron-down chevron ml-2 text-muted"></i>
+                            </span>
+                        </div>
+                        <div class="campaign-expand-content px-3 pb-3" id="${collapseId}" style="display:none;">
+                            <p class="small text-muted mb-1">Asunto: ${escapeHtml((c.subject || '').substring(0, 60))}${(c.subject || '').length > 60 ? '...' : ''}</p>
+                            <div class="small text-muted mb-2">Envío: ${schedStr} | KYC: ${escapeHtml(kyc)} | País: ${escapeHtml(countries)}</div>
+                            <button class="btn btn-sm btn-outline-secondary mr-1" onclick="event.stopPropagation(); openDetailModal('${c.id}')"><i class="fas fa-list mr-1"></i>Ver detalle</button>
+                        </div>
+                    </div>
+                `;
+                }
+                return `
+                    <div class="border rounded p-3 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>${escapeHtml(c.title)}</strong>
+                            <span class="badge badge-${badgeClass}">${label}</span>
+                        </div>
+                        <p class="small text-muted mb-1 mt-1">Asunto: ${escapeHtml((c.subject || '').substring(0, 50))}${(c.subject || '').length > 50 ? '...' : ''}</p>
+                        ${c.imageUrl ? '<img src="' + escapeHtml(c.imageUrl) + '" alt="" class="banner-preview mb-2">' : ''}
+                        <div class="small text-muted">
+                            Envío: ${schedStr} | KYC: ${escapeHtml(kyc)} | País: ${escapeHtml(countries)}
+                        </div>
+                        <div class="mt-2">
+                            ${c.status === 'DRAFT' ? `
+                                <button class="btn btn-sm btn-success mr-1" onclick="scheduleCampaign('${c.id}')"><i class="fas fa-paper-plane mr-1"></i>Programar envío</button>
+                                <button class="btn btn-sm btn-outline-primary mr-1" onclick="editCampaignById('${c.id}')"><i class="fas fa-edit mr-1"></i>Editar</button>
+                            ` : ''}
+                            ${['SCHEDULED', 'SENDING'].includes(c.status) ? `
+                                <button class="btn btn-sm btn-info mr-1" onclick="openDetailModal('${c.id}')"><i class="fas fa-list mr-1"></i>Ver detalle</button>
+                                ${c.status === 'SCHEDULED' ? '<button class="btn btn-sm btn-danger mr-1" onclick="cancelCampaign(\'' + c.id + '\')"><i class="fas fa-ban mr-1"></i>Cancelar</button>' : ''}
+                            ` : ''}
+                            ${c.status === 'COMPLETED' || c.status === 'CANCELLED' ? `
+                                <button class="btn btn-sm btn-outline-secondary mr-1" onclick="openDetailModal('${c.id}')"><i class="fas fa-list mr-1"></i>Ver detalle</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if (!skipListPollingStart && campaignsCache.some(c => c.status === 'SENDING' || c.status === 'SCHEDULED')) {
+                startListPollingIfNeeded();
+            } else if (!campaignsCache.some(c => c.status === 'SENDING' || c.status === 'SCHEDULED')) {
+                stopListPolling();
+            }
+        }
+
+        function editCampaignById(id) {
+            const c = campaignsCache.find(x => x.id === id);
+            if (!c) return;
+            setFormData(c);
+            document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save mr-1"></i> Actualizar borrador';
+        }
+
+        async function scheduleCampaign(id) {
+            if (!(await showConfirmModal('¿Programar el envío de esta campaña? Se calcularán los destinatarios según targeting y se iniciará el envío por lotes (30 correos cada 2 min).', 'Programar campaña'))) return;
+            const c = campaignsCache.find(x => x.id === id);
+            try {
+                const res = await fetch(API + '/' + id + '/schedule', {
+                    method: 'POST',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scheduledAt: c?.scheduledAt || null })
+                });
+                if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await res.json();
+                if (data.error) {
+                    showAlertModal(data.error, 'Error');
+                } else {
+                    showAlertModal('Campaña programada. ' + (data.recipientCount || 0) + ' destinatarios.', 'Éxito');
+                    loadCampaigns();
+                    openDetailModal(id);
+                }
+            } catch (err) {
+                showAlertModal('Error: ' + (err.message || err), 'Error');
+            }
+        }
+
+        async function cancelCampaign(id) {
+            if (!(await showConfirmModal('¿Cancelar esta campaña? Los pendientes no se enviarán.', 'Cancelar campaña'))) return;
+            const res = await fetch(API + '/' + id + '/cancel', { method: 'POST', headers: AdminConfig.getAuthHeaders() });
+            if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+            const data = await res.json();
+            if (data.error) showAlertModal(data.error, 'Error');
+            else { loadCampaigns(); if (currentDetailCampaignId === id) closeDetailModal(); }
+        }
+
+        function toggleCampaignExpand(id) {
+            const el = document.querySelector('.campaign-item-collapsed[data-id="' + id + '"]');
+            if (!el) return;
+            el.classList.toggle('expanded');
+            const content = document.getElementById('collapse-camp-' + id);
+            if (content) content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function openDetailModal(id) {
+            currentDetailCampaignId = id;
+            $('#campaignDetailModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
+                currentDetailCampaignId = null;
+                if (detailPollInterval) { clearInterval(detailPollInterval); detailPollInterval = null; }
+                stopListPolling();
+            });
+            $('#campaignDetailModal').modal('show');
+            if (detailPollInterval) clearInterval(detailPollInterval);
+            loadDetailStats();
+            detailPollInterval = setInterval(loadDetailStats, 5000);
+            startListPollingIfNeeded();
+        }
+
+        function closeDetailModal() {
+            $('#campaignDetailModal').modal('hide');
+        }
+
+        function startListPollingIfNeeded() {
+            if (listPollInterval) return;
+            const hasActive = campaignsCache.some(c => c.status === 'SENDING' || c.status === 'SCHEDULED');
+            if (hasActive) {
+                listPollInterval = setInterval(function () {
+                    loadCampaigns(true);
+                }, 6000);
+            }
+        }
+
+        function stopListPolling() {
+            if (listPollInterval) {
+                clearInterval(listPollInterval);
+                listPollInterval = null;
+            }
+        }
+
+        async function loadDetailStats() {
+            if (!currentDetailCampaignId) return;
+            try {
+                const res = await fetch(API + '/' + currentDetailCampaignId + '/recipients', { headers: AdminConfig.getAuthHeaders() });
+                if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await res.json();
+                if (data.error) return;
+
+                document.getElementById('detailCampaignTitle').textContent = data.campaign?.title || 'Campaña';
+                document.getElementById('detailStatusBadge').textContent = statusLabels[data.campaign?.status] || data.campaign?.status || '—';
+                document.getElementById('detailStatusBadge').className = 'badge badge-' + (statusBadgeClass[data.campaign?.status] || 'secondary') + ' ml-2 poll-badge';
+
+                document.getElementById('detailTotal').textContent = data.total || 0;
+                document.getElementById('detailSent').textContent = data.sent || 0;
+                document.getElementById('detailPending').textContent = data.pending || 0;
+                document.getElementById('detailFailed').textContent = data.failed || 0;
+
+                const sentList = document.getElementById('detailSentList');
+                const pendingList = document.getElementById('detailPendingList');
+                const failedList = document.getElementById('detailFailedList');
+                sentList.innerHTML = (data.sentList || []).length === 0
+                    ? '<div class="text-muted small">Ninguno aún</div>'
+                    : (data.sentList || []).slice(0, 50).map(r => '<div class="list-group-item list-group-item-action py-2"><span class="text-success">' + escapeHtml(r.email) + '</span><br><small class="text-muted">' + (r.sentAt ? new Date(r.sentAt).toLocaleString('es') : '') + '</small></div>').join('');
+                pendingList.innerHTML = (data.pendingList || []).length === 0
+                    ? '<div class="text-muted small">Ninguno</div>'
+                    : (data.pendingList || []).slice(0, 50).map(r => '<div class="list-group-item list-group-item-action py-2">' + escapeHtml(r.email) + '</div>').join('');
+                failedList.innerHTML = (data.failedList || []).length === 0
+                    ? '<div class="text-muted small">Ninguno</div>'
+                    : (data.failedList || []).slice(0, 50).map(r => '<div class="list-group-item list-group-item-action py-2"><span class="text-danger">' + escapeHtml(r.email) + '</span>' + (r.errorMessage ? '<br><small class="text-muted" title="' + escapeHtml(r.errorMessage) + '">' + escapeHtml((r.errorMessage || '').substring(0, 50)) + ((r.errorMessage || '').length > 50 ? '...' : '') + '</small>' : '') + '</div>').join('');
+
+                if (data.campaign) {
+                    const idx = campaignsCache.findIndex(x => x.id === currentDetailCampaignId);
+                    if (idx >= 0) { campaignsCache[idx] = { ...campaignsCache[idx], ...data.campaign }; }
+                    if (data.campaign.status === 'COMPLETED' || data.campaign.status === 'CANCELLED') {
+                        if (detailPollInterval) { clearInterval(detailPollInterval); detailPollInterval = null; }
+                        loadCampaigns();
+                        stopListPolling();
+                    }
+                }
+            } catch (e) { /* silencioso */ }
+        }
+
+        function escapeHtml(s) {
+            if (!s) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        loadCampaigns();
+    </script>
+</body>
+</html>

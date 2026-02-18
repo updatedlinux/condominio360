@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+    <link rel="icon" type="image/png" href="/web/assets/favicon_io/favicon-32x32.png">
+    <title>Recargas Telefónicas - BidiPago</title>
+    <style>
+        /* Base BidiInvest-style container and cards */
+        .recargas-container { max-width: 1000px; margin: 0 auto; }
+        .recargas-hero {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: #fff;
+            border-radius: 12px;
+            padding: 28px 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(33, 150, 243, 0.25);
+        }
+        .recargas-hero h1 { margin: 0 0 8px 0; font-size: 1.85rem; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .recargas-hero p { margin: 0; opacity: 0.95; font-size: 1rem; }
+        .recargas-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border: 2px solid #e8e8e8;
+        }
+        .recargas-card h2 { color: #333; margin: 0 0 8px 0; font-size: 1.35rem; }
+        .recargas-card h3 { color: #333; margin: 0 0 12px 0; font-size: 1.2rem; }
+        .recargas-card p { color: #666; margin: 0 0 20px 0; }
+        .section-label { font-size: 0.9rem; color: #666; margin-bottom: 12px; display: block; }
+        /* Country grid - card style like BidiInvest/P2P */
+        .country-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+        .country-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .country-card:hover { border-color: #2196F3; box-shadow: 0 4px 20px rgba(33, 150, 243, 0.15); }
+        .country-card img { width: 52px; height: 36px; object-fit: contain; margin-bottom: 10px; }
+        .country-card span { display: block; font-weight: 600; color: #333; font-size: 0.95rem; }
+        .recargas-country-code { font-size: 1.1rem; font-weight: 600; color: #1976D2; }
+        /* Operators */
+        .operator-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+        .operator-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .operator-card:hover { border-color: #2196F3; box-shadow: 0 4px 20px rgba(33, 150, 243, 0.12); }
+        .operator-card.selected { border-color: #2196F3; background: #E3F2FD; }
+        .operator-card img { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; }
+        .amount-chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+        .amount-chip { padding: 10px 18px; border-radius: 8px; background: #f5f5f5; cursor: pointer; font-weight: 600; color: #333; border: 2px solid transparent; transition: all 0.2s; }
+        .amount-chip:hover, .amount-chip.selected { border-color: #2196F3; background: #E3F2FD; color: #1976D2; }
+        .wallet-option {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; border-radius: 12px; border: 2px solid #e0e0e0; cursor: pointer; margin-bottom: 10px; transition: all 0.2s;
+        }
+        .wallet-option-icon { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+        .wallet-option > div { display: flex; flex-direction: column; gap: 2px; }
+        .wallet-option:hover { border-color: #2196F3; }
+        .wallet-option.selected { border-color: #2196F3; background: #E3F2FD; }
+        .btn-recarga {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            border: none; color: #fff; padding: 14px 28px; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-recarga:hover:not(:disabled) { box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4); }
+        .btn-recarga:disabled { opacity: 0.6; cursor: not-allowed; }
+        .back-link { color: #1976D2; cursor: pointer; margin-bottom: 16px; display: inline-block; font-weight: 500; }
+        .back-link:hover { text-decoration: underline; }
+        #alertRecargas { display: none; }
+        .recargas-note { font-size: 0.85rem; color: #888; margin-top: 8px; }
+        /* Modal éxito/error */
+        .recarga-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9998; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .recarga-modal-overlay.show { display: flex; }
+        .recarga-modal { background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-width: 420px; width: 100%; overflow: hidden; animation: recargaModalIn 0.25s ease; }
+        @keyframes recargaModalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .recarga-modal-header { padding: 24px 24px 12px; text-align: center; }
+        .recarga-modal-header.success { color: #0d8050; }
+        .recarga-modal-header.error { color: #c53030; }
+        .recarga-modal-header i { font-size: 48px; margin-bottom: 8px; display: block; }
+        .recarga-modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+        .recarga-modal-body { padding: 12px 24px 24px; text-align: center; color: #444; line-height: 1.5; }
+        .recarga-modal-footer { padding: 16px 24px; background: #f8f9fa; display: flex; justify-content: center; }
+        .recarga-modal-footer .btn-recarga-modal { padding: 12px 32px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%); color: #fff !important; }
+        .recarga-modal-footer .btn-recarga-modal:hover { background: linear-gradient(135deg, #1565C0 0%, #0d47a1 100%); color: #fff !important; }
+    </style>
+</head>
+<body>
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/"><img src="/assets/images/biglogo.svg" alt="BidiPago"></a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas" class="active"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a></li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menú">☰</button>
+    <main class="dashboard-main" id="mainContent">
+        <div class="recargas-container">
+            <div id="alertRecargas" class="alert"></div>
+            <div class="recargas-hero">
+                <h1><i class="ri-phone-line"></i> Recargas Telefónicas</h1>
+                <p>Selecciona el país, operador y monto. Paga con USDT, USDC o BiUSD.</p>
+            </div>
+            <div class="recargas-card">
+                <div id="stepCountries">
+                    <span class="section-label">Selecciona el país</span>
+                    <div id="countriesGrid" class="country-grid"></div>
+                </div>
+                <div id="stepOperators" style="display: none;">
+                    <a class="back-link" id="backToCountries"><i class="ri-arrow-left-line"></i> Cambiar país</a>
+                    <span class="section-label">Operador y monto</span>
+                    <p class="recargas-note">Los montos disponibles son proporcionados por el proveedor de recargas según el operador.</p>
+                    <div id="operatorsList" class="operator-grid"></div>
+                    <div id="amountSection" style="display: none;">
+                        <label class="form-label mt-3">Monto (USD)</label>
+                        <div id="amountChips" class="amount-chips"></div>
+                        <input type="number" id="amountInput" class="form-control mt-2" placeholder="O ingresa un monto" min="1" step="0.01" style="max-width: 200px;">
+                        <div id="amountEquivFiat" class="recargas-note mt-1" style="display: none;"></div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label d-block">Código de país</label>
+                        <span id="phoneCountryCode" class="recargas-country-code">—</span>
+                    </div>
+                    <label class="form-label mt-2">Número (sin código de país)</label>
+                    <input type="tel" id="phoneInput" class="form-control" placeholder="Ej: 4121234567" style="max-width: 280px;" inputmode="numeric" pattern="[0-9]*">
+                    <button type="button" class="btn btn-recarga mt-3" id="btnContinueToWallet">Continuar a pago</button>
+                </div>
+                <div id="stepWallet" style="display: none;">
+                    <a class="back-link" id="backToOperators"><i class="ri-arrow-left-line"></i> Cambiar operador/monto</a>
+                    <span class="section-label">Elige con qué billetera pagar (solo estables)</span>
+                    <div id="walletsList"></div>
+                    <div id="quoteSummary" class="mt-3 p-3 bg-light rounded" style="display: none;"></div>
+                    <button type="button" class="btn btn-recarga mt-3" id="btnConfirmRecarga" disabled>Confirmar recarga</button>
+                </div>
+            </div>
+            <div class="recargas-card">
+                <h3>Historial reciente</h3>
+                <div id="historyList">Cargando...</div>
+            </div>
+        </div>
+    </main>
+    <!-- Modal éxito/error -->
+    <div class="recarga-modal-overlay" id="recargaModalOverlay">
+        <div class="recarga-modal" id="recargaModal">
+            <div class="recarga-modal-header" id="recargaModalHeader">
+                <i class="ri-checkbox-circle-line" id="recargaModalIcon"></i>
+                <h3 id="recargaModalTitle">Resultado</h3>
+            </div>
+            <div class="recarga-modal-body" id="recargaModalBody"></div>
+            <div class="recarga-modal-footer">
+                <button type="button" class="btn btn-recarga-modal" id="recargaModalClose">Entendido</button>
+            </div>
+        </div>
+    </div>
+    <script src="/web/js/recargas.js"></script>
+</body>
+</html>

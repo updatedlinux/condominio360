@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Disputas P2P</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+
+    <style>
+        /* Custom sidebar colors - orange/black */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+
+        .dispute-info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .attachment-preview {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .attachment-preview:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'p2p';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-2 text-gray-800">Administración P2P</h1>
+                    <p class="mb-4">Centro de control para operaciones Peer-to-Peer.</p>
+
+                    <!-- VIEW: DASHBOARD (Selection) -->
+                    <div id="p2pDashboardView" class="row">
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2 cursor-pointer"
+                                onclick="showView('disputes')" style="cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='scale(1.02)'"
+                                onmouseout="this.style.transform='scale(1)'">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Resolución de Conflictos</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">Disputas P2P</div>
+                                            <p class="text-muted small mt-2">Gestionar reclamos abiertos, en revisión y
+                                                cerrados.</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-gavel fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2 cursor-pointer"
+                                onclick="showView('profiles')" style="cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='scale(1.02)'"
+                                onmouseout="this.style.transform='scale(1)'">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Información de Usuarios</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">Perfiles P2P</div>
+                                            <p class="text-muted small mt-2">Consultar estadísticas y reputación por
+                                                correo.</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-user-tag fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2 cursor-pointer"
+                                onclick="showView('market')" style="cursor: pointer; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='scale(1.02)'"
+                                onmouseout="this.style.transform='scale(1)'">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Órdenes del Mercado</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">Ver Mercado P2P</div>
+                                            <p class="text-muted small mt-2">Ver todas las órdenes, makers, takers y
+                                                comisiones.</p>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-store fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- VIEW: DISPUTES -->
+                    <div id="p2pDisputesView" style="display: none;">
+                        <button class="btn btn-link mb-3 p-0" onclick="showView('dashboard')">
+                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                        </button>
+                        <h4 class="text-gray-800 mb-3">Gestión de Disputas</h4>
+
+                        <!-- Filters -->
+                        <div class="card shadow mb-4">
+                            <div class="card-body">
+                                <form class="form-inline">
+                                    <label class="mr-2">Estado:</label>
+                                    <select id="statusFilter" class="form-control mr-sm-2" onchange="loadDisputes()">
+                                        <option value="OPEN">Abiertas</option>
+                                        <option value="IN_REVIEW">En Revisión</option>
+                                        <option value="RESOLVED">Resueltas</option>
+                                        <option value="CLOSED">Cerradas</option>
+                                        <option value="">Todas</option>
+                                    </select>
+                                    <button type="button" class="btn btn-primary" onclick="loadDisputes()">
+                                        <i class="fas fa-sync-alt"></i> Actualizar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Disputes Table -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Lista de Disputas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Trade ID</th>
+                                                <th>Abierta Por</th>
+                                                <th>Razón</th>
+                                                <th>Fecha</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="disputesTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW: PROFILES -->
+                    <div id="p2pProfilesView" style="display: none;">
+                        <button class="btn btn-link mb-3 p-0" onclick="showView('dashboard')">
+                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                        </button>
+                        <h4 class="text-gray-800 mb-3">Buscador de Perfiles P2P</h4>
+
+                        <!-- Search Box -->
+                        <div class="card shadow mb-4">
+                            <div class="card-body">
+                                <form class="form-inline" onsubmit="event.preventDefault(); searchProfile();">
+                                    <label class="mr-2">Buscar Usuario:</label>
+                                    <input type="email" class="form-control mr-sm-2" id="profileSearchEmail"
+                                        placeholder="Correo electrónico del usuario" style="width: 300px;" required>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Profile Result Container -->
+                        <div id="profileResultContainer" style="display: none;">
+                            <!-- Here we will replicate the merchant profile card structure -->
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Detalle del Comerciante</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row align-items-center mb-4">
+                                        <div class="col-auto">
+                                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                                style="width: 80px; height: 80px; font-size: 32px; font-weight: bold;"
+                                                id="pInitials">
+                                                BP
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <h3 class="font-weight-bold text-dark mb-1" id="pName">Usuario</h3>
+                                            <p class="text-muted mb-0">Miembro desde <span id="pJoined">--</span></p>
+                                            <div class="d-flex align-items-center mt-2">
+                                                <div class="text-warning mr-2" id="pStars">
+                                                    <!-- Stars -->
+                                                </div>
+                                                <span class="font-weight-bold mr-1" id="pRating">0.00</span>
+                                                <span class="text-muted small">(<span id="pVotes">0</span>
+                                                    calificaciones)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 1: Key Stats -->
+                                    <div class="row text-center mb-4">
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-dark mb-0" id="pTotalTrades">0
+                                                </div>
+                                                <div class="small text-muted">Órdenes Totales</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-dark mb-0" id="pCompletion">0%
+                                                </div>
+                                                <div class="small text-muted">Tasa Finalización</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-dark mb-0" id="pAvgTime">-- min
+                                                </div>
+                                                <div class="small text-muted">Tiempo Promedio</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-danger mb-0" id="pCancelled">0
+                                                </div>
+                                                <div class="small text-muted">Cancelados</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 2: Secondary Stats -->
+                                    <div class="row text-center mb-4">
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-warning mb-0" id="pDisputes">0
+                                                </div>
+                                                <div class="small text-muted">Disputas</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-gray-800" id="pMakerAds">0</div>
+                                                <div class="small text-muted">Anuncios (Maker)</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card bg-light border-0 h-100 py-3">
+                                                <div class="h5 font-weight-bold text-gray-800" id="pTakerOffers">0</div>
+                                                <div class="small text-muted">Ofertas (Taker)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <h6 class="font-weight-bold text-dark mb-3">Último Feedback</h6>
+                                    <div id="pRecentFeedback">
+                                        <p class="text-muted">No hay calificaciones recientes.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW: MARKET -->
+                    <div id="p2pMarketView" style="display: none;">
+                        <button class="btn btn-link mb-3 p-0" onclick="showView('dashboard')">
+                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                        </button>
+                        <h4 class="text-gray-800 mb-3">Mercado P2P</h4>
+
+                        <!-- Filters -->
+                        <div class="card shadow mb-4">
+                            <div class="card-body">
+                                <form class="form-inline">
+                                    <label class="mr-2">Estado:</label>
+                                    <select id="marketStatusFilter" class="form-control mr-sm-2"
+                                        onchange="loadMarketOrders()">
+                                        <option value="ALL">Todas</option>
+                                        <option value="PENDING">Abiertas</option>
+                                        <option value="TAKEN">Tomadas</option>
+                                        <option value="SETTLED">Liquidadas</option>
+                                        <option value="CANCELLED">Canceladas</option>
+                                        <option value="EXPIRED">Expiradas</option>
+                                    </select>
+                                    <button type="button" class="btn btn-primary" onclick="loadMarketOrders()">
+                                        <i class="fas fa-sync-alt"></i> Actualizar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Market Orders Table -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Órdenes del Mercado</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="marketTable" width="100%" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Tipo</th>
+                                                <th>Par</th>
+                                                <th>Monto</th>
+                                                <th>Tasa</th>
+                                                <th>Maker</th>
+                                                <th>Taker</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="marketTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Pagination -->
+                                <nav id="marketPagination" class="mt-3"></nav>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.container-fluid -->
+
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white mt-auto w-100">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Dispute Details Modal -->
+    <div class="modal fade" id="disputeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title"><i class="fas fa-gavel mr-2"></i>Resolución de Disputa</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Left Column: Trade Info & Participants -->
+                        <div class="col-lg-6">
+                            <div class="dispute-info-card">
+                                <h5 class="text-primary border-bottom pb-2">Información del Trade</h5>
+                                <p><strong>Trade ID:</strong> <span id="detailTradeId">-</span></p>
+                                <p><strong>Monto Crypto:</strong> <span id="detailTradeAmount">-</span> <span
+                                        id="detailTradeAsset"></span></p>
+                                <p><strong>Precio:</strong> <span id="detailTradePrice">-</span> <span
+                                        id="detailTradeFiat"></span></p>
+                                <p><strong>Total Fiat:</strong> <span id="detailTradeTotal">-</span></p>
+                                <p><strong>Estado Trade:</strong> <span id="detailTradeStatus">-</span></p>
+
+                                <div class="mt-3 border-top pt-2">
+                                    <h6 class="text-secondary small font-weight-bold">Métodos de Pago (Opciones)</h6>
+                                    <div id="detailPaymentMethods" class="small">
+                                        <p class="text-muted mb-0">No disponibles</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="dispute-info-card border-left-success">
+                                        <h6 class="text-success font-weight-bold">Maker (Vendedor/Comprador)</h6>
+                                        <p class="small mb-1"><strong>ID:</strong> <span id="detailMakerId">-</span></p>
+                                        <p class="small mb-1"><strong>Email:</strong> <span
+                                                id="detailMakerEmail">-</span></p>
+                                        <p class="small mb-1"><strong>Rol:</strong> <span id="detailMakerRole">-</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="dispute-info-card border-left-info">
+                                        <h6 class="text-info font-weight-bold">Taker (Contraparte)</h6>
+                                        <p class="small mb-1"><strong>ID:</strong> <span id="detailTakerId">-</span></p>
+                                        <p class="small mb-1"><strong>Email:</strong> <span
+                                                id="detailTakerEmail">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Dispute Details & Attachments -->
+                        <div class="col-lg-6">
+                            <div class="dispute-info-card">
+                                <h5 class="text-danger border-bottom pb-2">Detalle de la Disputa</h5>
+                                <p><strong>Abierta por:</strong> <span id="detailOpenedBy">-</span></p>
+                                <p><strong>Fecha:</strong> <span id="detailDate">-</span></p>
+                                <p><strong>Razón:</strong></p>
+                                <div class="alert alert-secondary" id="detailReason">
+                                    -
+                                </div>
+                            </div>
+
+                            <div class="dispute-info-card">
+                                <h6>Adjuntos / Pruebas</h6>
+                                <div id="attachmentsContainer" class="d-flex flex-wrap">
+                                    <p class="text-muted small">No hay adjuntos.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resolution Section -->
+                    <div class="card border-danger mt-3" id="resolutionSection">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="m-0 font-weight-bold">Acciones de Resolución</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Notas del Administrador (Requerido para resolver):</label>
+                                <textarea id="adminNotes" class="form-control" rows="3"
+                                    placeholder="Explique la razón de la decisión..."></textarea>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-outline-secondary" disabled>Cancelar Trade (Devolver
+                                    fondos)</button>
+                                <div>
+                                    <button class="btn btn-success mr-2" onclick="resolveDispute('BUYER_WINS')">
+                                        <i class="fas fa-user-check mr-1"></i> Ganador: Comprador
+                                    </button>
+                                    <button class="btn btn-primary" onclick="resolveDispute('SELLER_WINS')">
+                                        <i class="fas fa-user-shield mr-1"></i> Ganador: Vendedor
+                                    </button>
+
+                                    <button class="btn btn-secondary ml-3" onclick="resolveDispute('CANCEL')">
+                                        <i class="fas fa-ban mr-1"></i> Cancelar Trade
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Resolved Info (Visible only if resolved) -->
+                    <div class="alert alert-success mt-3" id="resolvedInfoSection" style="display: none;">
+                        <h6><i class="fas fa-check-circle"></i> Disputa Resuelta</h6>
+                        <p><strong>Resolución:</strong> <span id="detailResolution">-</span></p>
+                        <p><strong>Notas Admin:</strong> <span id="detailAdminNotes">-</span></p>
+                        <p><strong>Resuelto por:</strong> <span id="detailResolvedBy">-</span></p>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">¿Listo para salir?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" si estás listo para terminar tu sesión actual.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <a class="btn btn-primary" href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        let dataTableInstance = null;
+        let currentDisputeId = null;
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        if (!AdminConfig.checkAuth()) {
+            // Redirect handled
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            const p2pStatus = urlParams.get('status');
+
+            if (p2pStatus) {
+                showView('market');
+                const filter = document.getElementById('marketStatusFilter');
+                if (filter) {
+                    filter.value = p2pStatus;
+                }
+                loadMarketOrders();
+            } else {
+                showView('dashboard');
+            }
+        }
+
+        async function loadDisputes() {
+            const status = document.getElementById('statusFilter').value;
+            try {
+                const url = new URL(`${AdminConfig.API_URL}/admin/p2p/disputes`);
+                if (status) url.searchParams.append('status', status);
+
+                const response = await fetch(url, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    AdminConfig.handleApiError(401);
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error buscando disputas');
+
+                const data = await response.json();
+                const disputes = data.disputes || (Array.isArray(data) ? data : []);
+
+                if (dataTableInstance) {
+                    dataTableInstance.destroy();
+                }
+
+                const tbody = document.getElementById('disputesTableBody');
+                tbody.innerHTML = '';
+
+                disputes.forEach(dispute => {
+                    const row = `
+                        <tr>
+                            <td>${dispute.id.substring(0, 8)}...</td>
+                            <td>${dispute.trade ? dispute.trade.id.substring(0, 8) : 'N/A'}...</td>
+                            <td>${dispute.openedBy ? dispute.openedBy.email : 'Unknown'}</td>
+                            <td>${dispute.reason.substring(0, 50)}${dispute.reason.length > 50 ? '...' : ''}</td>
+                            <td>${new Date(dispute.createdAt).toLocaleDateString()}</td>
+                            <td>${getDisputeStatusBadge(dispute.status)}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="viewDispute('${dispute.id}')">
+                                    <i class="fas fa-eye"></i> Ver
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+                dataTableInstance = $('#dataTable').DataTable({
+                    order: [[4, "desc"]] // Sort by Date
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar las disputas', 'error');
+            }
+        }
+
+        async function viewDispute(disputeId) {
+            currentDisputeId = disputeId;
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/p2p/disputes/${disputeId}`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (!response.ok) throw new Error('Error cargando detalle');
+
+                const data = await response.json();
+                const dispute = data.dispute; // Access the inner dispute object
+                const trade = dispute.trade || {};
+                const order = trade.order || {};
+
+                // Header Info
+                document.getElementById('detailTradeId').textContent = trade.id || '-';
+                document.getElementById('detailTradeAmount').textContent = trade.cryptoAmount || '-'; // Use trade.cryptoAmount not amount
+                document.getElementById('detailTradeAsset').textContent = trade.cryptoAsset || '-';
+                document.getElementById('detailTradePrice').textContent = trade.rate || '-';
+                document.getElementById('detailTradeFiat').textContent = trade.fiatCurrency || '-';
+                document.getElementById('detailTradeTotal').textContent = trade.fiatAmount ? trade.fiatAmount.toFixed(2) + ' ' + (trade.fiatCurrency || '') : '-';
+                document.getElementById('detailTradeStatus').textContent = trade.status || '-';
+
+                // Payment Methods
+                const pmContainer = document.getElementById('detailPaymentMethods');
+                pmContainer.innerHTML = '';
+                if (trade.paymentMethodsDetails && trade.paymentMethodsDetails.length > 0) {
+                    trade.paymentMethodsDetails.forEach(pm => {
+                        const pmDiv = document.createElement('div');
+                        pmDiv.className = 'mb-2 p-2 border rounded bg-light';
+
+                        let detailsHtml = '';
+                        if (pm.type === 'BANK_TRANSFER' || pm.type === 'PAGO_MOVIL') {
+                            if (pm.name) detailsHtml += `<div><strong>${pm.name}</strong></div>`;
+                            if (pm.field1) detailsHtml += `<div><span class="text-muted">Banco:</span> ${pm.field1}</div>`;
+                            if (pm.field2) detailsHtml += `<div><span class="text-muted">Cuenta/Telf:</span> ${pm.field2}</div>`;
+                            if (pm.field3) detailsHtml += `<div><span class="text-muted">ID/Cédula:</span> ${pm.field3}</div>`;
+                        } else {
+                            // Generic fallback
+                            if (pm.name) detailsHtml += `<div><strong>${pm.name}</strong></div>`;
+                            if (pm.field1) detailsHtml += `<div>${pm.field1}</div>`;
+                            if (pm.field2) detailsHtml += `<div>${pm.field2}</div>`;
+                        }
+
+                        pmDiv.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <span class="badge badge-info">${pm.type}</span>
+                            </div>
+                            <div class="mt-1 small">
+                                ${detailsHtml}
+                            </div>
+                        `;
+                        pmContainer.appendChild(pmDiv);
+                    });
+                } else {
+                    pmContainer.innerHTML = '<p class="text-muted mb-0">No disponibles</p>';
+                }
+
+                // Participants
+                // CAUTION: Adjust based on actual API response structure for Maker/Taker
+                const maker = trade.maker || {}; // Might be userId or object
+                const taker = trade.taker || {};
+
+                // If API returns IDs, we might need to fetch user details or rely on expanded relation
+                document.getElementById('detailMakerId').textContent = maker.id ? maker.id.substring(0, 8) : '-';
+                document.getElementById('detailMakerEmail').textContent = maker.email || '-';
+                document.getElementById('detailMakerRole').textContent = order.type === 'SELL' ? 'Vendedor' : 'Comprador'; // If Maker created SELL ad, they are SELLER
+
+                document.getElementById('detailTakerId').textContent = taker.id ? taker.id.substring(0, 8) : '-';
+                document.getElementById('detailTakerEmail').textContent = taker.email || '-';
+
+                // Dispute Details
+                document.getElementById('detailOpenedBy').textContent = dispute.openedBy ? dispute.openedBy.email : '-';
+                document.getElementById('detailDate').textContent = new Date(dispute.createdAt).toLocaleString();
+                document.getElementById('detailReason').textContent = dispute.reason || '-';
+
+                // Attachments
+                const attachContainer = document.getElementById('attachmentsContainer');
+                attachContainer.innerHTML = '';
+                let attachments = [];
+                try {
+                    attachments = typeof dispute.attachments === 'string'
+                        ? JSON.parse(dispute.attachments)
+                        : (dispute.attachments || []);
+                } catch (e) { console.error("Error parsing attachments", e); }
+
+                if (attachments.length > 0) {
+                    attachments.forEach((url, index) => {
+                        const isPdf = url.toLowerCase().endsWith('.pdf');
+
+                        if (isPdf) {
+                            // PDF: Mostrar botón que abre en nueva pestaña
+                            attachContainer.innerHTML += `
+                                <div class="attachment-item mr-2 mb-2">
+                                    <a href="${url}" target="_blank" class="btn btn-outline-danger btn-sm" title="Ver PDF">
+                                        <i class="fas fa-file-pdf fa-2x"></i>
+                                        <div class="small mt-1">PDF ${index + 1}</div>
+                                    </a>
+                                </div>
+                            `;
+                        } else {
+                            // Imagen: Usar lightbox (SweetAlert2) para preview
+                            attachContainer.innerHTML += `
+                                <div class="attachment-item mr-2 mb-2">
+                                    <a href="#" onclick="openLightbox('${url}'); return false;">
+                                        <img src="${url}" class="attachment-preview" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; cursor: pointer;" 
+                                             onerror="this.parentElement.outerHTML='<a href=\\'${url}\\' target=\\'_blank\\' class=\\'btn btn-outline-secondary btn-sm\\'><i class=\\'fas fa-file fa-2x\\'></i><div class=\\'small mt-1\\'>Archivo</div></a>'">
+                                    </a>
+                                </div>
+                            `;
+                        }
+                    });
+                } else {
+                    attachContainer.innerHTML = '<p class="text-muted small">No hay adjuntos.</p>';
+                }
+
+                // Resolution UI state
+                const resolutionSection = document.getElementById('resolutionSection');
+                const resolvedInfoSection = document.getElementById('resolvedInfoSection');
+
+                if (dispute.status === 'RESOLVED' || dispute.status === 'CLOSED') {
+                    resolutionSection.style.display = 'none';
+                    resolvedInfoSection.style.display = 'block';
+                    document.getElementById('detailResolution').textContent = dispute.resolution || '-';
+                    document.getElementById('detailAdminNotes').textContent = dispute.adminNotes || '-';
+                    document.getElementById('detailResolvedBy').textContent = dispute.resolvedBy ? dispute.resolvedBy.email : '-';
+                } else {
+                    resolutionSection.style.display = 'block';
+                    resolvedInfoSection.style.display = 'none';
+                    document.getElementById('adminNotes').value = ''; // Reset notes
+                }
+
+                $('#disputeDetailsModal').modal('show');
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudo cargar el detalle de la disputa', 'error');
+            }
+        }
+
+        async function resolveDispute(resolution) {
+            const adminNotes = document.getElementById('adminNotes').value;
+
+            if (!adminNotes || adminNotes.trim().length < 5) {
+                Swal.fire('Atención', 'Debes escribir una nota explicando la resolución (mínimo 5 caracteres).', 'warning');
+                return;
+            }
+
+            const confirmText = resolution === 'CANCEL' ? 'Cancelar Trade y Devolver Fondos' :
+                resolution === 'BUYER_WINS' ? 'Ganador: COMPRADOR (Liberar fondos)' :
+                    'Ganador: VENDEDOR (Devolver fondos)';
+
+            const result = await Swal.fire({
+                title: '¿Confirmar Resolución?',
+                text: `Acción: ${confirmText}. Esta acción es irreversible.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Resolver',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`${AdminConfig.API_URL}/admin/p2p/disputes/${currentDisputeId}/resolve`, {
+                        method: 'PATCH',
+                        headers: {
+                            ...AdminConfig.getAuthHeaders(),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            resolution: resolution,
+                            adminNotes: adminNotes
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        Swal.fire('Éxito', 'Disputa resuelta correctamente', 'success');
+                        $('#disputeDetailsModal').modal('hide');
+                        loadDisputes(); // Reload table
+                    } else {
+                        throw new Error(data.error || 'Error al resolver');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
+        }
+
+
+
+        // --- NEW P2P ADMIN LOGIC ---
+
+        function showView(viewName) {
+            // Hide all
+            document.getElementById('p2pDashboardView').style.display = 'none';
+            document.getElementById('p2pDisputesView').style.display = 'none';
+            document.getElementById('p2pProfilesView').style.display = 'none';
+            document.getElementById('p2pMarketView').style.display = 'none';
+
+            // Show selected
+            if (viewName === 'dashboard') {
+                document.getElementById('p2pDashboardView').style.display = 'flex';
+            } else if (viewName === 'disputes') {
+                document.getElementById('p2pDisputesView').style.display = 'block';
+                // Reload table if needed
+                if (!dataTableInstance) loadDisputes();
+            } else if (viewName === 'profiles') {
+                document.getElementById('p2pProfilesView').style.display = 'block';
+            } else if (viewName === 'market') {
+                document.getElementById('p2pMarketView').style.display = 'block';
+                loadMarketOrders();
+            }
+        }
+
+        async function searchProfile() {
+            const email = document.getElementById('profileSearchEmail').value.trim();
+            if (!email) return;
+
+            try {
+                // 1. Find User ID by Email (using Admin User List with filter)
+                const userUrl = new URL(`${AdminConfig.API_URL}/admin/users`);
+                userUrl.searchParams.append('email', email);
+
+                const userResponse = await fetch(userUrl, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (!userResponse.ok) throw new Error('Error buscando usuario');
+
+                const userData = await userResponse.json();
+                const users = userData.users || [];
+                const targetUser = users.find(u => u.email.toLowerCase() === email.toLowerCase()) || users[0];
+
+                if (!targetUser) {
+                    Swal.fire('No encontrado', 'No se encontró ningún usuario con ese correo.', 'info');
+                    document.getElementById('profileResultContainer').style.display = 'none';
+                    return;
+                }
+
+                const userId = targetUser.id;
+
+                // 2. Fetch Reputation/Profile Stats (Using Public/User API)
+                // Note: Admin token should be valid for this general endpoint
+                const repResponse = await fetch(`${AdminConfig.API_URL}/p2p/reputation/${userId}`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (!repResponse.ok) throw new Error('Error obteniendo perfil P2P');
+
+                const repData = await repResponse.json();
+                renderP2PProfile(repData, targetUser);
+
+            } catch (error) {
+                console.error('Search Error:', error);
+                Swal.fire('Error', 'Ocurrió un error al buscar el perfil.', 'error');
+            }
+        }
+
+        function renderP2PProfile(data, userUser) {
+            const container = document.getElementById('profileResultContainer');
+            container.style.display = 'block';
+
+            // Data extraction
+            // Attempt to get name from profile, fallback to email
+            let displayName = userUser.email;
+            if (data.user && data.user.profile) {
+                displayName = `${data.user.profile.firstName} ${data.user.profile.lastName}`;
+            }
+
+            // Initials
+            const initials = displayName.substring(0, 2).toUpperCase();
+
+            // Stats
+            const rating = parseFloat(data.averageRating || 0).toFixed(2);
+            const totalVotes = data.totalFeedbacks || 0;
+
+            // DOM Updates
+            document.getElementById('pInitials').textContent = initials;
+            document.getElementById('pName').textContent = displayName;
+
+            // Member since
+            const joinedDate = data.user && data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString() : '--';
+            document.getElementById('pJoined').textContent = joinedDate;
+
+            // Stars
+            const starsContainer = document.getElementById('pStars');
+            starsContainer.innerHTML = '';
+            const fullStars = Math.floor(rating);
+            const hasHalf = rating % 1 >= 0.5;
+            for (let i = 0; i < fullStars; i++) starsContainer.innerHTML += '<i class="fas fa-star"></i>';
+            if (hasHalf) starsContainer.innerHTML += '<i class="fas fa-star-half-alt"></i>';
+            // Fill empty? Optional.
+
+            document.getElementById('pRating').textContent = rating;
+            document.getElementById('pVotes').textContent = totalVotes;
+
+            document.getElementById('pTotalTrades').textContent = data.totalTrades || 0;
+            document.getElementById('pCompletion').textContent = parseFloat(data.completionRate || 0).toFixed(1) + '%';
+
+            // Extended stats from API
+            document.getElementById('pCancelled').textContent = data.cancelledTrades || 0;
+            document.getElementById('pDisputes').textContent = data.totalDisputes || 0;
+            document.getElementById('pMakerAds').textContent = data.makerTotalTrades || 0;
+            document.getElementById('pTakerOffers').textContent = data.takerTotalTrades || 0;
+
+            // Avg Time Calculation
+            let avgMinutes = 0;
+            const totalCompleted = (data.makerCompletedTrades || 0) + (data.takerCompletedTrades || 0);
+            if (totalCompleted > 0) {
+                const makerTime = (data.makerAvgMinutes || 0) * (data.makerCompletedTrades || 0);
+                const takerTime = (data.takerAvgMinutes || 0) * (data.takerCompletedTrades || 0);
+                avgMinutes = (makerTime + takerTime) / totalCompleted;
+            }
+            document.getElementById('pAvgTime').textContent = Math.round(avgMinutes) + ' min';
+
+            // Recent Feedback
+            const feedContainer = document.getElementById('pRecentFeedback');
+            feedContainer.innerHTML = '';
+
+            // API property is 'recentFeedback' (singular or plural in JSON? JSON says 'recentFeedback' array)
+            const feedbacks = data.recentFeedback || [];
+            if (feedbacks.length > 0) {
+                const last = feedbacks[0]; // Most recent
+                const authorName = last.fromUser && last.fromUser.profile
+                    ? `${last.fromUser.profile.firstName} ${last.fromUser.profile.lastName}`
+                    : (last.fromUser ? last.fromUser.email : 'Usuario');
+
+                feedContainer.innerHTML = `
+                    <div class="border rounded p-3 bg-light">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong class="text-dark">${authorName}</strong>
+                            <small class="text-muted">${new Date(last.createdAt).toLocaleDateString()}</small>
+                        </div>
+                        <p class="mb-1 text-dark italic">"${last.comment}"</p>
+                        <div class="text-warning small">
+                            ${Array(last.rating).fill('<i class="fas fa-star"></i>').join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                feedContainer.innerHTML = '<p class="text-muted">No hay calificaciones recientes.</p>';
+            }
+        }
+
+        function getDisputeStatusBadge(status) {
+            switch (status) {
+                case 'OPEN': return '<span class="badge badge-warning">Abierta</span>';
+                case 'IN_REVIEW': return '<span class="badge badge-info">En Revisión</span>';
+                case 'RESOLVED': return '<span class="badge badge-success">Resuelta</span>';
+                case 'CLOSED': return '<span class="badge badge-secondary">Cerrada</span>';
+                default: return `<span class="badge badge-light">${status}</span>`;
+            }
+        }
+
+        function getOrderStatusBadge(status, tradeStatus) {
+            if (tradeStatus === 'SETTLED') return '<span class="badge badge-success">Liquidada</span>';
+            if (tradeStatus === 'CANCELLED') return '<span class="badge badge-secondary">Cancelada</span>';
+            if (tradeStatus === 'DISPUTED') return '<span class="badge badge-danger">En Disputa</span>';
+            if (tradeStatus === 'WAITING_PAYMENT') return '<span class="badge badge-warning">Esperando Pago</span>';
+            if (tradeStatus === 'PAYMENT_CONFIRMED') return '<span class="badge badge-info">Pago Confirmado</span>';
+
+            switch (status) {
+                case 'PENDING': return '<span class="badge badge-success">Abierta</span>';
+                case 'TAKEN': return '<span class="badge badge-warning">Tomada</span>';
+                case 'CANCELLED': return '<span class="badge badge-secondary">Cancelada</span>';
+                case 'EXPIRED': return '<span class="badge badge-dark">Expirada</span>';
+                default: return `<span class="badge badge-light">${status}</span>`;
+            }
+        }
+
+        let marketTableInstance = null;
+        let currentMarketPage = 1;
+        let allMarketOrders = [];
+
+        async function loadMarketOrders(page = 1) {
+            currentMarketPage = page;
+            const status = document.getElementById('marketStatusFilter').value;
+
+            try {
+                const url = new URL(`${AdminConfig.API_URL}/admin/p2p/market`);
+                url.searchParams.append('page', page);
+                url.searchParams.append('limit', '20');
+                if (status && status !== 'ALL') url.searchParams.append('status', status);
+
+                const response = await fetch(url, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    AdminConfig.handleApiError(401);
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error cargando órdenes del mercado');
+
+                const data = await response.json();
+                allMarketOrders = data.orders || [];
+                const pagination = data.pagination || {};
+
+                // Destroy existing DataTable if any (or clean up partial/failed init)
+                if (marketTableInstance) {
+                    try { marketTableInstance.destroy(); } catch (e) { /* ignore */ }
+                    marketTableInstance = null;
+                }
+                if ($.fn.DataTable && $.fn.DataTable.isDataTable('#marketTable')) {
+                    try { $('#marketTable').DataTable().destroy(); } catch (e) { /* ignore */ }
+                }
+
+                const tbody = document.getElementById('marketTableBody');
+                tbody.innerHTML = '';
+
+                if (allMarketOrders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay órdenes para mostrar</td></tr>';
+                    // No inicializar DataTable con fila vacía (colspan causa _DT_CellIndex)
+                    renderMarketPagination(pagination);
+                    return;
+                } else {
+                    allMarketOrders.forEach((order, idx) => {
+                        const tradeStatus = order.trade ? order.trade.status : null;
+                        const makerName = order.maker ?
+                            `${order.maker.firstName || ''} ${order.maker.lastName || ''}`.trim() || order.maker.email.split('@')[0] :
+                            '-';
+                        const takerName = order.trade && order.trade.taker ?
+                            `${order.trade.taker.firstName || ''} ${order.trade.taker.lastName || ''}`.trim() || order.trade.taker.email.split('@')[0] :
+                            '-';
+
+                        const typeBadge = order.type === 'SELL' ?
+                            '<span class="badge badge-danger">Venta</span>' :
+                            '<span class="badge badge-success">Compra</span>';
+
+                        const row = `
+                            <tr>
+                                <td title="${order.id}">${order.id.substring(0, 8)}...</td>
+                                <td>${typeBadge}</td>
+                                <td>${order.cryptoAsset}/${order.fiatCurrency}</td>
+                                <td>${order.amount.toFixed(4)} ${order.type === 'BUY' ? order.fiatCurrency : order.cryptoAsset}</td>
+                                <td>${order.rate.toFixed(2)}</td>
+                                <td title="${order.maker?.email || ''}">${makerName}</td>
+                                <td title="${order.trade?.taker?.email || ''}">${takerName}</td>
+                                <td>${getOrderStatusBadge(order.status, tradeStatus)}</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="viewOrderDetails(${idx})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+
+                // Initialize DataTable
+                marketTableInstance = $('#marketTable').DataTable({
+                    order: [],
+                    pageLength: 20,
+                    paging: false, // We use server-side pagination
+                    searching: true,
+                    language: {
+                        search: "Buscar:",
+                        emptyTable: "No hay datos",
+                        info: `Página ${pagination.page || 1} de ${pagination.totalPages || 1}`,
+                        infoEmpty: "Sin resultados"
+                    }
+                });
+
+                // Render pagination
+                renderMarketPagination(pagination);
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar las órdenes del mercado', 'error');
+            }
+        }
+
+        function renderMarketPagination(pagination) {
+            const container = document.getElementById('marketPagination');
+            if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<ul class="pagination justify-content-center">';
+            html += `<li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="loadMarketOrders(${pagination.page - 1}); return false;">Anterior</a>
+                     </li>`;
+
+            for (let i = 1; i <= pagination.totalPages && i <= 5; i++) {
+                html += `<li class="page-item ${pagination.page === i ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="loadMarketOrders(${i}); return false;">${i}</a>
+                         </li>`;
+            }
+
+            html += `<li class="page-item ${pagination.page === pagination.totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="loadMarketOrders(${pagination.page + 1}); return false;">Siguiente</a>
+                     </li>`;
+            html += '</ul>';
+
+            container.innerHTML = html;
+        }
+
+        function viewOrderDetails(idx) {
+            const order = allMarketOrders[idx];
+            if (!order) return;
+
+            const typeLabels = {
+                'BANK_TRANSFER': 'Transferencia Bancaria',
+                'PAGO_MOVIL': 'Pago Móvil',
+                'PAYPAL': 'PayPal',
+                'ZELLE': 'Zelle',
+                'BANESCO_PANAMA': 'Banesco Panamá',
+                'WALLY_TECH': 'Wally Tech',
+                'ZINLI': 'Zinli'
+            };
+
+            // Build payment methods HTML
+            let paymentMethodsHtml = '<p class="text-muted">No especificados</p>';
+            let paymentMethodsArr = order.paymentMethods;
+
+            // Handle string JSON if backend sent it as string (legacy/fallback)
+            if (typeof paymentMethodsArr === 'string') {
+                try {
+                    paymentMethodsArr = JSON.parse(paymentMethodsArr);
+                } catch (e) {
+                    paymentMethodsArr = [];
+                }
+            }
+
+            if (Array.isArray(paymentMethodsArr) && paymentMethodsArr.length > 0) {
+                const getFieldLabel = (methodType, fieldNumber) => {
+                    const labels = {
+                        'BANK_TRANSFER': { 1: 'Nombre del Banco', 2: 'Número de Cuenta', 3: 'Tipo de Cuenta', 4: 'ID del Titular' },
+                        'PAGO_MOVIL': { 1: 'Nombre del Banco', 2: 'Número de Teléfono', 3: 'ID del Titular', 4: '' },
+                        'PAYPAL': { 1: 'Correo Electrónico', 2: '', 3: '', 4: '' },
+                        'ZELLE': { 1: 'Correo Electrónico', 2: '', 3: '', 4: '' },
+                        'BANESCO_PANAMA': { 1: 'Número de Cuenta', 2: 'Nombre del Titular', 3: '', 4: '' },
+                        'WALLY_TECH': { 1: 'Número de Teléfono', 2: '', 3: '', 4: '' },
+                        'ZINLI': { 1: 'Correo Electrónico', 2: '', 3: '', 4: '' },
+                        // Additional Venezuelan banks
+                        'BANCAMIGA': { 1: 'Número de Cuenta', 2: 'Tipo de Cuenta', 3: 'Cédula del Titular', 4: '' },
+                        'BANESCO': { 1: 'Número de Cuenta', 2: 'Tipo de Cuenta', 3: 'Cédula del Titular', 4: '' },
+                        'MERCANTIL': { 1: 'Número de Cuenta', 2: 'Tipo de Cuenta', 3: 'Cédula del Titular', 4: '' },
+                        'PROVINCIAL': { 1: 'Número de Cuenta', 2: 'Tipo de Cuenta', 3: 'Cédula del Titular', 4: '' },
+                        'BANCO_DE_VENEZUELA': { 1: 'Número de Cuenta', 2: 'Tipo de Cuenta', 3: 'Cédula del Titular', 4: '' },
+                        'BNC': { 1: 'Número de Cuenta', 2: 'Tipo de Cuenta', 3: 'Cédula del Titular', 4: '' },
+                        // Default labels for any unrecognized type
+                        'DEFAULT': { 1: 'Cuenta/ID', 2: 'Tipo/Detalle', 3: 'Identificación', 4: 'Información Adicional' }
+                    };
+                    // Try specific type first, then fallback to DEFAULT labels
+                    if (labels[methodType]?.[fieldNumber] && labels[methodType][fieldNumber] !== '') {
+                        return labels[methodType][fieldNumber];
+                    }
+                    return labels['DEFAULT'][fieldNumber] || `Campo ${fieldNumber}`;
+                };
+
+                paymentMethodsHtml = paymentMethodsArr.map(pm => {
+                    let methodObj = pm;
+                    // Try to parse if string
+                    if (typeof pm === 'string') {
+                        try {
+                            const parsed = JSON.parse(pm);
+                            methodObj = (typeof parsed === 'object') ? parsed : { name: pm };
+                        } catch (e) {
+                            methodObj = { name: pm };
+                        }
+                    }
+
+                    if (!methodObj || typeof methodObj !== 'object') {
+                        methodObj = { name: String(pm) };
+                    }
+
+                    // Determine method name
+                    let methodName = methodObj.name || methodObj.methodName || 'Método de Pago';
+                    if (methodObj.type && typeLabels[methodObj.type]) {
+                        methodName = typeLabels[methodObj.type];
+                    } else if (methodObj.code && typeLabels[methodObj.code]) {
+                        methodName = typeLabels[methodObj.code];
+                    }
+
+                    // Build details HTML using specific fields with mapped labels
+                    let detailsHtml = '';
+
+                    if (methodObj.field1) detailsHtml += `<div class="small text-muted"><strong>${getFieldLabel(methodObj.type, 1)}:</strong> ${methodObj.field1}</div>`;
+                    if (methodObj.field2) detailsHtml += `<div class="small text-muted"><strong>${getFieldLabel(methodObj.type, 2)}:</strong> ${methodObj.field2}</div>`;
+                    if (methodObj.field3) detailsHtml += `<div class="small text-muted"><strong>${getFieldLabel(methodObj.type, 3)}:</strong> ${methodObj.field3}</div>`;
+                    if (methodObj.field4) detailsHtml += `<div class="small text-muted"><strong>${getFieldLabel(methodObj.type, 4)}:</strong> ${methodObj.field4}</div>`;
+
+                    // Also check for dynamic properties for backward compatibility or extra fields
+                    const excludeFields = ['id', 'definitionId', 'name', 'methodName', 'code', 'type', 'userId', 'createdAt', 'updatedAt', 'details', 'user', 'isActive', 'displayOrder', 'field1', 'field2', 'field3', 'field4'];
+
+                    for (const [key, value] of Object.entries(methodObj)) {
+                        if (excludeFields.includes(key)) continue;
+                        if (value === null || value === undefined || value === 'undefined' || value === 'null' || value === '') continue;
+
+                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                        detailsHtml += `<div class="small text-muted"><strong>${label}:</strong> ${value}</div>`;
+                    }
+
+                    return `
+                        <div class="card mb-2">
+                            <div class="card-body py-2 px-3">
+                                <h6 class="mb-1 text-info">${methodName}</h6>
+                                ${detailsHtml ? `<div class="mt-1">${detailsHtml}</div>` : '<div class="small text-muted">Sin detalles adicionales</div>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Build payment proof section
+            let paymentProofHtml = '';
+            if (order.trade && order.trade.paymentProof) {
+                const proofUrl = order.trade.paymentProof;
+                const isPdf = proofUrl.toLowerCase().endsWith('.pdf');
+
+                if (isPdf) {
+                    // Open PDF in new tab
+                    paymentProofHtml = `
+                        <div class="card bg-light mb-3">
+                            <div class="card-body py-2">
+                                 <h6 class="card-title border-bottom pb-2 mb-2">Comprobante de Pago</h6>
+                                <a href="${proofUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-file-pdf mr-1"></i> Ver PDF
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Use lightbox for images
+                    paymentProofHtml = `
+                        <div class="card bg-light mb-3">
+                            <div class="card-body py-2">
+                                 <h6 class="card-title border-bottom pb-2 mb-2">Comprobante de Pago</h6>
+                                <a href="#" onclick="openLightbox('${proofUrl}'); return false;" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-image mr-1"></i> Ver Comprobante
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Build trade info
+            let tradeHtml = '<div class="alert alert-secondary">Orden aún no tomada</div>';
+            if (order.trade) {
+                const t = order.trade;
+                tradeHtml = `
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white py-1 px-3">
+                            <h6 class="mb-0">Información del Trade</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>ID:</strong> <small>${t.id}</small></p>
+                                    <p class="mb-1"><strong>Estado:</strong> ${getOrderStatusBadge(null, t.status)}</p>
+                                    <p class="mb-1"><strong>Crypto:</strong> ${t.cryptoAmount.toFixed(8)}</p>
+                                    <p class="mb-1"><strong>Fiat:</strong> ${t.fiatAmount.toFixed(2)}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Tasa:</strong> ${t.rate.toFixed(2)}</p>
+                                    <p class="mb-1"><strong>Fee Maker:</strong> ${t.makerFee.toFixed(8)}</p>
+                                    <p class="mb-1"><strong>Fee Taker:</strong> ${t.takerFee.toFixed(8)}</p>
+                                    ${t.settledAt ? `<p class="mb-1"><strong>Liquidado:</strong> ${new Date(t.settledAt).toLocaleString()}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build taker info
+            let takerHtml = '<p class="text-muted">N/A</p>';
+            if (order.trade && order.trade.taker) {
+                const taker = order.trade.taker;
+                takerHtml = `
+                    <p class="mb-1"><strong>Nombre:</strong> ${taker.firstName || ''} ${taker.lastName || ''}</p>
+                    <p class="mb-1"><strong>Email:</strong> ${taker.email}</p>
+                `;
+            }
+
+            Swal.fire({
+                title: `Orden ${order.id.substring(0, 8)}...`,
+                html: `
+                    <div class="text-left container-fluid px-0">
+                         <!-- Header Box: Order Info -->
+                        <div class="card mb-3">
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-6 border-right">
+                                        <h6 class="text-primary">Detalles de la Orden</h6>
+                                        <p class="mb-1"><strong>Tipo:</strong> ${order.type === 'SELL' ? '<span class="badge badge-danger">VENTA</span>' : '<span class="badge badge-success">COMPRA</span>'}</p>
+                                        <p class="mb-1"><strong>Par:</strong> ${order.cryptoAsset}/${order.fiatCurrency}</p>
+                                        <p class="mb-1"><strong>Monto:</strong> ${order.amount.toFixed(8)} ${order.type === 'BUY' ? order.fiatCurrency : order.cryptoAsset}</p>
+                                        <p class="mb-1"><strong>Tasa:</strong> ${order.rate.toFixed(2)} ${order.fiatCurrency}</p>
+                                        <p class="mb-1"><strong>Estado:</strong> ${getOrderStatusBadge(order.status, order.trade?.status)}</p>
+                                        <p class="mb-1"><strong>Creada:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary">Participantes</h6>
+                                        <strong class="d-block text-muted small mt-1">MAKER (Creador)</strong>
+                                        <p class="mb-1"><strong>Nombre:</strong> ${order.maker?.firstName || ''} ${order.maker?.lastName || ''}</p>
+                                        <p class="mb-1"><strong>Email:</strong> ${order.maker?.email || '-'}</p>
+                                        
+                                        <strong class="d-block text-muted small mt-2">TAKER (Tomador)</strong>
+                                        ${takerHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                         <!-- Terms and Conditions Box -->
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info text-white py-1 px-3">
+                                <h6 class="mb-0">Términos y Condiciones del Creador</h6>
+                            </div>
+                            <div class="card-body py-3">
+                                <p class="mb-0" style="white-space: pre-wrap;">${order.terms || 'Sin términos y condiciones adicionales.'}</p>
+                            </div>
+                        </div>
+                        
+                         <!-- Payment Methods -->
+                        <div class="mb-3">
+                            <h6 class="border-bottom pb-2">Métodos de Pago Utilizados</h6>
+                            ${paymentMethodsHtml}
+                        </div>
+
+                        ${paymentProofHtml}
+
+                         <!-- Trade Info -->
+                        ${tradeHtml}
+                    </div>
+                `,
+                width: 900,
+                showCloseButton: true,
+                showConfirmButton: false,
+                customClass: {
+                    content: 'text-left'
+                }
+            });
+        }
+
+        // Lightbox function for payment proof
+        function openLightbox(imageUrl) {
+            Swal.fire({
+                imageUrl: imageUrl,
+                imageAlt: 'Comprobante de Pago',
+                showCloseButton: true,
+                showConfirmButton: false,
+                width: 'auto',
+                padding: '1rem',
+                background: '#000',
+                customClass: {
+                    image: 'img-fluid'
+                }
+            });
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BidiPago Admin Dashboard">
+    <meta name="author" content="BidiPago">
+
+    <title>BidiPago Admin - Dashboard</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts for this template-->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="css/sb-admin-2.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        /* Custom sidebar colors - orange/black */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'index';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Admin</span>
+                                <img class="img-profile rounded-circle" src="img/undraw_profile.svg">
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+                    </div>
+
+                    <!-- Dashboard Statistics Cards (Existing Top Row) -->
+                    <div class="row">
+                        <!-- KYC Card -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                KYC Pendientes</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kycPendingCount">-
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-id-card fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <a href="kyc.html" class="stretched-link"></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- P2P Disputes Card -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Disputas P2P (Abiertas)</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="openDisputesCount">-
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-gavel fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <a href="p2p.html" class="stretched-link"></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Users Card -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Usuarios Activos</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="usersActiveCount">-
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <a href="users.html" class="stretched-link"></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SAN Groups Card -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Grupos
+                                                SAN (Activos)
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="sanGroupsCount">-
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-piggy-bank fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <a href="san.html" class="stretched-link"></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Accordion for Sections -->
+                    <div class="accordion mb-4" id="dashboardAccordion">
+
+                        <!-- P2P Section -->
+                        <div class="card shadow mb-2">
+                            <div class="card-header py-3" id="headingP2P">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <button class="btn btn-link btn-block text-left collapsed text-decoration-none"
+                                        type="button" data-toggle="collapse" data-target="#collapseP2P"
+                                        aria-expanded="false" aria-controls="collapseP2P">
+                                        <i class="fas fa-exchange-alt mr-2"></i> Estado del Mercado P2P
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="collapseP2P" class="collapse" aria-labelledby="headingP2P"
+                                data-parent="#dashboardAccordion">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- P2P Open Orders Card -->
+                                        <div class="col-xl-2 col-md-6 mb-4">
+                                            <div class="card border-left-success h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                                Órdenes Abiertas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="p2pOpenCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-store fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="p2p.html?status=PENDING" class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- P2P Taken Card -->
+                                        <div class="col-xl-2 col-md-6 mb-4">
+                                            <div class="card border-left-warning h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                                Tomadas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="p2pTakenCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="p2p.html?status=TAKEN" class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- P2P Settled Card -->
+                                        <div class="col-xl-2 col-md-6 mb-4">
+                                            <div class="card border-left-info h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                                Liquidadas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="p2pSettledCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="p2p.html?status=SETTLED" class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- P2P Cancelled Card -->
+                                        <div class="col-xl-2 col-md-6 mb-4">
+                                            <div class="card border-left-secondary h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                                                Canceladas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="p2pCancelledCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="p2p.html?status=CANCELLED" class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- P2P Expired Card -->
+                                        <div class="col-xl-2 col-md-6 mb-4">
+                                            <div class="card border-left-dark h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                                                Expiradas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="p2pExpiredCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="p2p.html?status=EXPIRED" class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BidiInvest Section -->
+                        <div class="card shadow mb-2">
+                            <div class="card-header py-3" id="headingInvest">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <button class="btn btn-link btn-block text-left collapsed text-decoration-none"
+                                        type="button" data-toggle="collapse" data-target="#collapseInvest"
+                                        aria-expanded="false" aria-controls="collapseInvest">
+                                        <i class="fas fa-chart-line mr-2"></i> BidiInvest
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="collapseInvest" class="collapse" aria-labelledby="headingInvest"
+                                data-parent="#dashboardAccordion">
+                                <div class="card-body">
+                                    <div class="row" id="investStatsRow">
+                                        <!-- Salas en Registro -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-info h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                                Salas Abiertas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="investRegistrationCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-door-open fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="invest.html?status=REGISTRATION"
+                                                        class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Salas Activas -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-success h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                                Salas Activas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="investActiveCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="invest.html?status=ACTIVE" class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Capital Activo -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-warning h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                                Capital Activo</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="investTotalCapital">$0.00</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Inversores Activos -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-primary h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                                Inversores Activos</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="investParticipantsCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Capital en Registro -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-info h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                                Capital en Registro</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="investRegistrationCapital">$0.00</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gift Cards Section -->
+                        <div class="card shadow mb-2">
+                            <div class="card-header py-3" id="headingGiftCards">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <button class="btn btn-link btn-block text-left collapsed text-decoration-none"
+                                        type="button" data-toggle="collapse" data-target="#collapseGiftCards"
+                                        aria-expanded="false" aria-controls="collapseGiftCards">
+                                        <i class="fas fa-gift mr-2"></i> Servicio de GiftCards
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="collapseGiftCards" class="collapse" aria-labelledby="headingGiftCards"
+                                data-parent="#dashboardAccordion">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Pendiente Manual -->
+                                        <div class="col-xl-4 col-md-6 mb-4">
+                                            <div class="card border-left-warning h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                                Pendiente Manual</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="giftcardPendingCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i
+                                                                class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                    <a href="giftcards.html?status=SUCCESS&filter=manual"
+                                                        class="stretched-link"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Entregadas -->
+                                        <div class="col-xl-4 col-md-6 mb-4">
+                                            <div class="card border-left-success h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                                Entregadas</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="giftcardDeliveredCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Reloadly Balance -->
+                                        <div class="col-xl-4 col-md-6 mb-4">
+                                            <div class="card border-left-primary h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                                Balance Reloadly</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="giftcardReloadlyBalance">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-wallet fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SAN Alerts Section -->
+                        <div class="card shadow mb-2">
+                            <div class="card-header py-3" id="headingSan">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <button class="btn btn-link btn-block text-left collapsed text-decoration-none"
+                                        type="button" data-toggle="collapse" data-target="#collapseSan"
+                                        aria-expanded="false" aria-controls="collapseSan">
+                                        <i class="fas fa-piggy-bank mr-2"></i> Alertas BidiSAN
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="collapseSan" class="collapse" aria-labelledby="headingSan"
+                                data-parent="#dashboardAccordion">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Morosos Card -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-danger h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                                Morosos SAN</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="sanDefaultersCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-user-slash fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pagos Hoy Card -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-danger h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                                Vencen
+                                                                Hoy/Mañana</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="sanDueTodayCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i
+                                                                class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pagos 2 Días Card -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-warning h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                                Vencen en 2 Días</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="sanDue2DaysCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pagos 3 Días Card -->
+                                        <div class="col-xl-3 col-md-6 mb-4">
+                                            <div class="card border-left-info h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="row no-gutters align-items-center">
+                                                        <div class="col mr-2">
+                                                            <div
+                                                                class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                                Vencen
+                                                                en 3 Días</div>
+                                                            <div class="h5 mb-0 font-weight-bold text-gray-800"
+                                                                id="sanDue3DaysCount">-</div>
+                                                        </div>
+                                                        <div class="col-auto">
+                                                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pending Payments Table -->
+                                    <div class="card shadow mb-4" id="sanPaymentsCard" style="display: none;">
+                                        <div
+                                            class="card-header py-3 d-flex justify-content-between align-items-center bg-light">
+                                            <h6 class="m-0 font-weight-bold text-primary"><i
+                                                    class="fas fa-credit-card mr-2"></i>Pagos
+                                                Pendientes (Próximos 3 días)</h6>
+                                            <span class="badge badge-warning" id="sanPaymentsTotalCount">0</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-sm" id="sanPaymentsTable">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Usuario</th>
+                                                            <th>Grupo</th>
+                                                            <th>Monto</th>
+                                                            <th>Vence</th>
+                                                            <th>Urgencia</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="sanPaymentsTableBody">
+                                                        <tr>
+                                                            <td colspan="5" class="text-center text-muted">Sin
+                                                                pagos
+                                                                próximos</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Finance Section -->
+                        <div class="card shadow mb-2">
+                            <div class="card-header py-3" id="headingFinance">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <button class="btn btn-link btn-block text-left text-decoration-none" type="button"
+                                        data-toggle="collapse" data-target="#collapseFinance" aria-expanded="true"
+                                        aria-controls="collapseFinance">
+                                        <i class="fas fa-wallet mr-2"></i> Finanzas
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="collapseFinance" class="collapse show" aria-labelledby="headingFinance"
+                                data-parent="#dashboardAccordion">
+                                <div class="card-body">
+                                    <ul class="nav nav-tabs mb-4" id="financeTab" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="nowpayments-tab" data-toggle="tab"
+                                                href="#nowpayments" role="tab" aria-controls="nowpayments"
+                                                aria-selected="true">
+                                                <i class="fas fa-globe mr-1"></i> NowPayments
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="commissions-tab" data-toggle="tab"
+                                                href="#commissions" role="tab" aria-controls="commissions"
+                                                aria-selected="false">
+                                                <i class="fas fa-percentage mr-1"></i> Comisiones BidiPago
+                                            </a>
+                                        </li>
+                                    </ul>
+
+                                    <div class="tab-content" id="financeTabContent">
+                                        <!-- NowPayments Tab -->
+                                        <div class="tab-pane fade show active" id="nowpayments" role="tabpanel"
+                                            aria-labelledby="nowpayments-tab">
+                                            <div class="d-flex justify-content-end mb-3">
+                                                <button onclick="loadFinanceStats()"
+                                                    class="btn btn-sm btn-primary shadow-sm">
+                                                    <i class="fas fa-sync-alt fa-sm text-white-50"></i>
+                                                    Actualizar
+                                                </button>
+                                            </div>
+                                            <div class="row" id="financeRow">
+                                                <!-- Dynamic Content -->
+                                                <div class="col-12 text-center py-4">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="sr-only">Cargando balances...</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Commissions Tab -->
+                                        <div class="tab-pane fade" id="commissions" role="tabpanel"
+                                            aria-labelledby="commissions-tab">
+                                            <div class="d-flex justify-content-end mb-3">
+                                                <button onclick="loadCommissionsStats()"
+                                                    class="btn btn-sm btn-primary shadow-sm">
+                                                    <i class="fas fa-sync-alt fa-sm text-white-50"></i>
+                                                    Actualizar
+                                                </button>
+                                            </div>
+                                            <div class="row" id="commissionsRow">
+                                                <!-- Dynamic Content -->
+                                                <div class="col-12 text-center py-4">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="sr-only">Cargando comisiones...</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> <!-- End Accordion -->
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">¿Listo para salir?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" si estás listo para terminar tu sesión
+                    actual.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <a class="btn btn-primary" href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="js/sb-admin-2.min.js"></script>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        if (!AdminConfig.checkAuth()) {
+            // Redirect will happen
+        } else {
+            loadDashboardStats();
+        }
+
+        async function loadDashboardStats() {
+            const headers = AdminConfig.getAuthHeaders();
+            console.log('[Dashboard] Starting to load stats...');
+
+            try {
+                // Fetch consolidated stats
+                const statsEndpoint = '/admin/dashboard/stats';
+                const res = await fetch(`${AdminConfig.API_URL}${statsEndpoint}`, { headers });
+
+                if (res.ok) {
+                    const data = await res.json();
+
+                    document.getElementById('kycPendingCount').textContent = data.pendingKyc || '0';
+                    document.getElementById('usersActiveCount').textContent = data.activeUsers || '0';
+                    document.getElementById('sanGroupsCount').textContent = data.activeSanGroups || '0';
+
+                    if (document.getElementById('suspendedUsersCount')) {
+                        document.getElementById('suspendedUsersCount').textContent = data.suspendedUsers || '0';
+                    }
+                    if (document.getElementById('openDisputesCount')) {
+                        document.getElementById('openDisputesCount').textContent = data.openDisputes || '0';
+                    }
+                } else if (res.status === 401) {
+                    AdminConfig.handleApiError(401, statsEndpoint);
+                    return;
+                }
+            } catch (e) {
+                console.error("Error loading Dashboard stats", e);
+            }
+
+            // Load finances
+            loadFinanceStats();
+            // Load Commissions
+            loadCommissionsStats();
+
+            // Load SAN alerts
+            loadSanAlerts();
+
+            // Load P2P stats
+            loadP2PStats();
+
+            // Load BidiInvest stats
+            loadInvestStats();
+
+            // Load Gift Card stats
+            loadGiftCardStats();
+
+            console.log('[Dashboard] Stats loading complete');
+        }
+
+        async function loadInvestStats() {
+            const headers = AdminConfig.getAuthHeaders();
+
+            try {
+                const res = await fetch(`${AdminConfig.API_URL}/admin/invest/rooms`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    const rooms = data.rooms || [];
+
+                    const registration = rooms.filter(r => r.status === 'registration').length;
+                    const active = rooms.filter(r => r.status === 'active').length;
+                    const totalCapital = rooms
+                        .filter(r => r.status === 'active')
+                        .reduce((sum, r) => sum + (parseFloat(r.totalCapital) || 0), 0);
+                    const registrationCapital = rooms
+                        .filter(r => r.status === 'registration')
+                        .reduce((sum, r) => sum + (parseFloat(r.totalCapital) || 0), 0);
+                    const totalParticipants = rooms
+                        .filter(r => r.status === 'active')
+                        .reduce((sum, r) => sum + (r.participantCount || 0), 0);
+
+                    document.getElementById('investRegistrationCount').textContent = registration;
+                    document.getElementById('investActiveCount').textContent = active;
+                    document.getElementById('investTotalCapital').textContent = '$' + totalCapital.toFixed(2);
+                    document.getElementById('investRegistrationCapital').textContent = '$' + registrationCapital.toFixed(2);
+                    document.getElementById('investParticipantsCount').textContent = totalParticipants;
+                }
+            } catch (e) {
+                console.error('Error loading BidiInvest stats:', e);
+            }
+        }
+
+        function getAssetSymbol(currency, network) {
+            if (!currency) return '';
+            const c = currency.toLowerCase();
+            // Just basic normalization to find the file
+            // Assume files are btc.svg, eth.svg, usdt.svg etc.
+            if (c.includes('usdt')) return 'USDT';
+            if (c.includes('usdc')) return 'USDC';
+            if (c.includes('btc')) return 'BTC';
+            if (c.includes('eth')) return 'ETH';
+            if (c.includes('ltc')) return 'LTC';
+            if (c.includes('dai')) return 'DAI';
+            if (c.includes('sol')) return 'SOL';
+            if (c.includes('bnb')) return 'BNB';
+            return c.toUpperCase();
+        }
+
+        async function loadP2PStats() {
+            const headers = AdminConfig.getAuthHeaders();
+
+            try {
+                const res = await fetch(`${AdminConfig.API_URL}/admin/p2p/stats`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('p2pOpenCount').textContent = data.open || '0';
+                    document.getElementById('p2pTakenCount').textContent = data.taken || '0';
+                    document.getElementById('p2pSettledCount').textContent = data.settled || '0';
+                    document.getElementById('p2pCancelledCount').textContent = data.cancelled || '0';
+                    document.getElementById('p2pExpiredCount').textContent = data.expired || '0';
+                }
+            } catch (e) {
+                console.error('Error loading P2P stats:', e);
+            }
+        }
+
+        async function loadSanAlerts() {
+            const headers = AdminConfig.getAuthHeaders();
+
+            try {
+                // Load defaulters count
+                const defaultersRes = await fetch(`${AdminConfig.API_URL}/admin/san/defaulters`, { headers });
+                if (defaultersRes.ok) {
+                    const defaultersData = await defaultersRes.json();
+                    document.getElementById('sanDefaultersCount').textContent = defaultersData.totalDefaulters || '0';
+                }
+
+                // Load pending payments
+                const pendingRes = await fetch(`${AdminConfig.API_URL}/admin/san/pending-payments`, { headers });
+                if (pendingRes.ok) {
+                    const pendingData = await pendingRes.json();
+                    const summary = pendingData.summary || {};
+                    const payments = pendingData.payments || [];
+
+                    document.getElementById('sanDueTodayCount').textContent = (summary.dueToday || 0) + (summary.dueTomorrow || 0);
+                    document.getElementById('sanDue2DaysCount').textContent = summary.dueIn2Days || '0';
+                    document.getElementById('sanDue3DaysCount').textContent = summary.dueIn3Days || '0';
+
+                    // Render payments table
+                    if (payments.length > 0) {
+                        document.getElementById('sanPaymentsCard').style.display = 'block';
+                        document.getElementById('sanPaymentsTotalCount').textContent = payments.length;
+
+                        const tbody = document.getElementById('sanPaymentsTableBody');
+                        tbody.innerHTML = '';
+
+                        payments.slice(0, 10).forEach(p => {
+                            const urgencyClass = p.priority === 'high' ? 'badge-danger' : (p.priority === 'medium' ? 'badge-warning' : 'badge-info');
+                            const urgencyText = p.priority === 'high' ? 'URGENTE' : (p.priority === 'medium' ? 'Pronto' : 'Normal');
+                            const dueDate = new Date(p.dueDate).toLocaleDateString('es-VE');
+
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${p.userEmail.split('@')[0]}</td>
+                                    <td><a href="san.html">${p.groupName}</a></td>
+                                    <td>${p.total.toFixed(2)} BiUSD</td>
+                                    <td>${dueDate}</td>
+                                    <td><span class="badge ${urgencyClass}">${urgencyText}</span></td>
+                                </tr>
+                            `;
+                        });
+
+                        if (payments.length > 10) {
+                            tbody.innerHTML += '<tr><td colspan="5" class="text-center"><a href="san.html">Ver todos...</a></td></tr>';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading SAN alerts:', e);
+            }
+        }
+
+        async function loadFinanceStats() {
+            const headers = AdminConfig.getAuthHeaders();
+            const financeRow = document.getElementById('financeRow');
+
+            try {
+                financeRow.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div></div>';
+
+                const endpoint = '/admin/dashboard/finance/balance';
+                const res = await fetch(`${AdminConfig.API_URL}${endpoint}`, { headers });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    financeRow.innerHTML = '';
+
+                    let hasBalances = false;
+
+                    Object.keys(data).forEach(currency => {
+                        const balance = data[currency];
+                        // Usually { amount, pending_amount }
+                        if (balance && balance.amount > 0) {
+                            hasBalances = true;
+                            const assetSymbol = getAssetSymbol(currency);
+                            const iconPath = `/assets/coins/${assetSymbol.toLowerCase()}.svg`;
+
+                            // Just simpler card for NowPayments
+                            const card = `
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-success shadow-sm h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <img src="${iconPath}" onerror="this.src='/assets/coins/usdt.svg'" alt="${assetSymbol}" style="width: 32px; height: 32px; margin-right: 10px;">
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">${currency.toUpperCase()}</div>
+                                            </div>
+                                            <div class="h4 font-weight-bold text-success mb-1">
+                                                ${balance.amount}
+                                            </div>
+                                            ${balance.pending_amount > 0 ? `<div class="text-xs text-warning"><i class="fas fa-clock"></i> Pendiente: ${balance.pending_amount}</div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                             `;
+                            financeRow.innerHTML += card;
+                        }
+                    });
+
+                    if (!hasBalances) {
+                        financeRow.innerHTML = '<div class="col-12 text-center text-muted">No hay balances positivos para mostrar en NowPayments.</div>';
+                    }
+
+                } else {
+                    financeRow.innerHTML = `<div class="col-12 text-center text-danger">Error al cargar balances: ${res.statusText}</div>`;
+                }
+            } catch (e) {
+                console.error("Error loading Finance stats", e);
+                financeRow.innerHTML = `<div class="col-12 text-center text-danger">Error de conexión</div>`;
+            }
+        }
+
+        async function loadCommissionsStats() {
+            const headers = AdminConfig.getAuthHeaders();
+            const commissionsRow = document.getElementById('commissionsRow');
+
+            try {
+                commissionsRow.innerHTML = '<div class="col-12 text-center py-4"><div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div></div>';
+
+                const endpoint = '/admin/dashboard/finance/commissions';
+                const res = await fetch(`${AdminConfig.API_URL}${endpoint}`, { headers });
+
+                if (res.ok) {
+                    const wallets = await res.json();
+                    commissionsRow.innerHTML = '';
+
+                    if (wallets.length === 0) {
+                        commissionsRow.innerHTML = '<div class="col-12 text-center text-muted">No hay balances de comisiones positivos para mostrar.</div>';
+                        return;
+                    }
+
+                    wallets.forEach(w => {
+                        const assetSymbol = getAssetSymbol(w.assetSymbol);
+                        const iconPath = `/assets/coins/${assetSymbol.toLowerCase()}.svg`;
+                        const formattedBalance = parseFloat(w.balance).toFixed(8);
+
+                        // Consolidated User App Style
+                        const card = `
+                            <div class="col-xl-4 col-md-6 mb-4">
+                                <div class="card shadow-sm h-100 border-0" style="background-color: #fff; border-radius: 8px;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <img src="${iconPath}" onerror="this.src='/assets/coins/usdt.svg'" alt="${assetSymbol}" style="width: 40px; height: 40px; margin-right: 12px;">
+                                            <div>
+                                                <div class="h5 font-weight-bold text-dark mb-0">${assetSymbol}</div>
+                                                <div class="text-xs text-muted" style="font-size: 0.75rem;">Balance total</div>
+                                            </div>
+                                        </div>
+                                        <div class="h3 font-weight-bold mb-0" style="color: #e85d26;">${formattedBalance} ${assetSymbol}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        commissionsRow.innerHTML += card;
+                    });
+
+                } else {
+                    commissionsRow.innerHTML = `<div class="col-12 text-center text-danger">Error: ${res.statusText}</div>`;
+                }
+            } catch (e) {
+                console.error("Error loading Commissions stats", e);
+                commissionsRow.innerHTML = `<div class="col-12 text-center text-danger">Error de conexión</div>`;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

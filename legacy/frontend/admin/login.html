@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BidiPago Admin Panel">
+    <meta name="author" content="BidiPago">
+    <title>BidiPago Admin - Login</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+
+    <style>
+        :root {
+            --primary: #ee6a3e;
+            --primary-gradient: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #2d2d2d 0%, #121212 100%);
+            color: var(--text-primary);
+            padding: 20px;
+        }
+        .login-box {
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 2.5rem 3rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .login-logo img {
+            max-height: 50px;
+            height: 50px;
+        }
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 1.75rem;
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .form-check input {
+            width: auto;
+            accent-color: var(--primary);
+        }
+        .form-check label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn-ingresar {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(238, 106, 62, 0.3);
+        }
+        .btn-ingresar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(238, 106, 62, 0.4);
+        }
+        .btn-ingresar:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .login-disclaimer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 380px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-box">
+        <div class="login-logo">
+            <img src="img/biglogo.svg" alt="BidiPago">
+        </div>
+        <h1>Bienvenido a BidiPago Admin</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope fa-sm" style="margin-right: 0.25rem;"></i> Correo</label>
+                <input type="email" id="email" autocomplete="email" placeholder="Ingresa tu correo..." required>
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock fa-sm" style="margin-right: 0.25rem;"></i> Contraseña</label>
+                <input type="password" id="password" autocomplete="current-password" placeholder="Contraseña" required>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="customCheck">
+                <label for="customCheck">Recordarme</label>
+            </div>
+                <button type="submit" class="btn-ingresar" id="loginBtn">
+                <i class="fas fa-sign-in-alt" style="margin-right: 0.25rem;"></i> Ingresar
+            </button>
+        </form>
+    </div>
+    <p class="login-disclaimer">
+        El acceso al admin es auditado y un ingreso no autorizado será denunciado.
+    </p>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- reCAPTCHA v3 (mismo que login web - requerido cuando RECAPTCHA_V3_SECRET_KEY está configurado) -->
+    <script>
+        (function() {
+            const baseUrl = AdminConfig.API_URL.replace(/\/api\/?$/, '') || AdminConfig.API_URL;
+            fetch(baseUrl + '/api/config/recaptcha-v3').then(r => r.json()).then(data => {
+                if (data.siteKey) {
+                    const s = document.createElement('script');
+                    s.src = 'https://www.google.com/recaptcha/api.js?render=' + data.siteKey;
+                    s.async = true;
+                    document.head.appendChild(s);
+                    window.RECAPTCHA_V3_SITE_KEY = data.siteKey;
+                }
+            }).catch(function(){});
+        })();
+    </script>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('loginBtn');
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ingresando...';
+
+            try {
+                let recaptchaToken = null;
+                if (window.RECAPTCHA_V3_SITE_KEY) {
+                    if (typeof grecaptcha !== 'undefined') {
+                        await new Promise(function(r) { grecaptcha.ready(r); });
+                        recaptchaToken = await grecaptcha.execute(window.RECAPTCHA_V3_SITE_KEY, { action: 'login' });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Verificación de seguridad cargando. Espera un momento e intenta de nuevo.' });
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right: 0.25rem;"></i> Ingresar';
+                        return;
+                    }
+                }
+
+                const body = { email, password };
+                if (recaptchaToken) body.recaptchaToken = recaptchaToken;
+
+                const response = await fetch(`${AdminConfig.API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const token = data.accessToken || data.token;
+                    if (!token) throw new Error('No se recibió token del servidor');
+
+                    localStorage.setItem('adminToken', token);
+                    if (data.user) localStorage.setItem('adminUser', JSON.stringify(data.user));
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Bienvenido',
+                        text: 'Ingreso exitoso',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = 'index.html';
+                    });
+                } else {
+                    throw new Error(data.message || 'Error de autenticación');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message
+                });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right: 0.25rem;"></i> Ingresar';
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Métodos de Pago Fiat</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fd7e14 !important; }
+        .sidebar .sidebar-brand { color: #fd7e14 !important; }
+        .sidebar-divider { border-top: 1px solid rgba(253,126,20,0.3) !important; }
+        .sidebar-heading { color: #fd7e14 !important; }
+    </style>
+</head>
+<body id="page-top">
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'fiat-payment-methods';</script>
+        <script src="js/admin-sidebar.js"></script>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3"><i class="fa fa-bars"></i></button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="container-fluid">
+                    <h1 class="h3 mb-2 text-gray-800">Métodos de Pago Fiat</h1>
+                    <p class="mb-4">Activa o desactiva métodos de depósito fiat. PayPal/Tarjeta y Depósito en moneda nacional (OTC BidiPago Express). Cuando está desactivado, los usuarios no verán la opción.</p>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Disponibilidad</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Método</th>
+                                                    <th>Estado</th>
+                                                    <th>Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="methodsBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto"><span>Copyright &copy; BidiPago 2026</span></div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Cerrar sesión</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+                <div class="modal-body">¿Desea cerrar sesión?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <a href="login.html" class="btn btn-primary" onclick="localStorage.removeItem('adminToken');localStorage.removeItem('adminUser');">Cerrar sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script>
+        if (!AdminConfig.checkAuth()) {}
+        const user = AdminConfig.getUser();
+        document.getElementById('adminEmail').textContent = user.email || 'Admin';
+
+        async function loadMethods() {
+            const res = await fetch(AdminConfig.API_URL + '/admin/fiat/methods', { headers: AdminConfig.getAuthHeaders() });
+            if (res.status === 401) { AdminConfig.handleApiError(401, 'fiat/methods'); return; }
+            const data = await res.json();
+            const tbody = document.getElementById('methodsBody');
+            tbody.innerHTML = (data.methods || []).map(m => `
+                <tr>
+                    <td><strong>${m.name}</strong><br><small class="text-muted">${m.code}</small></td>
+                    <td><span class="badge badge-${m.isActive ? 'success' : 'secondary'}">${m.isActive ? 'Activo' : 'Inactivo'}</span></td>
+                    <td>
+                        <button class="btn btn-sm ${m.isActive ? 'btn-warning' : 'btn-success'}" onclick="toggleMethod('${m.id}', ${!m.isActive})">
+                            ${m.isActive ? 'Desactivar' : 'Activar'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function toggleMethod(id, isActive) {
+            const res = await fetch(AdminConfig.API_URL + '/admin/fiat/methods/' + id, {
+                method: 'PATCH',
+                headers: AdminConfig.getAuthHeaders(),
+                body: JSON.stringify({ isActive })
+            });
+            if (res.status === 401) { AdminConfig.handleApiError(401); return; }
+            const data = await res.json();
+            if (data.error) alert(data.message || data.error);
+            else loadMethods();
+        }
+
+        loadMethods();
+    </script>
+</body>
+</html>

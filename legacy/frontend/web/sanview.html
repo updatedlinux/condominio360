@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Grupo SAN - BidiPago</title>
+
+    <style>
+        /* Sidebar styles */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        /* Main content area */
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .dashboard-main.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        /* SAN View container */
+        .san-view-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+
+        @media (max-width: 1200px) {
+            .san-view-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Group info section */
+        .san-info-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: calc(100vh - 120px);
+        }
+
+        .san-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .san-header h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .san-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .san-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .san-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .san-status.completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .san-status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .san-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .san-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .san-detail-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .san-detail-value {
+            color: #333;
+        }
+
+        .total-benefit {
+            background: linear-gradient(135deg, #ee6a3e 0%, #f7931e 100%);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .total-benefit h3 {
+            margin: 0 0 10px 0;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .total-benefit .amount {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Beneficiary order */
+        .beneficiary-order {
+            margin-top: 20px;
+        }
+
+        .beneficiary-order h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .beneficiary-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .beneficiary-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .beneficiary-item.current {
+            background: linear-gradient(135deg, #ee6a3e 0%, #f7931e 100%);
+            color: #fff;
+        }
+
+        .beneficiary-position {
+            width: 30px;
+            height: 30px;
+            background: #fff;
+            color: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 12px;
+        }
+
+        .beneficiary-item.current .beneficiary-position {
+            background: rgba(255, 255, 255, 0.9);
+            color: #ee6a3e;
+        }
+
+        .waiting-order-message {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            color: #856404;
+            text-align: center;
+        }
+
+        /* Interactive beneficiary list styles */
+        .beneficiary-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .beneficiary-item:hover {
+            background-color: #eee;
+        }
+
+        .beneficiary-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .beneficiary-details {
+            width: 100%;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            border-top: 1px solid transparent;
+        }
+
+        .beneficiary-details.expanded {
+            max-height: 100px;
+            opacity: 1;
+            margin-top: 15px;
+            padding-bottom: 5px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ee6a3e, #f7931e);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.6s ease-out;
+        }
+
+        /* Chat section */
+        .chat-section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 0;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.own {
+            align-items: flex-end;
+        }
+
+        .message.other {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.own .message-bubble {
+            background: #ee6a3e;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.other .message-bubble {
+            background: #e9ecef;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background: #fff;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #ee6a3e;
+        }
+
+        .btn-send {
+            padding: 12px 24px;
+            background: #ee6a3e;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-send:hover {
+            background: #d85a2e;
+        }
+
+        .btn-send:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .chat-closed-message {
+            padding: 15px;
+            background: #e2e3e5;
+            border-radius: 5px;
+            color: #383d41;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            background: #6c757d;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 15px;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                width: 200px;
+            }
+
+            .dashboard-main {
+                margin-left: 200px;
+            }
+
+            .dashboard-sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-main.sidebar-collapsed {
+                margin-left: 0;
+            }
+
+            .san-view-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .chat-section {
+                height: 500px;
+                margin-top: 20px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Dashboard Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san" class="active"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="dashboard-main" id="dashboardMain">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            <i class="ri-loader-4-line"></i> Cargando información del grupo...
+        </div>
+
+        <!-- SAN View Container -->
+        <div id="sanContainer" class="san-view-container" style="display: none;">
+            <!-- Group Info Section -->
+            <div class="san-info-section">
+                <a href="/san" class="btn-back">
+                    <i class="ri-arrow-left-line"></i> Volver a BidiSAN
+                </a>
+
+                <div class="san-header">
+                    <h2 id="groupName">Cargando...</h2>
+                    <span id="groupStatus" class="san-status">...</span>
+                </div>
+
+                <div class="san-details">
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Periodicidad:</span>
+                        <span class="san-detail-value" id="periodicity">-</span>
+                    </div>
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Cuota:</span>
+                        <span class="san-detail-value" id="contribution">-</span>
+                    </div>
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Día de Pago:</span>
+                        <span class="san-detail-value" id="paymentDay">-</span>
+                    </div>
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Fecha de Inicio:</span>
+                        <span class="san-detail-value" id="startDate">-</span>
+                    </div>
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Fecha de Fin del SAN:</span>
+                        <span class="san-detail-value" id="endDate">-</span>
+                    </div>
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Participantes:</span>
+                        <span class="san-detail-value" id="participants">-</span>
+                    </div>
+                    <div class="san-detail-row">
+                        <span class="san-detail-label">Período Actual:</span>
+                        <span class="san-detail-value" id="currentPeriod">-</span>
+                    </div>
+                </div>
+
+                <!-- Total Benefit -->
+                <div class="total-benefit">
+                    <h3>Monto Total del Beneficio</h3>
+                    <div class="amount" id="totalBenefit">0.00 BiUSD</div>
+                </div>
+
+                <!-- Beneficiary Order -->
+                <div class="beneficiary-order">
+                    <h4><i class="ri-list-ordered"></i> Orden de Beneficiarios</h4>
+                    <div id="beneficiaryOrder">
+                        <div class="waiting-order-message">
+                            <i class="ri-time-line"></i>
+                            Esperando a iniciar el SAN para determinar orden aleatorio
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Section -->
+            <div class="chat-section">
+                <div class="chat-header">
+                    <h3><i class="ri-message-3-line"></i> Chat del Grupo</h3>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando mensajes...
+                    </div>
+                </div>
+                <div class="chat-input-container" id="chatInputContainer">
+                    <!-- Join Button for non-participants -->
+                    <div id="joinButtonContainer" style="display: none; margin-bottom: 15px;">
+                        <button id="joinGroupBtn" onclick="joinGroupFromView()"
+                            style="width: 100%; padding: 12px; background: linear-gradient(135deg, #c94d2a 0%, #d4700f 100%); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="ri-user-add-line"></i> Unirse al Grupo
+                        </button>
+                    </div>
+                    <div id="chatClosedMessage" class="chat-closed-message" style="display: none;">
+                        <i class="ri-lock-line"></i> Este grupo ha finalizado. El chat está cerrado.
+                    </div>
+                    <form class="chat-input-form" id="chatForm" onsubmit="sendMessage(event)">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Escribe un mensaje..."
+                            maxlength="5000" required>
+                        <button type="submit" class="btn-send" id="sendButton">
+                            <i class="ri-send-plane-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Tooltip -->
+        <div id="successTooltip"
+            style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: #fff; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 10px;">
+            <i class="ri-checkbox-circle-line" style="font-size: 1.2rem;"></i>
+            <span id="successTooltipMessage">Éxito</span>
+        </div>
+
+        <!-- Error Tooltip -->
+        <div id="errorTooltip"
+            style="display: none; position: fixed; top: 20px; right: 20px; background: #dc3545; color: #fff; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 10px;">
+            <i class="ri-close-circle-line" style="font-size: 1.2rem;"></i>
+            <span id="errorTooltipMessage">Error</span>
+        </div>
+
+        <!-- Generic Modal -->
+        <div id="genericModal" class="modal"
+            style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(5px);">
+            <div class="modal-content"
+                style="background-color: #fff; margin: 15% auto; padding: 30px; border: none; width: 90%; max-width: 450px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                <i id="modalIcon" class="ri-error-warning-line"
+                    style="font-size: 4rem; color: #dc3545; margin-bottom: 15px; display: block;"></i>
+                <h3 id="modalTitle" style="margin: 10px 0; color: #333; font-weight: 700;">Título</h3>
+                <p id="modalMessage" style="margin-bottom: 25px; color: #666; font-size: 1.1em; line-height: 1.5;">
+                    Mensaje</p>
+                <div id="modalButtons" style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="modalOkBtn"
+                        style="background: #333; color: #fff; padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s;">Entendido</button>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .btn-pay-quota {
+                background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+                color: white;
+                border: none;
+                padding: 6px 14px;
+                border-radius: 20px;
+                font-size: 0.85em;
+                font-weight: 600;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                transition: transform 0.2s, box-shadow 0.2s;
+                text-decoration: none;
+                box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
+            }
+
+            .btn-pay-quota:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+                color: white;
+            }
+
+            .btn-pay-quota:active {
+                transform: translateY(0);
+            }
+
+            .btn-pay-quota i {
+                font-size: 1.1em;
+            }
+        </style>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/web/js/sanview.js?v=1.6"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('dashboardSidebar');
+            sidebar.classList.toggle('collapsed');
+            document.getElementById('dashboardMain').classList.toggle('sidebar-collapsed');
+        }
+
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+        document.getElementById('logoutBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+        });
+    </script>
+</body>
+
+</html>

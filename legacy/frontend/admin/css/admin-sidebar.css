@@ -1,0 +1,175 @@
+/**
+ * BidiPago Admin - Sidebar estilo web app
+ * Estilos alineados con la interfaz de usuario principal de BidiPago
+ * Corrige overflow y aplica diseño oscuro con acentos naranja
+ */
+
+/* === Contenedor principal - Estilo web BidiPago (sobrescribe inline) === */
+ul#accordionSidebar.sidebar,
+#accordionSidebar.sidebar {
+    background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 50%, #252525 100%) !important;
+    border-radius: 0 16px 16px 0;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+    overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+    #accordionSidebar.sidebar {
+        width: 20rem !important; /* Ancho para "Métodos de Depósito Fiat" completo */
+    }
+    #accordionSidebar.sidebar .nav-item .nav-link {
+        width: 100% !important;
+    }
+    /* Estado colapsado: permitir que el botón <- funcione */
+    #accordionSidebar.sidebar.toggled {
+        width: 6.5rem !important;
+    }
+    #accordionSidebar.sidebar.toggled .nav-item .nav-link {
+        width: 6.5rem !important;
+    }
+}
+
+/* Logo: BidiPago cuando extendido, BiUSD cuando contraído */
+#accordionSidebar.sidebar .sidebar-brand .sidebar-logo-expanded {
+    display: block;
+}
+#accordionSidebar.sidebar .sidebar-brand .sidebar-logo-collapsed {
+    display: none;
+}
+#accordionSidebar.sidebar.toggled .sidebar-brand .sidebar-logo-expanded {
+    display: none;
+}
+#accordionSidebar.sidebar.toggled .sidebar-brand .sidebar-logo-collapsed {
+    display: block;
+}
+
+/* Logo y separadores */
+#accordionSidebar.sidebar .sidebar-brand {
+    color: #fff !important;
+}
+
+#accordionSidebar.sidebar .sidebar-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* === Navegación principal - Icono + texto blanco === */
+#accordionSidebar.sidebar .nav-item .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    padding: 0.75rem 1rem;
+    border-radius: 0 12px 12px 0;
+    margin-right: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+#accordionSidebar.sidebar .nav-item .nav-link i {
+    color: rgba(255, 255, 255, 0.9) !important;
+    margin-right: 0.5rem;
+}
+
+#accordionSidebar.sidebar .nav-item .nav-link:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+}
+
+/* Dashboard activo - Fondo naranja completo como en web */
+#accordionSidebar.sidebar .nav-item.active .nav-link {
+    background: #F48D2A !important;
+    color: #fff !important;
+}
+
+#accordionSidebar.sidebar .nav-item.active .nav-link i {
+    color: #fff !important;
+}
+
+/* === Secciones colapsables === */
+#accordionSidebar.sidebar .nav-link[data-toggle="collapse"] {
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+#accordionSidebar.sidebar .nav-link[data-toggle="collapse"]:not(.collapsed) {
+    color: #F48D2A !important;
+}
+
+#accordionSidebar.sidebar .nav-link[data-toggle="collapse"]:not(.collapsed) i {
+    color: #F48D2A !important;
+}
+
+/* === CORRECCIÓN OVERFLOW: Collapse e items dentro del sidebar === */
+#accordionSidebar.sidebar .nav-item .collapse {
+    overflow: hidden;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: none !important;
+    border-radius: 0 12px 12px 0;
+    padding: 0.5rem 0 !important;
+    margin: 0 0.5rem 0.5rem !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: calc(100% - 1rem) !important;
+    box-sizing: border-box;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner .collapse-item {
+    display: flex !important;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.9) !important;
+    padding: 0.6rem 1rem !important;
+    margin: 0 0.25rem 0.125rem !important;
+    border-radius: 0 10px 10px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner .collapse-item i {
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner .collapse-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner .collapse-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner .collapse-item.active {
+    background: #F48D2A !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+#accordionSidebar.sidebar .nav-item .collapse .collapse-inner .collapse-item[href="#"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Botón Cerrar Sesión en la parte inferior */
+#accordionSidebar.sidebar .sidebar-logout-btn {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: 0.75rem 1rem;
+}
+#accordionSidebar.sidebar .sidebar-logout-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff !important;
+}
+#accordionSidebar.sidebar .sidebar-logout-btn i {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Sidebar toggle botón - funcional en todas las páginas */
+#accordionSidebar.sidebar #sidebarToggle {
+    background: rgba(255, 255, 255, 0.1) !important;
+    cursor: pointer;
+}
+
+#accordionSidebar.sidebar #sidebarToggle:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+}

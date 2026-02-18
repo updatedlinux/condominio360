@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Email Verificado - BidiPago</title>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .verification-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            color: #fff;
+        }
+        
+        .verification-container h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .verification-container p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        .kyc-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        
+        .btn-dashboard {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border: none;
+            color: #fff;
+            padding: 15px 40px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+        
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(238, 106, 62, 0.3);
+            color: #fff;
+        }
+        
+        @media (max-width: 768px) {
+            .verification-container {
+                padding: 30px 20px;
+            }
+            
+            .verification-container h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="success-icon">
+            <i class="ri-checkbox-circle-fill"></i>
+        </div>
+        
+        <h1>¡Email verificado con éxito!</h1>
+        
+        <p>Tu correo electrónico ha sido verificado correctamente.</p>
+        
+        <p>Ahora puedes acceder a todas las funciones de tu cuenta en BidiPago.</p>
+        
+        <div class="kyc-badge">
+            <i class="ri-shield-check-line"></i> Tu nivel KYC actual es: L1 – Email verificado
+        </div>
+        
+        <a href="/dashboard" class="btn-dashboard">
+            <i class="ri-arrow-right-line"></i> Ir al Dashboard
+        </a>
+    </div>
+</body>
+</html>
+

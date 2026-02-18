@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Auditoría OTC</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fd7e14 !important; }
+        .sidebar .sidebar-brand { color: #fd7e14 !important; }
+        .sidebar-divider { border-top: 1px solid rgba(253,126,20,0.3) !important; }
+        .sidebar-heading { color: #fd7e14 !important; }
+    </style>
+</head>
+<body id="page-top">
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'otc-audit';</script>
+        <script src="js/admin-sidebar.js"></script>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Cerrar Sesión</a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="container-fluid">
+                    <h1 class="h3 mb-2 text-gray-800">Auditoría OTC</h1>
+                    <p class="mb-4">Depósitos y retiros en moneda nacional. Retiros OTC incluyen comprobante, tasa y comisiones.</p>
+
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between flex-wrap">
+                            <h6 class="m-0 font-weight-bold text-primary">Órdenes OTC</h6>
+                            <div class="d-flex align-items-center flex-wrap mt-2 mt-md-0">
+                                <input type="text" class="form-control form-control-sm mr-2" id="emailFilter" placeholder="Buscar por correo..." style="max-width: 200px;" onkeyup="if(event.key==='Enter')loadOrders()">
+                                <select class="form-control form-control-sm mr-2" id="orderTypeFilter" onchange="loadOrders()" style="max-width: 140px;">
+                                    <option value="">Todos</option>
+                                    <option value="DEPOSIT">Depósitos</option>
+                                    <option value="WITHDRAWAL">Retiros</option>
+                                </select>
+                                <select class="form-control form-control-sm mr-2" id="statusFilter" onchange="loadOrders()" style="max-width: 140px;">
+                                    <option value="">Todos</option>
+                                    <option value="PENDING">Pendiente</option>
+                                    <option value="WAITING_PAYMENT">Esperando pago</option>
+                                    <option value="COMPLETED">Completado</option>
+                                    <option value="CANCELLED">Cancelado</option>
+                                </select>
+                                <button class="btn btn-sm btn-primary" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm" width="100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Solicitante</th>
+                                            <th>Tomador</th>
+                                            <th>Monto</th>
+                                            <th>Fiat</th>
+                                            <th>Tasa</th>
+                                            <th>Estado</th>
+                                            <th>Comprobante</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ordersTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div id="ordersPagination" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="sticky-footer bg-white">
+                    <div class="container my-auto">
+                        <div class="copyright text-center my-auto"><span>Copyright &copy; BidiPago 2026</span></div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Cerrar sesión</h5><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+                <div class="modal-body">¿Está seguro?</div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="logout()">Cerrar sesión</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="proofLightboxModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Comprobante de pago</h5><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+                <div class="modal-body text-center p-0">
+                    <img id="proofLightboxImg" src="" alt="Comprobante" style="max-width:100%; height:auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="js/otc-audit.js"></script>
+</body>
+</html>

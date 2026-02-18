@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/assets/css/remixicon.css">
+	<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon_io/favicon-32x32.png">
+	<title>Ayuda - Preguntas Frecuentes | BidiPago</title>
+	<style>
+		:root {
+			--primary-orange: #ee6a3e;
+			--primary-orange-light: #ff8c5a;
+			--bg-light: #f8f9fa;
+			--bg-dark: #1a202c;
+			--text-light: #1a202c;
+			--text-dark: #f7fafc;
+			--card-bg-light: #fff;
+			--card-bg-dark: #2d3748;
+			--border-light: #e2e8f0;
+			--border-dark: #4a5568;
+		}
+		body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text-light); line-height: 1.6; background: var(--bg-light); transition: all 0.3s; }
+		body.dark-mode { background: var(--bg-dark); color: var(--text-dark); }
+		.theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 1001; background: var(--card-bg-light); border: 2px solid var(--border-light); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+		body.dark-mode .theme-toggle { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.theme-toggle i { font-size: 1.5rem; color: var(--primary-orange); }
+		.navbar-custom { background: var(--card-bg-light); padding: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; transition: all 0.3s; }
+		body.dark-mode .navbar-custom { background: var(--card-bg-dark); }
+		.navbar-custom .nav-link { color: var(--text-light); font-weight: 500; margin: 0 0.75rem; }
+		body.dark-mode .navbar-custom .nav-link { color: var(--text-dark); }
+		.navbar-custom .nav-link:hover, .navbar-custom .nav-link.active { color: var(--primary-orange); }
+		.btn-primary-custom { background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); color: #fff; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; text-decoration: none; border: none; transition: all 0.3s; }
+		.btn-primary-custom:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(238, 106, 62, 0.3); color: #fff; }
+		.section-label { color: #ee6a3e; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+		.section-heading { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+		.section-desc { color: #718096; font-size: 1.05rem; }
+		body.dark-mode .section-desc { color: #a0aec0; }
+		body.dark-mode .section-heading { color: var(--text-dark); }
+		.footer-border { border-top: 1px solid var(--border-light); }
+		body.dark-mode .footer-border { border-color: var(--border-dark); }
+		.navbar-custom .navbar-brand img { height: 50px; }
+		.navbar-custom .navbar-brand .logo-dark { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-light { display: none; }
+		body.dark-mode .navbar-custom .navbar-brand .logo-dark { display: inline; }
+		.navbar-custom .btn-login { color: var(--text-light); text-decoration: none; font-weight: 500; margin-right: 1rem; }
+		body.dark-mode .navbar-custom .btn-login { color: var(--text-dark); }
+		.navbar-custom .btn-register { background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%); color: #fff; padding: 0.5rem 1.5rem; border-radius: 8px; font-weight: 600; text-decoration: none; }
+		.navbar-custom .container { flex-wrap: wrap; }
+		.navbar-custom .navbar-nav { flex-wrap: wrap; }
+		.navbar-custom .nav-item .nav-link { margin: 0 0.4rem; font-size: 0.9rem; white-space: nowrap; }
+		@media (max-width: 1199px) {
+			#headerRatesCarousel { display: none !important; }
+			.navbar-custom .nav-item .nav-link { margin: 0 0.5rem; }
+		}
+		@media (max-width: 991px) {
+			.navbar-collapse { padding: 1rem 0; }
+			.navbar-nav .nav-item { margin-bottom: 0.25rem; }
+		}
+		.header-rates-carousel { min-height: 36px; flex-direction: column; }
+		.header-rates-title { font-size: 0.7rem; font-weight: 600; color: var(--text-light); opacity: 0.9; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+		body.dark-mode .header-rates-title { color: var(--text-dark); }
+		.header-rates-track { display: flex; gap: 1.25rem; align-items: center; overflow-x: auto; scroll-behavior: smooth; padding: 0.25rem 0; scrollbar-width: none; -ms-overflow-style: none; }
+		.header-rates-track::-webkit-scrollbar { display: none; }
+		.header-rate-item { flex: 0 0 auto; text-align: center; white-space: nowrap; }
+		.header-rate-item .pair { font-size: 0.7rem; color: var(--text-light); opacity: 0.9; }
+		body.dark-mode .header-rate-item .pair { color: var(--text-dark); }
+		.header-rate-item .value { font-size: 0.95rem; font-weight: 700; color: var(--primary-orange); }
+		.header-rate-item .value.loading { font-weight: 400; opacity: 0.7; }
+		/* FAQ */
+		.faq-search { max-width: 480px; margin: 0 auto 2rem; }
+		.faq-search .form-control { border-radius: 12px; padding: 0.75rem 1rem 0.75rem 2.75rem; border: 1px solid var(--border-light); background: var(--card-bg-light); color: var(--text-light); }
+		body.dark-mode .faq-search .form-control { background: #374151; border-color: #4b5563; color: #f3f4f6; }
+		body.dark-mode .faq-search .form-control::placeholder { color: #9ca3af; }
+		.faq-search .input-wrapper { position: relative; }
+		.faq-search .input-wrapper i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #718096; font-size: 1.1rem; pointer-events: none; }
+		body.dark-mode .faq-search .input-wrapper i { color: #d1d5db; }
+		.faq-category { margin-bottom: 2rem; }
+		.faq-category-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+		.faq-category-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; flex-shrink: 0; }
+		.faq-category-title { font-size: 1.25rem; font-weight: 700; color: var(--text-light); margin: 0; }
+		body.dark-mode .faq-category-title { color: var(--text-dark); }
+		.faq-accordion .accordion-item { background: var(--card-bg-light); border: 1px solid var(--border-light); border-radius: 12px !important; margin-bottom: 0.5rem; overflow: hidden; }
+		body.dark-mode .faq-accordion .accordion-item { background: var(--card-bg-dark); border-color: var(--border-dark); }
+		.faq-accordion .accordion-button { background: transparent !important; border: none !important; color: var(--text-light) !important; font-weight: 600; padding: 1rem 1.25rem; box-shadow: none !important; text-align: left; }
+		body.dark-mode .faq-accordion .accordion-button { color: var(--text-dark) !important; }
+		.faq-accordion .accordion-button:not(.collapsed) { color: var(--primary-orange) !important; }
+		.faq-accordion .accordion-button::after { background-size: 1rem; }
+		.faq-accordion .accordion-body { padding: 0 1.25rem 1.25rem; color: #4a5568; font-size: 0.95rem; }
+		body.dark-mode .faq-accordion .accordion-body { color: #a0aec0; }
+		.faq-accordion .accordion-body p { margin-bottom: 0.5rem; }
+		.faq-accordion .accordion-body p:last-child { margin-bottom: 0; }
+		.faq-accordion .accordion-body ul { margin: 0.5rem 0; padding-left: 1.25rem; }
+		.faq-no-results { text-align: center; padding: 3rem; color: #718096; }
+		body.dark-mode .faq-no-results { color: #a0aec0; }
+		.faq-item.hidden, .faq-category.hidden { display: none !important; }
+		.btn-scroll-top { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-light) 100%); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(238, 106, 62, 0.4); z-index: 999; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s, transform 0.2s; }
+		.btn-scroll-top.visible { opacity: 1; visibility: visible; }
+		.btn-scroll-top:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(238, 106, 62, 0.5); }
+		.btn-scroll-top i { font-size: 1.5rem; }
+		/* Responsive FAQ */
+		@media (max-width: 767px) {
+			.theme-toggle { top: 0.5rem; right: 0.5rem; width: 44px; height: 44px; }
+			.navbar .navbar-toggler { margin-right: 50px; }
+			body { padding-top: 0; }
+			.container { padding-left: 1rem; padding-right: 1rem; }
+			.section-heading { font-size: 1.5rem; }
+			.faq-search { margin-bottom: 1.5rem; padding: 0 0.5rem; }
+			.faq-search .form-control { padding: 0.65rem 1rem 0.65rem 2.5rem; font-size: 0.95rem; }
+			.faq-category { margin-bottom: 1.5rem; }
+			.faq-category-header { flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+			.faq-category-icon { width: 40px; height: 40px; font-size: 1.25rem; }
+			.faq-category-title { font-size: 1.1rem; }
+			.faq-accordion .accordion-button { padding: 0.85rem 1rem; font-size: 0.95rem; min-height: 48px; white-space: normal; line-height: 1.4; }
+			.faq-accordion .accordion-body { padding: 0 1rem 1rem; font-size: 0.9rem; }
+			.faq-accordion .accordion-body ul { padding-left: 1rem; }
+			.faq-no-results { padding: 2rem 1rem; font-size: 0.95rem; }
+		}
+		@media (max-width: 575px) {
+			.navbar-custom .navbar-brand img { height: 40px; }
+			.navbar-custom .nav-link { font-size: 0.85rem; }
+			.btn-primary-custom { padding: 0.6rem 1.25rem; font-size: 0.9rem; }
+		}
+	</style>
+</head>
+<body>
+	<button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema"><i class="ri-moon-line" id="themeIcon"></i></button>
+	<nav class="navbar navbar-expand-lg navbar-custom">
+		<div class="container d-flex align-items-center flex-wrap">
+			<a class="navbar-brand" href="/">
+				<img src="/assets/images/logotextdark.svg" alt="BidiPago" class="logo-light">
+				<img src="/assets/images/biglogo.svg" alt="BidiPago" class="logo-dark">
+			</a>
+			<div id="headerRatesCarousel" class="header-rates-carousel flex-grow-1 d-none d-lg-flex justify-content-center" style="max-width: 480px; margin-left: 3rem; margin-right: 2rem;">
+				<div class="header-rates-title">Tasas de Mercado:</div>
+				<div class="header-rates-track" id="headerRatesTrack"></div>
+			</div>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto align-items-center">
+					<li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+					<li class="nav-item"><a class="nav-link active" href="/faq">Ayuda</a></li>
+					<li class="nav-item"><a class="nav-link" href="/contact">Contacto</a></li>
+					<li class="nav-item"><a class="nav-link btn-login" href="/login">Ingresar</a></li>
+					<li class="nav-item"><a class="nav-link btn-register" href="/register">Registrarme</a></li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container py-5">
+		<div class="text-center mb-4">
+			<div class="section-label">Centro de Ayuda</div>
+			<h1 class="section-heading">Preguntas Frecuentes</h1>
+			<p class="section-desc mx-auto" style="max-width: 600px;">Encuentra respuestas rápidas sobre BidiPago: registro, niveles KYC, BidiInvest, BidiSan, criptomonedas, P2P, gift cards y más.</p>
+		</div>
+
+		<div class="faq-search">
+			<div class="input-wrapper">
+				<i class="ri-search-line"></i>
+				<input type="text" class="form-control" id="faqSearch" placeholder="Buscar en las preguntas frecuentes..." aria-label="Buscar">
+			</div>
+		</div>
+
+		<div id="faqContent">
+			<!-- 1. Registro y Cuenta -->
+			<section class="faq-category" data-category="registro cuenta kyc niveles verificación">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-user-add-line"></i></div>
+					<h2 class="faq-category-title">Registro y Cuenta</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionRegistro">
+					<div class="accordion-item faq-item" data-search="registro registro crear cuenta correo contraseña verificación">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReg1">¿Cómo me registro en BidiPago?</button>
+						</h3>
+						<div id="collapseReg1" class="accordion-collapse collapse" data-bs-parent="#accordionRegistro">
+							<div class="accordion-body">
+								<p>Es muy sencillo. Solo necesitas un correo electrónico válido y crear una contraseña segura. Una vez registrado, recibirás un código de verificación para activar tu cuenta y comenzar a explorar la plataforma.</p>
+							</div>
+						</div>
+					</div>
+					<div class="accordion-item faq-item" data-search="niveles verificación kyc documento identidad selfie cajero avanzado">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReg2">¿Qué son los niveles de verificación (KYC)?</button>
+						</h3>
+						<div id="collapseReg2" class="accordion-collapse collapse" data-bs-parent="#accordionRegistro">
+							<div class="accordion-body">
+								<p>Para garantizar la seguridad de todos nuestros usuarios y cumplir con las normativas internacionales, BidiPago utiliza niveles de verificación:</p>
+								<ul>
+									<li><strong>Nivel 1 (Básico):</strong> Registro inicial. Permite explorar la plataforma y realizar operaciones limitadas.</li>
+									<li><strong>Nivel 2 (Verificado):</strong> Requiere subir tu documento de identidad y una selfie. Desbloquea límites más altos en el P2P.</li>
+									<li><strong>Nivel 3 (Cajero/Avanzado):</strong> Requiere verificación con datos adicionales. Ideal para quienes desean ser proveedores de liquidez y ganar comisiones, además ofrece acceso a Productos de Inversión para crecimiento de capital o ahorro colaborativo.</li>
+									<li><strong>Nivel 4 (Máximo Nivel):</strong> Es nuestro nivel más alto. Con este no tendrás limitación transaccional y tendrás Acceso Anticipado a nuevas funcionalidades.</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 2. BidiInvest (Staking) -->
+			<section class="faq-category" data-category="bidinvest staking biusd planes conservador arriesgado agresivo">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-line-chart-line"></i></div>
+					<h2 class="faq-category-title">BidiInvest (Staking)</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionInvest">
+					<div class="accordion-item faq-item" data-search="bidinvest staking biusd congelados recompensas blockchain">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInv1">¿Qué es BidiInvest y cómo funciona el Staking?</button>
+						</h3>
+						<div id="collapseInv1" class="accordion-collapse collapse" data-bs-parent="#accordionInvest">
+							<div class="accordion-body">
+								<p>BidiInvest es nuestra herramienta de crecimiento patrimonial. El Staking consiste en mantener tus BiUSD (nuestra moneda estable) "congelados" en un plazo fijo a cambio de recompensas diarias o al finalizar el periodo. Es como una cuenta de ahorros, pero con rendimientos mucho más atractivos y basados en tecnología blockchain.</p>
+							</div>
+						</div>
+					</div>
+					<div class="accordion-item faq-item" data-search="planes staking conservador arriesgado agresivo rentabilidad">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInv2">¿Cuáles son los planes de Staking?</button>
+						</h3>
+						<div id="collapseInv2" class="accordion-collapse collapse" data-bs-parent="#accordionInvest">
+							<div class="accordion-body">
+								<p>Ofrecemos tres perfiles según tus metas:</p>
+								<ul>
+									<li><strong>Conservador:</strong> Plazos cortos y riesgo mínimo.</li>
+									<li><strong>Arriesgado:</strong> Un equilibrio entre tiempo y mayor retorno.</li>
+									<li><strong>Agresivo:</strong> Para quienes buscan la máxima rentabilidad a plazos más largos.</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 3. BidiSan -->
+			<section class="faq-category" data-category="bidisan susu san ahorro comunitario">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-group-line"></i></div>
+					<h2 class="faq-category-title">BidiSan (Rondas de Ahorro)</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionSan">
+					<div class="accordion-item faq-item" data-search="bidisan susu san ahorro comunitario cuota pote">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSan1">¿Qué es BidiSan?</button>
+						</h3>
+						<div id="collapseSan1" class="accordion-collapse collapse" data-bs-parent="#accordionSan">
+							<div class="accordion-body">
+								<p>Es la versión digital de los populares "Susu" o "San". Es un sistema de ahorro comunitario donde un grupo de personas aporta una cuota fija periódica y, en cada turno, uno de los miembros recibe el pote total recaudado. BidiPago actúa como el organizador y garante para que todos reciban su dinero de forma segura y puntual.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 4. Criptomonedas y Redes -->
+			<section class="faq-category" data-category="criptomonedas usdt usdc btc eth sol redes tron ethereum bsc polygon base">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-coin-line"></i></div>
+					<h2 class="faq-category-title">Criptomonedas y Redes</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionCrypto">
+					<div class="accordion-item faq-item" data-search="criptomonedas usdt usdc btc eth sol biusd">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCry1">¿Qué criptomonedas puedo usar en BidiPago?</button>
+						</h3>
+						<div id="collapseCry1" class="accordion-collapse collapse" data-bs-parent="#accordionCrypto">
+							<div class="accordion-body">
+								<p>Soportamos las monedas más estables y populares del mercado: USDT, USDC, BTC, ETH, SOL y nuestra moneda interna BiUSD.</p>
+							</div>
+						</div>
+					</div>
+					<div class="accordion-item faq-item" data-search="redes blockchains trc20 erc20 bep20 polygon solana base comisiones">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCry2">¿Qué redes o blockchains están disponibles?</button>
+						</h3>
+						<div id="collapseCry2" class="accordion-collapse collapse" data-bs-parent="#accordionCrypto">
+							<div class="accordion-body">
+								<p>Para que ahorres en comisiones, soportamos múltiples redes:</p>
+								<ul>
+									<li>TRC20 (Tron)</li>
+									<li>ERC20 (Ethereum)</li>
+									<li>BEP20 (Binance Smart Chain)</li>
+									<li>Polygon (MATIC)</li>
+									<li>Solana</li>
+									<li>Base</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 5. P2P y Monedas Fiat -->
+			<section class="faq-category" data-category="p2p fiat pesos dólares escrow comprar vender">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-exchange-dollar-line"></i></div>
+					<h2 class="faq-category-title">P2P y Monedas Fiat</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionP2P">
+					<div class="accordion-item faq-item" data-search="monedas fiat pesos argentinos colombianos bolívares bolivianos mexicanos dólares usd">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseP2P1">¿Qué monedas fiat puedo usar para comprar o vender?</button>
+						</h3>
+						<div id="collapseP2P1" class="accordion-collapse collapse" data-bs-parent="#accordionP2P">
+							<div class="accordion-body">
+								<p>Soportamos múltiples monedas fiduciarias con foco especial en Latinoamérica: desde Pesos Argentinos, Pesos Colombianos, Bolívares Venezolanos, Bolivianos, Pesos Mexicanos y muchas más. Por supuesto, soportamos operaciones en Dólares (USD) a través de métodos de pago internacionales seleccionados.</p>
+							</div>
+						</div>
+					</div>
+					<div class="accordion-item faq-item" data-search="seguro p2p escrow garantía fondos bloqueados">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseP2P2">¿Es seguro el mercado P2P?</button>
+						</h3>
+						<div id="collapseP2P2" class="accordion-collapse collapse" data-bs-parent="#accordionP2P">
+							<div class="accordion-body">
+								<p>Totalmente. BidiPago utiliza un sistema de Escrow (Garantía). Cuando inicias una operación, los fondos quedan bloqueados por la plataforma y solo se liberan cuando ambas partes confirman que el pago fiat fue realizado y recibido con éxito.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 6. Servicios y Gift Cards -->
+			<section class="faq-category" data-category="gift cards tarjetas regalo recargas telefónicas amazon netflix">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-gift-line"></i></div>
+					<h2 class="faq-category-title">Servicios y Gift Cards</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionServ">
+					<div class="accordion-item faq-item" data-search="gift cards tarjetas regalo amazon netflix apple playstation razer gold">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseServ1">¿Puedo comprar tarjetas de regalo (Gift Cards)?</button>
+						</h3>
+						<div id="collapseServ1" class="accordion-collapse collapse" data-bs-parent="#accordionServ">
+							<div class="accordion-body">
+								<p>Sí. En nuestra sección de Gift Cards puedes adquirir códigos para Amazon, Netflix, Apple, PlayStation, Razer Gold y muchas más, pagando directamente con tu saldo en BiUSD o cripto.</p>
+							</div>
+						</div>
+					</div>
+					<div class="accordion-item faq-item" data-search="recargas telefónicas digitel movistar movilnet claro personal tigo at&t virgin mobile">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseServ2">¿Cómo funcionan las recargas telefónicas?</button>
+						</h3>
+						<div id="collapseServ2" class="accordion-collapse collapse" data-bs-parent="#accordionServ">
+							<div class="accordion-body">
+								<p>Puedes recargar saldo de forma inmediata para las principales operadoras del continente (Digitel, Movistar y Movilnet, Claro, Personal, Tigo, AT&amp;T, Virgin Mobile, entre otros). Solo ingresas el número, el monto y el pago se procesa al instante.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 7. Seguridad y Soporte -->
+			<section class="faq-category" data-category="seguridad soporte 2fa fondos disputas ticket">
+				<div class="faq-category-header">
+					<div class="faq-category-icon"><i class="ri-shield-check-line"></i></div>
+					<h2 class="faq-category-title">Seguridad y Soporte</h2>
+				</div>
+				<div class="accordion faq-accordion" id="accordionSec">
+					<div class="accordion-item faq-item" data-search="protección fondos seguridad cifrado 2fa billeteras frías">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSec1">¿Cómo protegen mis fondos?</button>
+						</h3>
+						<div id="collapseSec1" class="accordion-collapse collapse" data-bs-parent="#accordionSec">
+							<div class="accordion-body">
+								<p>Utilizamos estándares de seguridad bancaria, cifrado de datos AES-256 y autenticación de dos factores (2FA). Además, la mayoría de los fondos se mantienen en billeteras frías (offline) para mayor protección.</p>
+							</div>
+						</div>
+					</div>
+					<div class="accordion-item faq-item" data-search="problema transacción disputa soporte chat ticket">
+						<h3 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSec2">¿Qué hago si tengo un problema con una transacción?</button>
+						</h3>
+						<div id="collapseSec2" class="accordion-collapse collapse" data-bs-parent="#accordionSec">
+							<div class="accordion-body">
+								<p>Contamos con un sistema de Disputas en el P2P y un equipo de soporte técnico listo para ayudarte a través de nuestro chat interno o ticket de ayuda.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<div id="faqNoResults" class="faq-no-results" style="display: none;">
+			<i class="ri-search-line" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+			<p class="mb-0">No se encontraron resultados para tu búsqueda. Intenta con otras palabras.</p>
+		</div>
+	</div>
+
+	<footer class="py-4 mt-5 footer-border">
+		<div class="container text-center section-desc">
+			<p class="mb-0">BidiPago - Plataforma para usuarios de Latinoamérica y el Caribe</p>
+			<a href="/" class="btn-primary-custom mt-3 d-inline-block">Volver al inicio</a>
+		</div>
+	</footer>
+
+	<button class="btn-scroll-top" id="btnScrollTop" aria-label="Subir"><i class="ri-arrow-up-s-line"></i></button>
+
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+	<script>
+		// Theme
+		const themeToggle = document.getElementById('themeToggle');
+		const themeIcon = document.getElementById('themeIcon');
+		function loadTheme() {
+			const savedTheme = localStorage.getItem('theme');
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+			if (isDark) {
+				document.body.classList.add('dark-mode');
+				themeIcon.className = 'ri-sun-line';
+			} else {
+				document.body.classList.remove('dark-mode');
+				themeIcon.className = 'ri-moon-line';
+			}
+		}
+		themeToggle.addEventListener('click', () => {
+			document.body.classList.toggle('dark-mode');
+			const isDark = document.body.classList.contains('dark-mode');
+			localStorage.setItem('theme', isDark ? 'dark' : 'light');
+			themeIcon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
+		});
+		loadTheme();
+
+		// Header rates
+		async function loadHeaderRates() {
+			const track = document.getElementById('headerRatesTrack');
+			if (!track) return;
+			track.innerHTML = ['VES/USDT','COP/USDT','ARS/USDT','MXN/USDT'].map(p =>
+				`<div class="header-rate-item"><div class="pair">${p}</div><div class="value loading">—</div></div>`
+			).join('');
+			try {
+				const res = await fetch('/api/prices/landing');
+				const data = await res.json();
+				if (data.success && data.rates) {
+					data.rates.forEach((r, i) => {
+						const items = track.querySelectorAll('.header-rate-item');
+						const valEl = items[i]?.querySelector('.value');
+						if (valEl) {
+							valEl.classList.remove('loading');
+							valEl.textContent = r.rate != null
+								? new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(r.rate)
+								: '—';
+						}
+					});
+				}
+			} catch (e) { console.warn('Header rates:', e); }
+		}
+		loadHeaderRates();
+		setInterval(loadHeaderRates, 5 * 60 * 1000);
+
+		// FAQ Search
+		const searchInput = document.getElementById('faqSearch');
+		const faqContent = document.getElementById('faqContent');
+		const faqNoResults = document.getElementById('faqNoResults');
+
+		function normalize(s) {
+			return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+		}
+
+		function filterFAQ() {
+			const q = normalize(searchInput.value).trim();
+			if (!q) {
+				document.querySelectorAll('.faq-category, .faq-item').forEach(el => el.classList.remove('hidden'));
+				faqNoResults.style.display = 'none';
+				return;
+			}
+			const terms = q.split(/\s+/).filter(Boolean);
+			let hasVisible = false;
+			document.querySelectorAll('.faq-category').forEach(cat => {
+				const catText = normalize(cat.dataset.category || '');
+				let catHasMatch = false;
+				cat.querySelectorAll('.faq-item').forEach(item => {
+					const itemText = normalize(item.dataset.search || '') + ' ' + normalize(item.textContent);
+					const match = terms.every(t => catText.includes(t) || itemText.includes(t));
+					if (match) {
+						item.classList.remove('hidden');
+						catHasMatch = true;
+						hasVisible = true;
+					} else {
+						item.classList.add('hidden');
+					}
+				});
+				cat.classList.toggle('hidden', !catHasMatch);
+			});
+			faqNoResults.style.display = hasVisible ? 'none' : 'block';
+		}
+
+		searchInput.addEventListener('input', filterFAQ);
+
+		// Botón subir
+		const btnScrollTop = document.getElementById('btnScrollTop');
+		if (btnScrollTop) {
+			window.addEventListener('scroll', () => {
+				btnScrollTop.classList.toggle('visible', window.scrollY > 300);
+			});
+			btnScrollTop.addEventListener('click', () => {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			});
+		}
+	</script>
+</body>
+</html>

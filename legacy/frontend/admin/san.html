@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BidiPago Admin - SAN">
+    <meta name="author" content="BidiPago">
+
+    <title>BidiPago Admin - SAN</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/sb-admin-2.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+
+    <!-- Custom styles for this page -->
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+    <style>
+        /* Custom sidebar colors - orange/black */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+
+        .stat-card {
+            border-left-width: 4px;
+            border-left-style: solid;
+        }
+
+        .stat-card.primary {
+            border-left-color: #4e73df;
+        }
+
+        .stat-card.success {
+            border-left-color: #1cc88a;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f6c23e;
+        }
+
+        .stat-card.danger {
+            border-left-color: #e74a3b;
+        }
+
+        .stat-card.info {
+            border-left-color: #36b9cc;
+        }
+
+        .modal-xl {
+            max-width: 1000px;
+        }
+
+        .participant-card {
+            background: #f8f9fc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #e3e6f0;
+        }
+
+        .participant-card.system {
+            background: #fff3cd;
+            border-color: #f6c23e;
+        }
+
+        .participant-card.inactive {
+            opacity: 0.6;
+            background: #f8d7da;
+            border-color: #e74a3b;
+        }
+        .participant-name { font-weight: 600; line-height: 1.3; }
+        .participant-email { font-size: 0.8rem; line-height: 1.3; word-break: break-all; }
+        .participant-cell .participant-name { font-weight: 600; }
+        .participant-cell .participant-email { font-size: 0.75rem; }
+
+        .payment-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .payment-badge.paid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .payment-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .payment-badge.defaulted {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .payment-badge.covered {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .payment-badge.exempt {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .action-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-bar {
+            margin-bottom: 20px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .group-info-card {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .group-info-card h5 {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+
+        .group-info-card h4 {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'san';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Admin</span>
+                                <img class="img-profile rounded-circle" src="img/undraw_profile.svg">
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-2 text-gray-800">Administración BidiSAN</h1>
+                    <p class="mb-4">Gestión de grupos de ahorro colaborativo.</p>
+
+                    <!-- Stats Row -->
+                    <div class="row" id="statsRow">
+                        <!-- Stats loaded via JS -->
+                        <div class="col-12 text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Cargando estadísticas...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notificaciones: Grupos por aprobar -->
+                    <div class="card shadow mb-4 border-left-warning" id="pendingApprovalCard">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-warning"><i class="fas fa-bell mr-2"></i>Grupos por aprobar (iniciar o rechazar)</h6>
+                            <span class="badge badge-warning" id="pendingApprovalCount">0</span>
+                        </div>
+                        <div class="card-body py-2" id="pendingApprovalBody">
+                            <p class="text-muted mb-0 small">Cargando...</p>
+                        </div>
+                    </div>
+
+                    <!-- Grupos atascados (no avanzan por falta de pago) -->
+                    <div class="card shadow mb-4 border-left-danger" id="groupsStuckCard">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-danger"><i class="fas fa-exclamation-triangle mr-2"></i>Grupos atascados (impagos en el período actual)</h6>
+                            <span class="badge badge-danger" id="groupsStuckCount">0</span>
+                        </div>
+                        <div class="card-body py-2" id="groupsStuckBody">
+                            <p class="text-muted mb-0 small">Cargando...</p>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="card shadow mb-4">
+                        <div class="card-body">
+                            <div class="row filter-bar">
+                                <div class="col-md-3">
+                                    <label for="filterStatus">Estado</label>
+                                    <select id="filterStatus" class="form-control" onchange="loadGroups()">
+                                        <option value="">Todos</option>
+                                        <option value="pending">Pendientes</option>
+                                        <option value="active">Activos</option>
+                                        <option value="completed">Completados</option>
+                                        <option value="cancelled">Cancelados</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filterPeriodicity">Periodicidad</label>
+                                    <select id="filterPeriodicity" class="form-control" onchange="loadGroups()">
+                                        <option value="">Todas</option>
+                                        <option value="weekly">Semanal</option>
+                                        <option value="monthly">Mensual</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-secondary" onclick="resetFilters()">
+                                        <i class="fas fa-sync"></i> Reiniciar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Groups Table -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-primary">Listado de Grupos</h6>
+                            <span id="totalCount" class="badge badge-primary">0 grupos</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover" id="groupsTable" width="100%"
+                                    cellspacing="0">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Creador</th>
+                                            <th>Monto</th>
+                                            <th>Periodicidad</th>
+                                            <th>Participantes</th>
+                                            <th>Período</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="groupsTableBody">
+                                        <tr>
+                                            <td colspan="8" class="text-center py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="sr-only">Cargando...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Pagination -->
+                            <div class="pagination-controls" id="paginationControls">
+                                <!-- Dynamic pagination -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">¿Listo para salir?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" si estás listo para terminar tu sesión actual.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <a class="btn btn-primary" href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Details Modal -->
+    <div class="modal fade" id="groupDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-piggy-bank mr-2"></i>Detalles del Grupo SAN</h5>
+                    <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="groupDetailsBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="groupDetailsFooter">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expel Participant Modal -->
+    <div class="modal fade" id="expelModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-slash mr-2"></i>Expulsar Participante</h5>
+                    <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="expelGroupId">
+                    <input type="hidden" id="expelParticipantId">
+                    <input type="hidden" id="expelHasDefaulted" value="false">
+                    <p><strong>Participante:</strong> <span id="expelParticipantName">-</span></p>
+                    <div class="alert alert-warning py-2 mb-2" id="expelDefaulterAlert" style="display: none;">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Este participante tiene impagos. Use <strong>Expulsar y cubrir con sistema</strong> para que participant-san@bidipago.com asuma la plaza y pague.
+                    </div>
+                    <div class="form-group">
+                        <label for="expelReason"><strong>Razón de la expulsión</strong></label>
+                        <textarea class="form-control" id="expelReason" rows="3"
+                            placeholder="Ingresa la razón de la expulsión..."></textarea>
+                        <small class="text-muted">La posición será ocupada por participant-san@bidipago.com.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-outline-danger" id="btnExpelOnly" onclick="confirmExpel(false)">
+                        <i class="fas fa-user-slash mr-1"></i>Solo expulsar
+                    </button>
+                    <button class="btn btn-danger" id="btnExpelAndCover" onclick="confirmExpel(true)">
+                        <i class="fas fa-hand-holding-usd mr-1"></i>Expulsar y cubrir con sistema
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Procesar Pagos (selección de usuarios a cobrar) -->
+    <div class="modal fade" id="processPaymentsModal" tabindex="-1" role="dialog" aria-labelledby="processPaymentsModalLabel" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="processPaymentsModalLabel"><i class="fas fa-credit-card mr-2"></i>Procesar pagos del período actual</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Seleccione a qué participantes desea cobrar ahora (restar saldo BiUSD). Los no seleccionados quedarán en mora y podrá expulsar o cubrir con el otro botón después.</p>
+                    <input type="hidden" id="processPaymentsGroupId">
+                    <div id="processPaymentsPreviewContent">
+                        <div class="text-center py-3"><div class="spinner-border text-primary"></div> Cargando...</div>
+                    </div>
+                    <div id="processPaymentsTableWrap" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Cobrar</th>
+                                        <th>Usuario</th>
+                                        <th>Monto + comisión</th>
+                                        <th>Balance BiUSD</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="processPaymentsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="btnProcessSelectedPayments" onclick="confirmProcessSelectedPayments()" style="display: none;">
+                        <i class="fas fa-check mr-1"></i>Cobrar a seleccionados
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="js/sb-admin-2.min.js"></script>
+
+    <script>
+        // State
+        let currentPage = 1;
+        const pageSize = 20;
+        let totalGroups = 0;
+        let currentGroupId = null;
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        // Check Auth
+        if (!AdminConfig.checkAuth()) {
+            // Redirect handled
+        } else {
+            loadStats();
+            loadGroups();
+            loadPendingApproval();
+            loadGroupsStuck();
+        }
+
+        async function loadPendingApproval() {
+            const card = document.getElementById('pendingApprovalCard');
+            const body = document.getElementById('pendingApprovalBody');
+            const countEl = document.getElementById('pendingApprovalCount');
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/san/pending-approval`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (response.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await response.json();
+                const groups = data.groups || [];
+                countEl.textContent = groups.length;
+                if (groups.length === 0) {
+                    body.innerHTML = '<p class="text-muted mb-0 small">No hay grupos pendientes de aprobar.</p>';
+                    return;
+                }
+                let html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead class="thead-light"><tr><th>Nombre</th><th>Creador</th><th>Participantes</th><th>Acciones</th></tr></thead><tbody>';
+                groups.forEach(g => {
+                    const participants = (g.participants || []).filter(p => p.isActive).length;
+                    html += `<tr>
+                        <td>${escapeHtml(g.name)}</td>
+                        <td>${escapeHtml(g.creator?.email || 'N/A')}</td>
+                        <td>${participants} / ${g.maxParticipants}</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm mr-1" onclick="startGroup('${g.id}')" title="Iniciar"><i class="fas fa-play"></i> Iniciar</button>
+                            <button class="btn btn-danger btn-sm" onclick="cancelGroup('${g.id}')" title="Cancelar"><i class="fas fa-times"></i> Cancelar</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                body.innerHTML = html;
+            } catch (e) {
+                body.innerHTML = '<p class="text-danger mb-0 small">Error al cargar.</p>';
+            }
+        }
+
+        async function loadGroupsStuck() {
+            const body = document.getElementById('groupsStuckBody');
+            const countEl = document.getElementById('groupsStuckCount');
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups-stuck`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (response.status === 401) { AdminConfig.handleApiError(401); return; }
+                const data = await response.json();
+                const stuck = data.groups || [];
+                countEl.textContent = stuck.length;
+                if (stuck.length === 0) {
+                    body.innerHTML = '<p class="text-muted mb-0 small">Ningún grupo atascado.</p>';
+                    return;
+                }
+                let html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead class="thead-light"><tr><th>Grupo</th><th>Período</th><th>Impagos</th><th>Pendientes</th><th>Acción</th></tr></thead><tbody>';
+                stuck.forEach(s => {
+                    html += `<tr>
+                        <td>${escapeHtml(s.group.name)}</td>
+                        <td>${s.currentPeriod} / ${s.group.maxParticipants}</td>
+                        <td><span class="badge badge-danger">${s.defaultedCount}</span></td>
+                        <td><span class="badge badge-warning">${s.pendingCount}</span></td>
+                        <td><button class="btn btn-info btn-sm" onclick="viewGroupDetails('${s.group.id}'); $('#groupDetailsModal').modal('show');" title="Ver detalle"><i class="fas fa-eye"></i> Ver</button></td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                body.innerHTML = html;
+            } catch (e) {
+                body.innerHTML = '<p class="text-danger mb-0 small">Error al cargar.</p>';
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPeriodicity').value = '';
+            currentPage = 1;
+            loadGroups();
+        }
+
+        async function loadStats() {
+            const statsRow = document.getElementById('statsRow');
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/san/stats`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    AdminConfig.handleApiError(401);
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error cargando estadísticas');
+
+                const stats = await response.json();
+
+                statsRow.innerHTML = `
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Grupos</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.totalGroups}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card success shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Activos</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.activeGroups}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.pendingGroups}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card info shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Participantes</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.totalParticipants}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card danger shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Impagos</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.totalDefaults}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4 mb-4">
+                        <div class="card stat-card primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Cubierto Sistema</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${stats.amountCoveredBySystem.toFixed(2)} BiUSD</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                statsRow.innerHTML = '<div class="col-12 text-center text-danger">Error cargando estadísticas</div>';
+            }
+        }
+
+        async function loadGroups() {
+            const status = document.getElementById('filterStatus').value;
+            const periodicity = document.getElementById('filterPeriodicity').value;
+
+            let url = `${AdminConfig.API_URL}/admin/san/groups?page=${currentPage}&limit=${pageSize}`;
+            if (status) url += `&status=${status}`;
+            if (periodicity) url += `&periodicity=${periodicity}`;
+
+            const tbody = document.getElementById('groupsTableBody');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+
+            try {
+                const response = await fetch(url, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    AdminConfig.handleApiError(401);
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error cargando grupos');
+
+                const data = await response.json();
+                const groups = data.groups || [];
+                totalGroups = data.total || groups.length;
+
+                document.getElementById('totalCount').textContent = `${totalGroups} grupos`;
+
+                if (groups.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay grupos</td></tr>';
+                    renderPagination();
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                groups.forEach(group => {
+                    const participantCount = group.participants?.filter(p => p.isActive).length || 0;
+                    const creatorEmail = group.creator?.email || 'N/A';
+                    const row = `
+                        <tr>
+                            <td><strong>${escapeHtml(group.name)}</strong></td>
+                            <td>${escapeHtml(creatorEmail)}</td>
+                            <td>${group.contributionAmount} ${group.assetSymbol || 'BiUSD'}</td>
+                            <td>${group.periodicity === 'weekly' ? 'Semanal' : 'Mensual'}</td>
+                            <td>${participantCount} / ${group.maxParticipants}</td>
+                            <td>${group.currentPeriod || 0} / ${group.maxParticipants}</td>
+                            <td><span class="badge badge-${getStatusBadge(group.status)}">${getStatusText(group.status)}</span></td>
+                            <td>
+                                <button class="btn btn-info btn-sm" onclick="viewGroupDetails('${group.id}')" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                ${group.status === 'pending' ? `
+                                    <button class="btn btn-primary btn-sm" onclick="startGroup('${group.id}')" title="Iniciar">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="cancelGroup('${group.id}')" title="Cancelar">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+                renderPagination();
+
+            } catch (error) {
+                console.error('Error:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error cargando grupos</td></tr>';
+            }
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(totalGroups / pageSize);
+            const controls = document.getElementById('paginationControls');
+
+            if (totalPages <= 1) {
+                controls.innerHTML = '';
+                return;
+            }
+
+            let paginationHtml = `
+                <div>
+                    <span class="text-muted">Mostrando página ${currentPage} de ${totalPages}</span>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm ml-2" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">
+                        Siguiente <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            `;
+            controls.innerHTML = paginationHtml;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadGroups();
+        }
+
+        function getStatusBadge(status) {
+            switch (status?.toLowerCase()) {
+                case 'pending': return 'warning';
+                case 'active': return 'success';
+                case 'completed': return 'primary';
+                case 'cancelled': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status?.toLowerCase()) {
+                case 'pending': return 'Pendiente';
+                case 'active': return 'Activo';
+                case 'completed': return 'Completado';
+                case 'cancelled': return 'Cancelado';
+                default: return status || 'Desconocido';
+            }
+        }
+
+        function getPaymentStatusBadge(status) {
+            switch (status?.toLowerCase()) {
+                case 'paid': return 'paid';
+                case 'pending': return 'pending';
+                case 'defaulted': return 'defaulted';
+                case 'covered': return 'covered';
+                case 'exempt': return 'exempt';
+                default: return 'pending';
+            }
+        }
+
+        function getPaymentStatusText(status) {
+            switch (status?.toLowerCase()) {
+                case 'paid': return 'Pagado';
+                case 'pending': return 'Pendiente';
+                case 'defaulted': return 'Moroso';
+                case 'covered': return 'Cubierto';
+                case 'exempt': return 'Exento';
+                default: return status || 'Pendiente';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (text == null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Formato para mostrar participante: Nombre Apellido y correo (sin romper la vista).
+         * @param {{ user?: { email?: string, profile?: { firstName?: string, lastName?: string } } }} p - participant o objeto con .user
+         * @returns {string} HTML seguro para insertar
+         */
+        function formatParticipantNameAndEmail(p) {
+            const user = p && p.user;
+            const email = user && user.email ? String(user.email) : 'N/A';
+            const profile = user && user.profile;
+            const firstName = (profile && profile.firstName) ? String(profile.firstName).trim() : '';
+            const lastName = (profile && profile.lastName) ? String(profile.lastName).trim() : '';
+            const fullName = [firstName, lastName].filter(Boolean).join(' ') || email.split('@')[0];
+            return '<span class="d-block participant-name">' + escapeHtml(fullName) + '</span>' +
+                '<span class="d-block small text-muted participant-email">' + escapeHtml(email) + '</span>';
+        }
+
+        /** Texto plano para modal (ej. expulsar): "Nombre Apellido (email@x.com)" */
+        function getParticipantDisplayLabel(p) {
+            const user = p && p.user;
+            const email = user && user.email ? String(user.email) : 'N/A';
+            const profile = user && user.profile;
+            const firstName = (profile && profile.firstName) ? String(profile.firstName).trim() : '';
+            const lastName = (profile && profile.lastName) ? String(profile.lastName).trim() : '';
+            const fullName = [firstName, lastName].filter(Boolean).join(' ') || email.split('@')[0];
+            return fullName + ' (' + email + ')';
+        }
+
+        /**
+         * Calculate the payment date for a specific period
+         * Compensates for timezone offset to match backend dates
+         * @param {Date} startDate - Group start date
+         * @param {number} period - Period number (1-based)
+         * @param {boolean} isWeekly - If true, weekly; else monthly
+         * @param {number} paymentDay - Day of week (1-7) for weekly, day of month (1-28) for monthly
+         * @returns {Date} Calculated payment date for the period
+         */
+        // Fecha canónica del período: mismo criterio que el backend (dueDate).
+        // Semanal: primer día paymentDay (1=Lu..7=Do) en o después de start, luego + (periodo-1)*7.
+        // Mensual: día paymentDay del mes correspondiente al período.
+        function calculatePeriodDate(startDate, period, isWeekly, paymentDay) {
+            const start = new Date(startDate);
+            const timezoneOffset = start.getTimezoneOffset();
+            if (timezoneOffset > 0) {
+                start.setMinutes(start.getMinutes() + timezoneOffset);
+            }
+            start.setHours(0, 0, 0, 0);
+
+            if (isWeekly) {
+                // 1=Monday..7=Sunday; JS getDay: 0=Sun, 1=Mon..6=Sat
+                const targetDayJS = paymentDay === 7 ? 0 : paymentDay;
+                const currentDayJS = start.getDay();
+                const daysToAdd = (targetDayJS - currentDayJS + 7) % 7;
+                const firstPaymentDate = new Date(start);
+                firstPaymentDate.setDate(start.getDate() + daysToAdd);
+                const periodDate = new Date(firstPaymentDate);
+                periodDate.setDate(firstPaymentDate.getDate() + (period - 1) * 7);
+                return periodDate;
+            } else {
+                const periodDate = new Date(start.getFullYear(), start.getMonth() + (period - 1), Math.min(paymentDay, 28), 0, 0, 0, 0);
+                return periodDate;
+            }
+        }
+
+        async function viewGroupDetails(groupId) {
+            currentGroupId = groupId;
+            const body = document.getElementById('groupDetailsBody');
+            const footer = document.getElementById('groupDetailsFooter');
+
+            body.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            footer.innerHTML = '<button class="btn btn-secondary" type="button" data-dismiss="modal">Cerrar</button>';
+
+            $('#groupDetailsModal').modal('show');
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+
+                if (!response.ok) throw new Error('Error cargando detalles');
+
+                const data = await response.json();
+                const group = data.group;
+                const payments = data.payments || [];
+                const payouts = data.payouts || [];
+                const stats = data.stats || {};
+
+                // Render group info
+                let html = `
+                    <div class="group-info-card">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <h5>Grupo</h5>
+                                <h4>${escapeHtml(group.name)}</h4>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>Creador</h5>
+                                <h4 style="font-size: 0.95rem; word-break: break-all;">${escapeHtml(group.creator?.email || 'N/A')}</h4>
+                            </div>
+                            <div class="col-md-2">
+                                <h5>Monto</h5>
+                                <h4>${group.contributionAmount} ${group.assetSymbol || 'BiUSD'}</h4>
+                            </div>
+                            <div class="col-md-2">
+                                <h5>Período</h5>
+                                <h4>${group.currentPeriod || 0} / ${group.maxParticipants}</h4>
+                            </div>
+                            <div class="col-md-2">
+                                <h5>Estado</h5>
+                                <h4><span class="badge badge-${getStatusBadge(group.status)}">${getStatusText(group.status)}</span></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body text-center">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Recaudado</div>
+                                    <div class="h5 mb-0 font-weight-bold">${stats.totalCollected?.toFixed(2) || '0.00'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body text-center">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Pagado</div>
+                                    <div class="h5 mb-0 font-weight-bold">${stats.totalPaidOut?.toFixed(2) || '0.00'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body text-center">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Comisiones</div>
+                                    <div class="h5 mb-0 font-weight-bold">${stats.totalFees?.toFixed(2) || '0.00'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-left-danger shadow h-100 py-2">
+                                <div class="card-body text-center">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Impagos</div>
+                                    <div class="h5 mb-0 font-weight-bold">${stats.defaults || 0}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Participants -->
+                    <div class="card mb-4">
+                        <div class="card-header"><h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users mr-2"></i>Participantes</h6></div>
+                        <div class="card-body">
+                            <div class="row">
+                `;
+
+                // Sort participants by position
+                const participants = (group.participants || []).sort((a, b) => a.position - b.position);
+                participants.forEach(p => {
+                    const isSystem = p.isSystemPlaceholder;
+                    const isInactive = !p.isActive;
+                    const cardClass = isSystem ? 'system' : (isInactive ? 'inactive' : '');
+                    const email = p.user?.email || 'N/A';
+
+                    html += `
+                        <div class="col-md-4">
+                            <div class="participant-card ${cardClass}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="participant-info flex-grow-1 min-width-0">
+                                        <strong>#${p.position}</strong>
+                                        ${isSystem ? '<span class="badge badge-warning ml-1">Sistema</span>' : ''}
+                                        ${isInactive ? '<span class="badge badge-danger ml-1">Expulsado</span>' : ''}
+                                        <div class="mt-1">${formatParticipantNameAndEmail(p)}</div>
+                                    </div>
+                                    ${p.isActive && !isSystem && group.status === 'active' ? (() => {
+                                        const periodPayments = payments.filter(pay => pay.participant && pay.participant.id === p.id && pay.period === group.currentPeriod);
+                                        const hasDefaulted = periodPayments.some(pay => pay.status === 'defaulted');
+                                        return `
+                                        <div class="d-flex align-items-center flex-shrink-0">
+                                        ${hasDefaulted ? '<span class="badge badge-danger mr-1">Moroso</span>' : ''}
+                                        <button class="btn btn-outline-danger btn-sm btn-expel-participant" title="${hasDefaulted ? 'Expulsar y cubrir con sistema' : 'Expulsar'}"
+                                            data-group-id="${escapeHtml(groupId)}" data-participant-id="${escapeHtml(p.id)}" data-participant-label="${escapeHtml(getParticipantDisplayLabel(p))}" data-has-defaulted="${hasDefaulted ? '1' : '0'}">
+                                            <i class="fas fa-user-slash"></i>
+                                        </button>
+                                        </div>
+                                    `; })() : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // === ALL PERIODS WITH DATES (Collapsible) ===
+                html += `
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center" id="periodsHeading">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-calendar-alt mr-2"></i>Cronograma de Períodos</h6>
+                            <button class="btn btn-link btn-sm" type="button" data-toggle="collapse" data-target="#periodsCollapse" aria-expanded="true">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div id="periodsCollapse" class="collapse show">
+                            <div class="card-body">
+                                <div class="accordion" id="periodsAccordion">
+                `;
+
+                // Calculate dates for all periods
+                const startDate = new Date(group.startDate);
+                const isWeekly = group.periodicity === 'weekly';
+
+                for (let period = 1; period <= group.maxParticipants; period++) {
+                    const periodDate = calculatePeriodDate(startDate, period, isWeekly, group.paymentDay);
+                    const periodDateStr = periodDate.toLocaleDateString('es-VE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                    const isCurrentPeriod = period === group.currentPeriod;
+                    const isPastPeriod = period < group.currentPeriod;
+                    const periodPayments = payments.filter(p => p.period === period);
+
+                    // Beneficiario: preferir participante activo (participant-san cubre si el titular fue expulsado)
+                    const beneficiary = participants.find(p => p.position === period && p.isActive) || participants.find(p => p.position === period);
+                    let beneficiaryDisplay = 'Posición ' + period;
+                    if (beneficiary && beneficiary.user) {
+                        const u = beneficiary.user;
+                        const name = (u.profile && (u.profile.firstName || u.profile.lastName))
+                            ? [u.profile.firstName, u.profile.lastName].filter(Boolean).join(' ')
+                            : (u.email ? u.email.split('@')[0] : 'Usuario');
+                        beneficiaryDisplay = escapeHtml(name) + (u.email ? ' <span class="small text-muted">' + escapeHtml(u.email) + '</span>' : '');
+                        if (beneficiary.isSystemPlaceholder) beneficiaryDisplay += ' <span class="badge badge-warning ml-1">Sistema</span>';
+                        else if (!beneficiary.isActive) beneficiaryDisplay += ' <span class="badge badge-danger ml-1">Expulsado</span>';
+                    }
+
+                    // Determine status badges
+                    let periodStatusBadge = 'badge-secondary';
+                    let periodStatusText = 'Futuro';
+                    if (isCurrentPeriod) {
+                        periodStatusBadge = 'badge-primary';
+                        periodStatusText = 'Actual';
+                    } else if (isPastPeriod) {
+                        periodStatusBadge = 'badge-success';
+                        periodStatusText = 'Completado';
+                    }
+
+                    html += `
+                        <div class="card mb-2">
+                            <div class="card-header py-2 d-flex justify-content-between align-items-center" id="periodHeading${period}" 
+                                 data-toggle="collapse" data-target="#periodCollapse${period}" 
+                                 style="cursor: pointer; ${isCurrentPeriod ? 'background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); color: white;' : ''}">
+                                <div>
+                                    <strong>Período ${period}</strong>
+                                    <span class="badge ${isCurrentPeriod ? 'badge-light' : periodStatusBadge} ml-2">${periodStatusText}</span>
+                                    <span class="ml-2 ${isCurrentPeriod ? '' : 'text-muted'}">
+                                        <i class="fas fa-user mr-1"></i>Beneficiario: ${beneficiaryDisplay}
+                                    </span>
+                                </div>
+                                <div>
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    <strong>${periodDateStr}</strong>
+                                    <i class="fas fa-chevron-down ml-2"></i>
+                                </div>
+                            </div>
+                            <div id="periodCollapse${period}" class="collapse ${isCurrentPeriod ? 'show' : ''}" data-parent="#periodsAccordion">
+                                <div class="card-body py-2">
+                    `;
+
+                    if (periodPayments.length > 0) {
+                        // Get the actual dueDate from the first payment
+                        const actualDueDate = periodPayments[0]?.dueDate
+                            ? new Date(periodPayments[0].dueDate).toLocaleDateString('es-VE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                            : periodDateStr;
+                        const activePeriodPayments = periodPayments.filter(p => p.participant && p.participant.isActive !== false);
+                        const expelledPeriodPayments = periodPayments.filter(p => p.participant && p.participant.isActive === false);
+
+                        html += `
+                            <div class="alert alert-info py-1 mb-2">
+                                <small><i class="fas fa-clock mr-1"></i><strong>Fecha de Vencimiento en Sistema:</strong> ${actualDueDate}</small>
+                            </div>
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="thead-light"><tr><th>Participante</th><th>Monto</th><th>Estado</th><th>Pagado</th></tr></thead>
+                                <tbody>
+                        `;
+
+                        activePeriodPayments.forEach(payment => {
+                            const paidAt = payment.paidAt ? new Date(payment.paidAt).toLocaleString('es-VE') : '-';
+                            html += `
+                                <tr>
+                                    <td><div class="participant-cell">${formatParticipantNameAndEmail(payment.participant || {})} ${payment.paidBySystem ? '<span class="badge badge-info">Sistema</span>' : ''}</div></td>
+                                    <td>${payment.amount} + ${payment.fee} BiUSD</td>
+                                    <td><span class="payment-badge ${getPaymentStatusBadge(payment.status)}">${getPaymentStatusText(payment.status)}</span></td>
+                                    <td>${paidAt}</td>
+                                </tr>
+                            `;
+                        });
+
+                        expelledPeriodPayments.forEach(payment => {
+                            const paidAt = payment.paidAt ? new Date(payment.paidAt).toLocaleString('es-VE') : '-';
+                            html += `
+                                <tr class="table-secondary">
+                                    <td><div class="participant-cell">${formatParticipantNameAndEmail(payment.participant || {})} <span class="badge badge-danger">Expulsado</span><br><small class="text-muted">participant-san@bidipago.com lo reemplaza</small></div></td>
+                                    <td>${payment.amount} + ${payment.fee} BiUSD</td>
+                                    <td><span class="payment-badge ${getPaymentStatusBadge(payment.status)}">${getPaymentStatusText(payment.status)}</span></td>
+                                    <td>${paidAt}</td>
+                                </tr>
+                            `;
+                        });
+
+                        html += `</tbody></table>`;
+                    } else {
+                        html += `
+                            <div class="alert alert-secondary mb-0 py-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <small>Fecha programada: <strong>${periodDateStr}</strong>. Los pagos se generarán cuando el grupo llegue a este período.</small>
+                            </div>
+                        `;
+                    }
+
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                body.innerHTML = html;
+
+                // Footer actions
+                let footerHtml = '<button class="btn btn-secondary" type="button" data-dismiss="modal">Cerrar</button>';
+
+                if (group.status === 'active') {
+                    footerHtml += `
+                        <button class="btn btn-warning" onclick="processPayments('${groupId}')" title="Procesar pagos pendientes">
+                            <i class="fas fa-credit-card mr-1"></i>Procesar Pagos
+                        </button>
+                        <button class="btn btn-info" onclick="coverDefaults('${groupId}')" title="Cubrir impagos con cuenta del sistema">
+                            <i class="fas fa-hand-holding-usd mr-1"></i>Cubrir Impagos
+                        </button>
+                        <button class="btn btn-primary" onclick="advancePeriod('${groupId}')" title="Avanzar al siguiente período">
+                            <i class="fas fa-forward mr-1"></i>Avanzar Período
+                        </button>
+                    `;
+                }
+
+                footer.innerHTML = footerHtml;
+
+            } catch (error) {
+                console.error('Error:', error);
+                body.innerHTML = '<div class="text-center text-danger py-4">Error cargando detalles del grupo</div>';
+            }
+        }
+
+        function openExpelModal(groupId, participantId, participantDisplayLabel, hasDefaulted) {
+            document.getElementById('expelGroupId').value = groupId;
+            document.getElementById('expelParticipantId').value = participantId;
+            document.getElementById('expelParticipantName').textContent = participantDisplayLabel || '-';
+            document.getElementById('expelReason').value = '';
+            document.getElementById('expelHasDefaulted').value = hasDefaulted ? '1' : '0';
+            document.getElementById('expelDefaulterAlert').style.display = hasDefaulted ? 'block' : 'none';
+            const modalEl = document.getElementById('expelModal');
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                $('#expelModal').modal('show');
+            } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                (new bootstrap.Modal(modalEl)).show();
+            } else {
+                $(modalEl).modal('show');
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-expel-participant');
+            if (!btn) return;
+            e.preventDefault();
+            openExpelModal(
+                btn.getAttribute('data-group-id'),
+                btn.getAttribute('data-participant-id'),
+                btn.getAttribute('data-participant-label') || '-',
+                btn.getAttribute('data-has-defaulted') === '1'
+            );
+        });
+
+        async function confirmExpel(expelAndCover) {
+            const groupId = document.getElementById('expelGroupId').value;
+            const participantId = document.getElementById('expelParticipantId').value;
+            const reason = document.getElementById('expelReason').value;
+
+            if (!reason.trim()) {
+                Swal.fire('Error', 'Debes ingresar una razón para la expulsión', 'error');
+                return;
+            }
+
+            const endpoint = expelAndCover
+                ? `${AdminConfig.API_URL}/admin/san/groups/${groupId}/participants/${participantId}/expel-and-cover`
+                : `${AdminConfig.API_URL}/admin/san/groups/${groupId}/participants/${participantId}/expel`;
+
+            try {
+                Swal.fire({ title: expelAndCover ? 'Expulsando y cubriendo...' : 'Expulsando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Error');
+
+                if (typeof $ !== 'undefined' && $.fn.modal) {
+                    $('#expelModal').modal('hide');
+                } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const inst = bootstrap.Modal.getInstance(document.getElementById('expelModal'));
+                    if (inst) inst.hide();
+                }
+                let msg = result.message;
+                if (expelAndCover && result.covered > 0) {
+                    msg += (result.beneficiaryPaid ? ' Beneficiario pagado.' : '') + (result.advanced ? ' Período avanzado.' : '');
+                }
+                Swal.fire('Éxito', msg, 'success').then(() => {
+                    viewGroupDetails(groupId);
+                    loadGroupsStuck();
+                    loadPendingApproval();
+                });
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        async function startGroup(groupId) {
+            const result = await Swal.fire({
+                title: '¿Iniciar Grupo?',
+                text: 'Se realizará el sorteo y comenzará el grupo inmediatamente',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, iniciar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}/start`, {
+                        method: 'POST',
+                        headers: AdminConfig.getAuthHeaders()
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Error al iniciar');
+                    }
+
+                    Swal.fire('Iniciado', 'El grupo ha comenzado', 'success').then(() => {
+                        loadGroups();
+                        loadPendingApproval();
+                        loadGroupsStuck();
+                    });
+
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
+        }
+
+        async function cancelGroup(groupId) {
+            const result = await Swal.fire({
+                title: '¿Cancelar Grupo?',
+                text: 'Esta acción no se puede deshacer',
+                input: 'text',
+                inputPlaceholder: 'Razón de cancelación',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No',
+                confirmButtonColor: '#d33',
+                inputValidator: (value) => {
+                    if (!value) return 'Debes ingresar una razón';
+                }
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}/cancel`, {
+                        method: 'POST',
+                        headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: result.value })
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Error al cancelar');
+                    }
+
+                    Swal.fire('Cancelado', 'El grupo ha sido cancelado', 'success').then(() => {
+                        loadGroups();
+                        loadPendingApproval();
+                        loadGroupsStuck();
+                    });
+
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
+        }
+
+        async function processPayments(groupId) {
+            document.getElementById('processPaymentsGroupId').value = groupId;
+            document.getElementById('processPaymentsPreviewContent').style.display = 'block';
+            document.getElementById('processPaymentsPreviewContent').innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div> Cargando...</div>';
+            document.getElementById('processPaymentsTableWrap').style.display = 'none';
+            document.getElementById('btnProcessSelectedPayments').style.display = 'none';
+            $('#processPaymentsModal').modal('show');
+
+            try {
+                const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}/current-period-payments-preview`, {
+                    headers: AdminConfig.getAuthHeaders()
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Error al cargar');
+                }
+                const data = await response.json();
+                const payments = data.payments || [];
+                const group = data.group || {};
+
+                if (payments.length === 0) {
+                    document.getElementById('processPaymentsPreviewContent').innerHTML = '<div class="alert alert-info mb-0">No hay pagos pendientes en el período actual.</div>';
+                    document.getElementById('processPaymentsPreviewContent').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('processPaymentsPreviewContent').innerHTML = '<p class="mb-2"><strong>' + escapeHtml(group.name) + '</strong> — Período ' + (group.currentPeriod || 0) + '</p>';
+                document.getElementById('processPaymentsPreviewContent').style.display = 'block';
+                document.getElementById('processPaymentsTableWrap').style.display = 'block';
+
+                const tbody = document.getElementById('processPaymentsTableBody');
+                tbody.innerHTML = '';
+                payments.forEach(p => {
+                    const statusText = p.hasWallet ? (p.sufficient ? 'Suficiente' : 'Insuficiente') : 'Sin billetera BiUSD';
+                    const statusClass = p.sufficient ? 'text-success' : 'text-danger';
+                    const canSelect = p.sufficient;
+                    const nameCell = '<span class="d-block participant-name">' + escapeHtml(p.userFullName || p.userEmail.split('@')[0]) + '</span>' +
+                        '<span class="d-block small text-muted participant-email">' + escapeHtml(p.userEmail) + '</span>';
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td><input type="checkbox" class="process-payment-cb" data-payment-id="' + escapeHtml(p.id) + '" ' + (canSelect ? '' : 'disabled title="Sin saldo o sin billetera"') + '></td>' +
+                        '<td><div class="participant-cell">' + nameCell + '</div></td>' +
+                        '<td>' + p.total.toFixed(2) + ' BiUSD</td>' +
+                        '<td>' + (p.hasWallet ? p.balance.toFixed(2) : '—') + '</td>' +
+                        '<td class="' + statusClass + '">' + statusText + '</td>';
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('btnProcessSelectedPayments').style.display = 'inline-block';
+            } catch (error) {
+                document.getElementById('processPaymentsPreviewContent').innerHTML = '<div class="alert alert-danger mb-0">' + escapeHtml(error.message) + '</div>';
+            }
+        }
+
+        function confirmProcessSelectedPayments() {
+            const groupId = document.getElementById('processPaymentsGroupId').value;
+            const checked = document.querySelectorAll('.process-payment-cb:checked');
+            const paymentIds = Array.from(checked).map(el => el.getAttribute('data-payment-id'));
+
+            if (paymentIds.length === 0) {
+                Swal.fire('Aviso', 'Seleccione al menos un pago a cobrar.', 'info');
+                return;
+            }
+
+            (async () => {
+                try {
+                    Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}/process-selected-payments`, {
+                        method: 'POST',
+                        headers: { ...AdminConfig.getAuthHeaders(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentIds })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Error');
+                    $('#processPaymentsModal').modal('hide');
+                    Swal.fire('Listo', data.successful + ' cobrado(s), ' + data.failed + ' fallido(s).' + (data.beneficiaryPaid ? ' Beneficiario pagado.' : ''), 'success')
+                        .then(() => {
+                            viewGroupDetails(groupId);
+                            loadGroupsStuck();
+                        });
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            })();
+        }
+
+        async function coverDefaults(groupId) {
+            const result = await Swal.fire({
+                title: '¿Cubrir Impagos?',
+                html: 'Se usará el balance de <strong>participant-san@bidipago.com</strong> para cubrir los pagos pendientes y marcará a los participantes como morosos.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Cubrir',
+                confirmButtonColor: '#17a2b8'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    Swal.fire({ title: 'Cubriendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                    const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}/cover-defaults`, {
+                        method: 'POST',
+                        headers: AdminConfig.getAuthHeaders()
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) throw new Error(data.error || 'Error');
+
+                    Swal.fire('Cubierto', `${data.covered} pagos cubiertos.${data.beneficiaryPaid ? ' Beneficiario pagado.' : ''}`, 'success')
+                        .then(() => viewGroupDetails(groupId));
+
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
+        }
+
+        async function advancePeriod(groupId) {
+            const result = await Swal.fire({
+                title: '¿Avanzar Período?',
+                text: 'Se pasará al siguiente período del grupo',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Avanzar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    Swal.fire({ title: 'Avanzando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                    const response = await fetch(`${AdminConfig.API_URL}/admin/san/groups/${groupId}/advance-period`, {
+                        method: 'POST',
+                        headers: AdminConfig.getAuthHeaders()
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) throw new Error(data.error || 'Error');
+
+                    const msg = data.isCompleted
+                        ? '¡El grupo ha sido completado!'
+                        : `Nuevo período: ${data.newPeriod}`;
+
+                    Swal.fire('Avanzado', msg, 'success')
+                        .then(() => {
+                            viewGroupDetails(groupId);
+                            loadStats();
+                        });
+
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
+        }
+    </script>
+
+</body>
+
+</html>

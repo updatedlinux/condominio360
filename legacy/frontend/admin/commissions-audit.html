@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Auditoría de Comisiones</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+
+    <style>
+        .sidebar { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important; }
+        .sidebar .nav-link { color: rgba(255, 255, 255, 0.8) !important; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fd7e14 !important; }
+        .sidebar .sidebar-brand { color: #fd7e14 !important; }
+        .sidebar-divider { border-top: 1px solid rgba(253, 126, 20, 0.3) !important; }
+        .sidebar-heading { color: #fd7e14 !important; }
+        .source-badge { font-size: 0.75rem; }
+        .commission-balance-list { font-size: 0.8rem; line-height: 1.5; }
+        .commission-balance-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .commission-balance-row:last-child { margin-bottom: 0; }
+        .commission-balance-list .coin-logo { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; }
+        .commission-balance-list .coin-symbol { font-weight: 600; color: #4e73df; min-width: 3.5em; }
+        .commission-balance-list .coin-amount { font-weight: 600; color: #2d3748; }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'commissions-audit';</script>
+        <script src="js/admin-sidebar.js"></script>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3"><i class="fa fa-bars"></i></button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="container-fluid">
+                    <h1 class="h3 mb-2 text-gray-800">Auditoría de Comisiones</h1>
+                    <p class="mb-4">Cuenta <strong>comisiones@bidipago.com</strong>. Totales por origen y detalle de movimientos.</p>
+
+                    <!-- Summary cards -->
+                    <div class="row mb-4" id="summaryCards">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">P2P</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryP2P">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-exchange-alt fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">BidiSAN</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summarySAN">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-piggy-bank fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">BidiInvest</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryInvest">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-chart-line fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Gift Cards</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryGiftcards">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-gift fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-secondary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Recargas</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryAirtime">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-phone-alt fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-dark shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">Conversión</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryConversion">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-coins fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Depósito Fiat</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryFiatDeposit">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-credit-card fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Retiros</div>
+                                            <div class="commission-balance-list h5 mb-0 text-gray-800" id="summaryRetiros">—</div>
+                                        </div>
+                                        <div class="col-auto"><i class="fas fa-money-bill-wave fa-2x text-gray-300"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <label>Origen</label>
+                                    <select class="form-control" id="filterSource">
+                                        <option value="">Todos</option>
+                                        <option value="p2p">P2P</option>
+                                        <option value="san">BidiSAN</option>
+                                        <option value="invest">BidiInvest</option>
+                                        <option value="giftcards">Gift Cards</option>
+                                        <option value="airtime">Recargas</option>
+                                        <option value="conversion">Conversión</option>
+                                        <option value="fiat_deposit">Depósito Fiat</option>
+                                        <option value="retiros">Retiros</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label>Desde</label>
+                                    <input type="date" class="form-control" id="filterFrom">
+                                </div>
+                                <div class="col-md-2">
+                                    <label>Hasta</label>
+                                    <input type="date" class="form-control" id="filterTo">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-primary" id="btnApply"><i class="fas fa-search mr-1"></i> Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-primary">Movimientos</h6>
+                            <span class="badge badge-secondary" id="totalCount">0 registros</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="auditLoading" class="text-center py-4" style="display: none;">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 mb-0">Cargando...</p>
+                            </div>
+                            <div id="auditTableWrap" class="table-responsive">
+                                <table class="table table-bordered table-sm" id="auditTable">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Origen</th>
+                                            <th>Tipo</th>
+                                            <th>Monto</th>
+                                            <th>Activo</th>
+                                            <th>Referencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="auditTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div>
+                                    <label class="mr-2">Página</label>
+                                    <input type="number" id="pageInput" class="form-control form-control-sm d-inline-block" style="width: 70px;" min="1" value="1">
+                                    <span id="pageOf"></span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPrev">Anterior</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnNext">Siguiente</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cerrar sesión</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">¿Está seguro de que desea cerrar sesión?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <a href="login.html" class="btn btn-primary" id="logoutConfirm">Cerrar sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script>
+        (function () {
+            if (!AdminConfig.checkAuth()) return;
+
+            const API = AdminConfig.API_URL + '/admin/dashboard';
+            let currentPage = 1;
+            const limit = 50;
+
+            function coinLogoPath(symbol) {
+                var s = (symbol || '').toLowerCase();
+                return 'assets/coins/' + s + '.svg';
+            }
+
+            function formatAmountByAsset(byAsset) {
+                if (!byAsset || typeof byAsset !== 'object') return '—';
+                var entries = Object.entries(byAsset).filter(function (e) { return Number(e[1]) > 0; });
+                if (!entries.length) return '<span class="text-muted">0</span>';
+                var order = ['USDT', 'USDC', 'BiUSD', 'BTC', 'ETH', 'LTC'];
+                entries.sort(function (a, b) {
+                    var i = order.indexOf(a[0]);
+                    var j = order.indexOf(b[0]);
+                    if (i !== -1 && j !== -1) return i - j;
+                    if (i !== -1) return -1;
+                    if (j !== -1) return 1;
+                    return a[0].localeCompare(b[0]);
+                });
+                return entries.map(function (e) {
+                    var symbol = e[0];
+                    var amount = Number(e[1]).toFixed(4);
+                    var src = coinLogoPath(symbol);
+                    return '<div class="commission-balance-row">' +
+                        '<img class="coin-logo" src="' + src + '" alt="" onerror="this.style.display=\'none\'">' +
+                        '<span class="coin-symbol">' + symbol + '</span>' +
+                        '<span class="coin-amount">' + amount + '</span>' +
+                        '</div>';
+                }).join('');
+            }
+
+            function renderSummary(summary) {
+                document.getElementById('summaryP2P').innerHTML = formatAmountByAsset(summary.p2p);
+                document.getElementById('summarySAN').innerHTML = formatAmountByAsset(summary.san);
+                document.getElementById('summaryInvest').innerHTML = formatAmountByAsset(summary.invest);
+                document.getElementById('summaryGiftcards').innerHTML = formatAmountByAsset(summary.giftcards);
+                document.getElementById('summaryAirtime').innerHTML = formatAmountByAsset(summary.airtime || {});
+                document.getElementById('summaryConversion').innerHTML = formatAmountByAsset(summary.conversion || {});
+                document.getElementById('summaryFiatDeposit').innerHTML = formatAmountByAsset(summary.fiat_deposit || {});
+                document.getElementById('summaryRetiros').innerHTML = formatAmountByAsset(summary.retiros || {});
+            }
+
+            const sourceBadgeClass = { p2p: 'primary', san: 'success', invest: 'info', giftcards: 'warning', airtime: 'secondary', conversion: 'dark', fiat_deposit: 'info', retiros: 'primary' };
+
+            function renderTable(entries, total) {
+                const tbody = document.getElementById('auditTableBody');
+                tbody.innerHTML = '';
+                entries.forEach(function (e) {
+                    const row = document.createElement('tr');
+                    const date = e.createdAt ? new Date(e.createdAt).toLocaleString('es') : '—';
+                    const src = e.source || 'other';
+                    const label = e.sourceLabel || src;
+                    const badge = '<span class="badge badge-' + (sourceBadgeClass[src] || 'secondary') + ' source-badge">' + label + '</span>';
+                    row.innerHTML =
+                        '<td>' + date + '</td>' +
+                        '<td>' + badge + '</td>' +
+                        '<td><small>' + (e.type || '') + '</small></td>' +
+                        '<td>' + Number(e.amount).toFixed(4) + '</td>' +
+                        '<td>' + (e.assetSymbol || '—') + '</td>' +
+                        '<td><small>' + (e.reference || '—') + '</small></td>';
+                    tbody.appendChild(row);
+                });
+                document.getElementById('totalCount').textContent = total + ' registros';
+                const totalPages = Math.max(1, Math.ceil(total / limit));
+                document.getElementById('pageOf').textContent = ' de ' + totalPages;
+                document.getElementById('pageInput').max = totalPages;
+                document.getElementById('btnPrev').disabled = currentPage <= 1;
+                document.getElementById('btnNext').disabled = currentPage >= totalPages;
+            }
+
+            function buildQuery() {
+                const params = new URLSearchParams();
+                params.set('page', String(currentPage));
+                params.set('limit', String(limit));
+                const source = document.getElementById('filterSource').value;
+                if (source) params.set('source', source);
+                const from = document.getElementById('filterFrom').value;
+                if (from) params.set('from', from);
+                const to = document.getElementById('filterTo').value;
+                if (to) params.set('to', to);
+                return params.toString();
+            }
+
+            function loadAudit() {
+                document.getElementById('auditLoading').style.display = 'block';
+                document.getElementById('auditTableWrap').style.display = 'none';
+                fetch(API + '/finance/commissions/audit?' + buildQuery(), {
+                    headers: AdminConfig.getAuthHeaders()
+                })
+                    .then(function (res) {
+                        if (res.status === 401) {
+                            AdminConfig.handleApiError(401, 'commissions/audit');
+                            return null;
+                        }
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        document.getElementById('auditLoading').style.display = 'none';
+                        document.getElementById('auditTableWrap').style.display = 'block';
+                        if (!data) return;
+                        if (data.error) {
+                            document.getElementById('auditTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">' + data.error + '</td></tr>';
+                            return;
+                        }
+                        renderSummary(data.summary || { p2p: {}, san: {}, invest: {}, giftcards: {}, airtime: {}, conversion: {}, fiat_deposit: {}, retiros: {} });
+                        renderTable(data.entries || [], data.total || 0);
+                    })
+                    .catch(function (err) {
+                        document.getElementById('auditLoading').style.display = 'none';
+                        document.getElementById('auditTableWrap').style.display = 'block';
+                        document.getElementById('auditTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar: ' + (err.message || '') + '</td></tr>';
+                    });
+            }
+
+            document.getElementById('btnApply').addEventListener('click', function () {
+                currentPage = 1;
+                document.getElementById('pageInput').value = 1;
+                loadAudit();
+            });
+            document.getElementById('btnPrev').addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    document.getElementById('pageInput').value = currentPage;
+                    loadAudit();
+                }
+            });
+            document.getElementById('btnNext').addEventListener('click', function () {
+                currentPage++;
+                document.getElementById('pageInput').value = currentPage;
+                loadAudit();
+            });
+            document.getElementById('pageInput').addEventListener('change', function () {
+                const p = parseInt(this.value, 10);
+                if (!isNaN(p) && p >= 1) {
+                    currentPage = p;
+                    loadAudit();
+                }
+            });
+
+            loadAudit();
+        })();
+    </script>
+</body>
+
+</html>

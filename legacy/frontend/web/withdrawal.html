@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Retirar - BidiPago</title>
+
+    <style>
+        /* Reutilizar estilos del dashboard */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Estilos específicos para retiro */
+        .withdrawal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .withdrawal-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .withdrawal-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #ee6a3e;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(238, 106, 62, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .conversion-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .summary-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #ee6a3e;
+        }
+
+        .summary-box h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #ee6a3e;
+        }
+
+        .summary-item label {
+            color: #666;
+        }
+
+        .summary-item span {
+            color: #333;
+        }
+
+        /* Selector de moneda estilo móvil */
+        .asset-selector-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fff;
+            min-height: 48px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .asset-selector-trigger:hover:not(.disabled) {
+            border-color: #ee6a3e;
+            background: #fffbf8;
+        }
+        .asset-selector-trigger.disabled { cursor: not-allowed; }
+        .asset-selector-trigger:focus {
+            outline: none;
+            border-color: #ee6a3e;
+            box-shadow: 0 0 0 2px rgba(238, 106, 62, 0.2);
+        }
+        .asset-icon-small { width: 28px; height: 28px; object-fit: contain; margin-right: 12px; flex-shrink: 0; }
+        .asset-selector-trigger .selector-label { flex: 1; min-width: 0; text-align: left; font-weight: 600; color: #333; }
+        .asset-selector-trigger .selector-label.unselected { color: #333 !important; font-weight: 500; font-size: 0.95rem; opacity: 1; }
+        .asset-selector-trigger .selector-inner { flex: 1; min-width: 0; display: flex; align-items: center; }
+        .asset-selector-trigger .selector-chevron { color: #999; font-size: 1.2rem; }
+        .crypto-selector-modal .modal-content { border-radius: 12px; overflow: hidden; }
+        .crypto-selector-modal .list-group-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border: none; border-bottom: 1px solid #eee; }
+        .crypto-selector-modal .list-group-item:last-child { border-bottom: none; }
+        .crypto-selector-modal .list-group-item:hover { background: #f8f9fa; }
+        .otc-crypto-balance { font-size: 0.85rem; white-space: nowrap; }
+        .otc-balance-info { color: #666; }
+        body.dark-mode .otc-balance-info { color: #a0aec0; }
+        body.dark-mode .otc-crypto-balance { color: #a0aec0; }
+        body.dark-mode #otcWithdrawCryptoModal .modal-content,
+        body.dark-mode #cryptoCurrencyModal .modal-content { background: #1e1b2e; border-color: #2d2640; color: #fff; }
+        body.dark-mode #otcWithdrawCryptoModal .modal-header,
+        body.dark-mode #cryptoCurrencyModal .modal-header { background: #1e1b2e; border-color: #2d2640; }
+        body.dark-mode #otcWithdrawCryptoModal .modal-title,
+        body.dark-mode #cryptoCurrencyModal .modal-title { color: #fff; }
+        body.dark-mode .crypto-selector-modal .list-group-item { background: #1e1b2e; color: #fff; border-bottom-color: #2d2640; }
+        body.dark-mode .crypto-selector-modal .list-group-item:hover { background: #2d2339; }
+        body.dark-mode .otc-withdraw-breakdown { background: rgba(238, 106, 62, 0.15); }
+        body.dark-mode .otc-withdraw-breakdown .breakdown-row { color: #e2e8f0; }
+        body.dark-mode .otc-withdraw-breakdown strong { color: #fff; }
+        body.dark-mode #otcWithdrawSearchModal .modal-content { background: #1e1b2e; border-color: #2d2640; color: #fff; }
+        body.dark-mode #otcWithdrawSearchModal .modal-header { background: #1e1b2e; border-color: #2d2640; }
+        body.dark-mode #otcWithdrawSearchModal .modal-title { color: #fff; }
+        body.dark-mode #otcWithdrawSearchModal .modal-body p { color: #e2e8f0; }
+        body.dark-mode #otcWithdrawSearchModal .text-muted { color: #a0aec0 !important; }
+        body.dark-mode .otc-withdraw-success-badge { background: rgba(56, 161, 105, 0.2); border-color: #38a169; color: #68d391; }
+
+        /* Payment method cards OTC */
+        .payment-method-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .payment-method-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 160px;
+        }
+        .payment-method-card:hover {
+            border-color: #ee6a3e;
+            background: #fffbf8;
+        }
+        .payment-method-card.selected {
+            border-color: #ee6a3e;
+            background: #fff5f0;
+            box-shadow: 0 0 0 2px rgba(238, 106, 62, 0.2);
+        }
+        .payment-method-card .pm-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .payment-method-card .pm-name { font-weight: 600; color: #333; }
+        .payment-method-cards .loading-placeholder { color: #666; padding: 12px 0; }
+        .otc-withdraw-breakdown .breakdown-row { margin-bottom: 4px; }
+        .otc-withdraw-breakdown .breakdown-row:last-child { margin-bottom: 0; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .status-badge.pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-badge.processing {
+            background: #17a2b8;
+            color: #fff;
+        }
+
+        .status-badge.completed {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .status-badge.failed,
+        .status-badge.cancelled {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .withdrawal-history {
+            margin-top: 30px;
+        }
+
+        .withdrawal-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .withdrawal-item-info {
+            flex: 1;
+        }
+
+        .withdrawal-item-info strong {
+            color: #333;
+        }
+
+        .withdrawal-item-info small {
+            color: #666;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ee6a3e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .balance-info {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .balance-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .balance-tooltip {
+            margin-left: 10px;
+            cursor: help;
+            font-size: 1.2rem;
+            opacity: 0.8;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .balance-tooltip:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .asset-balance-info {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .balance-available {
+            background: #e7f3ff;
+            border-left: 4px solid #17a2b8;
+            padding: 12px 15px;
+            border-radius: 5px;
+            color: #0c5460;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .balance-available i {
+            font-size: 1.2rem;
+            color: #17a2b8;
+        }
+
+        .balance-available strong {
+            margin-right: 5px;
+        }
+
+        .balance-tooltip-popup {
+            position: fixed;
+            background: #333;
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            max-width: 350px;
+            z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: none;
+            pointer-events: none;
+            line-height: 1.5;
+        }
+
+        .balance-tooltip-popup::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 20px;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #333;
+        }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination-controls button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background: #ee6a3e;
+            color: #fff;
+            border-color: #ee6a3e;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls .page-info {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .withdrawal-type-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .withdrawal-type-card:hover {
+            border-color: #ee6a3e;
+            background: #fffbf8;
+        }
+        .withdrawal-type-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 1.5rem;
+        }
+        .withdrawal-type-icon.crypto { background: rgba(238, 106, 62, 0.15); color: #ee6a3e; }
+        .withdrawal-type-icon.fiat { background: rgba(0, 200, 83, 0.15); color: #00C853; }
+        .withdrawal-type-card h4 { margin-bottom: 8px; color: #333; }
+        .withdrawal-type-card p { color: #666; font-size: 0.9rem; margin: 0; }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal" class="active"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <div class="withdrawal-container">
+            <!-- Balance Info -->
+            <div class="balance-info" id="balanceInfo">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3 style="margin: 0;">Balance Disponible</h3>
+                </div>
+                <div class="balance-amount" id="balanceAmount">Cargando...</div>
+            </div>
+
+            <!-- Selección de Tipo de Retiro -->
+            <div class="withdrawal-card" id="withdrawalTypeSelection">
+                <h2><i class="ri-upload-line"></i> Retirar Fondos</h2>
+                <p style="color: #666; margin-bottom: 30px;">Selecciona el tipo de retiro que deseas realizar</p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="withdrawal-type-card" onclick="selectWithdrawalType('crypto')">
+                            <div class="withdrawal-type-icon crypto"><i class="ri-bit-coin-line"></i></div>
+                            <h4>Criptomonedas</h4>
+                            <p>Retira a una dirección de wallet externa</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6" id="otcWithdrawalCardWrapper" style="display: none;">
+                        <div class="withdrawal-type-card" onclick="selectWithdrawalType('fiat')">
+                            <div class="withdrawal-type-icon fiat"><i class="ri-bank-line"></i></div>
+                            <h4>Retira a tu moneda nacional</h4>
+                            <p id="otcNationalCardText"><span id="otcNationalCardFlag"></span> Recibe en tu moneda nacional: <span id="otcNationalCardCurrency">—</span>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario Retiro Crypto -->
+            <div class="withdrawal-card" id="cryptoWithdrawalSection" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2><i class="ri-bit-coin-line"></i> Retiro en Criptomoneda</h2>
+                    <button type="button" class="btn btn-outline-secondary" onclick="selectWithdrawalType('back')">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                </div>
+                <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+                <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+
+                <form id="withdrawalForm">
+                    <div class="form-group">
+                        <label for="cryptoCurrency">Criptomoneda</label>
+                        <div class="asset-selector-trigger" id="cryptoCurrencyTrigger" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openWithdrawalCryptoSelector(); }">
+                            <div class="selector-inner">
+                                <img src="/assets/coins/usdt.svg" id="cryptoCurrencyIcon" class="asset-icon-small" alt="">
+                                <span id="cryptoCurrencyLabel" class="selector-label unselected">Haz clic para seleccionar la moneda</span>
+                            </div>
+                            <i class="ri-arrow-down-s-line selector-chevron"></i>
+                        </div>
+                        <input type="hidden" id="cryptoCurrency" name="cryptoCurrency" value="">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Monto en USD</label>
+                        <input type="number" id="amount" class="form-control" step="0.01" min="1" required
+                            placeholder="Ej: 100.00">
+                        <div id="conversionInfo" class="conversion-info" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Dirección de Wallet</label>
+                        <input type="text" id="address" class="form-control" required
+                            placeholder="Ej: 0x1EBAeF7Bee7B3a7B2EEfC72e86593Bf15ED37522">
+                        <small style="color: #666; margin-top: 5px; display: block;">
+                            Ingresa la dirección de tu wallet donde recibirás los fondos.
+                        </small>
+                    </div>
+
+                    <!-- Resumen con Fees -->
+                    <div id="summaryBox" class="summary-box" style="display: none;">
+                        <h4>Resumen del Retiro</h4>
+                        <div class="summary-item">
+                            <label>Monto a debitar:</label>
+                            <span id="summaryAmount">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Comisión (2%):</label>
+                            <span id="summaryFee">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Total a debitar:</label>
+                            <span id="summaryTotal">$0.00</span>
+                        </div>
+                        <div class="summary-item" style="border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px;">
+                            <label>Recibirás (neto):</label>
+                            <span id="summaryNet" class="text-success font-weight-bold">$0.00</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <i class="ri-send-plane-line"></i> Confirmar Retiro
+                    </button>
+                </form>
+            </div>
+
+            <!-- Formulario Retiro OTC Moneda Nacional -->
+            <div class="withdrawal-card" id="otcWithdrawalSection" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2><i class="ri-bank-line"></i> Retiro a Moneda Nacional</h2>
+                    <button type="button" class="btn btn-outline-secondary" onclick="selectWithdrawalType('back')">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                </div>
+                <div id="otcWithdrawalError" class="alert alert-danger" style="display: none;"></div>
+                <div id="otcWithdrawalSuccess" class="alert alert-success" style="display: none;"></div>
+                <p style="color: #666; margin-bottom: 20px;">Convierte tu crypto en moneda nacional. Recibirás el fiat en tu método de pago. Comisión 2%.</p>
+                <form id="otcWithdrawalForm">
+                    <div class="form-group">
+                        <label>Moneda a recibir</label>
+                        <div class="form-control" id="otcWithdrawFiatDisplay" style="background: #f8f9fa;">—</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="otcWithdrawCrypto">Criptomoneda a retirar</label>
+                        <div class="asset-selector-trigger" id="otcWithdrawCryptoTrigger" tabindex="0" role="button">
+                            <div class="selector-inner">
+                                <img src="/assets/coins/usdt.svg" id="otcWithdrawCryptoIcon" class="asset-icon-small" alt="">
+                                <span id="otcWithdrawCryptoLabel" class="selector-label unselected">Seleccionar</span>
+                            </div>
+                            <i class="ri-arrow-down-s-line selector-chevron"></i>
+                        </div>
+                        <input type="hidden" id="otcWithdrawCrypto" value="">
+                        <div id="otcWithdrawBalanceInfo" class="otc-balance-info" style="display: none; margin-top: 8px; font-size: 0.9rem;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Método de pago (donde recibirás el fiat)</label>
+                        <div id="otcWithdrawPaymentMethodCards" class="payment-method-cards">
+                            <div class="loading-placeholder">Cargando métodos...</div>
+                        </div>
+                        <div id="otcWithdrawNoPaymentMethods" class="alert alert-warning" style="display: none;">
+                            <p>No tienes métodos de pago agregados para esta moneda.</p>
+                            <a href="/profile#payment-methods" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="ri-add-line"></i> Agregar método de pago
+                            </a>
+                        </div>
+                        <input type="hidden" id="otcWithdrawPaymentMethod" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="otcWithdrawAmount">Monto en crypto</label>
+                        <input type="number" id="otcWithdrawAmount" class="form-control" step="0.01" min="0.01" required placeholder="Ej: 100" inputmode="decimal">
+                        <div id="otcWithdrawBalanceError" class="text-danger small mt-1" style="display: none;"></div>
+                    </div>
+                    <div class="form-group otc-withdraw-breakdown" style="background: #fff8f3; border-left: 4px solid #ee6a3e; padding: 15px; border-radius: 4px;">
+                        <div class="breakdown-row">Tasa: <span id="otcWithdrawRateDisplay">—</span></div>
+                        <div class="breakdown-row">Monto a Retirar: <strong><span id="otcWithdrawAmountDisplay">—</span></strong></div>
+                        <div class="breakdown-row">Comisión de Servicio: 2% — Equiv: <strong><span id="otcWithdrawFeeDisplay">—</span></strong></div>
+                        <div class="breakdown-row mt-2">Recibirás: <strong><span id="otcWithdrawFiatAmount">—</span></strong></div>
+                    </div>
+                    <button type="button" class="btn-primary" id="otcWithdrawSubmitBtn" onclick="handleOtcWithdrawalSubmit()">
+                        <i class="ri-arrow-right-line"></i> Solicitar Retiro
+                    </button>
+                </form>
+            </div>
+
+            <!-- Historial de Retiros -->
+            <div class="withdrawal-card withdrawal-history">
+                <h2><i class="ri-history-line"></i> Historial de Retiros</h2>
+                <div id="withdrawalHistory">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Seleccionar Criptomoneda -->
+    <div class="modal fade crypto-selector-modal" id="cryptoCurrencyModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleccionar Criptomoneda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="cryptoCurrencyList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Criptomoneda OTC Retiro -->
+    <div class="modal fade crypto-selector-modal" id="otcWithdrawCryptoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seleccionar Criptomoneda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="otcWithdrawCryptoList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal OTC Buscando disponibilidad (Retiro Fiat) -->
+    <div class="modal fade" id="otcWithdrawSearchModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title"><i class="ri-loader-4-line"></i> Procesando solicitud</h5>
+                    <span id="otcWithdrawSearchTimer" class="badge bg-secondary fs-6">10:00</span>
+                </div>
+                <div class="modal-body text-center py-4" id="otcWithdrawSearchContent">
+                    <div class="otc-withdraw-search-animation" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 30px 0; flex-wrap: wrap;">
+                        <div><i class="ri-cloud-fill" style="font-size: 64px; color: #ee6a3e;"></i><div style="margin-top: 8px; font-size: 12px; color: #4a5568;">Tú</div></div>
+                        <div class="connection-dots" style="display: flex; gap: 5px;">
+                            <span style="width: 8px; height: 8px; background: #ee6a3e; border-radius: 50%; animation: otcPulse 1.5s infinite;"></span>
+                            <span style="width: 8px; height: 8px; background: #ee6a3e; border-radius: 50%; animation: otcPulse 1.5s infinite 0.2s;"></span>
+                            <span style="width: 8px; height: 8px; background: #ee6a3e; border-radius: 50%; animation: otcPulse 1.5s infinite 0.4s;"></span>
+                        </div>
+                        <div><i class="ri-earth-fill" style="font-size: 64px; color: #ee6a3e;"></i><div style="margin-top: 8px; font-size: 12px; color: #4a5568;">BidiPago</div></div>
+                    </div>
+                    <p id="otcWithdrawSearchStatus" style="color: #718096; margin-bottom: 20px;">Procesando tu solicitud...</p>
+                    <p class="text-muted small">Tienes 10 minutos. Si no hay disponibilidad, puedes cancelar e intentar más tarde.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4" id="otcWithdrawSearchFooter">
+                    <button type="button" class="btn btn-outline-secondary" id="otcWithdrawCancelSearchBtn"><i class="ri-close-line"></i> Cancelar solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>@keyframes otcPulse{0%,100%{opacity:1}50%{opacity:0.5}}</style>
+    <script src="/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="/web/js/withdrawal.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Envío a Terceros - BidiPago</title>
+
+    <style>
+        /* Reutilizar estilos del dashboard */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Estilos específicos para envío */
+        .send-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .send-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .send-card h2 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #ee6a3e;
+            box-shadow: 0 0 0 3px rgba(238, 106, 62, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%);
+            border: none;
+            color: #fff;
+            padding: 14px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(238, 106, 62, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Crypto selector con logos */
+        .crypto-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .crypto-option {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fff;
+        }
+
+        .crypto-option:hover {
+            border-color: #ee6a3e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(238, 106, 62, 0.15);
+        }
+
+        .crypto-option.selected {
+            border-color: #ee6a3e;
+            background: linear-gradient(135deg, rgba(238, 106, 62, 0.05) 0%, rgba(255, 140, 90, 0.05) 100%);
+        }
+
+        .crypto-option img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 8px;
+        }
+
+        .crypto-option .crypto-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .crypto-option .crypto-balance {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Conversión USD */
+        .conversion-display {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .conversion-display .usd-amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #28a745;
+        }
+
+        .conversion-display .usd-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Balance disponible */
+        .balance-info {
+            background: #e7f5ff;
+            border-left: 4px solid #339af0;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+        }
+
+        .balance-info .label {
+            color: #1971c2;
+            font-size: 0.9rem;
+        }
+
+        .balance-info .amount {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1864ab;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d3f9d8;
+            color: #2b8a3e;
+            border: 1px solid #b2f2bb;
+        }
+
+        .alert-danger {
+            background: #ffe3e3;
+            color: #c92a2a;
+            border: 1px solid #ffc9c9;
+        }
+
+        .alert-info {
+            background: #d3f9d8;
+            color: #087f5b;
+            border: 1px solid #96f2d7;
+        }
+
+        /* Historial */
+        .history-item {
+            background: #f8f9fa;
+            padding: 18px 20px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .history-item .info {
+            flex: 1;
+        }
+
+        .history-item .info .type {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .history-item .info .email {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .history-item .info .date {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .history-item .amount {
+            text-align: right;
+        }
+
+        .history-item .amount .value {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .history-item .amount .value.sent {
+            color: #c92a2a;
+        }
+
+        .history-item .amount .value.received {
+            color: #2b8a3e;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #ee6a3e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination-controls button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background: #ee6a3e;
+            color: #fff;
+            border-color: #ee6a3e;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls .page-info {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send" class="active"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <div class="send-container">
+            <!-- Formulario de Envío -->
+            <div class="send-card">
+                <h2><i class="ri-send-plane-line"></i> Enviar Fondos</h2>
+
+                <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+                <div id="successMessage" class="alert alert-success" style="display: none;"></div>
+
+                <!-- Selector de Criptomoneda -->
+                <div class="form-group">
+                    <label>Selecciona la criptomoneda a enviar</label>
+                    <div class="crypto-options" id="cryptoOptions">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Cargando wallets...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Disponible -->
+                <div class="balance-info" id="balanceInfo" style="display: none;">
+                    <div class="label">Balance Disponible</div>
+                    <div class="amount"><span id="availableBalance">0</span> <span id="selectedAsset"></span></div>
+                </div>
+
+                <!-- Monto -->
+                <div class="form-group">
+                    <label for="amount">Monto a enviar</label>
+                    <input type="number" id="amount" class="form-control" step="0.00000001" min="0.00000001"
+                        placeholder="Ej: 50.00">
+                    <div class="conversion-display" id="conversionDisplay" style="display: none;">
+                        <div class="usd-amount">≈ $<span id="usdAmount">0.00</span> USD</div>
+                        <div class="usd-label">Valor aproximado en USD</div>
+                    </div>
+                </div>
+
+                <!-- Email Destinatario -->
+                <div class="form-group">
+                    <label for="recipientEmail">Email del destinatario</label>
+                    <input type="email" id="recipientEmail" class="form-control" placeholder="usuario@example.com">
+                </div>
+
+                <!-- Notas (opcional) -->
+                <div class="form-group">
+                    <label for="notes">Notas (opcional)</label>
+                    <input type="text" id="notes" class="form-control" placeholder="Ej: Pago por servicios"
+                        maxlength="200">
+                </div>
+
+                <button type="button" class="btn-primary" id="sendBtn" onclick="sendFunds()" disabled>
+                    <i class="ri-send-plane-line"></i> Enviar Fondos
+                </button>
+            </div>
+
+            <!-- Historial de Envíos -->
+            <div class="send-card">
+                <h2><i class="ri-history-line"></i> Historial de Transferencias</h2>
+                <div id="transferHistory">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accessToken = localStorage.getItem('accessToken');
+        let wallets = [];
+        let selectedWallet = null;
+        let currentUserId = null;
+        let conversionTimeout = null;
+        let transferHistoryPage = 1;
+        let transferHistoryTotalPages = 1;
+        const TRANSFER_HISTORY_PAGE_SIZE = 5;
+
+        // Crypto logos SVG
+        const cryptoLogos = {
+            'USDT': '/web/assets/crypto/usdt.svg',
+            'USDC': '/web/assets/crypto/usdc.svg',
+            'BTC': '/web/assets/crypto/btc.svg',
+            'ETH': '/web/assets/crypto/eth.svg',
+            'LTC': '/web/assets/crypto/ltc.svg',
+            'BIUSD': '/web/assets/crypto/biusd.svg',
+        };
+
+        // Fallback logo - use a simple one without special characters for inline use
+        const defaultLogoPath = '/web/assets/crypto/default.svg';
+
+        // Helper function for image error handling
+        function handleLogoError(img) {
+            img.onerror = null; // Prevent infinite loop
+            img.src = defaultLogoPath;
+        }
+
+        async function init() {
+            if (!accessToken) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                // Get current user info with wallets
+                const userResponse = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (!userResponse.ok) {
+                    if (userResponse.status === 401) {
+                        localStorage.removeItem('accessToken');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Error al obtener información del usuario');
+                }
+
+                const userData = await userResponse.json();
+                currentUserId = userData.user.id;
+
+                // Wallets come from the same response
+                wallets = userData.wallets || userData.user.wallets || [];
+
+                // Render crypto options
+                loadWalletsFromData();
+
+                // Load history
+                await loadHistory();
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Error al cargar la página. Por favor, recarga.');
+            }
+        }
+
+        function loadWalletsFromData() {
+            // Group wallets by asset (sum balances from different networks)
+            const groupedWallets = {};
+            wallets.forEach(w => {
+                const asset = w.assetSymbol.toUpperCase();
+                // BiUSD is now allowed for sending to third parties
+
+                if (!groupedWallets[asset]) {
+                    groupedWallets[asset] = {
+                        assetSymbol: asset,
+                        balance: 0,
+                        lockedBalance: 0
+                    };
+                }
+                groupedWallets[asset].balance += parseFloat(w.balance || 0);
+                groupedWallets[asset].lockedBalance += parseFloat(w.lockedBalance || 0);
+            });
+
+            renderCryptoOptions(Object.values(groupedWallets));
+        }
+
+        async function loadWallets() {
+            try {
+                // Reload user data to get fresh wallets
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (!response.ok) throw new Error('Error al cargar wallets');
+
+                const data = await response.json();
+                wallets = data.wallets || data.user.wallets || [];
+
+                loadWalletsFromData();
+
+            } catch (error) {
+                console.error('Error loading wallets:', error);
+                document.getElementById('cryptoOptions').innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <i class="ri-error-warning-line"></i>
+                        <p>Error al cargar wallets</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderCryptoOptions(groupedWallets) {
+            const container = document.getElementById('cryptoOptions');
+
+            if (groupedWallets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <i class="ri-wallet-line"></i>
+                        <p>No tienes fondos disponibles</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = groupedWallets.map(wallet => {
+                const available = wallet.balance - wallet.lockedBalance;
+                const logoUrl = cryptoLogos[wallet.assetSymbol] || defaultLogoPath;
+
+                return `
+                    <div class="crypto-option" onclick="selectCrypto('${wallet.assetSymbol}')" data-asset="${wallet.assetSymbol}">
+                        <img src="${logoUrl}" alt="${wallet.assetSymbol}" onerror="handleLogoError(this)">
+                        <div class="crypto-name">${wallet.assetSymbol}</div>
+                        <div class="crypto-balance">${available.toFixed(8).replace(/\.?0+$/, '')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectCrypto(asset) {
+            // Update UI
+            document.querySelectorAll('.crypto-option').forEach(el => {
+                el.classList.remove('selected');
+                if (el.dataset.asset === asset) {
+                    el.classList.add('selected');
+                }
+            });
+
+            // Find wallet info
+            const groupedWallet = getGroupedWalletByAsset(asset);
+            if (!groupedWallet) return;
+
+            selectedWallet = {
+                assetSymbol: asset,
+                balance: groupedWallet.balance,
+                lockedBalance: groupedWallet.lockedBalance,
+                available: groupedWallet.balance - groupedWallet.lockedBalance
+            };
+
+            // Show balance info
+            document.getElementById('balanceInfo').style.display = 'block';
+            document.getElementById('availableBalance').textContent = selectedWallet.available.toFixed(8).replace(/\.?0+$/, '');
+            document.getElementById('selectedAsset').textContent = asset;
+
+            // Enable form
+            updateSendButton();
+
+            // Trigger conversion if amount already entered
+            const amount = document.getElementById('amount').value;
+            if (amount && parseFloat(amount) > 0) {
+                updateConversion();
+            }
+        }
+
+        function getGroupedWalletByAsset(asset) {
+            let total = { balance: 0, lockedBalance: 0 };
+            wallets.forEach(w => {
+                if (w.assetSymbol.toUpperCase() === asset.toUpperCase()) {
+                    total.balance += parseFloat(w.balance || 0);
+                    total.lockedBalance += parseFloat(w.lockedBalance || 0);
+                }
+            });
+            return total.balance > 0 ? total : null;
+        }
+
+        // Amount input handler
+        document.getElementById('amount').addEventListener('input', function () {
+            updateConversion();
+            updateSendButton();
+        });
+
+        // Email input handler
+        document.getElementById('recipientEmail').addEventListener('input', updateSendButton);
+
+        function updateConversion() {
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            if (!amount || amount <= 0 || !selectedWallet) {
+                document.getElementById('conversionDisplay').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('conversionDisplay').style.display = 'block';
+            document.getElementById('usdAmount').textContent = 'Calculando...';
+
+            // Handle BIUSD locally (1:1 parity)
+            const asset = selectedWallet.assetSymbol;
+            if (asset === 'BIUSD') {
+                document.getElementById('usdAmount').textContent = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return;
+            }
+
+            // Debounce API call
+            clearTimeout(conversionTimeout);
+            conversionTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/prices/convert?from=${asset}&to=USD&amount=${amount}`);
+
+                    if (!response.ok) throw new Error('Error de conversión');
+
+                    const data = await response.json();
+                    document.getElementById('usdAmount').textContent = parseFloat(data.convertedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                } catch (error) {
+                    console.error('Conversion error:', error);
+                    document.getElementById('usdAmount').textContent = '---';
+                }
+            }, 300);
+        }
+
+        function updateSendButton() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const email = document.getElementById('recipientEmail').value.trim();
+
+            const isValid = selectedWallet &&
+                amount > 0 &&
+                amount <= selectedWallet.available &&
+                email &&
+                email.includes('@');
+
+            document.getElementById('sendBtn').disabled = !isValid;
+        }
+
+        async function sendFunds() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const recipientEmail = document.getElementById('recipientEmail').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!selectedWallet || amount <= 0 || !recipientEmail) {
+                showError('Por favor, completa todos los campos');
+                return;
+            }
+
+            if (amount > selectedWallet.available) {
+                showError('El monto excede tu balance disponible');
+                return;
+            }
+
+            const btn = document.getElementById('sendBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;"></div> Enviando...';
+
+            try {
+                const response = await fetch('/api/transfers/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        recipientEmail,
+                        assetSymbol: selectedWallet.assetSymbol,
+                        amount,
+                        notes: notes || undefined
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error al enviar fondos');
+                }
+
+                showSuccess(`✅ Enviaste ${amount} ${selectedWallet.assetSymbol} a ${recipientEmail}`);
+
+                // Clear form
+                document.getElementById('amount').value = '';
+                document.getElementById('recipientEmail').value = '';
+                document.getElementById('notes').value = '';
+                document.getElementById('conversionDisplay').style.display = 'none';
+
+                // Reload data
+                await loadWallets();
+                await loadHistory();
+
+                // Reset selected wallet balance
+                if (selectedWallet) {
+                    selectCrypto(selectedWallet.assetSymbol);
+                }
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                updateSendButton();
+            }
+        }
+
+        async function loadHistory(page = 1) {
+            transferHistoryPage = page;
+            try {
+                const response = await fetch('/api/transfers/history?limit=100', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (!response.ok) throw new Error('Error al cargar historial');
+
+                const data = await response.json();
+                const allTransfers = data.transfers || [];
+
+                // Calculate pagination
+                transferHistoryTotalPages = Math.ceil(allTransfers.length / TRANSFER_HISTORY_PAGE_SIZE);
+                const startIndex = (page - 1) * TRANSFER_HISTORY_PAGE_SIZE;
+                const endIndex = startIndex + TRANSFER_HISTORY_PAGE_SIZE;
+                const transfers = allTransfers.slice(startIndex, endIndex);
+
+                renderHistory(transfers);
+
+            } catch (error) {
+                console.error('Error loading history:', error);
+                document.getElementById('transferHistory').innerHTML = `
+                    <div class="empty-state">
+                        <i class="ri-error-warning-line"></i>
+                        <p>Error al cargar historial</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderHistory(transfers) {
+            const container = document.getElementById('transferHistory');
+
+            if (transfers.length === 0 && transferHistoryPage === 1) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="ri-exchange-line"></i>
+                        <p>No hay transferencias aún</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = transfers.map(t => {
+                const isSent = t.sender.id === currentUserId;
+                const otherParty = isSent ? t.recipient.email : t.sender.email;
+                const typeText = isSent ? 'Enviado a' : 'Recibido de';
+                const typeIcon = isSent ? 'ri-arrow-up-line' : 'ri-arrow-down-line';
+                const amountClass = isSent ? 'sent' : 'received';
+                const prefix = isSent ? '-' : '+';
+                const date = new Date(t.createdAt).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <div class="history-item">
+                        <div class="info">
+                            <div class="type"><i class="${typeIcon}"></i> ${typeText}</div>
+                            <div class="email">${otherParty}</div>
+                            <div class="date">${date}</div>
+                        </div>
+                        <div class="amount">
+                            <div class="value ${amountClass}">${prefix}${parseFloat(t.amount).toFixed(8).replace(/\.?0+$/, '')} ${t.assetSymbol}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add pagination controls if more than 1 page
+            if (transferHistoryTotalPages > 1) {
+                html += `
+                    <div class="pagination-controls">
+                        <button onclick="loadHistory(${transferHistoryPage - 1})" ${transferHistoryPage <= 1 ? 'disabled' : ''}>
+                            <i class="ri-arrow-left-s-line"></i> Anterior
+                        </button>
+                        <span class="page-info">Página ${transferHistoryPage} de ${transferHistoryTotalPages}</span>
+                        <button onclick="loadHistory(${transferHistoryPage + 1})" ${transferHistoryPage >= transferHistoryTotalPages ? 'disabled' : ''}>
+                            Siguiente <i class="ri-arrow-right-s-line"></i>
+                        </button>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            window.location.href = '/login';
+        });
+
+        // Init
+        init();
+    </script>
+</body>
+
+</html>

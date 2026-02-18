@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>BidiSAN - Ahorro Colaborativo - BidiPago</title>
+
+    <style>
+        /* Reutilizar estilos del dashboard */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+            }
+        }
+
+        /* Estilos específicos para BidiSAN */
+        .san-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .san-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .san-hero {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .san-hero h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+            color: #fff;
+        }
+
+        .san-hero p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .san-stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .san-stat-item {
+            text-align: center;
+        }
+
+        .san-stat-item .number {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .san-stat-item .label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .san-actions {
+            margin-top: 20px;
+        }
+
+        .san-actions .btn {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-light {
+            background: #fff;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-outline-light {
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .eligibility-banner {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .eligibility-banner.eligible {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+
+        .eligibility-banner.not-eligible {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .group-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .group-card:hover {
+            border-color: #ee6a3e;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .group-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+
+        .group-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .group-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .group-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .group-badge.completed {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .group-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ee6a3e;
+            margin-bottom: 15px;
+        }
+
+        .group-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .group-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .group-info-item i {
+            color: #ee6a3e;
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B35, #F7931E);
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .group-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #ee6a3e;
+            color: #fff;
+        }
+
+        .btn-outline-primary {
+            background: transparent;
+            color: #ee6a3e;
+            border: 1px solid #ee6a3e;
+        }
+
+        .btn-outline-danger {
+            background: transparent;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        .empty-state h4 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ee6a3e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Modal */
+        .san-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+            display: none;
+        }
+
+        .san-modal-backdrop.show {
+            display: block;
+        }
+
+        .modal-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 1051;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h5 {
+            margin: 0;
+            color: #fff !important;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #fff !important;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #ee6a3e;
+            outline: none;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .alert-info {
+            background: #cce5ff;
+            color: #004085;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .alert-info ul {
+            margin: 10px 0 0 20px;
+            padding: 0;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .group-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li>
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san" class="active"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+        <div class="san-container">
+            <!-- Hero Section -->
+            <div class="san-hero">
+                <h1>🏦 BidiSAN</h1>
+                <p>Ahorro colaborativo digitalizado. Únete a un grupo, aporta periódicamente, y cuando sea tu turno,
+                    recibirás el fondo completo.</p>
+                <div class="san-stats">
+                    <div class="san-stat-item">
+                        <div class="number" id="myGroupsCount">-</div>
+                        <div class="label">Mis Grupos</div>
+                    </div>
+                    <div class="san-stat-item">
+                        <div class="number" id="totalSaved">-</div>
+                        <div class="label">Total Aportado</div>
+                    </div>
+                    <div class="san-stat-item">
+                        <div class="number" id="nextPayment">-</div>
+                        <div class="label">Próximo Pago</div>
+                    </div>
+                </div>
+                <div class="san-actions">
+                    <button class="btn-light" onclick="showCreateModal()">
+                        <i class="ri-add-line"></i> Crear Grupo
+                    </button>
+                    <a href="#available-groups" class="btn-outline-light">
+                        <i class="ri-search-line"></i> Explorar Grupos
+                    </a>
+                </div>
+            </div>
+
+            <!-- Eligibility Banner -->
+            <div id="eligibilityBanner" class="eligibility-banner" style="display: none;"></div>
+
+            <!-- My Groups Section -->
+            <div class="san-card">
+                <div class="section-header">
+                    <h3><i class="ri-team-line"></i> Mis Grupos</h3>
+                </div>
+                <div id="myGroupsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando tus grupos...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Groups Section -->
+            <div class="san-card" id="available-groups">
+                <div class="section-header">
+                    <h3><i class="ri-search-line"></i> Grupos Disponibles</h3>
+                </div>
+                <div id="availableGroupsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Buscando grupos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="san-modal-backdrop" id="createModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h5><i class="ri-add-circle-line"></i> Crear Nuevo Grupo</h5>
+                <button class="modal-close" onclick="hideCreateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createGroupForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre del Grupo *</label>
+                            <input type="text" class="form-control" id="groupName" required
+                                placeholder="Ej: Ahorro Navideño">
+                        </div>
+                        <div class="form-group">
+                            <label>Periodicidad *</label>
+                            <select class="form-control" id="groupPeriodicity" required
+                                onchange="updatePaymentDayOptions()">
+                                <option value="">Seleccionar...</option>
+                                <option value="weekly">Semanal (máx. 50 BiUSD)</option>
+                                <option value="monthly">Mensual (mín. 50 BiUSD)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cuota por período (BiUSD) *</label>
+                            <input type="number" class="form-control" id="groupAmount" required min="1" step="0.01"
+                                placeholder="50.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Número de Participantes *</label>
+                            <input type="number" class="form-control" id="groupParticipants" required min="3" max="20"
+                                placeholder="5">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Día de Pago *</label>
+                            <select class="form-control" id="groupPaymentDay" required>
+                                <option value="">Selecciona periodicidad primero</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Inicio *</label>
+                            <div style="display: flex; gap: 10px;">
+                                <select class="form-control" id="groupStartMonth" required
+                                    onchange="updateDaysOptions()">
+                                    <option value="">Mes...</option>
+                                </select>
+                                <select class="form-control" id="groupStartDay" required>
+                                    <option value="">Día...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción (opcional)</label>
+                        <textarea class="form-control" id="groupDescription" rows="2"
+                            placeholder="Describe el propósito del grupo..."></textarea>
+                    </div>
+                    <div class="alert-info">
+                        <strong>Importante:</strong>
+                        <ul>
+                            <li>Comisión del 0.5% sobre cada aporte</li>
+                            <li>El beneficiario del período está exento</li>
+                            <li>Orden de beneficiarios asignado aleatoriamente</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-outline-primary" onclick="hideCreateModal()">Cancelar</button>
+                <button class="btn-sm btn-primary" onclick="createGroup()">Crear Grupo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KYC Required Modal -->
+    <div class="san-modal-backdrop" id="kycRequiredModal">
+        <div class="modal-container">
+            <div class="modal-header" style="background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);">
+                <h5><i class="ri-shield-check-line"></i> Requisito de KYC</h5>
+                <button class="modal-close" onclick="hideKycRequiredModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="font-size: 4rem; color: #ee6a3e; margin-bottom: 15px;">
+                    <i class="ri-lock-2-line"></i>
+                </div>
+                <h4 style="margin-bottom: 15px; color: #333;">Acceso Restringido</h4>
+                <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
+                    Para crear un grupo de ahorro, es necesario tener un nivel de verificación <strong>L3
+                        (Avanzado)</strong> o superior.
+                    Esto garantiza la seguridad y confianza dentro de la comunidad BidiSAN.
+                </p>
+                <div class="alert-info" style="text-align: left; margin-bottom: 20px;">
+                    <small><i class="ri-information-line"></i> Completa tu verificación para desbloquear esta
+                        funcionalidad.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-outline-primary" onclick="hideKycRequiredModal()">Cancelar</button>
+                <a href="/profile" class="btn-sm btn-primary"
+                    style="text-decoration: none; display: inline-flex; align-items: center;">
+                    Subir Nivel de KYC <i class="ri-arrow-right-line" style="margin-left: 5px;"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="san-modal-backdrop" id="successModal">
+        <div class="modal-container">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h5><i class="ri-checkbox-circle-line"></i> ¡Éxito!</h5>
+                <button class="modal-close" onclick="hideSuccessModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="font-size: 4rem; color: #28a745; margin-bottom: 15px;">
+                    <i class="ri-checkbox-circle-fill"></i>
+                </div>
+                <p id="successMessage" style="color: #333; font-size: 1.1rem; margin-bottom: 20px;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-primary" onclick="hideSuccessModal()">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="san-modal-backdrop" id="errorModal">
+        <div class="modal-container">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                <h5><i class="ri-error-warning-line"></i> Error</h5>
+                <button class="modal-close" onclick="hideErrorModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="font-size: 4rem; color: #dc3545; margin-bottom: 15px;">
+                    <i class="ri-close-circle-fill"></i>
+                </div>
+                <p id="errorMessage" style="color: #333; font-size: 1.1rem; margin-bottom: 20px;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-primary" onclick="hideErrorModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/web/js/san.js?v=1.4"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+        }
+
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', function (e) {
+            e.preventDefault();
+            logout();
+        });
+    </script>
+</body>
+
+</html>

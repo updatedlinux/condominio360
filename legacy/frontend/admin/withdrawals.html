@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>BidiPago Admin - Retiros</title>
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Custom fonts -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/admin-sidebar.css" rel="stylesheet">
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/env-config.js"></script>
+    <script src="js/admin-config.js"></script>
+
+    <style>
+        /* Custom sidebar colors - orange/black */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar .sidebar-brand {
+            color: #fd7e14 !important;
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(253, 126, 20, 0.3) !important;
+        }
+
+        .sidebar-heading {
+            color: #fd7e14 !important;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar"></ul>
+        <script>window.ADMIN_ACTIVE_PAGE = 'withdrawals';</script>
+        <script src="js/admin-sidebar.js"></script>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="adminEmail">Admin</span>
+                                <i class="fas fa-user-circle fa-lg text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-2 text-gray-800">Retiros</h1>
+                    <p class="mb-4">Gestión de solicitudes de retiro de usuarios.</p>
+
+                    <!-- Filter Options -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Filtros</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Estado</label>
+                                        <select class="form-control" id="statusFilter" onchange="loadWithdrawals()">
+                                            <option value="">Todos</option>
+                                            <option value="PENDING" selected>Pendiente</option>
+                                            <option value="PROCESSING">En Proceso</option>
+                                            <option value="COMPLETED">Completado</option>
+                                            <option value="FAILED">Fallido</option>
+                                            <option value="CANCELLED">Cancelado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Withdrawals Table -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Lista de Retiros</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Usuario</th>
+                                            <th>Monto</th>
+                                            <th>Fee</th>
+                                            <th>Total Debit</th>
+                                            <th>Moneda</th>
+                                            <th>Fecha</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="withdrawalsTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; BidiPago 2026</span>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Withdrawal Details Modal -->
+    <div class="modal fade" id="withdrawalDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-money-bill-wave mr-2"></i>Detalles del Retiro</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="currentWithdrawalId">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Usuario</label>
+                                <p id="detailUserEmail">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Fecha Solicitud</label>
+                                <p id="detailDate">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Monto a Debitar (bruto)</label>
+                                <h4 class="text-primary" id="detailAmount">-</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Comisión (Fee)</label>
+                                <p id="detailFee">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Total Debitado</label>
+                                <p class="text-danger" id="detailTotalDebited">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Neto a enviar al usuario</label>
+                                <h5 class="text-success" id="detailNetToUser">-</h5>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Crypto / Red</label>
+                                <p id="detailCrypto">-</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Estado Actual</label>
+                                <div id="detailStatusBadge">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Dirección de Destino (Wallet)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="detailAddress" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button"
+                                    onclick="copyToClipboard('detailAddress')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Hash Transacción (TxHash)</label>
+                        <input type="text" class="form-control" id="detailTxHash" placeholder="Pendiente...">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Notas Admin</label>
+                        <textarea class="form-control" id="detailAdminNotes" rows="3"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <div id="actionButtons">
+                        <!-- Buttons injected dynamically based on status -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">¿Cerrar Sesión?</h5>
+                    <button class="close" type="button" data-dismiss="modal">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Selecciona "Cerrar Sesión" si estás listo para finalizar tu sesión actual.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" onclick="AdminConfig.logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        let dataTableInstance = null;
+        let currentWithdrawal = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            AdminConfig.checkAuth();
+            const user = AdminConfig.getUser();
+            document.getElementById('adminEmail').textContent = user.email || 'Admin';
+            await loadWithdrawals();
+        });
+
+        async function loadWithdrawals() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            let url = `${AdminConfig.API_URL}/admin/withdrawals?limit=100`; // Default limit 100
+            if (statusFilter) {
+                url += `&status=${statusFilter}`;
+            }
+
+            try {
+                const response = await fetch(url, { headers: AdminConfig.getAuthHeaders() });
+
+                if (response.status === 401) {
+                    AdminConfig.handleApiError(401);
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error cargando retiros');
+
+                const data = await response.json();
+                const withdrawals = data.withdrawals || [];
+
+                if (dataTableInstance) {
+                    dataTableInstance.destroy();
+                    dataTableInstance = null;
+                }
+
+                const tbody = document.getElementById('withdrawalsTableBody');
+                tbody.innerHTML = '';
+
+                withdrawals.forEach(w => {
+                    const statusBadge = getStatusBadge(w.status);
+                    const row = `
+                        <tr>
+                            <td>${w.id.substring(0, 8)}...</td>
+                            <td>${w.user.email}</td>
+                            <td>${Number(w.amount).toFixed(4)}</td>
+                            <td>${Number(w.feeAmount).toFixed(4)}</td>
+                            <td>${Number(w.totalDebited).toFixed(4)}</td>
+                            <td>${w.cryptoCurrency}</td>
+                            <td>${new Date(w.createdAt).toLocaleDateString('es-ES')}</td>
+                            <td><span class="badge badge-${statusBadge.class}">${statusBadge.text}</span></td>
+                            <td>
+                                <button class="btn btn-info btn-sm" onclick='openDetails(${JSON.stringify(w).replace(/'/g, "&#39;")})' title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+                dataTableInstance = $('#dataTable').DataTable({
+                    language: { emptyTable: "No hay retiros encontrados" },
+                    order: [[6, "desc"]] // Sort by date
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar los retiros', 'error');
+            }
+        }
+
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'PENDING': return { class: 'warning', text: 'Pendiente' };
+                case 'PROCESSING': return { class: 'info', text: 'En Proceso' };
+                case 'COMPLETED': return { class: 'success', text: 'Completado' };
+                case 'FAILED': return { class: 'danger', text: 'Fallido' };
+                case 'CANCELLED': return { class: 'secondary', text: 'Cancelado' };
+                default: return { class: 'light', text: status };
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const copyText = document.getElementById(elementId);
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            // Optional: Tooltip or small toast
+            const btn = copyText.nextElementSibling.querySelector('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => btn.innerHTML = originalHtml, 1500);
+        }
+
+        function getAssetSymbol(currency) {
+            if (!currency) return '';
+            const c = currency.toLowerCase();
+            if (c.includes('usdt')) return 'USDT';
+            if (c.includes('usdc')) return 'USDC';
+            if (c.includes('btc')) return 'BTC';
+            if (c.includes('eth')) return 'ETH';
+            if (c.includes('ltc')) return 'LTC';
+            return c.toUpperCase();
+        }
+
+        async function fetchCryptoAmount(amount, currency) {
+            try {
+                const toAsset = getAssetSymbol(currency);
+                // Para stablecoins (USDT/USDC): 1 USD = 1 USDT/USDC. No usar el converter que aplica 1% fee.
+                if (toAsset === 'USDT' || toAsset === 'USDC') {
+                    return amount;
+                }
+                // Para criptos volátiles: usar API de precios para conversión USD → crypto (sin fee de conversión)
+                const url = `${AdminConfig.API_URL}/prices/latest?currency=${toAsset}`;
+                const response = await fetch(url, { headers: AdminConfig.getAuthHeaders() });
+                if (!response.ok) return null;
+                const data = await response.json();
+                const price = parseFloat(data.price);
+                if (!price || price <= 0) return null;
+                return amount / price;
+            } catch (error) {
+                console.error('Error fetching crypto amount:', error);
+                return null;
+            }
+        }
+
+        async function openDetails(w) {
+            currentWithdrawal = w;
+            document.getElementById('currentWithdrawalId').value = w.id;
+            document.getElementById('detailUserEmail').textContent = w.user.email;
+            document.getElementById('detailDate').textContent = new Date(w.createdAt).toLocaleString('es-ES');
+            document.getElementById('detailAmount').textContent = `${Number(w.amount).toFixed(2)} USD`;
+            document.getElementById('detailFee').textContent = `${Number(w.feeAmount).toFixed(2)} USD`;
+            document.getElementById('detailTotalDebited').textContent = `${Number(w.totalDebited).toFixed(2)} USD`;
+
+            // Neto al usuario = amount - feeAmount
+            const netToUser = Number(w.amount) - Number(w.feeAmount);
+            document.getElementById('detailNetToUser').textContent = `${netToUser.toFixed(2)} USD (calculando crypto...)`;
+
+            // Asset Icon and Network
+            const assetSymbol = getAssetSymbol(w.cryptoCurrency);
+            const iconPath = `assets/coins/${assetSymbol.toLowerCase()}.svg`;
+            const cryptoHtml = `
+                <div class="d-flex align-items-center">
+                    <img src="${iconPath}" alt="${assetSymbol}" style="width: 24px; height: 24px; margin-right: 8px;">
+                    <span>${w.cryptoCurrency.toUpperCase()}</span>
+                </div>
+            `;
+            document.getElementById('detailCrypto').innerHTML = cryptoHtml;
+
+            document.getElementById('detailAddress').value = w.address;
+            document.getElementById('detailTxHash').value = w.txHash || '';
+            document.getElementById('detailAdminNotes').value = w.adminNotes || '';
+
+            const statusBadge = getStatusBadge(w.status);
+            document.getElementById('detailStatusBadge').innerHTML = `<span class="badge badge-${statusBadge.class}" style="font-size: 1rem;">${statusBadge.text}</span>`;
+
+            // Reset displays while loading
+            const amountContainer = document.getElementById('detailAmount');
+            amountContainer.innerHTML = `
+                <div>${Number(w.amount).toFixed(2)} USD</div>
+            `;
+
+            // Action Buttons Logic
+            const actionContainer = document.getElementById('actionButtons');
+            actionContainer.innerHTML = ''; // Clear prev
+
+            if (w.status === 'PENDING') {
+                actionContainer.innerHTML = `
+                    <button class="btn btn-danger mr-2" onclick="updateStatus('CANCELLED')">Cancelar Retiro</button>
+                    <button class="btn btn-primary" onclick="updateStatus('PROCESSING')">Procesar (Marcar En Proceso)</button>
+                `;
+            } else if (w.status === 'PROCESSING') {
+                actionContainer.innerHTML = `
+                    <button class="btn btn-danger mr-2" onclick="updateStatus('FAILED')">Marcar Fallido (Reembolsar)</button>
+                    <button class="btn btn-success" onclick="updateStatus('COMPLETED')">Completar (Ya enviado)</button>
+                `;
+            }
+            if (['COMPLETED', 'FAILED', 'CANCELLED'].includes(w.status)) {
+                actionContainer.innerHTML = `<button class="btn btn-secondary" onclick="saveNotesOnly()">Guardar Notas</button>`;
+            }
+
+            $('#withdrawalDetailsModal').modal('show');
+
+            // Fetch Crypto Amount para el neto al usuario (amount - feeAmount)
+            const netToUserUsd = Number(w.amount) - Number(w.feeAmount);
+            const cryptoAmount = await fetchCryptoAmount(netToUserUsd, w.cryptoCurrency);
+            const netToUserEl = document.getElementById('detailNetToUser');
+            if (cryptoAmount !== null && netToUserEl) {
+                netToUserEl.innerHTML = `
+                    <span class="text-success">${netToUserUsd.toFixed(2)} USD</span>
+                    <span class="text-muted">≈</span>
+                    <span class="text-success font-weight-bold">${Number(cryptoAmount).toFixed(8)} ${assetSymbol}</span>
+                `;
+            } else if (netToUserEl) {
+                netToUserEl.innerHTML = `<span class="text-success">${netToUserUsd.toFixed(2)} USD</span>`;
+            }
+        }
+
+        async function updateStatus(newStatus) {
+            const withdrawalId = document.getElementById('currentWithdrawalId').value;
+            const txHash = document.getElementById('detailTxHash').value;
+            const notes = document.getElementById('detailAdminNotes').value;
+
+            // Validations
+            if (newStatus === 'COMPLETED' && !txHash) {
+                Swal.fire('Atención', 'Debes ingresar el TxHash para completar el retiro', 'warning');
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: `Cambiar estado a: ${newStatus}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cambiar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const body = {
+                    status: newStatus,
+                    adminNotes: notes
+                };
+                if (txHash) body.txHash = txHash;
+
+                const response = await fetch(`${AdminConfig.API_URL}/admin/withdrawals/${withdrawalId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        ...AdminConfig.getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Error al actualizar');
+                }
+
+                Swal.fire('Éxito', 'Estado actualizado correctamente', 'success');
+                $('#withdrawalDetailsModal').modal('hide');
+                loadWithdrawals();
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        async function saveNotesOnly() {
+            const withdrawalId = document.getElementById('currentWithdrawalId').value;
+            const txHash = document.getElementById('detailTxHash').value;
+            const notes = document.getElementById('detailAdminNotes').value;
+
+            try {
+                const body = { adminNotes: notes };
+                if (txHash) body.txHash = txHash; // Allow updating hash if needed
+
+                const response = await fetch(`${AdminConfig.API_URL}/admin/withdrawals/${withdrawalId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        ...AdminConfig.getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) throw new Error('Error al guardar');
+                Swal.fire('Éxito', 'Información actualizada', 'success');
+                loadWithdrawals(); // Refresh list to update any view
+
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        }
+
+
+
+    </script>
+</body>
+
+</html>

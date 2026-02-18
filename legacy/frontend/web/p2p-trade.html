@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Links Of CSS File -->
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/flaticon.css">
+    <link rel="stylesheet" href="/assets/css/remixicon.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/web/assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/web/assets/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/web/assets/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="/web/assets/favicon_io/favicon.ico">
+    <title>Trade P2P - BidiPago</title>
+
+    <style>
+        /* Sidebar styles - igual que dashboard.html */
+        .dashboard-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #0f0e0e;
+            color: #fff;
+            padding: 20px 0;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .dashboard-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 70px;
+            z-index: 1001;
+            background: #0f0e0e;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header img {
+            height: 50px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 20px;
+            color: #fff;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #333;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #ee6a3e;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: #1a1a1a;
+            padding-left: 20px;
+            display: none;
+        }
+
+        .sidebar-submenu li {
+            margin: 0;
+        }
+
+        .sidebar-submenu a {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .sidebar-menu>li.has-submenu:hover .sidebar-submenu {
+            display: block !important;
+        }
+
+        /* Main content area */
+        .dashboard-main {
+            margin-left: 250px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .dashboard-main.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        /* Trade container */
+        .trade-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+
+        @media (max-width: 1200px) {
+            .trade-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Trade info section */
+        .trade-info-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: calc(100vh - 120px);
+        }
+
+        .trade-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .trade-header h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .trade-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .trade-status.waiting-payment {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .trade-status.payment-confirmed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .trade-status.settled {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .trade-status.disputed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .trade-status.cancelled {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .trade-details {
+            margin-bottom: 30px;
+        }
+
+        .trade-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .trade-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .trade-detail-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .trade-detail-value {
+            color: #333;
+        }
+
+        .trade-actions {
+            margin-top: 30px;
+        }
+
+        .btn-trade-action {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-confirm-payment {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .btn-confirm-payment:hover {
+            background: #218838;
+        }
+
+        .btn-settle {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .btn-settle:hover {
+            background: #0056b3;
+        }
+
+        .btn-dispute {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .btn-dispute:hover {
+            background: #c82333;
+        }
+
+        .btn-trade-action:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            width: 95%;
+            max-width: 500px;
+            color: #333;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .modal-header .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-header .close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        /* Chat section */
+        .chat-section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 0;
+            /* Important for flex scroll */
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .chat-input-container.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .chat-closed-message {
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            color: #856404;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.own {
+            align-items: flex-end;
+        }
+
+        .message.other {
+            align-items: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.own .message-bubble {
+            background: #ee6a3e;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.other .message-bubble {
+            background: #e9ecef;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background: #fff;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #ee6a3e;
+        }
+
+        .btn-send {
+            padding: 12px 24px;
+            background: #ee6a3e;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-send:hover {
+            background: #d85a2e;
+        }
+
+        .btn-send:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-sidebar {
+                width: 200px;
+            }
+
+            .dashboard-main {
+                margin-left: 200px;
+            }
+
+            .dashboard-sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-main.sidebar-collapsed {
+                margin-left: 0;
+            }
+
+            .trade-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .chat-section {
+                height: 500px;
+                margin-top: 20px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/web/css/dashboard-sidebar.css">
+</head>
+
+<body>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ri-menu-line"></i>
+    </button>
+
+    <!-- Dashboard Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-header">
+            <a href="/" style="display: inline-block;">
+                <img src="/assets/images/biglogo.svg" alt="BidiPago">
+            </a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="ri-wallet-3-line"></i> Dashboard</a></li>
+            <li class="has-submenu">
+                <a href="/p2p"><i class="ri-exchange-line"></i> P2P – Intercambio</a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/p2p/payment-methods"><i class="ri-bank-card-line"></i> Mis Métodos de Pago</a></li>
+                </ul>
+            </li>
+            <li><a href="/deposit"><i class="ri-download-line"></i> Depósito</a></li>
+            <li><a href="/withdrawal"><i class="ri-upload-line"></i> Retiro</a></li>
+            <li><a href="/send"><i class="ri-send-plane-line"></i> Envío a Terceros</a></li>
+            <li><a href="/converter"><i class="ri-exchange-dollar-line"></i> Conversor de Monedas</a></li>
+            <li><a href="/recargas"><i class="ri-phone-line"></i> Recargas Telefónicas</a></li>
+            <li>
+                <a href="/giftcards"><i class="ri-gift-line"></i> Giftcards</a>
+                <ul class="sidebar-submenu" style="display: none;">
+                    <li><a href="/giftcards/my-giftcards"><i class="ri-history-line"></i> Mis Giftcards Compradas</a>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="/san"><i class="ri-group-line"></i> BidiSAN</a></li>
+            <li><a href="/invest"><i class="ri-line-chart-line"></i> BidiInvest</a></li>
+            <li><a href="/profile"><i class="ri-user-line"></i> Perfil y Seguridad</a></li>
+            <li><a href="/support"><i class="ri-chat-3-line"></i> Soporte</a></li>
+            <li><a href="#" id="logoutBtn"><i class="ri-logout-box-line"></i> Cerrar Sesión</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="dashboard-main" id="dashboardMain">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            <i class="ri-loader-4-line"></i> Cargando información del trade...
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-message" style="display: none;">
+            <p id="errorText"></p>
+        </div>
+
+        <!-- Trade Container -->
+        <div id="tradeContainer" class="trade-container" style="display: none;">
+            <!-- Trade Info Section -->
+            <div class="trade-info-section">
+                <div class="trade-header">
+                    <button onclick="window.location.href='/p2p'"
+                        style="background: transparent; color: #666; border: 1px solid #ddd; padding: 5px 15px; border-radius: 5px; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.9rem; transition: all 0.2s;"
+                        onmouseover="this.style.background='#f8f9fa'; this.style.color='#333'"
+                        onmouseout="this.style.background='transparent'; this.style.color='#666'">
+                        <i class="ri-arrow-left-line"></i> Volver
+                    </button>
+                    <h2>Trade P2P</h2>
+                    <span id="tradeStatus" class="trade-status"></span>
+                    <span id="tradeTimer" class="trade-status"
+                        style="background: #e9ecef; color: #495057; margin-left: 10px; display: none;">
+                        <i class="ri-time-line"></i> <span id="timeRemaining">--:--</span>
+                    </span>
+                </div>
+
+                <div class="trade-details">
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">ID del Trade:</span>
+                        <span class="trade-detail-value" id="tradeId"
+                            style="font-family: monospace; font-size: 0.9rem;"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Tipo de Orden:</span>
+                        <span class="trade-detail-value" id="orderType"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Criptomoneda:</span>
+                        <span class="trade-detail-value" id="cryptoAsset"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Moneda Fiat:</span>
+                        <span class="trade-detail-value" id="fiatCurrency"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Cantidad Crypto:</span>
+                        <span class="trade-detail-value" id="cryptoAmount"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Cantidad Fiat:</span>
+                        <span class="trade-detail-value" id="fiatAmount"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Tasa:</span>
+                        <span class="trade-detail-value" id="rate"></span>
+                    </div>
+                    <!-- Comisiones ocultas por solicitud del usuario -->
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Creador:</span>
+                        <span class="trade-detail-value" id="makerName"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Tomador:</span>
+                        <span class="trade-detail-value" id="takerName"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Tu Rol:</span>
+                        <span class="trade-detail-value" id="userRole" style="font-weight: 600;"></span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Creado:</span>
+                        <span class="trade-detail-value" id="createdAt"></span>
+                    </div>
+                </div>
+
+                <!-- Métodos de Pago del Maker (solo visible para el taker) -->
+                <div id="termsSection"
+                    style="display: none; margin-top: 20px; padding: 15px; background: #fff; border-radius: 5px; border: 1px solid #eee;">
+                    <h4 style="margin-bottom: 10px; color: #333;">Términos y Condiciones del Creador</h4>
+                    <p id="tradeTerms" style="color: #555; white-space: pre-wrap; margin: 0;">Sin términos.</p>
+                </div>
+
+                <!-- Métodos de Pago (del usuario que recibe el fiat) -->
+                <div id="paymentMethodsSection"
+                    style="display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                    <h3 style="margin-bottom: 15px; color: #333;">Métodos de Pago</h3>
+                    <div id="paymentMethodsList">
+                        <p style="color: #666;">Cargando métodos de pago...</p>
+                    </div>
+                </div>
+
+                <div class="trade-actions" id="tradeActions">
+                    <!-- Los botones de acción se insertarán aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Chat Section -->
+            <div class="chat-section">
+                <div class="chat-header">
+                    <h3><i class="ri-message-3-line"></i> Chat del Trade</h3>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando mensajes...
+                    </div>
+                </div>
+                <div class="chat-input-container" id="chatInputContainer">
+                    <div id="chatClosedMessage" class="chat-closed-message" style="display: none;">
+                        <i class="ri-lock-line"></i> <span id="chatClosedText">Este trade ha sido cerrado. El chat está
+                            cerrado.</span>
+                    </div>
+                    <form class="chat-input-form" id="chatForm" onsubmit="sendMessage(event)">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Escribe un mensaje..."
+                            maxlength="5000" required>
+                        <button type="submit" class="btn-send" id="sendButton">
+                            <i class="ri-send-plane-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Pago -->
+    <div id="confirmPaymentModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Confirmar Pago</h2>
+                <span class="close" onclick="closeConfirmPaymentModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="ri-checkbox-circle-line"
+                        style="font-size: 48px; color: #28a745; margin-bottom: 15px;"></i>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">¿Estás seguro?</h3>
+                    <p style="color: #666; margin: 0;">¿Estás seguro de que has realizado el pago y deseas confirmarlo
+                        con un comprobante?</p>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                    <button onclick="closeConfirmPaymentModal()"
+                        style="background: #6c757d; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button id="confirmPaymentBtn" onclick="proceedWithPaymentConfirmation()"
+                        style="background: #28a745; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                        Sí, confirmar pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Recepción -->
+    <div id="confirmReceiptModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Confirmar Recepción</h2>
+                <span class="close" onclick="closeConfirmReceiptModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="ri-checkbox-circle-line"
+                        style="font-size: 48px; color: #007bff; margin-bottom: 15px;"></i>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">¿Estás seguro?</h3>
+                    <p style="color: #666; margin: 0;">¿Estás seguro de que has recibido el pago y deseas liquidar el
+                        trade? Esta acción transferirá los fondos y completará la transacción.</p>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                    <button onclick="closeConfirmReceiptModal()"
+                        style="background: #6c757d; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button id="confirmReceiptBtn" onclick="proceedWithReceiptConfirmation()"
+                        style="background: #007bff; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                        Sí, confirmar recepción
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ver Comprobante de Pago -->
+    <div id="paymentProofModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow: auto;">
+            <div class="modal-header">
+                <h2><i class="ri-file-paper-line"></i> Comprobante de Pago</h2>
+                <span class="close" onclick="closePaymentProofModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px; text-align: center;">
+                <div id="paymentProofContent" style="margin: 0 auto;">
+                    <div class="loading">
+                        <i class="ri-loader-4-line"></i> Cargando comprobante...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Disputa -->
+    <div id="disputeModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header" style="background: #dc3545; color: #fff;">
+                <h2 style="color: #fff;"><i class="ri-error-warning-line"></i> Abrir Disputa</h2>
+                <span class="close" onclick="closeDisputeModal()" style="color: #fff;">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 25px;">
+                <div
+                    style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 12px; margin-bottom: 20px;">
+                    <i class="ri-information-line" style="color: #856404;"></i>
+                    <span style="color: #856404; font-size: 0.9rem;">
+                        Una disputa bloqueará los fondos hasta que un administrador la resuelva. Solo abre una disputa
+                        si realmente hay un problema.
+                    </span>
+                </div>
+
+                <form id="disputeForm" onsubmit="submitDispute(event)">
+                    <!-- Campos Readonly -->
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 5px;">ID del
+                            Trade</label>
+                        <input type="text" id="disputeTradeId" readonly
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #e9ecef; color: #495057; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 5px;">Creador
+                            (Maker)</label>
+                        <input type="text" id="disputeMakerEmail" readonly
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #e9ecef; color: #495057; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 5px;">Tomador
+                            (Taker)</label>
+                        <input type="text" id="disputeTakerEmail" readonly
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #e9ecef; color: #495057; box-sizing: border-box;">
+                    </div>
+
+                    <!-- Descripción -->
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 5px;">
+                            Descripción del Problema <span style="color: #dc3545;">*</span>
+                        </label>
+                        <textarea id="disputeReason" maxlength="500" required
+                            placeholder="Describe detalladamente lo que sucedió..."
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 100px; resize: vertical; box-sizing: border-box;"
+                            oninput="updateCharCount()"></textarea>
+                        <div style="text-align: right; font-size: 0.85rem; color: #666; margin-top: 5px;">
+                            <span id="disputeCharCount">0</span>/500 caracteres
+                        </div>
+                    </div>
+
+                    <!-- Archivos Adjuntos -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-weight: 600; color: #333; display: block; margin-bottom: 5px;">
+                            Adjuntos (imágenes o PDF, máx. 3)
+                        </label>
+                        <div id="disputeFilesContainer">
+                            <div class="dispute-file-row" style="margin-bottom: 8px;">
+                                <input type="file" name="attachments" accept="image/*,.pdf"
+                                    style="width: 100%; padding: 8px; border: 1px dashed #ddd; border-radius: 5px; background: #fafafa;"
+                                    onchange="handleDisputeFileChange(this)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" onclick="closeDisputeModal()"
+                            style="background: #6c757d; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="submitDisputeBtn"
+                            style="background: #dc3545; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                            <i class="ri-error-warning-line"></i> Enviar Disputa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Calificación -->
+    <div id="feedbackModal" class="modal">
+        <div class="modal-content"
+            style="max-width: 450px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; border: none;">
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, #ee6a3e 0%, #ff8c5a 100%); color: white; padding: 25px; text-align: center; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                <h2 style="margin: 0; font-size: 1.5rem; color: #fff;">Calificar Usuario</h2>
+                <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.95rem;">¿Cómo fue tu experiencia?</p>
+                <span class="close" onclick="closeFeedbackModal()"
+                    style="position: absolute; top: 15px; right: 20px; color: rgba(255,255,255,0.8); font-size: 28px; opacity: 1;">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 25px;"
+                    id="starRatingContainer">
+                    <i class="ri-star-line star-rating" data-value="1"
+                        style="font-size: 40px; cursor: pointer; color: #e4e4e4; transition: all 0.2s;"></i>
+                    <i class="ri-star-line star-rating" data-value="2"
+                        style="font-size: 40px; cursor: pointer; color: #e4e4e4; transition: all 0.2s;"></i>
+                    <i class="ri-star-line star-rating" data-value="3"
+                        style="font-size: 40px; cursor: pointer; color: #e4e4e4; transition: all 0.2s;"></i>
+                    <i class="ri-star-line star-rating" data-value="4"
+                        style="font-size: 40px; cursor: pointer; color: #e4e4e4; transition: all 0.2s;"></i>
+                    <i class="ri-star-line star-rating" data-value="5"
+                        style="font-size: 40px; cursor: pointer; color: #e4e4e4; transition: all 0.2s;"></i>
+                </div>
+                <input type="hidden" id="feedbackRating" value="0">
+
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label style="font-weight: 600; color: #333; margin-bottom: 8px; display: block;">Comentario
+                        (opcional)</label>
+                    <textarea id="feedbackComment" placeholder="Describe tu experiencia con este usuario..." rows="3"
+                        style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 0.95rem; resize: none; background: #f9f9f9; transition: border 0.3s;"></textarea>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <button onclick="submitFeedback()" class="btn-create-order"
+                        style="width: 100%; padding: 14px; font-size: 1.1rem; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(238, 106, 62, 0.3);">
+                        Enviar Calificación
+                    </button>
+                    <button onclick="closeFeedbackModal()"
+                        style="width: 100%; padding: 14px; background: transparent; border: none; color: #666; font-weight: 600; margin-top: 10px; cursor: pointer;">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/web/js/p2p-trade.js"></script>
+</body>
+
+</html>
