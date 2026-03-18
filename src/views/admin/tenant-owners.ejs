@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Propietarios - <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #f97316;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #fff7ed;
+            --md-sys-color-on-primary-container: #9a3412;
+            --md-sys-color-secondary: #50606e;
+            --md-sys-color-on-secondary: #ffffff;
+            --md-sys-color-secondary-container: #d3e5f5;
+            --md-sys-color-on-secondary-container: #0c1d29;
+            --md-sys-color-surface: #fdfcff;
+            --md-sys-color-surface-variant: #dfe2eb;
+            --md-sys-color-on-surface: #1a1c1e;
+            --md-sys-color-on-surface-variant: #43474e;
+            --md-sys-color-outline: #73777f;
+            --md-sys-color-error: #ba1a1a;
+            --md-sys-color-error-container: #ffdad6;
+            --md-radius-large: 16px;
+        }
+
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; border: 1px solid rgb(241 245 249); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .property-tag { background: rgb(209 250 229); color: rgb(5 150 105); }
+        .owner-unassigned { background: rgb(255 237 213); color: rgb(194 65 12); }
+
+        /* Navigation Rail / Sidebar */
+        .nav-rail {
+            background: var(--md-sys-color-surface);
+            border-right: 1px solid var(--md-sys-color-surface-variant);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-rail.collapsed { width: 80px; }
+        .nav-rail.expanded { width: 300px; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            margin: 4px 12px;
+            border-radius: var(--md-radius-large);
+            color: var(--md-sys-color-on-surface-variant);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: rgba(249, 115, 22, 0.08); }
+        .nav-item.active {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .nav-item .icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-item .label {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        .nav-rail.collapsed .nav-item .label {
+            opacity: 0;
+            width: 0;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div class="h-screen flex overflow-hidden">
+        <!-- Navigation Rail / Sidebar -->
+        <aside id="sidebar" class="nav-rail expanded fixed h-full z-40 flex flex-col">
+            <!-- Logo Section -->
+            <div class="px-5 pl-6 py-4 flex items-center gap-4 h-16">
+                <button id="menu-toggle" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-gray-700">menu</span>
+                </button>
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10 flex-shrink-0" style="object-fit: contain;">
+                    <div class="whitespace-nowrap flex-shrink-0">
+                        <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Condominio360</h1>
+                        <p class="text-xs text-gray-500">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="h-px bg-gray-200 mx-4"></div>
+
+            <!-- Navigation Items (homologados con dashboard) -->
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">space_dashboard</span>
+                    <span class="label">Dashboard</span>
+                </a>
+                <a href="/admin" class="nav-item active">
+                    <span class="icon material-symbols-rounded">apartment</span>
+                    <span class="label">Condominios</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">group</span>
+                    <span class="label">Usuarios</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">receipt_long</span>
+                    <span class="label">Auditoría</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">payments</span>
+                    <span class="label">Facturación C360</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">account_balance</span>
+                    <span class="label">Balance Financiero</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">settings</span>
+                    <span class="label">Configuración</span>
+                </a>
+            </nav>
+
+            <!-- Bottom Actions -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="nav-item text-red-600 hover:bg-red-50" onclick="logout()">
+                    <span class="icon material-symbols-rounded">logout</span>
+                    <span class="label">Cerrar sesión</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-30 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="goBack()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+                    <span class="material-symbols-rounded text-slate-600">arrow_back</span>
+                </button>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Gestión de Propietarios</h1>
+                    <p class="text-sm text-slate-500"><%= tenant?.name || 'Condominio' %></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openBulkUploadModal()" class="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition">
+                    <span class="material-symbols-rounded">upload_file</span>
+                    Carga Masiva
+                </button>
+                <button onclick="downloadCSVTemplate()" class="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition">
+                    <span class="material-symbols-rounded">download</span>
+                    Plantilla CSV
+                </button>
+                <button onclick="openOwnerModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/25 transition">
+                    <span class="material-symbols-rounded">add</span>
+                    Agregar Propietario
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Stats -->
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-sm text-slate-600">Total Propietarios</p>
+                    <p class="font-medium text-slate-900 text-2xl" id="stat-total-owners">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600">Con Inmueble Asignado</p>
+                    <p class="font-medium text-slate-900 text-2xl" id="stat-with-property">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600">Sin Inmueble</p>
+                    <p class="font-medium text-slate-900 text-2xl" id="stat-without-property">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600">Inmuebles Disponibles</p>
+                    <p class="font-medium text-slate-900 text-2xl" id="stat-available-properties">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card p-4 mb-6">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex-1 min-w-[200px]">
+                    <div class="relative">
+                        <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                        <input type="text" id="search-filter" placeholder="Buscar por DNI, nombre o email..." 
+                            class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            oninput="applyFilters()">
+                    </div>
+                </div>
+                <select id="property-filter" onchange="applyFilters()" 
+                    class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">Todos los estados</option>
+                    <option value="with-property">Con inmueble</option>
+                    <option value="without-property">Sin inmueble</option>
+                </select>
+                <select id="building-filter" onchange="applyFilters()" 
+                    class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">Todos los edificios</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Owners Table -->
+        <div class="card overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-sm font-medium text-slate-600">Documento</th>
+                        <th class="px-6 py-4 text-left text-sm font-medium text-slate-600">Propietario</th>
+                        <th class="px-6 py-4 text-left text-sm font-medium text-slate-600">Contacto</th>
+                        <th class="px-6 py-4 text-left text-sm font-medium text-slate-600">Inmueble Asignado</th>
+                        <th class="px-6 py-4 text-left text-sm font-medium text-slate-600">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="owners-table" class="divide-y divide-slate-200">
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-slate-400">
+                            Cargando propietarios...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+        <%- include('../partials/panels-footer') %>
+    </main>
+
+    <!-- Modal: Add/Edit Owner -->
+    <div id="owner-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-medium text-slate-900" id="modal-title">Agregar Propietario</h2>
+                <button onclick="closeOwnerModal()" class="text-slate-600 hover:text-slate-900">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <!-- Info Banner (siempre visible) -->
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <div class="flex items-start gap-2">
+                    <span class="material-symbols-rounded text-blue-600 text-sm">info</span>
+                    <p class="text-sm text-blue-800">
+                        El <strong>número de documento (DNI)</strong> es el identificador único del propietario. 
+                        Si el documento ya existe, se actualizarán los datos y se asignará la nueva propiedad.
+                    </p>
+                </div>
+            </div>
+            <!-- Aviso al editar: cambios se replican en todos los condominios -->
+            <div id="edit-replication-alert" class="hidden mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <div class="flex items-start gap-2">
+                    <span class="material-symbols-rounded text-amber-600 text-sm">warning</span>
+                    <p class="text-sm text-amber-800">
+                        <strong>Importante:</strong> Los cambios que realices se aplicarán en <strong>todos los condominios</strong> donde este propietario participe.
+                    </p>
+                </div>
+            </div>
+
+            <form id="owner-form" class="space-y-4">
+                <input type="hidden" id="owner-id">
+                
+                <!-- Document Section - Primary Identifier -->
+                <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p class="text-xs font-medium text-amber-700 uppercase tracking-wide mb-3">Identificación Principal *</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">Tipo Documento</label>
+                            <select id="owner-doc-type" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white">
+                                <option value="DNI">DNI</option>
+                                <option value="CE">Carnet Extranjería</option>
+                                <option value="PASAPORTE">Pasaporte</option>
+                                <option value="RUC">RUC</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">Número *</label>
+                            <input type="text" id="owner-doc-number" required
+                                class="w-full px-4 py-3 border-2 border-orange-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                placeholder="12345678">
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Nombre Completo *</label>
+                    <input type="text" id="owner-name" required 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: Juan Pérez García">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Email *</label>
+                        <input type="email" id="owner-email" required 
+                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            placeholder="ejemplo@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Teléfono</label>
+                        <input type="tel" id="owner-phone" 
+                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            placeholder="555-0000">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Dirección Postal</label>
+                    <input type="text" id="owner-address" 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Av. Principal 123, Lima">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Asignar Inmueble</label>
+                    <select id="owner-property" 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        <option value="">-- Sin asignar --</option>
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1">Puede asignar un inmueble ahora o más tarde</p>
+                </div>
+            </form>
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeOwnerModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveOwner()" class="flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                    Guardar Propietario
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Bulk Upload -->
+    <div id="bulk-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-medium text-slate-900">Carga Masiva de Propietarios</h2>
+                <button onclick="closeBulkModal()" class="text-slate-600 hover:text-slate-900">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Step 1: Upload -->
+                <div id="bulk-step-1">
+                    <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-orange-500 transition-colors cursor-pointer" 
+                        onclick="document.getElementById('csv-file').click()">
+                        <span class="material-symbols-rounded text-5xl text-slate-400 mb-4">upload_file</span>
+                        <p class="text-lg font-medium text-slate-900 mb-2">Arrastra un archivo CSV aquí</p>
+                        <p class="text-sm text-slate-400">o haz clic para seleccionar</p>
+                        <input type="file" id="csv-file" accept=".csv" class="hidden" onchange="handleCSVSelect(event)">
+                    </div>
+                    <div class="mt-4 p-4 bg-slate-50 rounded-xl">
+                        <p class="text-sm font-medium text-slate-900 mb-2">Formato esperado (CSV):</p>
+                        <code class="text-xs text-slate-600 block bg-white p-2 rounded border font-mono">
+                            numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento<br>
+                            12345678,Juan Pérez,juan@email.com,555-0000,apartamento-101,DNI
+                        </code>
+                        <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
+                            <p class="text-xs text-amber-800">
+                                <span class="material-symbols-rounded text-xs align-text-bottom">warning</span>
+                                <strong>Importante:</strong> El <strong>numero_documento</strong> es el identificador único. 
+                                Si el documento ya existe, se actualizarán los datos del propietario.
+                            </p>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">
+                            <%= tenant?.building_type === 'MULTIPLE' 
+                                ? 'Para multi-edificio use: edificio-nombre-inmueble (ej: torre-a-101)' 
+                                : 'Use el nombre del inmueble como slug (ej: apartamento-101)' %>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 2: Preview -->
+                <div id="bulk-step-2" class="hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm text-slate-600">Vista previa del CSV</p>
+                        <span id="csv-record-count" class="text-sm font-medium text-orange-600"></span>
+                    </div>
+                    <div class="max-h-[300px] overflow-y-auto border rounded-xl">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 sticky top-0">
+                                <tr id="csv-preview-header"></tr>
+                            </thead>
+                            <tbody id="csv-preview-body" class="divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+                    <div id="csv-errors" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <p class="text-sm font-medium text-red-700 mb-2">Errores encontrados:</p>
+                        <ul id="csv-errors-list" class="text-sm text-red-600 space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeBulkModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-process-csv" onclick="processCSV()" class="hidden flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                    Procesar <span id="btn-process-count"></span> Registros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: CSV Results -->
+    <div id="results-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+            <div class="text-center mb-6">
+                <div id="results-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"></div>
+                <h2 class="text-xl font-medium text-slate-900">Resultado de la Carga</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="text-center p-4 bg-green-50 rounded-xl">
+                    <p class="text-2xl font-bold text-green-700" id="result-success">0</p>
+                    <p class="text-sm text-green-600">Éxitos</p>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded-xl">
+                    <p class="text-2xl font-bold text-red-700" id="result-errors">0</p>
+                    <p class="text-sm text-red-600">Errores</p>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-xl">
+                    <p class="text-2xl font-bold text-blue-700" id="result-total">0</p>
+                    <p class="text-sm text-blue-600">Total</p>
+                </div>
+            </div>
+            <div id="results-errors-list" class="hidden max-h-[200px] overflow-y-auto border rounded-xl p-4 mb-6">
+                <p class="text-sm font-medium text-red-700 mb-2">Detalle de errores:</p>
+                <ul class="text-sm text-red-600 space-y-1"></ul>
+            </div>
+            <button onclick="closeResultsModal()" class="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                Aceptar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Set Password -->
+    <div id="password-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-medium text-slate-900">Establecer Contraseña</h2>
+                <button onclick="closePasswordModal()" class="text-slate-400 hover:text-slate-900">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 mb-4">
+                <p class="text-sm text-blue-700">
+                    <span class="font-medium">Propietario:</span> <span id="password-owner-name"></span>
+                </p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Nueva Contraseña</label>
+                    <input type="password" id="password-input" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" placeholder="Mínimo 6 caracteres">
+                    <p class="text-xs text-slate-400 mt-1">Mínimo 6 caracteres</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Confirmar Contraseña</label>
+                    <input type="password" id="password-confirm" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" placeholder="Repita la contraseña">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closePasswordModal()" class="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-medium">
+                    Cancelar
+                </button>
+                <button onclick="savePassword()" class="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 font-medium">
+                    Guardar Contraseña
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación -->
+    <div id="confirm-modal-overlay" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onclick="closeConfirmModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                    <span class="material-symbols-rounded text-4xl text-red-600">warning</span>
+                </div>
+                <h3 id="confirm-modal-title" class="text-xl font-semibold text-slate-900 mb-2">Confirmar eliminación</h3>
+                <p id="confirm-modal-message" class="text-slate-600 mb-6">Esta acción no se puede deshacer.</p>
+                <div class="flex gap-3 justify-center">
+                    <button type="button" onclick="closeConfirmModal()" class="px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition">
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirm-modal-btn" onclick="executeConfirmAction()" class="px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition flex items-center gap-2">
+                        <span class="material-symbols-rounded">delete</span>
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const tenantId = '<%= tenant?.id %>';
+        const buildingType = '<%= tenant?.building_type %>';
+        
+        let buildings = [];
+        let properties = [];
+        let owners = [];
+        let filteredOwners = [];
+        let availableProperties = [];
+        let csvData = [];
+        let pendingConfirmAction = null;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const icon = document.querySelector('#menu-toggle .material-symbols-rounded');
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                sidebar.classList.add('collapsed');
+                mainContent.style.marginLeft = '80px';
+                if (icon) icon.textContent = 'menu_open';
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('expanded');
+                mainContent.style.marginLeft = '300px';
+                if (icon) icon.textContent = 'menu';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('menu-toggle')?.addEventListener('click', toggleSidebar);
+            loadData();
+        });
+
+        async function loadData() {
+            await Promise.all([loadBuildings(), loadProperties(), loadOwners()]);
+            updateStats();
+            renderOwners();
+            populateFilters();
+        }
+
+        async function loadBuildings() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/buildings`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) buildings = data.buildings;
+            } catch (error) {
+                console.error('Error loading buildings:', error);
+            }
+        }
+
+        async function loadProperties() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/properties`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    properties = data.properties || [];
+                    // Properties without owner
+                    availableProperties = properties.filter(p => !p.owner_id);
+                    populatePropertySelect();
+                }
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        async function loadOwners() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/owners`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    owners = data.owners || [];
+                    filteredOwners = [...owners];
+                }
+            } catch (error) {
+                console.error('Error loading owners:', error);
+            }
+        }
+
+        function populatePropertySelect() {
+            const select = document.getElementById('owner-property');
+            select.innerHTML = '<option value="">-- Sin asignar --</option>' +
+                properties.map(p => {
+                    const displayName = buildingType === 'MULTIPLE' && p.building_name 
+                        ? `${p.building_name} - ${p.name}` 
+                        : p.name;
+                    return `<option value="${p.id}" data-slug="${p.slug || generateSlug(p.name)}">${displayName}</option>`;
+                }).join('');
+        }
+
+        function populateFilters() {
+            const buildingFilter = document.getElementById('building-filter');
+            buildingFilter.innerHTML = '<option value="">Todos los edificios</option>' +
+                buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        }
+
+        function generateSlug(name) {
+            return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+
+        function updateStats() {
+            const withProperty = owners.filter(o => o.property_id).length;
+            document.getElementById('stat-total-owners').textContent = owners.length;
+            document.getElementById('stat-with-property').textContent = withProperty;
+            document.getElementById('stat-without-property').textContent = owners.length - withProperty;
+            document.getElementById('stat-available-properties').textContent = availableProperties.length;
+        }
+
+        function renderOwners() {
+            const tbody = document.getElementById('owners-table');
+            if (filteredOwners.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-slate-400">
+                            No se encontraron propietarios
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredOwners.map(o => {
+                const property = properties.find(p => p.id === o.property_id);
+                const propertyDisplay = property 
+                    ? (buildingType === 'MULTIPLE' && property.building_name 
+                        ? `${property.building_name} - ${property.name}` 
+                        : property.name)
+                    : null;
+                
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                ${o.document_number 
+                                    ? `<span class="font-mono font-bold text-orange-600 text-lg">${o.document_number}</span>` 
+                                    : `<span class="text-slate-400 italic">Sin doc.</span>`
+                                }
+                            </div>
+                            ${o.document_type ? `<span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">${o.document_type}</span>` : ''}
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="font-medium text-slate-900">${o.display_name || o.name || 'N/A'}</p>
+                            ${o.user_name ? `<p class="text-xs text-slate-400">Usuario: ${o.user_name}</p>` : ''}
+                        </td>
+                        <td class="px-6 py-4 text-slate-600">
+                            <p>${o.email || '-'}</p>
+                            ${o.phone ? `<p class="text-xs">${o.phone}</p>` : ''}
+                        </td>
+                        <td class="px-6 py-4">
+                            ${propertyDisplay 
+                                ? `<span class="px-3 py-1 rounded-full text-xs property-tag">${propertyDisplay}</span>`
+                                : `<span class="px-3 py-1 rounded-full text-xs owner-unassigned">Sin asignar</span>`
+                            }
+                        </td>
+                        <td class="px-6 py-4">
+                            <button onclick="openPasswordModal('${o.id}', '${(o.display_name || o.name || '').replace(/'/g, "\\'")}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg" title="Establecer Contraseña">
+                                <span class="material-symbols-rounded">vpn_key</span>
+                            </button>
+                            <button onclick="editOwner('${o.id}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg" title="Editar">
+                                <span class="material-symbols-rounded">edit</span>
+                            </button>
+                            <button onclick="deleteOwner('${o.id}', '${(o.display_name || o.name || 'N/A').replace(/'/g, "\\'")}')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg" title="Eliminar">
+                                <span class="material-symbols-rounded">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('search-filter').value.toLowerCase().trim();
+            const propertyStatus = document.getElementById('property-filter').value;
+            const buildingId = document.getElementById('building-filter').value;
+
+            filteredOwners = owners.filter(o => {
+                // Search by document number (priority), name, or email
+                const docNum = (o.document_number || '').toLowerCase();
+                const name = (o.display_name || o.name || '').toLowerCase();
+                const email = (o.email || '').toLowerCase();
+                
+                const matchesSearch = !search || 
+                    docNum.includes(search) ||
+                    name.includes(search) ||
+                    email.includes(search);
+                
+                const matchesStatus = !propertyStatus || 
+                    (propertyStatus === 'with-property' && o.property_id) ||
+                    (propertyStatus === 'without-property' && !o.property_id);
+                
+                let matchesBuilding = true;
+                if (buildingId) {
+                    const property = properties.find(p => p.id === o.property_id);
+                    matchesBuilding = property && property.building_id === buildingId;
+                }
+
+                return matchesSearch && matchesStatus && matchesBuilding;
+            });
+
+            renderOwners();
+        }
+
+        function goBack() {
+            window.location.href = `/admin/tenants/${tenantId}`;
+        }
+
+        // Owner Modal
+        function openOwnerModal() {
+            document.getElementById('modal-title').textContent = 'Agregar Propietario';
+            document.getElementById('owner-form').reset();
+            document.getElementById('owner-id').value = '';
+            document.getElementById('edit-replication-alert').classList.add('hidden');
+            document.getElementById('owner-modal').classList.remove('hidden');
+            document.getElementById('owner-modal').classList.add('flex');
+        }
+
+        function closeOwnerModal() {
+            document.getElementById('owner-modal').classList.add('hidden');
+            document.getElementById('owner-modal').classList.remove('flex');
+        }
+
+        function editOwner(id) {
+            const owner = owners.find(o => o.id === id);
+            if (!owner) return;
+
+            document.getElementById('modal-title').textContent = 'Editar Propietario';
+            document.getElementById('owner-id').value = owner.id;
+            document.getElementById('owner-name').value = owner.display_name || owner.name || '';
+            document.getElementById('owner-email').value = owner.email || '';
+            document.getElementById('owner-phone').value = owner.phone || '';
+            document.getElementById('owner-doc-type').value = owner.document_type || 'DNI';
+            document.getElementById('owner-doc-number').value = owner.document_number || '';
+            document.getElementById('owner-address').value = owner.address || '';
+            document.getElementById('owner-property').value = owner.property_id || '';
+            
+            document.getElementById('edit-replication-alert').classList.remove('hidden');
+            
+            document.getElementById('owner-modal').classList.remove('hidden');
+            document.getElementById('owner-modal').classList.add('flex');
+        }
+
+        async function saveOwner() {
+            const id = document.getElementById('owner-id').value;
+            const data = {
+                display_name: document.getElementById('owner-name').value,
+                email: document.getElementById('owner-email').value,
+                phone: document.getElementById('owner-phone').value,
+                document_type: document.getElementById('owner-doc-type').value,
+                document_number: document.getElementById('owner-doc-number').value,
+                address: document.getElementById('owner-address').value,
+                property_id: document.getElementById('owner-property').value || null,
+                tenant_id: tenantId
+            };
+
+            try {
+                const url = id 
+                    ? `/api/admin/owners/${id}`
+                    : `/api/admin/tenants/${tenantId}/owners`;
+                
+                const res = await fetch(url, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    closeOwnerModal();
+                    await loadData();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al guardar');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión');
+            }
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            pendingConfirmAction = onConfirm;
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-message').textContent = message;
+            document.getElementById('confirm-modal-overlay').classList.remove('hidden');
+            document.getElementById('confirm-modal-overlay').classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal-overlay').classList.add('hidden');
+            document.getElementById('confirm-modal-overlay').classList.remove('flex');
+            pendingConfirmAction = null;
+        }
+
+        function executeConfirmAction() {
+            if (pendingConfirmAction) {
+                pendingConfirmAction();
+                closeConfirmModal();
+            }
+        }
+
+        function deleteOwner(id, name) {
+            openConfirmModal(
+                'Eliminar propietario',
+                '¿Eliminar a ' + name + '? Esta acción no se puede deshacer.',
+                async () => {
+                    try {
+                        const res = await fetch(`/api/admin/tenants/${tenantId}/owners/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) await loadData();
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                }
+            );
+        }
+
+        // Bulk Upload
+        function openBulkUploadModal() {
+            document.getElementById('bulk-modal').classList.remove('hidden');
+            document.getElementById('bulk-modal').classList.add('flex');
+            resetBulkUpload();
+        }
+
+        function closeBulkModal() {
+            document.getElementById('bulk-modal').classList.add('hidden');
+            document.getElementById('bulk-modal').classList.remove('flex');
+        }
+
+        function resetBulkUpload() {
+            document.getElementById('bulk-step-1').classList.remove('hidden');
+            document.getElementById('bulk-step-2').classList.add('hidden');
+            document.getElementById('btn-process-csv').classList.add('hidden');
+            document.getElementById('csv-errors').classList.add('hidden');
+            document.getElementById('csv-file').value = '';
+            csvData = [];
+        }
+
+        function downloadCSVTemplate() {
+            const headers = 'nombre,email,telefono,inmueble_slug,tipo_documento,numero_documento,direccion\n';
+            const example = buildingType === 'MULTIPLE'
+                ? 'Juan Pérez,juan@email.com,555-0001,torre-a-101,DNI,12345678,Av. Principal 123\n'
+                : 'Juan Pérez,juan@email.com,555-0001,apartamento-101,DNI,12345678,Av. Principal 123\n';
+            
+            const blob = new Blob([headers + example], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `plantilla_propietarios_${buildingType === 'MULTIPLE' ? 'multi' : 'single'}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function handleCSVSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) {
+                alert('El archivo CSV está vacío o no tiene el formato correcto');
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            csvData = [];
+            const errors = [];
+
+            // Check if CSV has document number column (new format)
+            const hasDocNumber = headers.includes('numero_documento');
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length < 2) continue; // Skip empty lines
+
+                const row = {};
+                headers.forEach((h, idx) => {
+                    row[h] = values[idx] || '';
+                });
+
+                // Validate required fields
+                if (hasDocNumber) {
+                    // New format: numero_documento is primary
+                    if (!row.numero_documento) errors.push(`Fila ${i}: Falta el número de documento (identificador único)`);
+                }
+                if (!row.nombre) errors.push(`Fila ${i}: Falta el nombre`);
+                if (!row.email) errors.push(`Fila ${i}: Falta el email`);
+                if (row.email && !row.email.includes('@')) errors.push(`Fila ${i}: Email inválido: ${row.email}`);
+
+                csvData.push(row);
+            }
+
+            // Show preview
+            document.getElementById('bulk-step-1').classList.add('hidden');
+            document.getElementById('bulk-step-2').classList.remove('hidden');
+            document.getElementById('btn-process-csv').classList.remove('hidden');
+            document.getElementById('btn-process-count').textContent = csvData.length;
+            document.getElementById('csv-record-count').textContent = `${csvData.length} registros`;
+
+            // Render preview - prioritize document number if present
+            const previewHeaders = hasDocNumber 
+                ? ['numero_documento', 'nombre', 'email', 'inmueble_slug']
+                : ['nombre', 'email', 'inmueble_slug'];
+            
+            document.getElementById('csv-preview-header').innerHTML = previewHeaders.map(h => 
+                `<th class="px-4 py-2 text-left font-medium text-slate-600">${h}</th>`
+            ).join('');
+
+            document.getElementById('csv-preview-body').innerHTML = csvData.slice(0, 10).map(row => 
+                `<tr class="hover:bg-slate-50">` +
+                previewHeaders.map(h => `<td class="px-4 py-2 text-slate-900">${row[h] || '-'}</td>`).join('') +
+                `</tr>`
+            ).join('') + (csvData.length > 10 ? `<tr><td colspan="${previewHeaders.length}" class="px-4 py-2 text-center text-slate-400">... y ${csvData.length - 10} más</td></tr>` : '');
+
+            // Show errors if any
+            if (errors.length > 0) {
+                document.getElementById('csv-errors').classList.remove('hidden');
+                document.getElementById('csv-errors-list').innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+                document.getElementById('btn-process-csv').disabled = true;
+                document.getElementById('btn-process-csv').classList.add('opacity-50');
+            } else {
+                document.getElementById('csv-errors').classList.add('hidden');
+                document.getElementById('btn-process-csv').disabled = false;
+                document.getElementById('btn-process-csv').classList.remove('opacity-50');
+            }
+        }
+
+        async function processCSV() {
+            const results = { success: 0, errors: 0, errorDetails: [] };
+
+            for (const row of csvData) {
+                try {
+                    // Find property by slug
+                    let propertyId = null;
+                    if (row.inmueble_slug) {
+                        const property = properties.find(p => {
+                            const pSlug = p.slug || generateSlug(p.name);
+                            return pSlug === row.inmueble_slug || 
+                                (buildingType === 'MULTIPLE' && p.building_slug && 
+                                 `${p.building_slug}-${pSlug}` === row.inmueble_slug);
+                        });
+                        propertyId = property ? property.id : null;
+                    }
+
+                    const data = {
+                        display_name: row.nombre,
+                        email: row.email,
+                        phone: row.telefono || '',
+                        document_type: row.tipo_documento || 'DNI',
+                        document_number: row.numero_documento || '',
+                        address: row.direccion || '',
+                        property_id: propertyId
+                    };
+
+                    const res = await fetch(`/api/admin/tenants/${tenantId}/owners`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (res.ok) {
+                        results.success++;
+                    } else {
+                        const err = await res.json();
+                        results.errors++;
+                        const idLabel = row.numero_documento || row.nombre || 'Desconocido';
+                        results.errorDetails.push(`${idLabel}: ${err.error || 'Error desconocido'}`);
+                    }
+                } catch (error) {
+                    results.errors++;
+                    const idLabel = row.numero_documento || row.nombre || 'Desconocido';
+                    results.errorDetails.push(`${idLabel}: ${error.message}`);
+                }
+            }
+
+            showResults(results);
+        }
+
+        function showResults(results) {
+            closeBulkModal();
+            document.getElementById('results-modal').classList.remove('hidden');
+            document.getElementById('results-modal').classList.add('flex');
+            
+            document.getElementById('result-success').textContent = results.success;
+            document.getElementById('result-errors').textContent = results.errors;
+            document.getElementById('result-total').textContent = results.success + results.errors;
+
+            const iconEl = document.getElementById('results-icon');
+            if (results.errors === 0) {
+                iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-green-100';
+                iconEl.innerHTML = '<span class="material-symbols-rounded text-4xl text-green-600">check_circle</span>';
+            } else if (results.success === 0) {
+                iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-100';
+                iconEl.innerHTML = '<span class="material-symbols-rounded text-4xl text-red-600">error</span>';
+            } else {
+                iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-amber-100';
+                iconEl.innerHTML = '<span class="material-symbols-rounded text-4xl text-amber-600">warning</span>';
+            }
+
+            if (results.errorDetails.length > 0) {
+                document.getElementById('results-errors-list').classList.remove('hidden');
+                document.querySelector('#results-errors-list ul').innerHTML = results.errorDetails.map(e => 
+                    `<li>${e}</li>`
+                ).join('');
+            } else {
+                document.getElementById('results-errors-list').classList.add('hidden');
+            }
+
+            // Reload data if any success
+            if (results.success > 0) {
+                loadData();
+            }
+        }
+
+        function closeResultsModal() {
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.remove('flex');
+        }
+
+        // Password Modal Functions
+        let currentOwnerId = null;
+
+        function openPasswordModal(ownerId, ownerName) {
+            currentOwnerId = ownerId;
+            document.getElementById('password-owner-name').textContent = ownerName || 'Sin nombre';
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-confirm').value = '';
+            document.getElementById('password-modal').classList.remove('hidden');
+            document.getElementById('password-modal').classList.add('flex');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+            document.getElementById('password-modal').classList.remove('flex');
+            currentOwnerId = null;
+        }
+
+        async function savePassword() {
+            const password = document.getElementById('password-input').value;
+            const confirmPassword = document.getElementById('password-confirm').value;
+
+            if (!password || password.length < 6) {
+                alert('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert('Las contraseñas no coinciden');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/owners/${currentOwnerId}/password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('Contraseña actualizada exitosamente');
+                    closePasswordModal();
+                } else {
+                    alert(data.error || 'Error al establecer contraseña');
+                }
+            } catch (error) {
+                console.error('Error setting password:', error);
+                alert('Error al establecer contraseña');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+        </main>
+    </div>
+</body>
+</html>

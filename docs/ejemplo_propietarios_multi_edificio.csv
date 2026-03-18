@@ -1,0 +1,25 @@
+# Ejemplo CSV: Carga masiva de Propietarios - Multi-Edificio
+# IMPORTANTE: El 'numero_documento' es el IDENTIFICADOR ÚNICO del propietario
+# Si el documento ya existe, se actualizarán los datos y se asignará la nueva propiedad
+#
+# Para multi-edificio, el inmueble_slug debe incluir el identificador del edificio
+# Formato: {edificio-slug}-{inmueble-slug} o usar el formato completo
+#
+# Ejemplo: torre-a-101, torre-b-local-01
+#
+numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento,observaciones
+12345678,Juan Pérez García,juan.perez@email.com,555-0101,torre-a-101,DNI,Torre A - Apt 101
+23456789,María Elena García,maria.garcia@email.com,555-0102,torre-a-102,DNI,Torre A - Apt 102
+34567890,Carlos Alberto López,carlos.lopez@email.com,555-0103,torre-a-201,CE,Torre A - Apt 201
+45678901,Ana Isabel Martínez,ana.martinez@email.com,555-0104,torre-a-202,DNI,Torre A - Apt 202
+56789012,Roberto Carlos Díaz,roberto.diaz@email.com,555-0105,torre-b-101,DNI,Torre B - Apt 101
+67890123,Carmen Lucía Ruiz,carmen.ruiz@email.com,555-0106,torre-b-102,CE,Torre B - Apt 102
+78901234,Miguel Ángel Torres,miguel.torres@email.com,555-0107,torre-b-201,DNI,Torre B - Apt 201
+89012345,Isabel Cristina Flores,isabel.flores@email.com,555-0108,torre-b-202,PASAPORTE,Torre B - Apt 202
+12345678901,Fernando José Vega,fernando.vega@email.com,555-0109,edificio-central-local-01,RUC,Edif. Central - Local 1
+90123456,Patricia Andrea Luna,patricia.luna@email.com,555-0110,torre-a-est-pb-01,DNI,Torre A - Estacionamiento PB
+11223344,José Antonio Morales,jose.morales@email.com,555-0111,torre-b-est-pb-01,DNI,Torre B - Estacionamiento PB
+22334455,Rosa María Castro,rosa.castro@email.com,555-0112,torre-a-bodega-01,CE,Torre A - Bodega 1
+# Propietarios sin inmueble asignado
+33445566,Luis Fernando Ruiz,luis.ruiz@email.com,555-0113,,DNI,Pendiente de asignar
+44556677,Gabriela Fernández,gabriela.f@email.com,555-0114,,CE,Pendiente de asignar

@@ -1,0 +1,30 @@
+# Ejemplo CSV: Facturación por ALICUOTA + Edificio Único
+# El campo 'edificio' NO es necesario porque es edificio único
+# El campo 'alicuota' ES REQUERIDO porque la facturación es por alícuota
+# IMPORTANTE: La suma de todas las alícuotas debe ser 100.00
+# Campos requeridos: nombre, tipo, piso, numero, alicuota
+# Tipos válidos: Apartment, House, Store, Lot, Office, Parking, Storage
+#
+nombre,tipo,piso,numero,alicuota,observaciones
+Apartamento 1A,Apartment,1,101,8.50,Propietario: Juan Pérez
+Apartamento 1B,Apartment,1,102,8.50,Propietario: María García
+Apartamento 2A,Apartment,2,201,8.50,Propietario: Carlos López
+Apartamento 2B,Apartment,2,202,8.50,Propietaria: Ana Martínez
+Apartamento 3A,Apartment,3,301,8.50,Propietario: Pedro Rodríguez
+Apartamento 3B,Apartment,3,302,8.50,Propietaria: Laura Sánchez
+Apartamento 4A,Apartment,4,401,8.50,Penthouse
+Apartamento 4B,Apartment,4,402,8.50,Penthouse
+Local Comercial 1,Store,PB,LC01,5.00,Uso comercial
+Local Comercial 2,Store,PB,LC02,5.00,Uso comercial
+Estacionamiento 1,Parking,SS,E01,1.50,Asignado al 1A
+Estacionamiento 2,Parking,SS,E02,1.50,Asignado al 1B
+Estacionamiento 3,Parking,SS,E03,1.50,Asignado al 2A
+Estacionamiento 4,Parking,SS,E04,1.50,Asignado al 2B
+Bodega 1,Storage,SS,B01,2.00,Depósito
+Bodega 2,Storage,SS,B02,2.00,Depósito
+Bodega 3,Storage,SS,B03,2.00,Depósito
+Bodega 4,Storage,SS,B04,2.00,Depósito
+Bodega 5,Storage,SS,B05,2.00,Depósito
+Bodega 6,Storage,SS,B06,2.00,Depósito
+Bodega 7,Storage,SS,B07,2.00,Depósito
+Bodega 8,Storage,SS,B08,2.00,Depósito

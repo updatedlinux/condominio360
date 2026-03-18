@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Comunicados - Propietario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white border-b border-[#E5E5E5] px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Comunicados</h1>
+                        <p class="text-sm text-[#5F6368] mt-1">Comunicaciones oficiales de la junta de condominio</p>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-6">
+                <div id="communiques-list" class="space-y-4">
+                    <div class="flex items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316]"></div>
+                        <span class="ml-3 text-[#5F6368]">Cargando comunicados...</span>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCommuniques();
+        });
+
+        async function loadCommuniques() {
+            try {
+                const res = await fetch('/api/owner/communiques', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const container = document.getElementById('communiques-list');
+                
+                if (!data.success || !data.data || data.data.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 text-[#9AA0A6]">
+                            <span class="material-icons-round text-4xl mb-2">campaign</span>
+                            <p>No hay comunicados disponibles</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.data.map(c => `
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] p-6 hover:shadow-md transition cursor-pointer" onclick="viewCommunique('${c.id}')">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="font-medium text-[#3C4043] text-lg">${c.title}</h3>
+                                <p class="text-sm text-[#5F6368] mt-1">${c.description || ''}</p>
+                                <div class="flex items-center gap-4 mt-3 text-sm text-[#9AA0A6]">
+                                    <span>${new Date(c.created_at).toLocaleDateString('es-VE')}</span>
+                                    ${c.file_type ? `<span class="px-2 py-0.5 bg-[#F5F5F5] rounded text-xs uppercase">${c.file_type}</span>` : ''}
+                                </div>
+                            </div>
+                            <span class="material-icons-round text-[#f97316]">arrow_forward</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('communiques-list').innerHTML = `
+                    <div class="text-center py-12 text-red-600">
+                        <span class="material-icons-round text-4xl mb-2">error</span>
+                        <p>Error al cargar comunicados</p>
+                    </div>
+                `;
+            }
+        }
+
+        function viewCommunique(id) {
+            window.location.href = `/owner/communiques/${id}`;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('selectedProperty');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

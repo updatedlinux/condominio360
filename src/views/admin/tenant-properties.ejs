@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inmuebles - <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #f97316;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #fff7ed;
+            --md-sys-color-on-primary-container: #9a3412;
+            --md-sys-color-secondary: #50606e;
+            --md-sys-color-on-secondary: #ffffff;
+            --md-sys-color-secondary-container: #d3e5f5;
+            --md-sys-color-on-secondary-container: #0c1d29;
+            --md-sys-color-surface: #fdfcff;
+            --md-sys-color-surface-variant: #dfe2eb;
+            --md-sys-color-on-surface: #1a1c1e;
+            --md-sys-color-on-surface-variant: #43474e;
+            --md-sys-color-outline: #73777f;
+            --md-sys-color-error: #ba1a1a;
+            --md-sys-color-error-container: #ffdad6;
+            --md-radius-large: 16px;
+        }
+
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; border: 1px solid rgb(241 245 249); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .alicuota-warning { background: #FEF3C7; border: 1px solid #F59E0B; }
+        .alicuota-ok { background: #DCFCE7; border: 1px solid #22C55E; }
+        .config-card {
+            border: 2px solid rgb(226 232 240);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .config-card:hover { border-color: rgb(249 115 22); background: #fff7ed; }
+        .config-card.selected { border-color: rgb(249 115 22); background: #fff7ed; }
+
+        /* Navigation Rail / Sidebar */
+        .nav-rail {
+            background: var(--md-sys-color-surface);
+            border-right: 1px solid var(--md-sys-color-surface-variant);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-rail.collapsed { width: 80px; }
+        .nav-rail.expanded { width: 300px; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            margin: 4px 12px;
+            border-radius: var(--md-radius-large);
+            color: var(--md-sys-color-on-surface-variant);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: rgba(249, 115, 22, 0.08); }
+        .nav-item.active {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .nav-item .icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-item .label {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        .nav-rail.collapsed .nav-item .label {
+            opacity: 0;
+            width: 0;
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div class="h-screen flex overflow-hidden">
+        <!-- Navigation Rail / Sidebar -->
+        <aside id="sidebar" class="nav-rail expanded fixed h-full z-40 flex flex-col">
+            <!-- Logo Section -->
+            <div class="px-5 pl-6 py-4 flex items-center gap-4 h-16">
+                <button id="menu-toggle" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-gray-700">menu</span>
+                </button>
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10 flex-shrink-0" style="object-fit: contain;">
+                    <div class="whitespace-nowrap flex-shrink-0">
+                        <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Condominio360</h1>
+                        <p class="text-xs text-gray-500">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="h-px bg-gray-200 mx-4"></div>
+
+            <!-- Navigation Items (homologados con dashboard) -->
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">space_dashboard</span>
+                    <span class="label">Dashboard</span>
+                </a>
+                <a href="/admin" class="nav-item active">
+                    <span class="icon material-symbols-rounded">apartment</span>
+                    <span class="label">Condominios</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">group</span>
+                    <span class="label">Usuarios</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">receipt_long</span>
+                    <span class="label">Auditoría</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">payments</span>
+                    <span class="label">Facturación C360</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">account_balance</span>
+                    <span class="label">Balance Financiero</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">settings</span>
+                    <span class="label">Configuración</span>
+                </a>
+            </nav>
+
+            <!-- Bottom Actions -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="nav-item text-red-600 hover:bg-red-50" onclick="logout()">
+                    <span class="icon material-symbols-rounded">logout</span>
+                    <span class="label">Cerrar sesión</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-30 flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="goBack()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+                    <span class="material-symbols-rounded text-slate-600">arrow_back</span>
+                </button>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Gestión de Inmuebles</h1>
+                    <p class="text-sm text-slate-500"><%= tenant?.name || 'Condominio' %></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <% if (tenant?.billing_type === 'ALICUOTA') { %>
+                <div id="alicuota-status" class="px-4 py-2 rounded-lg text-sm font-medium">
+                    Alícuotas: <span id="alicuota-total">0</>% / 100%
+                </div>
+                <% } %>
+                <button onclick="openBulkConfigModal()" class="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition">
+                    <span class="material-symbols-rounded">upload_file</span>
+                    Carga Masiva CSV
+                </button>
+                <button onclick="openPropertyModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/25 transition">
+                    <span class="material-symbols-rounded">add</span>
+                    Agregar Inmueble
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Tenant Info Card -->
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Tipo de Facturación</p>
+                    <p class="font-semibold text-slate-900" id="info-billing-type">
+                        <%= tenant?.billing_type === 'ALICUOTA' ? 'Por Alícuota' : 'Cuota Fija' %>
+                    </p>
+                    <% if (!tenant?.billing_type) { %>
+                    <button onclick="configureTenantType()" class="text-xs text-orange-600 font-semibold hover:underline mt-1">Configurar →</button>
+                    <% } %>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Tipo de Conjunto</p>
+                    <p class="font-semibold text-slate-900" id="info-building-type">
+                        <%= tenant?.building_type === 'MULTIPLE' ? 'Múltiples Edificios' : 'Único Edificio' %>
+                    </p>
+                    <% if (!tenant?.building_type) { %>
+                    <button onclick="configureTenantType()" class="text-xs text-orange-600 font-semibold hover:underline mt-1">Configurar →</button>
+                    <% } %>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Total Inmuebles</p>
+                    <p class="font-bold text-slate-900 text-2xl" id="stat-total-properties">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Total Edificios</p>
+                    <p class="font-bold text-slate-900 text-2xl" id="stat-total-buildings">-</p>
+                </div>
+            </div>
+            
+            <% if (tenant?.billing_type === 'ALICUOTA') { %>
+            <div id="alicuota-alert" class="mt-4 p-4 rounded-xl hidden">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-rounded" id="alicuota-icon">warning</span>
+                    <p id="alicuota-message"></p>
+                </div>
+            </div>
+            <% } %>
+        </div>
+
+        <!-- Buildings Tabs -->
+        <div id="buildings-tabs" class="flex gap-2 mb-6 overflow-x-auto">
+            <button onclick="filterByBuilding('')" class="px-4 py-2.5 bg-orange-500 text-white rounded-xl font-semibold whitespace-nowrap shadow-lg shadow-orange-500/25">
+                Todos
+            </button>
+        </div>
+
+        <!-- Properties Table -->
+        <div class="card overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Unidad</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Edificio</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Piso</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Área (m²)</th>
+                        <% if (tenant?.billing_type === 'ALICUOTA') { %>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Alícuota (%)</th>
+                        <% } %>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Propietario</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="properties-table" class="divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="<%= tenant?.billing_type === 'ALICUOTA' ? 7 : 6 %>" class="px-6 py-8 text-center text-slate-400">
+                            Cargando inmuebles...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+        <%- include('../partials/panels-footer') %>
+    </main>
+
+    <!-- Modal: Add/Edit Property -->
+    <div id="property-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-medium text-slate-900" id="modal-title">Agregar Inmueble</h2>
+                <button onclick="closePropertyModal()" class="text-slate-600 hover:text-slate-900">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <form id="property-form" class="space-y-4">
+                <input type="hidden" id="prop-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Nombre/Unidad *</label>
+                    <input type="text" id="prop-name" required 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: Apartamento 101">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Edificio</label>
+                    <select id="prop-building" 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        <option value="">Seleccionar edificio...</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Piso</label>
+                        <input type="text" id="prop-floor" 
+                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            placeholder="Ej: 1, PB">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Área (m²)</label>
+                        <input type="number" id="prop-area" step="0.01"
+                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            placeholder="Ej: 85.50">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Tipo de Inmueble *</label>
+                    <select id="prop-type" required
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        <option value="Apartment">Apartamento</option>
+                        <option value="House">Casa</option>
+                        <option value="Office">Oficina</option>
+                        <option value="Store">Local Comercial</option>
+                        <option value="Parking">Estacionamiento</option>
+                        <option value="Storage">Depósito</option>
+                        <option value="Lot">Terreno</option>
+                    </select>
+                </div>
+                
+                <% if (tenant?.billing_type === 'ALICUOTA') { %>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Alícuota (%)</label>
+                    <input type="number" id="prop-alicuota" step="0.0001" min="0" max="100"
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: 1.2500">
+                    <p class="text-xs text-slate-400 mt-1">El porcentaje de participación en gastos (ej: 1.25 = 1.25%)</p>
+                </div>
+                <% } %>
+            </form>
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closePropertyModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveProperty()" class="flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 shadow-lg shadow-orange-500/25 transition-colors">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Bulk Upload Configuration -->
+    <div id="bulk-config-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-medium text-slate-900">Carga Masiva de Inmuebles</h2>
+                <button onclick="closeBulkConfigModal()" class="text-slate-600 hover:text-slate-900">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Configuration Summary -->
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <h3 class="font-medium text-slate-900 mb-4">Configuración del Condominio</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase">Tipo de Facturación</p>
+                            <p class="font-medium text-slate-900" id="config-billing-type">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase">Tipo de Edificio</p>
+                            <p class="font-medium text-slate-900" id="config-building-type">-</p>
+                        </div>
+                    </div>
+                    <div id="config-alert" class="hidden mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-rounded text-amber-600 text-sm">warning</span>
+                            <p class="text-sm text-amber-800">Debe configurar el tipo de facturación y edificio antes de cargar inmuebles.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expected CSV Format -->
+                <div>
+                    <h3 class="font-medium text-slate-900 mb-3">Formato CSV Esperado</h3>
+                    <div class="bg-gray-900 rounded-xl p-4 overflow-x-auto">
+                        <code class="text-green-400 text-sm font-mono" id="csv-format-display">
+                            <!-- Dynamic content -->
+                        </code>
+                    </div>
+                    <div class="mt-3 flex gap-3">
+                        <button onclick="downloadCSVExample()" class="text-sm text-orange-600 hover:underline flex items-center gap-1">
+                            <span class="material-symbols-rounded text-sm">download</span>
+                            Descargar ejemplo CSV
+                        </button>
+                        <a href="/docs/README_CSV.md" target="_blank" class="text-sm text-orange-600 hover:underline flex items-center gap-1">
+                            <span class="material-symbols-rounded text-sm">help</span>
+                            Ver guía completa
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-orange-500 transition-colors cursor-pointer" 
+                    onclick="document.getElementById('csv-upload-file').click()">
+                    <span class="material-symbols-rounded text-5xl text-slate-400 mb-4">upload_file</span>
+                    <p class="text-lg font-medium text-slate-900 mb-2">Arrastra un archivo CSV aquí</p>
+                    <p class="text-sm text-slate-400">o haz clic para seleccionar</p>
+                    <input type="file" id="csv-upload-file" accept=".csv" class="hidden" onchange="handleBulkCSVUpload(event)">
+                </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeBulkConfigModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: CSV Preview & Process -->
+    <div id="bulk-preview-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-medium text-slate-900">Vista Previa CSV</h2>
+                    <p class="text-sm text-slate-400" id="preview-record-count">0 registros</p>
+                </div>
+                <button onclick="closeBulkPreviewModal()" class="text-slate-600 hover:text-slate-900">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-auto border rounded-xl mb-4">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 sticky top-0">
+                        <tr id="preview-header"></tr>
+                    </thead>
+                    <tbody id="preview-body" class="divide-y"></tbody>
+                </table>
+            </div>
+
+            <div id="preview-errors" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-xl max-h-[150px] overflow-y-auto">
+                <p class="text-sm font-medium text-red-700 mb-2">Errores encontrados:</p>
+                <ul id="preview-errors-list" class="text-sm text-red-600 space-y-1"></ul>
+            </div>
+            
+            <div id="alicuota-validation" class="hidden mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-rounded text-amber-600">info</span>
+                    <p class="text-sm text-amber-800">
+                        Suma de alícuotas: <span id="alicuota-preview-total" class="font-bold">0</span>% 
+                        (debe ser exactamente 100%)
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="button" onclick="closeBulkPreviewModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-confirm-upload" onclick="confirmBulkUpload()" class="flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                    Confirmar Carga
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Results -->
+    <div id="bulk-results-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+            <div class="text-center mb-6">
+                <div id="results-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"></div>
+                <h2 class="text-xl font-medium text-slate-900">Resultado de la Carga</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="text-center p-4 bg-green-50 rounded-xl">
+                    <p class="text-2xl font-bold text-green-700" id="result-success">0</p>
+                    <p class="text-sm text-green-600">Éxitos</p>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded-xl">
+                    <p class="text-2xl font-bold text-red-700" id="result-errors">0</p>
+                    <p class="text-sm text-red-600">Errores</p>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-xl">
+                    <p class="text-2xl font-bold text-blue-700" id="result-total">0</p>
+                    <p class="text-sm text-blue-600">Total</p>
+                </div>
+            </div>
+            <div id="results-errors-detail" class="hidden max-h-[200px] overflow-y-auto border rounded-xl p-4 mb-6">
+                <p class="text-sm font-medium text-red-700 mb-2">Detalle de errores:</p>
+                <ul class="text-sm text-red-600 space-y-1"></ul>
+            </div>
+            <button onclick="closeBulkResultsModal()" class="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                Aceptar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación -->
+    <div id="confirm-modal-overlay" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onclick="closeConfirmModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                    <span class="material-symbols-rounded text-4xl text-red-600">warning</span>
+                </div>
+                <h3 id="confirm-modal-title" class="text-xl font-semibold text-slate-900 mb-2">Confirmar eliminación</h3>
+                <p id="confirm-modal-message" class="text-slate-600 mb-6">Esta acción no se puede deshacer.</p>
+                <div class="flex gap-3 justify-center">
+                    <button type="button" onclick="closeConfirmModal()" class="px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition">
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirm-modal-btn" onclick="executeConfirmAction()" class="px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition flex items-center gap-2">
+                        <span class="material-symbols-rounded">delete</span>
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const tenantId = '<%= tenant?.id %>';
+        const serverBillingType = '<%= tenant?.billing_type %>';
+        const serverBuildingType = '<%= tenant?.building_type %>';
+        
+        let buildings = [];
+        let properties = [];
+        let currentBuildingFilter = '';
+        let csvUploadData = [];
+        let pendingConfirmAction = null;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const icon = document.querySelector('#menu-toggle .material-symbols-rounded');
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                sidebar.classList.add('collapsed');
+                mainContent.style.marginLeft = '80px';
+                if (icon) icon.textContent = 'menu_open';
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('expanded');
+                mainContent.style.marginLeft = '300px';
+                if (icon) icon.textContent = 'menu';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('menu-toggle')?.addEventListener('click', toggleSidebar);
+            loadData();
+            updateConfigDisplay();
+        });
+
+        async function loadData() {
+            await Promise.all([loadBuildings(), loadProperties()]);
+            updateAlicuotaStats();
+        }
+
+        async function loadBuildings() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/buildings`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    buildings = data.buildings;
+                    document.getElementById('stat-total-buildings').textContent = buildings.length;
+                    renderBuildingTabs();
+                    renderBuildingOptions();
+                }
+            } catch (error) {
+                console.error('Error loading buildings:', error);
+            }
+        }
+
+        async function loadProperties() {
+            try {
+                const url = currentBuildingFilter 
+                    ? `/api/admin/tenants/${tenantId}/properties?building_id=${currentBuildingFilter}`
+                    : `/api/admin/tenants/${tenantId}/properties`;
+                
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    properties = data.properties || [];
+                    document.getElementById('stat-total-properties').textContent = data.pagination?.total || properties.length;
+                    renderProperties();
+                }
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        function renderBuildingTabs() {
+            const container = document.getElementById('buildings-tabs');
+            container.innerHTML = `
+                <button onclick="filterByBuilding('')" class="px-4 py-2 ${currentBuildingFilter === '' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'} rounded-xl font-medium whitespace-nowrap">
+                    Todos
+                </button>
+            `;
+            
+            buildings.forEach(b => {
+                container.innerHTML += `
+                    <button onclick="filterByBuilding('${b.id}')" class="px-4 py-2 ${currentBuildingFilter === b.id ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'} rounded-xl font-medium whitespace-nowrap">
+                        ${b.name}
+                    </button>
+                `;
+            });
+        }
+
+        function renderBuildingOptions() {
+            const select = document.getElementById('prop-building');
+            select.innerHTML = '<option value="">Seleccionar edificio...</option>' +
+                buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        }
+
+        function renderProperties() {
+            const tbody = document.getElementById('properties-table');
+            const billingType = serverBillingType;
+            const colSpan = billingType === 'ALICUOTA' ? 7 : 6;
+
+            if (properties.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${colSpan}" class="px-6 py-8 text-center text-slate-400">
+                            No hay inmuebles registrados. 
+                            <button onclick="openPropertyModal()" class="text-orange-600 hover:underline">Agregar uno</button>
+                            o usa la 
+                            <button onclick="openBulkConfigModal()" class="text-orange-600 hover:underline">carga masiva CSV</button>.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = properties.map(p => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-6 py-4 font-medium text-slate-900">${p.name}</td>
+                    <td class="px-6 py-4 text-slate-600">${p.building_name || '-'}</td>
+                    <td class="px-6 py-4 text-slate-600">${p.floor || '-'}</td>
+                    <td class="px-6 py-4 text-slate-600">${p.area_sqm || '-'}</td>
+                    ${billingType === 'ALICUOTA' ? `<td class="px-6 py-4 text-slate-600">${p.alicuota ? p.alicuota + '%' : '-'}</td>` : ''}
+                    <td class="px-6 py-4">
+                        ${p.owner_count > 0 
+                            ? `<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">${p.owner_count} propietario(s)</span>`
+                            : `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs">Sin propietario</span>`
+                        }
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="editProperty('${p.id}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg">
+                            <span class="material-symbols-rounded">edit</span>
+                        </button>
+                        <button onclick="deleteProperty('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg">
+                            <span class="material-symbols-rounded">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterByBuilding(buildingId) {
+            currentBuildingFilter = buildingId;
+            renderBuildingTabs();
+            loadProperties();
+        }
+
+        function updateAlicuotaStats() {
+            if (serverBillingType !== 'ALICUOTA') return;
+            
+            const totalAlicuota = properties.reduce((sum, p) => sum + (parseFloat(p.alicuota) || 0), 0);
+            const statusEl = document.getElementById('alicuota-status');
+            const alertEl = document.getElementById('alicuota-alert');
+            const iconEl = document.getElementById('alicuota-icon');
+            const msgEl = document.getElementById('alicuota-message');
+            
+            document.getElementById('alicuota-total').textContent = totalAlicuota.toFixed(4);
+            
+            if (Math.abs(totalAlicuota - 100) < 0.01) {
+                statusEl.className = 'px-4 py-2 rounded-lg text-sm font-medium alicuota-ok text-green-800';
+                alertEl.className = 'mt-4 p-4 rounded-xl alicuota-ok';
+                iconEl.textContent = 'check_circle';
+                iconEl.className = 'material-symbols-rounded text-green-600';
+                msgEl.textContent = 'Las alícuotas suman 100%. Configuración correcta.';
+                msgEl.className = 'text-green-800';
+            } else if (totalAlicuota < 100) {
+                statusEl.className = 'px-4 py-2 rounded-lg text-sm font-medium alicuota-warning text-amber-800';
+                alertEl.className = 'mt-4 p-4 rounded-xl alicuota-warning';
+                iconEl.textContent = 'info';
+                iconEl.className = 'material-symbols-rounded text-amber-600';
+                msgEl.textContent = `Faltan ${(100 - totalAlicuota).toFixed(4)}% por asignar. La suma debe ser exactamente 100%.`;
+                msgEl.className = 'text-amber-800';
+            } else {
+                statusEl.className = 'px-4 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800 border border-red-300';
+                alertEl.className = 'mt-4 p-4 rounded-xl bg-red-50 border border-red-300';
+                iconEl.textContent = 'error';
+                iconEl.className = 'material-symbols-rounded text-red-600';
+                msgEl.textContent = `Las alícuotas suman más de 100% (${totalAlicuota.toFixed(4)}%). Debe corregirse.`;
+                msgEl.className = 'text-red-800';
+            }
+            
+            alertEl.classList.remove('hidden');
+        }
+
+        function goBack() {
+            window.location.href = `/admin/tenants/${tenantId}`;
+        }
+
+        function configureTenantType() {
+            window.location.href = `/admin/tenants/${tenantId}`;
+        }
+
+        // Property Modal
+        function openPropertyModal() {
+            document.getElementById('modal-title').textContent = 'Agregar Inmueble';
+            document.getElementById('property-form').reset();
+            document.getElementById('prop-id').value = '';
+            document.getElementById('property-modal').classList.remove('hidden');
+            document.getElementById('property-modal').classList.add('flex');
+        }
+
+        function closePropertyModal() {
+            document.getElementById('property-modal').classList.add('hidden');
+            document.getElementById('property-modal').classList.remove('flex');
+        }
+
+        function editProperty(id) {
+            const prop = properties.find(p => p.id === id);
+            if (!prop) return;
+
+            document.getElementById('modal-title').textContent = 'Editar Inmueble';
+            document.getElementById('prop-id').value = prop.id;
+            document.getElementById('prop-name').value = prop.name;
+            document.getElementById('prop-building').value = prop.building_id || '';
+            document.getElementById('prop-floor').value = prop.floor || '';
+            document.getElementById('prop-area').value = prop.area_sqm || '';
+            
+            if (serverBillingType === 'ALICUOTA') {
+                document.getElementById('prop-alicuota').value = prop.alicuota || '';
+            }
+            
+            document.getElementById('property-modal').classList.remove('hidden');
+            document.getElementById('property-modal').classList.add('flex');
+        }
+
+        async function saveProperty() {
+            const id = document.getElementById('prop-id').value;
+            const data = {
+                name: document.getElementById('prop-name').value,
+                building_id: document.getElementById('prop-building').value || null,
+                floor: document.getElementById('prop-floor').value,
+                area_sqm: document.getElementById('prop-area').value,
+                type: document.getElementById('prop-type').value || 'Apartment'
+            };
+            
+            if (serverBillingType === 'ALICUOTA') {
+                data.alicuota = document.getElementById('prop-alicuota').value;
+            }
+
+            try {
+                const url = id 
+                    ? `/api/admin/properties/${id}`
+                    : `/api/admin/tenants/${tenantId}/properties`;
+                
+                const res = await fetch(url, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    closePropertyModal();
+                    loadProperties();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al guardar');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            pendingConfirmAction = onConfirm;
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-message').textContent = message;
+            document.getElementById('confirm-modal-overlay').classList.remove('hidden');
+            document.getElementById('confirm-modal-overlay').classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal-overlay').classList.add('hidden');
+            document.getElementById('confirm-modal-overlay').classList.remove('flex');
+            pendingConfirmAction = null;
+        }
+
+        function executeConfirmAction() {
+            if (pendingConfirmAction) {
+                pendingConfirmAction();
+                closeConfirmModal();
+            }
+        }
+
+        function deleteProperty(id, name) {
+            openConfirmModal(
+                'Eliminar inmueble',
+                '¿Eliminar el inmueble "' + (name || 'este') + '"? Esta acción no se puede deshacer.',
+                async () => {
+                    try {
+                        const res = await fetch(`/api/admin/properties/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) loadProperties();
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                }
+            );
+        }
+
+        // Bulk Upload Functions
+        function updateConfigDisplay() {
+            const billingTypeEl = document.getElementById('config-billing-type');
+            const buildingTypeEl = document.getElementById('config-building-type');
+            const formatDisplay = document.getElementById('csv-format-display');
+            const alertEl = document.getElementById('config-alert');
+            
+            // Server-side values
+            const hasBillingType = serverBillingType && serverBillingType !== 'null';
+            const hasBuildingType = serverBuildingType && serverBuildingType !== 'null';
+            
+            if (hasBillingType) {
+                billingTypeEl.textContent = serverBillingType === 'ALICUOTA' ? 'Por Alícuota (requiere %)' : 'Cuota Fija (sin %)';
+            } else {
+                billingTypeEl.textContent = 'No configurado';
+            }
+            
+            if (hasBuildingType) {
+                buildingTypeEl.textContent = serverBuildingType === 'MULTIPLE' ? 'Múltiples (requiere edificio)' : 'Único (sin edificio)';
+            } else {
+                buildingTypeEl.textContent = 'No configurado';
+            }
+
+            if (!hasBillingType || !hasBuildingType) {
+                alertEl.classList.remove('hidden');
+            }
+
+            // Show expected CSV format
+            const baseFields = 'nombre,tipo,piso,numero';
+            const buildingField = hasBuildingType && serverBuildingType === 'MULTIPLE' ? ',edificio' : '';
+            const alicuotaField = hasBillingType && serverBillingType === 'ALICUOTA' ? ',alicuota' : '';
+            const optionalFields = ',observaciones';
+            
+            formatDisplay.innerHTML = `${baseFields}<span class="text-yellow-400">${buildingField}</span><span class="text-cyan-400">${alicuotaField}</span>${optionalFields}`;
+        }
+
+        function openBulkConfigModal() {
+            document.getElementById('bulk-config-modal').classList.remove('hidden');
+            document.getElementById('bulk-config-modal').classList.add('flex');
+        }
+
+        function closeBulkConfigModal() {
+            document.getElementById('bulk-config-modal').classList.add('hidden');
+            document.getElementById('bulk-config-modal').classList.remove('flex');
+        }
+
+        function downloadCSVExample() {
+            let filename, content;
+            
+            if (serverBillingType === 'ALICUOTA' && serverBuildingType === 'MULTIPLE') {
+                filename = 'ejemplo_inmuebles_alicuota_multi_edificio.csv';
+                content = `nombre,tipo,edificio,piso,numero,alicuota,observaciones
+Apartamento 1A,APARTAMENTO,Torre A,1,101,8.50,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,Torre A,1,102,8.50,Propietario: María García
+Apartamento 2A,APARTAMENTO,Torre A,2,201,8.50,Propietario: Carlos López
+Apartamento 1A,APARTAMENTO,Torre B,1,101,8.50,Propietario: Roberto Díaz`;
+            } else if (serverBillingType === 'ALICUOTA') {
+                filename = 'ejemplo_inmuebles_alicuota_edificio_unico.csv';
+                content = `nombre,tipo,piso,numero,alicuota,observaciones
+Apartamento 1A,APARTAMENTO,1,101,8.50,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,1,102,8.50,Propietario: María García
+Apartamento 2A,APARTAMENTO,2,201,8.50,Propietario: Carlos López`;
+            } else if (serverBuildingType === 'MULTIPLE') {
+                filename = 'ejemplo_inmuebles_facturacion_fija_multi_edificio.csv';
+                content = `nombre,tipo,edificio,piso,numero,observaciones
+Apartamento 1A,APARTAMENTO,Torre A,1,101,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,Torre A,1,102,Propietario: María García
+Apartamento 1A,APARTAMENTO,Torre B,1,101,Propietario: Roberto Díaz`;
+            } else {
+                filename = 'ejemplo_inmuebles_facturacion_fija_edificio_unico.csv';
+                content = `nombre,tipo,piso,numero,observaciones
+Apartamento 1A,APARTAMENTO,1,101,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,1,102,Propietario: María García
+Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López`;
+            }
+
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function handleBulkCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                parseAndPreviewCSV(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseAndPreviewCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) {
+                alert('El archivo CSV está vacío o no tiene el formato correcto');
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            csvUploadData = [];
+            const errors = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length < 2) continue;
+
+                const row = {};
+                headers.forEach((h, idx) => {
+                    row[h] = values[idx] || '';
+                });
+                row._line = i + 1;
+
+                // Validations
+                if (!row.nombre) errors.push(`Fila ${i + 1}: Falta el nombre del inmueble`);
+                if (!row.tipo) errors.push(`Fila ${i + 1}: Falta el tipo`);
+                if (!row.piso) errors.push(`Fila ${i + 1}: Falta el piso`);
+                if (!row.numero) errors.push(`Fila ${i + 1}: Falta el número`);
+                
+                if (serverBuildingType === 'MULTIPLE' && !row.edificio) {
+                    errors.push(`Fila ${i + 1}: Falta el edificio (requerido para multi-edificio)`);
+                }
+                if (serverBillingType === 'ALICUOTA') {
+                    if (!row.alicuota) {
+                        errors.push(`Fila ${i + 1}: Falta la alícuota (requerida para facturación por alícuota)`);
+                    } else if (isNaN(parseFloat(row.alicuota))) {
+                        errors.push(`Fila ${i + 1}: La alícuota debe ser un número`);
+                    }
+                }
+
+                csvUploadData.push(row);
+            }
+
+            // Check alicuota sum
+            let alicuotaTotal = 0;
+            if (serverBillingType === 'ALICUOTA') {
+                alicuotaTotal = csvUploadData.reduce((sum, row) => sum + (parseFloat(row.alicuota) || 0), 0);
+                if (Math.abs(alicuotaTotal - 100) > 0.01) {
+                    errors.push(`La suma de alícuotas es ${alicuotaTotal.toFixed(2)}%, debe ser exactamente 100%`);
+                }
+            }
+
+            closeBulkConfigModal();
+            showPreviewModal(errors, alicuotaTotal);
+        }
+
+        function showPreviewModal(errors, alicuotaTotal) {
+            document.getElementById('bulk-preview-modal').classList.remove('hidden');
+            document.getElementById('bulk-preview-modal').classList.add('flex');
+            
+            document.getElementById('preview-record-count').textContent = `${csvUploadData.length} registros`;
+            
+            // Headers
+            const displayHeaders = ['nombre', 'tipo', 'piso', 'numero'];
+            if (serverBuildingType === 'MULTIPLE') displayHeaders.push('edificio');
+            if (serverBillingType === 'ALICUOTA') displayHeaders.push('alicuota');
+            
+            document.getElementById('preview-header').innerHTML = displayHeaders.map(h => 
+                `<th class="px-4 py-3 text-left font-medium text-slate-600">${h}</th>`
+            ).join('');
+
+            // Body
+            document.getElementById('preview-body').innerHTML = csvUploadData.map(row => 
+                `<tr class="hover:bg-slate-50">` +
+                displayHeaders.map(h => `<td class="px-4 py-3 text-slate-900">${row[h] || '-'}</td>`).join('') +
+                `</tr>`
+            ).join('');
+
+            // Errors
+            const errorsEl = document.getElementById('preview-errors');
+            if (errors.length > 0) {
+                errorsEl.classList.remove('hidden');
+                document.getElementById('preview-errors-list').innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+                document.getElementById('btn-confirm-upload').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('btn-confirm-upload').disabled = true;
+            } else {
+                errorsEl.classList.add('hidden');
+                document.getElementById('btn-confirm-upload').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('btn-confirm-upload').disabled = false;
+            }
+
+            // Alicuota validation
+            const alicuotaEl = document.getElementById('alicuota-validation');
+            if (serverBillingType === 'ALICUOTA') {
+                alicuotaEl.classList.remove('hidden');
+                document.getElementById('alicuota-preview-total').textContent = alicuotaTotal.toFixed(2);
+            } else {
+                alicuotaEl.classList.add('hidden');
+            }
+        }
+
+        function closeBulkPreviewModal() {
+            document.getElementById('bulk-preview-modal').classList.add('hidden');
+            document.getElementById('bulk-preview-modal').classList.remove('flex');
+        }
+
+        async function confirmBulkUpload() {
+            const results = { success: 0, errors: 0, errorDetails: [] };
+
+            for (const row of csvUploadData) {
+                try {
+                    // Find building if multi-building
+                    let buildingId = null;
+                    if (serverBuildingType === 'MULTIPLE' && row.edificio) {
+                        const building = buildings.find(b => b.name.toLowerCase() === row.edificio.toLowerCase());
+                        if (building) {
+                            buildingId = building.id;
+                        } else {
+                            results.errors++;
+                            results.errorDetails.push(`${row.nombre}: Edificio "${row.edificio}" no encontrado`);
+                            continue;
+                        }
+                    }
+
+                    const data = {
+                        name: row.nombre,
+                        type: row.tipo,
+                        building_id: buildingId,
+                        floor: row.piso,
+                        area_sqm: null,
+                        alicuota: serverBillingType === 'ALICUOTA' ? parseFloat(row.alicuota) : null
+                    };
+
+                    const res = await fetch(`/api/admin/tenants/${tenantId}/properties`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (res.ok) {
+                        results.success++;
+                    } else {
+                        const err = await res.json();
+                        results.errors++;
+                        results.errorDetails.push(`${row.nombre}: ${err.error || 'Error desconocido'}`);
+                    }
+                } catch (error) {
+                    results.errors++;
+                    results.errorDetails.push(`${row.nombre}: ${error.message}`);
+                }
+            }
+
+            closeBulkPreviewModal();
+            showResultsModal(results);
+        }
+
+        function showResultsModal(results) {
+            document.getElementById('bulk-results-modal').classList.remove('hidden');
+            document.getElementById('bulk-results-modal').classList.add('flex');
+            
+            document.getElementById('result-success').textContent = results.success;
+            document.getElementById('result-errors').textContent = results.errors;
+            document.getElementById('result-total').textContent = results.success + results.errors;
+
+            const iconEl = document.getElementById('results-icon');
+            if (results.errors === 0) {
+                iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-green-100';
+                iconEl.innerHTML = '<span class="material-symbols-rounded text-4xl text-green-600">check_circle</span>';
+            } else if (results.success === 0) {
+                iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-100';
+                iconEl.innerHTML = '<span class="material-symbols-rounded text-4xl text-red-600">error</span>';
+            } else {
+                iconEl.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-amber-100';
+                iconEl.innerHTML = '<span class="material-symbols-rounded text-4xl text-amber-600">warning</span>';
+            }
+
+            const errorsEl = document.getElementById('results-errors-detail');
+            if (results.errorDetails.length > 0) {
+                errorsEl.classList.remove('hidden');
+                errorsEl.querySelector('ul').innerHTML = results.errorDetails.map(e => `<li>${e}</li>`).join('');
+            } else {
+                errorsEl.classList.add('hidden');
+            }
+
+            if (results.success > 0) {
+                loadProperties();
+            }
+        }
+
+        function closeBulkResultsModal() {
+            document.getElementById('bulk-results-modal').classList.add('hidden');
+            document.getElementById('bulk-results-modal').classList.remove('flex');
+        }
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+        </main>
+    </div>
+</body>
+</html>

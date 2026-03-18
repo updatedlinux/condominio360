@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <rect width="48" height="48" rx="12" fill="url(#logo-grad)"/>
+  <!-- C estilizada como edificio/condominio -->
+  <path d="M24 12c-5.5 0-10 4.5-10 10 0 2.8 1.2 5.3 3 7v15h14V29c1.8-1.7 3-4.2 3-7 0-5.5-4.5-10-10-10z" fill="white"/>
+  <path d="M24 18c2.2 0 4 1.8 4 4s-1.8 4-4 4-4-1.8-4-4 1.8-4 4-4z" fill="url(#logo-grad)"/>
+  <defs>
+    <linearGradient id="logo-grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Tipos de Solicitud - <%= tenant.name %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .fab { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+        .fab:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(249,115,22,0.4); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .field-type-card { border: 2px solid #E5E5E5; transition: all 0.2s; }
+        .field-type-card:hover { border-color: #f97316; background: #FDF8F3; }
+        .field-type-card.selected { border-color: #f97316; background: #FDF8F3; }
+        .form-field { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; }
+        .dragging { opacity: 0.5; }
+        .drag-over { border: 2px dashed #f97316; background: #FDF8F3; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'request-types' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Tipos de Solicitud</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <button onclick="openModal()" class="fab text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg transition-all">
+                        <span class="material-icons-round">add</span>
+                        <span class="font-medium">Nuevo Tipo</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Info Banner -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+                    <span class="material-icons-round text-blue-600">info</span>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-medium">Crea formularios personalizados</p>
+                        <p>Diseña los tipos de solicitudes que los propietarios pueden enviar. Arrastra campos para crear formularios a medida.</p>
+                    </div>
+                </div>
+
+                <!-- Request Types List -->
+                <div id="types-list" class="space-y-4">
+                    <!-- Cargar dinámicamente -->
+                </div>
+
+                <div id="empty-state" class="hidden text-center py-16">
+                    <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="material-icons-round text-4xl text-[#9AA0A6]">description</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay tipos de solicitud</h3>
+                    <p class="text-[#5F6368]">Crea el primer tipo de solicitud para que los propietarios empiecen a enviar solicitudes</p>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Request Type -->
+    <div id="type-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between bg-gradient-to-r from-[#f97316] to-[#ea580c]">
+                <h2 class="text-xl font-medium text-white" id="modal-title">Nuevo Tipo de Solicitud</h2>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-hidden flex">
+                <!-- Left: Basic Info -->
+                <div class="w-1/3 border-r border-[#E5E5E5] p-6 space-y-4 overflow-y-auto">
+                    <input type="hidden" id="type-id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Nombre *</label>
+                        <input type="text" id="type-name" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]" placeholder="Ej: Solicitud de Reparación">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Descripción</label>
+                        <textarea id="type-description" rows="3" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none" placeholder="Describe cuándo usar este tipo de solicitud..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Color</label>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="selectColor('#EF4444')" class="color-btn w-8 h-8 rounded-full bg-red-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#EF4444"></button>
+                            <button onclick="selectColor('#F59E0B')" class="color-btn w-8 h-8 rounded-full bg-amber-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#F59E0B"></button>
+                            <button onclick="selectColor('#10B981')" class="color-btn w-8 h-8 rounded-full bg-green-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#10B981"></button>
+                            <button onclick="selectColor('#3B82F6')" class="color-btn w-8 h-8 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#3B82F6"></button>
+                            <button onclick="selectColor('#8B5CF6')" class="color-btn w-8 h-8 rounded-full bg-purple-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#8B5CF6"></button>
+                            <button onclick="selectColor('#EC4899')" class="color-btn w-8 h-8 rounded-full bg-pink-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#EC4899"></button>
+                            <button onclick="selectColor('#6B7280')" class="color-btn w-8 h-8 rounded-full bg-gray-500 ring-2 ring-offset-2 ring-transparent hover:ring-gray-300" data-color="#6B7280"></button>
+                        </div>
+                        <input type="hidden" id="type-color" value="#6B7280">
+                    </div>
+
+                    <div class="flex items-center gap-3 p-4 bg-[#F5F5F5] rounded-xl">
+                        <input type="checkbox" id="type-requires-approval" class="w-5 h-5 text-[#f97316] rounded focus:ring-[#f97316]">
+                        <div>
+                            <label for="type-requires-approval" class="font-medium text-[#3C4043] cursor-pointer">Requiere aprobación</label>
+                            <p class="text-sm text-[#5F6368]">La junta debe aprobar las solicitudes de este tipo</p>
+                        </div>
+                    </div>
+
+                    <!-- Move Type Configuration -->
+                    <div class="border-t border-[#E5E5E5] pt-4 mt-4">
+                        <div class="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                            <input type="checkbox" id="type-is-move" onchange="toggleMoveConfig()" class="w-5 h-5 text-amber-600 rounded focus:ring-amber-600">
+                            <div>
+                                <label for="type-is-move" class="font-medium text-[#3C4043] cursor-pointer">Es tipo de Mudanza</label>
+                                <p class="text-sm text-[#5F6368]">Habilita campos específicos para mudanzas</p>
+                            </div>
+                        </div>
+                        
+                        <div id="move-config" class="hidden mt-4 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">Tipo de Mudanza</label>
+                                <select id="type-move-type" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600">
+                                    <option value="ENTRY">Mudanza de Entrada</option>
+                                    <option value="EXIT">Mudanza de Salida</option>
+                                    <option value="BOTH">Ambas (Entrada y Salida)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">Días Permitidos</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="monday" checked class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Lunes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="tuesday" checked class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Martes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="wednesday" checked class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Miércoles</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="thursday" checked class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Jueves</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="friday" checked class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Viernes</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="saturday" class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Sábado</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 bg-white border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-amber-50">
+                                        <input type="checkbox" name="move-days" value="sunday" class="rounded text-amber-600 focus:ring-amber-600">
+                                        <span class="text-sm">Domingo</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Hora Inicio</label>
+                                    <input type="time" id="move-start-time" value="08:00" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Hora Fin</label>
+                                    <input type="time" id="move-end-time" value="17:00" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600">
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 p-3 bg-white border border-[#E5E5E5] rounded-xl">
+                                <input type="checkbox" id="move-requires-insurance" class="w-5 h-5 text-amber-600 rounded focus:ring-amber-600">
+                                <div>
+                                    <label for="move-requires-insurance" class="font-medium text-[#3C4043] cursor-pointer">Requiere seguro</label>
+                                    <p class="text-xs text-[#5F6368]">El propietario debe proporcionar póliza de seguro</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 p-3 bg-white border border-[#E5E5E5] rounded-xl">
+                                <input type="checkbox" id="move-requires-company" class="w-5 h-5 text-amber-600 rounded focus:ring-amber-600">
+                                <div>
+                                    <label for="move-requires-company" class="font-medium text-[#3C4043] cursor-pointer">Requiere empresa de mudanzas</label>
+                                    <p class="text-xs text-[#5F6368]">Debe contratarse una empresa autorizada</p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">Instrucciones para el propietario</label>
+                                <textarea id="move-instructions" rows="3" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 resize-none" placeholder="Información importante que verá el propietario al solicitar la mudanza..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Form Builder -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-[#E5E5E5] bg-[#FAFAFA]">
+                        <h3 class="font-medium text-[#3C4043]">Constructor de Formulario</h3>
+                        <p class="text-sm text-[#5F6368]">Arrastra campos para crear el formulario</p>
+                    </div>
+                    
+                    <div class="flex-1 flex overflow-hidden">
+                        <!-- Field Types -->
+                        <div class="w-48 border-r border-[#E5E5E5] p-4 space-y-2 overflow-y-auto">
+                            <p class="text-xs font-medium text-[#5F6368] uppercase mb-2">Campos disponibles</p>
+                            <button onclick="addField('text')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">short_text</span>
+                                <div class="text-sm font-medium mt-1">Texto</div>
+                            </button>
+                            <button onclick="addField('textarea')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">notes</span>
+                                <div class="text-sm font-medium mt-1">Párrafo</div>
+                            </button>
+                            <button onclick="addField('number')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">numbers</span>
+                                <div class="text-sm font-medium mt-1">Número</div>
+                            </button>
+                            <button onclick="addField('select')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">arrow_drop_down_circle</span>
+                                <div class="text-sm font-medium mt-1">Selección</div>
+                            </button>
+                            <button onclick="addField('checkbox')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">check_box</span>
+                                <div class="text-sm font-medium mt-1">Casillas</div>
+                            </button>
+                            <button onclick="addField('date')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">calendar_today</span>
+                                <div class="text-sm font-medium mt-1">Fecha</div>
+                            </button>
+                            <button onclick="addField('file')" class="field-type-card w-full p-3 rounded-xl text-left">
+                                <span class="material-icons-round text-[#5F6368]">attach_file</span>
+                                <div class="text-sm font-medium mt-1">Archivo</div>
+                            </button>
+                        </div>
+
+                        <!-- Form Preview -->
+                        <div class="flex-1 p-6 overflow-y-auto bg-[#FAFAFA]">
+                            <div id="form-fields" class="space-y-3">
+                                <div class="text-center py-12 text-[#9AA0A6]">
+                                    <span class="material-icons-round text-4xl">touch_app</span>
+                                    <p class="mt-2">Haz clic en un campo para agregarlo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-[#E5E5E5] flex gap-3 justify-end">
+                <button type="button" onclick="closeModal()" class="px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveType()" class="px-6 py-3 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-xl font-medium hover:shadow-lg">
+                    Guardar Tipo de Solicitud
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        let formFields = [];
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+            loadTypes();
+        });
+
+        // Load types
+        async function loadTypes() {
+            try {
+                const res = await fetch('/api/tenant-admin/request-types', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const list = document.getElementById('types-list');
+                const empty = document.getElementById('empty-state');
+
+                if (!data.success || data.data.length === 0) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                list.innerHTML = data.data.map(t => {
+                    const fieldCount = t.form_schema ? t.form_schema.fields?.length || 0 : 0;
+                    return `
+                        <div class="card p-6 card-hover">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background: ${t.color}20">
+                                    <span class="material-icons-round" style="color: ${t.color}">${t.icon || 'description'}</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-medium text-[#3C4043]">${t.name}</h3>
+                                        ${t.is_system ? '<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">Sistema</span>' : ''}
+                                        ${t.requires_approval ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">Requiere aprobación</span>' : ''}
+                                    </div>
+                                    <p class="text-sm text-[#5F6368] mt-1">${t.description || 'Sin descripción'}</p>
+                                    <p class="text-xs text-[#9AA0A6] mt-2">${fieldCount} campos en el formulario</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="editType('${t.id}')" class="p-2 hover:bg-[#F5F5F5] rounded-lg text-[#5F6368]" ${t.is_system ? 'disabled' : ''}>
+                                        <span class="material-icons-round">edit</span>
+                                    </button>
+                                    <button onclick="deleteType('${t.id}')" class="p-2 hover:bg-red-50 rounded-lg text-red-600" ${t.is_system ? 'disabled' : ''}>
+                                        <span class="material-icons-round">delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Error loading types:', e);
+            }
+        }
+
+        // Modal
+        // Move Config Toggle
+        function toggleMoveConfig() {
+            const isMove = document.getElementById('type-is-move').checked;
+            const configDiv = document.getElementById('move-config');
+            configDiv.classList.toggle('hidden', !isMove);
+        }
+
+        function openModal(isEdit = false) {
+            document.getElementById('type-modal').classList.remove('hidden');
+            document.getElementById('type-modal').classList.add('flex');
+            
+            if (!isEdit) {
+                // Modo creación - resetear todo
+                document.getElementById('modal-title').textContent = 'Nuevo Tipo de Solicitud';
+                document.getElementById('type-id').value = '';
+                document.getElementById('type-name').value = '';
+                document.getElementById('type-description').value = '';
+                document.getElementById('type-color').value = '#6B7280';
+                document.getElementById('type-requires-approval').checked = false;
+                document.getElementById('type-is-move').checked = false;
+                toggleMoveConfig();
+                formFields = [];
+                renderFields();
+                updateColorSelection();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('type-modal').classList.add('hidden');
+            document.getElementById('type-modal').classList.remove('flex');
+        }
+
+        // Color selection
+        function selectColor(color) {
+            document.getElementById('type-color').value = color;
+            updateColorSelection();
+        }
+
+        function updateColorSelection() {
+            const selected = document.getElementById('type-color').value;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                if (btn.dataset.color === selected) {
+                    btn.classList.add('ring-gray-400');
+                } else {
+                    btn.classList.remove('ring-gray-400');
+                }
+            });
+        }
+
+        // Form Builder
+        function addField(type) {
+            const field = {
+                id: 'field_' + Date.now(),
+                type: type,
+                label: getDefaultLabel(type),
+                required: false,
+                options: type === 'select' || type === 'checkbox' ? ['Opción 1', 'Opción 2'] : undefined
+            };
+            formFields.push(field);
+            renderFields();
+        }
+
+        function getDefaultLabel(type) {
+            const labels = {
+                text: 'Campo de texto',
+                textarea: 'Descripción detallada',
+                number: 'Número',
+                select: 'Selecciona una opción',
+                checkbox: 'Opciones',
+                date: 'Fecha',
+                file: 'Adjuntar archivo'
+            };
+            return labels[type] || 'Campo';
+        }
+
+        function renderFields() {
+            const container = document.getElementById('form-fields');
+            if (formFields.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-[#9AA0A6]">
+                        <span class="material-icons-round text-4xl">touch_app</span>
+                        <p class="mt-2">Haz clic en un campo para agregarlo</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = formFields.map((field, index) => `
+                <div class="form-field p-4" draggable="true" data-index="${index}">
+                    <div class="flex items-start gap-3">
+                        <div class="cursor-move pt-2 text-[#9AA0A6]">
+                            <span class="material-icons-round">drag_indicator</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="text" value="${field.label}" onchange="updateField(${index}, 'label', this.value)" 
+                                    class="flex-1 px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                                <select onchange="updateField(${index}, 'type', this.value)" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                                    <option value="text" ${field.type === 'text' ? 'selected' : ''}>Texto</option>
+                                    <option value="textarea" ${field.type === 'textarea' ? 'selected' : ''}>Párrafo</option>
+                                    <option value="number" ${field.type === 'number' ? 'selected' : ''}>Número</option>
+                                    <option value="select" ${field.type === 'select' ? 'selected' : ''}>Selección</option>
+                                    <option value="checkbox" ${field.type === 'checkbox' ? 'selected' : ''}>Casillas</option>
+                                    <option value="date" ${field.type === 'date' ? 'selected' : ''}>Fecha</option>
+                                    <option value="file" ${field.type === 'file' ? 'selected' : ''}>Archivo</option>
+                                </select>
+                            </div>
+                            
+                            ${field.type === 'select' || field.type === 'checkbox' ? `
+                                <div class="pl-4 border-l-2 border-[#E5E5E5] ml-2">
+                                    <p class="text-xs text-[#5F6368] mb-2">Opciones (una por línea):</p>
+                                    <textarea onchange="updateFieldOptions(${index}, this.value)" rows="3" 
+                                        class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">${field.options?.join('\n') || ''}</textarea>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="flex items-center gap-4 mt-3">
+                                <label class="flex items-center gap-2 text-sm text-[#5F6368] cursor-pointer">
+                                    <input type="checkbox" ${field.required ? 'checked' : ''} onchange="updateField(${index}, 'required', this.checked)" class="rounded">
+                                    Obligatorio
+                                </label>
+                                <button onclick="removeField(${index})" class="text-red-600 text-sm hover:underline">Eliminar campo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add drag handlers
+            container.querySelectorAll('.form-field').forEach(el => {
+                el.addEventListener('dragstart', handleDragStart);
+                el.addEventListener('dragover', handleDragOver);
+                el.addEventListener('drop', handleDrop);
+                el.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
+        function updateField(index, key, value) {
+            formFields[index][key] = value;
+        }
+
+        function updateFieldOptions(index, value) {
+            formFields[index].options = value.split('\n').filter(o => o.trim());
+        }
+
+        function removeField(index) {
+            formFields.splice(index, 1);
+            renderFields();
+        }
+
+        // Drag and Drop
+        let dragSrcEl = null;
+
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            this.classList.remove('drag-over');
+            
+            if (dragSrcEl !== this) {
+                const fromIndex = parseInt(dragSrcEl.dataset.index);
+                const toIndex = parseInt(this.dataset.index);
+                
+                const [moved] = formFields.splice(fromIndex, 1);
+                formFields.splice(toIndex, 0, moved);
+                
+                renderFields();
+            }
+            return false;
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.form-field').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        // Save
+        async function saveType() {
+            const id = document.getElementById('type-id').value;
+            const name = document.getElementById('type-name').value;
+            
+            if (!name) {
+                alert('El nombre es requerido');
+                return;
+            }
+
+            const isMove = document.getElementById('type-is-move').checked;
+            
+            const data = {
+                name,
+                description: document.getElementById('type-description').value,
+                color: document.getElementById('type-color').value,
+                icon: 'description',
+                requires_approval: document.getElementById('type-requires-approval').checked,
+                is_move_type: isMove,
+                form_schema: {
+                    fields: formFields.map(f => ({
+                        name: f.label.toLowerCase().replace(/\s+/g, '_'),
+                        type: f.type,
+                        label: f.label,
+                        required: f.required,
+                        options: f.options
+                    }))
+                }
+            };
+
+            // Agregar configuración de mudanza si aplica
+            if (isMove) {
+                data.move_type = document.getElementById('type-move-type').value;
+                data.requires_insurance = document.getElementById('move-requires-insurance').checked;
+                data.requires_moving_company = document.getElementById('move-requires-company').checked;
+                data.move_config = {
+                    allowed_days: Array.from(document.querySelectorAll('input[name="move-days"]:checked')).map(cb => cb.value),
+                    start_time: document.getElementById('move-start-time').value,
+                    end_time: document.getElementById('move-end-time').value,
+                    instructions: document.getElementById('move-instructions').value
+                };
+            }
+
+            try {
+                const url = id ? `/api/tenant-admin/request-types/${id}` : '/api/tenant-admin/request-types';
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    closeModal();
+                    loadTypes();
+                } else {
+                    alert(result.error || 'Error al guardar');
+                }
+            } catch (e) {
+                console.error('Error saving:', e);
+                alert('Error al guardar tipo de solicitud');
+            }
+        }
+
+        // Edit
+        async function editType(id) {
+            try {
+                const res = await fetch(`/api/tenant-admin/request-types/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) return;
+
+                const t = data.data;
+                
+                // Abrir modal en modo edición (no resetea campos)
+                openModal(true);
+                document.getElementById('modal-title').textContent = 'Editar Tipo de Solicitud';
+                
+                document.getElementById('type-id').value = t.id;
+                document.getElementById('type-name').value = t.name;
+                document.getElementById('type-description').value = t.description || '';
+                document.getElementById('type-color').value = t.color || '#6B7280';
+                document.getElementById('type-requires-approval').checked = t.requires_approval;
+                
+                // Cargar configuración de mudanza
+                document.getElementById('type-is-move').checked = t.is_move_type || false;
+                if (t.is_move_type) {
+                    document.getElementById('type-move-type').value = t.move_type || 'ENTRY';
+                    document.getElementById('move-requires-insurance').checked = t.requires_insurance || false;
+                    document.getElementById('move-requires-company').checked = t.requires_moving_company || false;
+                    
+                    // Parsear configuración de la base de datos
+                    let allowed_days = [];
+                    try {
+                        allowed_days = JSON.parse(t.days_allowed || '[]');
+                    } catch(e) { allowed_days = []; }
+                    
+                    // Parsear time_range (formato: "08:00-17:00")
+                    let start_time = '08:00';
+                    let end_time = '17:00';
+                    if (t.time_range && t.time_range.includes('-')) {
+                        [start_time, end_time] = t.time_range.split('-');
+                    }
+                    
+                    document.getElementById('move-start-time').value = start_time;
+                    document.getElementById('move-end-time').value = end_time;
+                    document.getElementById('move-instructions').value = t.move_instructions || '';
+                    
+                    // Check allowed days
+                    document.querySelectorAll('input[name="move-days"]').forEach(cb => {
+                        cb.checked = allowed_days.includes(cb.value);
+                    });
+                }
+                toggleMoveConfig();
+                
+                formFields = t.form_schema?.fields?.map(f => ({
+                    id: 'field_' + Math.random(),
+                    type: f.type,
+                    label: f.label,
+                    required: f.required,
+                    options: f.options
+                })) || [];
+                
+                updateColorSelection();
+                renderFields();
+            } catch (e) {
+                console.error('Error loading type:', e);
+            }
+        }
+
+        // Delete
+        async function deleteType(id) {
+            if (!confirm('¿Eliminar este tipo de solicitud?')) return;
+            try {
+                const res = await fetch(`/api/tenant-admin/request-types/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadTypes();
+                }
+            } catch (e) {
+                console.error('Error deleting:', e);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

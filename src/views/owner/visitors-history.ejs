@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Historial de Visitas - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .status-badge {
+            @apply px-2 py-1 rounded-full text-xs font-medium;
+        }
+        .status-pending { @apply bg-amber-100 text-amber-800; }
+        .status-inside { @apply bg-green-100 text-green-800; }
+        .status-completed { @apply bg-gray-100 text-gray-600; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                                <span class="material-icons-round">arrow_back</span>
+                            </a>
+                            <div>
+                                <h1 class="text-2xl font-medium text-[#3C4043]">Historial de Visitas</h1>
+                                <p class="text-sm text-[#5F6368]">Registro completo de visitantes</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <a href="/owner/visitors/new" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-lg font-medium hover:shadow-lg">
+                                <span class="material-icons-round text-sm">add</span>
+                                Nueva Visita
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-6xl mx-auto">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="card p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                    <span class="material-icons-round text-amber-600">schedule</span>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-[#5F6368]">Pendientes</p>
+                                    <p class="text-xl font-bold text-[#3C4043]" id="count-pending">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <span class="material-icons-round text-green-600">sensors</span>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-[#5F6368]">Dentro</p>
+                                    <p class="text-xl font-bold text-[#3C4043]" id="count-inside">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <span class="material-icons-round text-gray-600">check_circle</span>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-[#5F6368]">Completadas</p>
+                                    <p class="text-xl font-bold text-[#3C4043]" id="count-completed">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="card overflow-hidden">
+                        <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                            <h2 class="text-lg font-medium text-[#3C4043]">Registro de Visitas</h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-[#F5F5F5]">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-[#5F6368] uppercase tracking-wider">Visitante</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-[#5F6368] uppercase tracking-wider">Tipo</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-[#5F6368] uppercase tracking-wider">Fecha Programada</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-[#5F6368] uppercase tracking-wider">Entrada</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-[#5F6368] uppercase tracking-wider">Salida</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-[#5F6368] uppercase tracking-wider">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="visitsTableBody" class="divide-y divide-[#E5E5E5]">
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-8 text-center text-[#5F6368]">
+                                            Cargando...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="px-6 py-4 border-t border-[#E5E5E5] flex items-center justify-between">
+                            <p class="text-sm text-[#5F6368]">
+                                Mostrando <span id="showing-start">0</span>-<span id="showing-end">0</span> de <span id="total-records">0</span> registros
+                            </p>
+                            <div class="flex gap-2">
+                                <button id="btn-prev" onclick="changePage(-1)" disabled
+                                    class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#F5F5F5] disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="material-icons-round text-sm">chevron_left</span>
+                                </button>
+                                <span id="page-info" class="px-3 py-2 text-sm text-[#5F6368]">Página 1</span>
+                                <button id="btn-next" onclick="changePage(1)" disabled
+                                    class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#F5F5F5] disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="material-icons-round text-sm">chevron_right</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+        
+        let currentPage = 1;
+        const limit = 20;
+        let totalPages = 1;
+        let visitsData = [];
+
+        // Formato GMT-4 Venezuela (America/Caracas)
+        function formatTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
+        }
+        function formatDateTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
+        }
+
+        function formatDateVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('es-VE', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                timeZone: 'America/Caracas'
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'PENDING':
+                    return '<span class="status-badge status-pending">Pendiente</span>';
+                case 'INSIDE':
+                    return '<span class="status-badge status-inside">Dentro</span>';
+                case 'COMPLETED':
+                    return '<span class="status-badge status-completed">Completada</span>';
+                default:
+                    return '<span class="status-badge bg-gray-100 text-gray-600">Desconocido</span>';
+            }
+        }
+
+        function getTypeLabel(type) {
+            return type === 'ONE_TIME' 
+                ? '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Única</span>'
+                : '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">Frecuente</span>';
+        }
+
+        async function loadVisitsHistory() {
+            try {
+                const response = await fetch(`/api/owner/visits/history?property_id=${selectedProperty.id}&page=${currentPage}&limit=${limit}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    document.getElementById('visitsTableBody').innerHTML = `
+                        <tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Error al cargar datos</td></tr>
+                    `;
+                    return;
+                }
+                
+                visitsData = result.data;
+                totalPages = result.pagination.totalPages;
+                
+                // Update counts
+                const counts = {
+                    PENDING: visitsData.filter(v => v.visit_status === 'PENDING').length,
+                    INSIDE: visitsData.filter(v => v.visit_status === 'INSIDE').length,
+                    COMPLETED: visitsData.filter(v => v.visit_status === 'COMPLETED').length
+                };
+                
+                document.getElementById('count-pending').textContent = counts.PENDING;
+                document.getElementById('count-inside').textContent = counts.INSIDE;
+                document.getElementById('count-completed').textContent = counts.COMPLETED;
+                
+                // Render table
+                if (visitsData.length === 0) {
+                    document.getElementById('visitsTableBody').innerHTML = `
+                        <tr><td colspan="6" class="px-6 py-8 text-center text-[#5F6368]">
+                            No hay visitas registradas
+                        </td></tr>
+                    `;
+                } else {
+                    document.getElementById('visitsTableBody').innerHTML = visitsData.map(visit => `
+                        <tr class="hover:bg-[#FAFAFA]">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-[#f97316]/10 rounded-full flex items-center justify-center mr-3">
+                                        <span class="material-icons-round text-[#f97316] text-sm">person</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-[#3C4043]">${visit.first_name} ${visit.last_name}</p>
+                                        <p class="text-xs text-[#5F6368]">DNI: ${visit.visitor_dni}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">${getTypeLabel(visit.type)}</td>
+                            <td class="px-6 py-4 text-sm text-[#5F6368]">
+                                ${visit.type === 'ONE_TIME' 
+                                    ? formatDateVenezuela(visit.valid_from) 
+                                    : '<span class="text-gray-400">-</span>'}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-[#5F6368]">
+                                ${visit.entry_time 
+                                    ? `<span class="text-green-600 font-medium">${formatDateTimeVenezuela(visit.entry_time)}</span>`
+                                    : '-'}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-[#5F6368]">
+                                ${visit.exit_time 
+                                    ? `<span class="text-gray-600">${formatDateTimeVenezuela(visit.exit_time)}</span>`
+                                    : '-'}
+                            </td>
+                            <td class="px-6 py-4">${getStatusBadge(visit.visit_status)}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+                // Update pagination
+                const start = (currentPage - 1) * limit + 1;
+                const end = Math.min(currentPage * limit, result.pagination.total);
+                document.getElementById('showing-start').textContent = result.pagination.total > 0 ? start : 0;
+                document.getElementById('showing-end').textContent = end;
+                document.getElementById('total-records').textContent = result.pagination.total;
+                document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages}`;
+                
+                document.getElementById('btn-prev').disabled = currentPage <= 1;
+                document.getElementById('btn-next').disabled = currentPage >= totalPages;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('visitsTableBody').innerHTML = `
+                    <tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Error de conexión</td></tr>
+                `;
+            }
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadVisitsHistory();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('selectedProperty');
+            window.location.href = '/login';
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', loadVisitsHistory);
+    </script>
+</body>
+</html>

@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin | Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        :root {
+            --md-sys-color-primary: #f97316;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #fff7ed;
+            --md-sys-color-on-primary-container: #9a3412;
+            --md-sys-color-secondary: #50606e;
+            --md-sys-color-on-secondary: #ffffff;
+            --md-sys-color-secondary-container: #d3e5f5;
+            --md-sys-color-on-secondary-container: #0c1d29;
+            --md-sys-color-surface: #fdfcff;
+            --md-sys-color-surface-variant: #dfe2eb;
+            --md-sys-color-on-surface: #1a1c1e;
+            --md-sys-color-on-surface-variant: #43474e;
+            --md-sys-color-outline: #73777f;
+            --md-sys-color-error: #ba1a1a;
+            --md-sys-color-error-container: #ffdad6;
+            --md-elevation-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+            --md-elevation-2: 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12);
+            --md-elevation-3: 0 10px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.10);
+            --md-radius-small: 8px;
+            --md-radius-medium: 12px;
+            --md-radius-large: 16px;
+            --md-radius-extra-large: 28px;
+        }
+        
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Material Ripple Effect */
+        .md-ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        .md-ripple::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        .md-ripple:active::after {
+            width: 200%;
+            height: 200%;
+        }
+        
+        /* Navigation Rail / Sidebar */
+        .nav-rail {
+            background: var(--md-sys-color-surface);
+            border-right: 1px solid var(--md-sys-color-surface-variant);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-rail.collapsed {
+            width: 80px;
+        }
+        
+        .nav-rail.expanded {
+            width: 300px;
+        }
+        
+        /* Navigation Items */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            margin: 4px 12px;
+            border-radius: var(--md-radius-large);
+            color: var(--md-sys-color-on-surface-variant);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background: rgba(249, 115, 22, 0.08);
+        }
+        
+        .nav-item.active {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        
+        .nav-item .icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-item .label {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+        
+        .nav-rail.collapsed .nav-item .label {
+            opacity: 0;
+            width: 0;
+        }
+        
+        /* FAB (Floating Action Button) */
+        .md-fab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 24px;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border-radius: var(--md-radius-extra-large);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: var(--md-elevation-3);
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .md-fab:hover {
+            box-shadow: 0 14px 28px rgba(0,0,0,0.15), 0 10px 10px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+        
+        /* Cards Material */
+        .md-card {
+            background: var(--md-sys-color-surface);
+            border-radius: var(--md-radius-large);
+            box-shadow: var(--md-elevation-1);
+            transition: all 0.2s;
+        }
+        
+        .md-card:hover {
+            box-shadow: var(--md-elevation-2);
+        }
+        
+        .md-card-filled {
+            background: var(--md-sys-color-surface-variant);
+            border-radius: var(--md-radius-large);
+        }
+        
+        /* Modal Material */
+        .md-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .md-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .md-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: var(--md-sys-color-surface);
+            border-radius: var(--md-radius-extra-large);
+            box-shadow: var(--md-elevation-3);
+            z-index: 101;
+            max-width: 560px;
+            width: 90%;
+            max-height: 90vh;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        
+        .md-modal.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        /* Text Fields Material */
+        .md-text-field {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        
+        .md-text-field input,
+        .md-text-field textarea {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: var(--md-radius-small);
+            background: transparent;
+            font-size: 16px;
+            color: var(--md-sys-color-on-surface);
+            transition: all 0.2s;
+        }
+        
+        .md-text-field input:focus,
+        .md-text-field textarea:focus {
+            outline: none;
+            border-color: var(--md-sys-color-primary);
+            border-width: 2px;
+        }
+        
+        .md-text-field label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--md-sys-color-surface);
+            padding: 0 4px;
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 16px;
+            transition: all 0.2s;
+            pointer-events: none;
+        }
+        
+        .md-text-field input:focus + label,
+        .md-text-field input:not(:placeholder-shown) + label,
+        .md-text-field textarea:focus + label,
+        .md-text-field textarea:not(:placeholder-shown) + label {
+            top: 0;
+            font-size: 12px;
+            color: var(--md-sys-color-primary);
+        }
+        
+        /* Buttons Material */
+        .md-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: var(--md-radius-extra-large);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .md-button-filled {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }
+        
+        .md-button-filled:hover {
+            box-shadow: var(--md-elevation-1);
+        }
+        
+        .md-button-tonal {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+        
+        .md-button-outlined {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            border: 1px solid var(--md-sys-color-outline);
+        }
+        
+        .md-button-text {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            padding: 10px 12px;
+        }
+        
+        /* Progress Indicator */
+        .md-linear-progress {
+            height: 4px;
+            background: var(--md-sys-color-surface-variant);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .md-linear-progress-bar {
+            height: 100%;
+            background: var(--md-sys-color-primary);
+            transition: width 0.3s;
+        }
+        
+        /* Segmented Button */
+        .md-segmented-button {
+            display: flex;
+            background: var(--md-sys-color-surface-variant);
+            border-radius: var(--md-radius-extra-large);
+            padding: 4px;
+            gap: 4px;
+        }
+        
+        .md-segment {
+            flex: 1;
+            padding: 8px 16px;
+            border-radius: var(--md-radius-extra-large);
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--md-sys-color-on-surface);
+        }
+        
+        .md-segment.active {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+        
+        /* Snackbar */
+        .md-snackbar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--md-sys-color-on-surface);
+            color: var(--md-sys-color-surface);
+            padding: 14px 24px;
+            border-radius: var(--md-radius-small);
+            font-size: 14px;
+            box-shadow: var(--md-elevation-3);
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .md-snackbar.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-slide-in {
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Table Material */
+        .md-table-container {
+            overflow-x: auto;
+            border-radius: var(--md-radius-large);
+        }
+        
+        .md-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .md-table th {
+            text-align: left;
+            padding: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--md-sys-color-on-surface-variant);
+            border-bottom: 1px solid var(--md-sys-color-surface-variant);
+        }
+        
+        .md-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface);
+        }
+        
+        .md-table tr:hover td {
+            background: rgba(249, 115, 22, 0.04);
+        }
+        
+        /* Chips */
+        .md-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--md-radius-small);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .md-chip-filled {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        
+        /* Stats Cards */
+        .stat-card {
+            padding: 24px;
+            border-radius: var(--md-radius-large);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .stat-card.primary::before { background: var(--md-sys-color-primary); }
+        .stat-card.secondary::before { background: var(--md-sys-color-secondary); }
+        .stat-card.tertiary::before { background: #6b5b4f; }
+        .stat-card.error::before { background: var(--md-sys-color-error); }
+        
+        /* App Top Bar */
+        .app-top-bar {
+            background: var(--md-sys-color-surface);
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+            box-shadow: var(--md-elevation-1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="h-screen flex overflow-hidden">
+        <!-- Navigation Rail / Sidebar -->
+        <aside id="sidebar" class="nav-rail expanded fixed h-full z-40 flex flex-col">
+            <!-- Logo Section -->
+            <div class="px-5 pl-6 py-4 flex items-center gap-4 h-16">
+                <button id="menu-toggle" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-gray-700">menu</span>
+                </button>
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10 flex-shrink-0" style="object-fit: contain;">
+                    <div class="whitespace-nowrap flex-shrink-0">
+                        <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Condominio360</h1>
+                        <p class="text-xs text-gray-500">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="h-px bg-gray-200 mx-4"></div>
+
+            <!-- Navigation Items -->
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <div class="nav-item active" onclick="showSection('dashboard', this)">
+                    <span class="icon material-symbols-rounded">space_dashboard</span>
+                    <span class="label">Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="showSection('tenants', this)">
+                    <span class="icon material-symbols-rounded">apartment</span>
+                    <span class="label">Condominios</span>
+                </div>
+                <div class="nav-item" onclick="showSection('users', this)">
+                    <span class="icon material-symbols-rounded">group</span>
+                    <span class="label">Usuarios</span>
+                </div>
+                <div class="nav-item" onclick="showSection('audit', this)">
+                    <span class="icon material-symbols-rounded">receipt_long</span>
+                    <span class="label">Auditoría</span>
+                </div>
+                <div class="nav-item" onclick="showSection('saas-billing', this)">
+                    <span class="icon material-symbols-rounded">payments</span>
+                    <span class="label">Facturación C360</span>
+                </div>
+                <div class="nav-item" onclick="showSection('balance-financiero', this)">
+                    <span class="icon material-symbols-rounded">account_balance</span>
+                    <span class="label">Balance Financiero</span>
+                </div>
+                <div class="nav-item" onclick="showSection('settings', this)">
+                    <span class="icon material-symbols-rounded">settings</span>
+                    <span class="label">Configuración</span>
+                </div>
+            </nav>
+
+            <!-- Bottom Actions -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="nav-item text-red-600 hover:bg-red-50" onclick="logout()">
+                    <span class="icon material-symbols-rounded">logout</span>
+                    <span class="label">Cerrar sesión</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
+            <!-- Top App Bar -->
+            <header class="app-top-bar sticky top-0 z-30 flex-shrink-0">
+                <h2 id="page-title" class="text-xl font-medium text-gray-900 flex-1">Dashboard</h2>
+                <div class="flex items-center gap-4">
+                    <span id="admin-name" class="text-sm text-gray-600 hidden sm:block">Admin</span>
+                    <div class="w-10 h-10 bg-[var(--md-sys-color-primary-container)] rounded-full flex items-center justify-center">
+                        <span id="admin-initial" class="text-[var(--md-sys-color-on-primary-container)] font-medium">A</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area (scrollable) -->
+            <div class="flex-1 overflow-y-auto">
+            <div class="p-6 max-w-7xl mx-auto">
+                <!-- Dashboard Section -->
+                <section id="section-dashboard" class="space-y-6">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Stat Card 1 -->
+                        <div class="stat-card primary md-card animate-slide-in" style="animation-delay: 0ms;">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-medium">Condominios</p>
+                                    <h3 id="stat-tenants" class="text-4xl font-light text-gray-900 mt-2">0</h3>
+                                    <p class="text-sm text-emerald-600 mt-1 flex items-center gap-1">
+                                        <span class="material-symbols-rounded text-sm">trending_up</span>
+                                        <span id="stat-tenants-active">0</span> activos
+                                    </p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                                    <span class="material-symbols-rounded text-blue-600 text-2xl">apartment</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stat Card 2 -->
+                        <div class="stat-card secondary md-card animate-slide-in" style="animation-delay: 50ms;">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-medium">Usuarios Totales</p>
+                                    <h3 id="stat-users" class="text-4xl font-light text-gray-900 mt-2">0</h3>
+                                    <p id="stat-users-subtitle" class="text-sm text-gray-500 mt-1">
+                                        0 propietarios de 0 cuentas
+                                    </p>
+                                </div>
+                                <div class="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                                    <span class="material-symbols-rounded text-emerald-600 text-2xl">group</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stat Card 3 -->
+                        <div class="stat-card tertiary md-card animate-slide-in" style="animation-delay: 100ms;">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-medium">Unidades</p>
+                                    <h3 id="stat-properties" class="text-4xl font-light text-gray-900 mt-2">0</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Inmobiliarias</p>
+                                </div>
+                                <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
+                                    <span class="material-symbols-rounded text-amber-600 text-2xl">home_work</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stat Card 4 -->
+                        <div class="stat-card error md-card animate-slide-in" style="animation-delay: 150ms;">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-medium">Ingresos Mensuales</p>
+                                    <h3 id="stat-revenue" class="text-4xl font-light text-gray-900 mt-2">$0</h3>
+                                    <p class="text-sm text-emerald-600 mt-1">Ingresos confirmados (USD)</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                                    <span class="material-symbols-rounded text-purple-600 text-2xl">payments</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="md-card p-6 animate-slide-in" style="animation-delay: 200ms;">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-medium text-gray-900">Actividad Reciente</h3>
+                            <button class="md-button-text" onclick="loadAuditLogs()">Ver todo</button>
+                        </div>
+                        <div id="activity-list" class="space-y-3">
+                            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="material-symbols-rounded text-blue-600">sync</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-gray-900">Cargando actividad...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tenants Section -->
+                <section id="section-tenants" class="hidden space-y-6">
+                    <!-- Header with FAB -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-2xl font-medium text-gray-900">Condominios</h3>
+                            <p class="text-gray-500 mt-1">Gestiona todos los conjuntos residenciales</p>
+                        </div>
+                        <button class="md-fab" onclick="openNewTenantModal()">
+                            <span class="material-symbols-rounded">add</span>
+                            Nuevo Condominio
+                        </button>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="md-card-filled p-4 flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1 relative">
+                            <span class="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                            <input type="text" id="tenant-search" placeholder="Buscar condominio..." 
+                                class="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[var(--md-sys-color-primary)] transition"
+                                oninput="filterTenants()">
+                        </div>
+                        <div class="md-segmented-button w-full sm:w-auto">
+                            <div class="md-segment active" onclick="setFilter('all', this)">Todos</div>
+                            <div class="md-segment" onclick="setFilter('active', this)">Activos</div>
+                            <div class="md-segment" onclick="setFilter('inactive', this)">Inactivos</div>
+                        </div>
+                    </div>
+
+                    <!-- Tenants Table -->
+                    <div class="md-card overflow-hidden">
+                        <div class="md-table-container">
+                            <table class="md-table">
+                                <thead>
+                                    <tr>
+                                        <th>Condominio</th>
+                                        <th>Unidades</th>
+                                        <th>Usuarios</th>
+                                        <th>Estado</th>
+                                        <th>Creado</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tenants-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-8 text-gray-500">Cargando condominios...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Users Section (Superadministradores) -->
+                <section id="section-users" class="hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-medium text-gray-900">Superadministradores</h3>
+                            <p class="text-gray-500 mt-1">Cree y gestione usuarios con acceso total al panel de administración</p>
+                        </div>
+                        <button type="button" onclick="openSuperAdminModal()" class="md-fab flex items-center gap-2">
+                            <span class="material-symbols-rounded">add</span>
+                            Crear Superadmin
+                        </button>
+                    </div>
+                    <div class="md-card overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Teléfono</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Creado</th>
+                                    <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="superadmins-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Buscador de Propietarios -->
+                    <div class="md-card p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Buscar Propietario</h3>
+                        <p class="text-sm text-gray-500 mb-4">Busque un propietario por DNI o correo para ver a qué condominios pertenece</p>
+                        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">DNI (Cédula)</label>
+                                <input type="text" id="owner-search-dni" placeholder="Ej: V-12345678" 
+                                    class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[var(--md-sys-color-primary)]">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Correo electrónico</label>
+                                <input type="text" id="owner-search-email" placeholder="Ej: propietario@email.com" 
+                                    class="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[var(--md-sys-color-primary)]">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="button" onclick="searchOwner()" class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 text-sm flex items-center gap-2">
+                                    <span class="material-symbols-rounded text-lg">search</span>
+                                    Buscar
+                                </button>
+                            </div>
+                        </div>
+                        <div id="owner-search-result" class="mt-4 hidden">
+                            <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                                <div id="owner-search-result-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Audit Section -->
+                <section id="section-audit" class="hidden space-y-6">
+                    <div>
+                        <h3 class="text-2xl font-medium text-gray-900">Auditoría Global</h3>
+                        <p class="text-gray-500 mt-1">Registro de actividad del sistema</p>
+                    </div>
+                    <div class="md-card p-6">
+                        <div id="audit-logs-container" class="space-y-2 max-h-[600px] overflow-y-auto">
+                            <div class="text-center text-gray-500 py-8">Cargando logs...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Facturación SaaS (Condominio360 → Condominios) -->
+                <section id="section-saas-billing" class="hidden space-y-6">
+                    <!-- Método de pago para cobros Condominio360 -->
+                    <div class="md-card p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Método de pago para Cobros Condominio360</h3>
+                        <p class="text-sm text-gray-500 mb-4">Configura los datos que verán las juntas para realizar transferencias o pagos móviles al cobrar Condominio360.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" id="saas-payment-config-form">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cuenta bancaria / transferencia</label>
+                                <input type="text" id="saas-payment-bank" placeholder="Ej: Banco de Venezuela, C.I. 12345678, cuenta 0102-0123-45678901234" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Pago móvil</label>
+                                <input type="text" id="saas-payment-mobile" placeholder="Ej: 0414-1234567, C.I. 12345678" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <button type="button" onclick="saveSaaSPaymentConfig()" class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 text-sm">Guardar método de pago</button>
+                    </div>
+                    <div class="md-card p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Facturación Condominio360</h3>
+                        <p class="text-sm text-gray-500 mb-4">Genera facturas mensuales a los condominios ($0.50 USD por unidad + ítems extraordinarios). Tasa BCV: días 1-5 del mes usa tasa del 1ro; día 6+ usa tasa diaria.</p>
+                        <div class="flex flex-wrap gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Período</label>
+                                <div class="flex gap-2">
+                                    <select id="saas-period-month" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                        <% for(let m=1; m<=12; m++) { %>
+                                        <option value="<%= m %>" <%= (new Date().getMonth()+1) === m ? 'selected' : '' %>><%= ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][m-1] %></option>
+                                        <% } %>
+                                    </select>
+                                    <select id="saas-period-year" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                        <% const y = new Date().getFullYear(); for(let i=-1; i<=1; i++) { %>
+                                        <option value="<%= y+i %>" <%= i===0 ? 'selected' : '' %>><%= y+i %></option>
+                                        <% } %>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Condominios</label>
+                                <select id="saas-tenant-select" class="border border-gray-200 rounded-lg px-3 py-2 text-sm min-w-[200px]">
+                                    <option value="">Todos los activos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Método de pago</label>
+                                <input type="text" id="saas-payment-method" placeholder="Ej: Transferencia, Pago Móvil" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="button" onclick="openSaaSOverviewModal()" class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-lg">add_circle</span>
+                                Preparar facturas
+                            </button>
+                        </div>
+                    </div>
+                    <div class="md-card p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Facturas generadas</h3>
+                        <div id="saas-invoices-list" class="space-y-2">
+                            <p class="text-gray-500 text-sm">Cargando...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Balance Financiero -->
+                <section id="section-balance-financiero" class="hidden space-y-6">
+                    <div class="md-card p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Tasas BCV Diarias</h3>
+                        <p class="text-sm text-gray-500 mb-4">Historial de tasas de cambio registradas (USD y EUR)</p>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-sm font-medium text-gray-600 mb-2">Dólar (USD) - VES</p>
+                                <div class="h-64"><canvas id="chart-usd"></canvas></div>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <p class="text-sm font-medium text-gray-600 mb-2">Euro (EUR) - VES</p>
+                                <div class="h-64"><canvas id="chart-eur"></canvas></div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-4" id="balance-rate-info">Cargando última tasa...</p>
+                    </div>
+                    <div class="md-card p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Balance por Condominio</h3>
+                        <p class="text-sm text-gray-500 mb-4">Cobros según inmuebles, facturas SaaS generadas y por generar</p>
+                        <div class="overflow-x-auto">
+                            <table class="md-table">
+                                <thead>
+                                    <tr>
+                                        <th>Condominio</th>
+                                        <th>Unidades</th>
+                                        <th>Cobro Condo (VES)</th>
+                                        <th>SaaS Pagado (VES)</th>
+                                        <th>SaaS Pendiente (VES)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="balance-tenant-table"></tbody>
+                            </table>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                            <div class="stat-card primary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">Total Cobrado Condo</p>
+                                <p class="text-xl font-bold" id="balance-total-condo">-</p>
+                            </div>
+                            <div class="stat-card tertiary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">SaaS Pendiente</p>
+                                <p class="text-xl font-bold" id="balance-saas-pending">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="md-card p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Comparativa Meses Anteriores</h3>
+                            <div class="h-64"><canvas id="chart-comparative"></canvas></div>
+                            <div id="balance-comparative-list" class="mt-4 space-y-2 text-sm"></div>
+                        </div>
+                        <div class="md-card p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Proyección Próximos Meses</h3>
+                            <p class="text-xs text-gray-500 mb-2">Con última tasa BCV para contravalor en VES</p>
+                            <div id="balance-projection-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Section (Placeholder) -->
+                <section id="section-settings" class="hidden">
+                    <div class="md-card p-12 text-center">
+                        <span class="material-symbols-rounded text-6xl text-gray-300 mb-4">settings</span>
+                        <h3 class="text-xl font-medium text-gray-900">Configuración Global</h3>
+                        <p class="text-gray-500 mt-2">Configure cada condominio individualmente desde su panel de administración</p>
+                        <a href="/admin/tenants" class="inline-flex items-center gap-2 mt-4 text-[var(--md-sys-color-primary)] hover:underline">
+                            <span>Ver Condominios</span>
+                            <span class="material-symbols-rounded">arrow_forward</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+            </div>
+            <%- include('../partials/panels-footer') %>
+        </main>
+    </div>
+
+    <!-- Modal Overview Facturación SaaS -->
+    <div id="saas-overview-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-xl font-medium text-gray-900">Resumen antes de generar</h3>
+                <button onclick="closeSaaSOverviewModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded text-gray-600">close</span>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div id="saas-overview-tenants" class="space-y-2 mb-4">
+                    <p class="text-sm text-gray-500">Cargando...</p>
+                </div>
+                <div class="border-t border-gray-100 pt-4 mb-4">
+                    <p class="text-sm font-medium text-gray-700 mb-1">Ítems extraordinarios (opcional)</p>
+                    <p class="text-xs text-gray-500 mb-2">Los montos deben expresarse en USD</p>
+                    <div id="saas-overview-extra-list" class="space-y-2 mb-2"></div>
+                    <button type="button" onclick="addSaaSExtraItemInModal()" class="text-sm text-[var(--md-sys-color-primary)] hover:underline">+ Añadir ítem extraordinario</button>
+                </div>
+                <div id="saas-overview-totals" class="bg-gray-50 rounded-xl p-4 text-sm">
+                    <p class="text-gray-600">Total base estimado: <span id="saas-overview-base">$0</span> USD</p>
+                    <p class="text-gray-600 mt-1">Total extraordinarios: <span id="saas-overview-extra">$0</span> USD</p>
+                    <p class="font-medium text-gray-900 mt-2">Total: <span id="saas-overview-total">$0</span> USD <span id="saas-overview-ves" class="text-gray-600 font-normal"></span></p>
+                    <p class="text-xs text-gray-500 mt-2" id="saas-overview-rate-info">Cargando tasa BCV...</p>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+                <button type="button" onclick="closeSaaSOverviewModal()" class="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="confirmGenerateSaaSInvoices()" class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 flex items-center gap-2">
+                    <span class="material-symbols-rounded text-lg">check_circle</span>
+                    Generar facturas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle Factura SaaS -->
+    <div id="saas-invoice-detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="if(event.target===this)closeSaaSInvoiceDetail()">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-xl font-medium text-gray-900">Detalle de factura</h3>
+                <button onclick="closeSaaSInvoiceDetail()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded text-gray-600">close</span>
+                </button>
+            </div>
+            <div id="saas-invoice-detail-content" class="p-6 overflow-y-auto flex-1">
+                <p class="text-gray-500">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Rechazar Reporte SaaS -->
+    <div id="saas-reject-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="if(event.target===this)closeSaaSRejectModal()">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Rechazar reporte de pago</h3>
+            <p class="text-sm text-gray-500 mb-4">Indica el motivo del rechazo para que la junta pueda corregir y volver a reportar.</p>
+            <textarea id="saas-reject-reason" placeholder="Ej: Referencia incorrecta, monto no coincide..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4" rows="3"></textarea>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeSaaSRejectModal()" class="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="submitSaaSReject()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Rechazar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Tenant Modal -->
+    <div id="modal-overlay" class="md-modal-overlay" onclick="closeNewTenantModal()"></div>
+    <div id="new-tenant-modal" class="md-modal">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div>
+                <h3 class="text-xl font-medium text-gray-900">Nuevo Condominio</h3>
+                <p class="text-sm text-gray-500">Completa la información para crear un nuevo conjunto residencial</p>
+            </div>
+            <button onclick="closeNewTenantModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                <span class="material-symbols-rounded text-gray-600">close</span>
+            </button>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+            <div class="flex items-center gap-2 sm:gap-4 overflow-x-auto">
+                <div id="step-indicator-1" class="flex items-center gap-2 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-[var(--md-sys-color-primary)] text-white flex items-center justify-center text-sm font-medium">1</div>
+                    <span class="text-sm font-medium text-gray-900 hidden sm:inline">Condominio</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div id="step-indicator-2" class="flex items-center gap-2 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">2</div>
+                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Facturación</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div id="step-indicator-3" class="flex items-center gap-2 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">3</div>
+                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Edificios</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div id="step-indicator-4" class="flex items-center gap-2 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">4</div>
+                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Administrador</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div id="step-indicator-5" class="flex items-center gap-2 flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">5</div>
+                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Revisar</span>
+                </div>
+            </div>
+            <div class="mt-3 md-linear-progress">
+                <div id="progress-bar" class="md-linear-progress-bar" style="width: 20%"></div>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 overflow-y-auto max-h-[50vh]">
+            <form id="new-tenant-form">
+                <!-- Step 1: Tenant Info -->
+                <div id="step-1" class="space-y-4">
+                    <div class="md-text-field">
+                        <input type="text" id="tenant-name" name="name" required placeholder=" ">
+                        <label for="tenant-name">Nombre del Condominio *</label>
+                    </div>
+                    <div class="md-text-field">
+                        <input type="text" id="tenant-slug" name="slug" required placeholder=" " 
+                            pattern="[a-z0-9-]+" oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '')">
+                        <label for="tenant-slug">Slug (identificador único) *</label>
+                        <p class="text-xs text-gray-500 mt-1 ml-2">Solo minúsculas, números y guiones</p>
+                    </div>
+                    <div class="md-text-field">
+                        <textarea id="tenant-address" name="address" rows="3" placeholder=" "></textarea>
+                        <label for="tenant-address">Dirección</label>
+                    </div>
+                </div>
+
+                <!-- Step 2: Billing Type -->
+                <div id="step-2" class="space-y-4 hidden">
+                    <div class="bg-blue-50 p-4 rounded-xl mb-4">
+                        <p class="text-sm text-blue-700 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-blue-600">info</span>
+                            Selecciona el tipo de facturación para este condominio. Esto determinará cómo se distribuyen los gastos.
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Facturación *</label>
+                        
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-[var(--md-sys-color-primary)] transition-colors has-[:checked]:border-[var(--md-sys-color-primary)] has-[:checked]:bg-blue-50/50">
+                                <input type="radio" name="billing_type" value="FIXED" class="mt-1" checked onchange="updateBillingType(this.value)">
+                                <div>
+                                    <div class="font-medium text-gray-900">Cuota Fija</div>
+                                    <div class="text-sm text-gray-500">Todos los propietarios pagan el mismo monto fijo mensual</div>
+                                </div>
+                            </label>
+                            
+                            <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-[var(--md-sys-color-primary)] transition-colors has-[:checked]:border-[var(--md-sys-color-primary)] has-[:checked]:bg-blue-50/50">
+                                <input type="radio" name="billing_type" value="ALICUOTA" class="mt-1" onchange="updateBillingType(this.value)">
+                                <div>
+                                    <div class="font-medium text-gray-900">Por Alícuota</div>
+                                    <div class="text-sm text-gray-500">Cada propietario paga según su porcentaje de participación</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="alicuota-info" class="hidden bg-amber-50 p-4 rounded-xl">
+                        <p class="text-sm text-amber-700 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-amber-600">warning</span>
+                            <strong>Importante:</strong> Deberás crear los inmuebles e indicar su alícuota. La suma de todas las alícuotas debe ser exactamente 100%.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 3: Buildings -->
+                <div id="step-3" class="space-y-4 hidden">
+                    <div class="bg-blue-50 p-4 rounded-xl mb-4">
+                        <p class="text-sm text-blue-700 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-blue-600">info</span>
+                            Configura los edificios del conjunto residencial.
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Configuración de Edificios *</label>
+                        
+                        <div class="md-segmented-button">
+                            <div class="md-segment active" onclick="setBuildingType('SINGLE')" id="segment-single">
+                                <span class="material-symbols-rounded text-sm mr-1">apartment</span>
+                                Único Edificio
+                            </div>
+                            <div class="md-segment" onclick="setBuildingType('MULTIPLE')" id="segment-multiple">
+                                <span class="material-symbols-rounded text-sm mr-1">domain</span>
+                                Múltiples Edificios
+                            </div>
+                        </div>
+                        <input type="hidden" id="building-type" name="building_type" value="SINGLE">
+                        
+                        <!-- Single Building Info -->
+                        <div id="single-building-info" class="mt-4">
+                            <div class="md-text-field">
+                                <input type="text" id="single-building-name" value="Edificio Principal" readonly placeholder=" ">
+                                <label>Edificio Principal</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Multiple Buildings List -->
+                        <div id="multiple-buildings-container" class="hidden mt-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-medium text-gray-700">Edificios</label>
+                                <button type="button" onclick="addBuilding()" class="text-sm text-[var(--md-sys-color-primary)] hover:underline">
+                                    + Agregar Edificio
+                                </button>
+                            </div>
+                            <div id="buildings-list" class="space-y-3">
+                                <!-- Buildings will be added here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Admin Info -->
+                <div id="step-4" class="space-y-4 hidden">
+                    <div class="bg-blue-50 p-4 rounded-xl mb-4">
+                        <p class="text-sm text-blue-700 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-blue-600">info</span>
+                            Crea el primer administrador de junta. El SuperAdmin asigna la contraseña inicial.
+                        </p>
+                    </div>
+                    <div class="md-text-field">
+                        <input type="text" id="admin-display-name" name="display_name" required placeholder=" ">
+                        <label for="admin-display-name">Nombre de Usuario *</label>
+                    </div>
+                    <div class="md-text-field">
+                        <input type="email" id="admin-email" name="email" required placeholder=" ">
+                        <label for="admin-email">Email *</label>
+                    </div>
+                    <div class="md-text-field">
+                        <input type="password" id="admin-password" name="password" required placeholder=" " 
+                            minlength="6">
+                        <label for="admin-password">Contraseña inicial *</label>
+                    </div>
+                    <div class="md-text-field">
+                        <input type="tel" id="admin-phone" name="phone" placeholder=" ">
+                        <label for="admin-phone">Teléfono (opcional)</label>
+                    </div>
+                </div>
+
+                <!-- Step 5: Review -->
+                <div id="step-5" class="hidden space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <h4 class="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-gray-500">apartment</span>
+                            Datos del Condominio
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Nombre:</span>
+                                <span class="text-gray-900 font-medium" id="review-name"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Slug:</span>
+                                <span class="text-gray-900 font-medium" id="review-slug"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Dirección:</span>
+                                <span class="text-gray-900" id="review-address"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <h4 class="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-gray-500">payments</span>
+                            Configuración de Facturación
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Tipo:</span>
+                                <span class="text-gray-900 font-medium" id="review-billing-type"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <h4 class="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-gray-500">domain</span>
+                            Edificios
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Tipo:</span>
+                                <span class="text-gray-900 font-medium" id="review-building-type"></span>
+                            </div>
+                            <div id="review-buildings-list" class="mt-2"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <h4 class="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-gray-500">person</span>
+                            Administrador Principal
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Nombre:</span>
+                                <span class="text-gray-900 font-medium" id="review-admin-name"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Email:</span>
+                                <span class="text-gray-900" id="review-admin-email"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-xl flex items-start gap-3">
+                        <span class="material-symbols-rounded text-amber-600">mail</span>
+                        <p class="text-sm text-amber-700">Al confirmar, se enviará un email de bienvenida con las credenciales de acceso al administrador.</p>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-between bg-gray-50/50">
+            <button type="button" id="btn-prev" class="md-button md-button-text hidden" onclick="prevStep()">
+                <span class="material-symbols-rounded">arrow_back</span>
+                Anterior
+            </button>
+            <div class="flex-1"></div>
+            <button type="button" id="btn-next" class="md-button md-button-filled" onclick="nextStep()">
+                Siguiente
+                <span class="material-symbols-rounded">arrow_forward</span>
+            </button>
+            <button type="button" id="btn-submit" class="md-button md-button-filled hidden" onclick="submitTenant()" disabled>
+                <span class="material-symbols-rounded">check</span>
+                Crear Condominio
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Crear Superadmin -->
+    <div id="superadmin-modal-overlay" class="md-modal-overlay" onclick="closeSuperAdminModal()"></div>
+    <div id="superadmin-modal" class="md-modal">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div>
+                <h3 class="text-xl font-medium text-gray-900">Nuevo Superadministrador</h3>
+                <p class="text-sm text-gray-500">Complete los datos para crear un usuario con acceso total al panel</p>
+            </div>
+            <button onclick="closeSuperAdminModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                <span class="material-symbols-rounded text-gray-600">close</span>
+            </button>
+        </div>
+        <form id="superadmin-form" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="md-text-field">
+                    <input type="text" id="sa-first-name" required placeholder=" " maxlength="100">
+                    <label for="sa-first-name">Nombre *</label>
+                </div>
+                <div class="md-text-field">
+                    <input type="text" id="sa-last-name" required placeholder=" " maxlength="100">
+                    <label for="sa-last-name">Apellido *</label>
+                </div>
+            </div>
+            <div class="md-text-field">
+                <input type="email" id="sa-email" required placeholder=" ">
+                <label for="sa-email">Email *</label>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="md-text-field">
+                    <input type="password" id="sa-password" required placeholder=" " minlength="6" autocomplete="new-password">
+                    <label for="sa-password">Contraseña *</label>
+                </div>
+                <div class="md-text-field">
+                    <input type="password" id="sa-password-confirm" required placeholder=" " minlength="6" autocomplete="new-password">
+                    <label for="sa-password-confirm">Confirmar contraseña *</label>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Mínimo 6 caracteres</p>
+            <div class="md-text-field">
+                <input type="tel" id="sa-phone" placeholder=" " maxlength="20">
+                <label for="sa-phone">Teléfono (opcional)</label>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+            <button type="button" onclick="closeSuperAdminModal()" class="md-button md-button-text">Cancelar</button>
+            <button type="button" onclick="submitSuperAdmin()" class="md-button md-button-filled">
+                <span class="material-symbols-rounded">person_add</span>
+                Crear Superadmin
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar Eliminación -->
+    <div id="confirm-modal-overlay" class="md-modal-overlay" onclick="closeConfirmModal()"></div>
+    <div id="confirm-modal" class="md-modal max-w-md">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-rounded text-4xl text-red-600">warning</span>
+            </div>
+            <h3 id="confirm-modal-title" class="text-xl font-semibold text-gray-900 mb-2">Confirmar eliminación</h3>
+            <p id="confirm-modal-message" class="text-gray-600 mb-6">Esta acción no se puede deshacer.</p>
+            <div class="flex gap-3 justify-center">
+                <button type="button" onclick="closeConfirmModal()" class="px-6 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="button" id="confirm-modal-btn" onclick="executeConfirmAction()" class="px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition flex items-center gap-2">
+                    <span class="material-symbols-rounded">delete</span>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snackbar -->
+    <div id="snackbar" class="md-snackbar">
+        <span id="snackbar-message">Mensaje</span>
+        <button onclick="hideSnackbar()" class="text-[var(--md-sys-color-primary)] font-medium uppercase text-sm">Cerrar</button>
+    </div>
+
+    <script>
+        // Global State
+        let currentStep = 1;
+        let tenantsData = [];
+        let currentFilter = 'all';
+        let token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user') || '{}');
+        let pendingConfirmAction = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token || !user.isSuperAdmin) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Set user info
+            document.getElementById('admin-name').textContent = (user.firstName || '') + ' ' + (user.lastName || '');
+            document.getElementById('admin-initial').textContent = (user.firstName || 'A')[0];
+
+            // Load data
+            loadDashboard();
+
+            // Setup sidebar toggle
+            document.getElementById('menu-toggle').addEventListener('click', toggleSidebar);
+
+            // Setup validation listeners for wizard
+            setupValidationListeners();
+        });
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const icon = document.querySelector('#menu-toggle .material-symbols-rounded');
+            
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                sidebar.classList.add('collapsed');
+                mainContent.style.marginLeft = '80px';
+                icon.textContent = 'menu_open';
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('expanded');
+                mainContent.style.marginLeft = '300px';
+                icon.textContent = 'menu';
+            }
+        }
+
+        // Section Navigation
+        function showSection(sectionName, navEl) {
+            // Hide all sections (selector: sections dentro de main)
+            document.querySelectorAll('#main-content section[id^="section-"]').forEach(s => s.classList.add('hidden'));
+            
+            // Show selected
+            const target = document.getElementById(`section-${sectionName}`);
+            if (target) target.classList.remove('hidden');
+            
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (navEl) navEl.classList.add('active');
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'tenants': 'Condominios',
+                'users': 'Superadministradores',
+                'audit': 'Auditoría',
+                'saas-billing': 'Facturación Condominio360',
+                'balance-financiero': 'Balance Financiero',
+                'settings': 'Configuración'
+            };
+            document.getElementById('page-title').textContent = titles[sectionName];
+
+            // Load section data if needed
+            if (sectionName === 'tenants' && tenantsData.length === 0) {
+                loadTenants();
+            } else if (sectionName === 'users') {
+                loadSuperAdmins();
+            } else if (sectionName === 'audit') {
+                loadAuditLogs();
+            } else if (sectionName === 'saas-billing') {
+                loadSaaSBilling();
+            } else if (sectionName === 'balance-financiero') {
+                loadBalanceFinanciero();
+            }
+        }
+
+        // Data Loading
+        async function loadDashboard() {
+            await Promise.all([
+                loadStats(),
+                loadActivity()
+            ]);
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const { data } = await res.json();
+
+                animateNumber('stat-tenants', data.tenants || 0);
+                animateNumber('stat-users', data.users || 0);
+                animateNumber('stat-properties', data.properties || 0);
+                document.getElementById('stat-tenants-active').textContent = data.tenants_active || 0;
+                document.getElementById('stat-users-subtitle').textContent = `${data.owners ?? 0} propietarios de ${data.users ?? 0} cuentas`;
+                document.getElementById('stat-revenue').textContent = '$' + (data.revenue || 0).toLocaleString();
+            } catch (error) {
+                showSnackbar('Error cargando estadísticas', 'error');
+            }
+        }
+
+        async function loadActivity() {
+            try {
+                const res = await fetch('/api/admin/activity?limit=5', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const { data } = await res.json();
+                renderActivity(data);
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+
+        async function loadTenants() {
+            try {
+                const res = await fetch('/api/admin/tenants', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const { data } = await res.json();
+                tenantsData = data;
+                renderTenants(data);
+            } catch (error) {
+                showSnackbar('Error cargando condominios', 'error');
+            }
+        }
+
+        async function loadAuditLogs() {
+            try {
+                const res = await fetch('/api/admin/audit-logs?limit=50', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const { data } = await res.json();
+                renderAuditLogs(data);
+            } catch (error) {
+                showSnackbar('Error cargando auditoría', 'error');
+            }
+        }
+
+        let saasExtraItems = [];
+        async function loadSaaSBilling() {
+            try {
+                const month = document.getElementById('saas-period-month')?.value || new Date().getMonth()+1;
+                const year = document.getElementById('saas-period-year')?.value || new Date().getFullYear();
+                const [tenantsRes, invoicesRes, configRes] = await Promise.all([
+                    fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/saas-billing/invoices', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/saas-billing/payment-config', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const tenantsData = (await tenantsRes.json()).data || [];
+                const invoicesData = (await invoicesRes.json()).data || [];
+                const configData = (await configRes.json()).data || {};
+
+                document.getElementById('saas-payment-bank').value = configData.bank_account || '';
+                document.getElementById('saas-payment-mobile').value = configData.mobile_payment || '';
+
+                const sel = document.getElementById('saas-tenant-select');
+                sel.innerHTML = '<option value="">Todos los activos</option>' + tenantsData.map(t =>
+                    `<option value="${t.id}" ${t.has_invoice > 0 ? 'disabled' : ''}>${t.name} (${t.property_count} und.) ${t.has_invoice > 0 ? '- Ya facturado' : ''}</option>`
+                ).join('');
+                renderSaaSInvoices(invoicesData);
+            } catch (e) {
+                document.getElementById('saas-invoices-list').innerHTML = '<p class="text-red-500 text-sm">Error al cargar</p>';
+            }
+        }
+        function renderSaaSInvoices(invoices) {
+            const el = document.getElementById('saas-invoices-list');
+            if (!invoices || invoices.length === 0) {
+                el.innerHTML = '<p class="text-gray-500 text-sm">No hay facturas generadas aún.</p>';
+                return;
+            }
+            const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            el.innerHTML = invoices.map(inv => `
+                <div class="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer" onclick="openSaaSInvoiceDetail('${inv.id}')">
+                    <div>
+                        <span class="font-medium text-gray-900">${inv.tenant_name}</span>
+                        <span class="text-gray-500 text-sm ml-2">${months[inv.period_month-1]} ${inv.period_year}</span>
+                        ${inv.payment_report_pending ? '<span class="ml-2 px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">Reporte pendiente</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-4" onclick="event.stopPropagation()">
+                        <span class="text-gray-700">$${parseFloat(inv.total_usd).toFixed(2)} USD</span>
+                        <span class="text-gray-600">Bs. ${parseFloat(inv.total_ves).toLocaleString('es-VE')}</span>
+                        <span class="px-2 py-1 rounded text-xs ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status}</span>
+                        <button onclick="recalculateSaaSInvoice('${inv.id}')" class="text-xs text-[var(--md-sys-color-primary)] hover:underline" title="Recalcular VES (tasa BCV actual)">Recalcular</button>
+                        ${inv.status === 'PENDING' ? `<button onclick="deleteSaaSInvoice('${inv.id}', '${(inv.tenant_name || '').replace(/'/g, "\\'")}')" class="text-xs text-red-600 hover:underline" title="Eliminar factura">Eliminar</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        async function generateSaaSInvoices() {
+            const tenantId = document.getElementById('saas-tenant-select').value || null;
+            const month = parseInt(document.getElementById('saas-period-month').value);
+            const year = parseInt(document.getElementById('saas-period-year').value);
+            const paymentMethod = document.getElementById('saas-payment-method').value?.trim() || null;
+            const body = {
+                period_month: month,
+                period_year: year,
+                payment_method: paymentMethod,
+                extra_items: saasExtraItems
+            };
+            if (tenantId) body.tenant_id = tenantId;
+            try {
+                const res = await fetch('/api/admin/saas-billing/invoices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error');
+                showSnackbar(`Generadas ${data.created} factura(s)`, 'success');
+                if (data.skipped > 0) showSnackbar(`${data.skipped} condominio(s) ya facturados`, 'info');
+                loadSaaSBilling();
+            } catch (e) {
+                showSnackbar(e.message || 'Error al generar facturas', 'error');
+            }
+        }
+        async function recalculateSaaSInvoice(id) {
+            try {
+                const res = await fetch(`/api/admin/saas-billing/invoices/${id}/recalculate`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    showSnackbar('Factura recalculada con tasa BCV actual', 'success');
+                    loadSaaSBilling();
+                } else {
+                    const d = await res.json();
+                    throw new Error(d.error);
+                }
+            } catch (e) {
+                showSnackbar(e.message || 'Error al recalcular', 'error');
+            }
+        }
+        let chartUsd = null, chartEur = null, chartComparative = null;
+        async function loadBalanceFinanciero() {
+            try {
+                const [ratesRes, summaryRes] = await Promise.all([
+                    fetch('/api/admin/balance/exchange-rates?days=30', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/balance/financial-summary', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const ratesData = (await ratesRes.json()).data;
+                const summaryData = (await summaryRes.json()).data;
+                if (!ratesData || !summaryData) throw new Error('Error al cargar datos');
+
+                const rates = ratesData.rates || [];
+                const fmtDate = (d) => {
+                    if (!d) return '';
+                    const s = (d.split && d.split('T')[0]) || (d.toISOString && d.toISOString().split('T')[0]);
+                    if (!s) return '';
+                    const [y, m, day] = s.split('-');
+                    return `${parseInt(day)}/${parseInt(m)}`;
+                };
+                const labels = rates.map(r => fmtDate(r.date));
+                const usdData = rates.map(r => r.usd);
+                const eurData = rates.map(r => r.eur);
+
+                if (chartUsd) chartUsd.destroy();
+                if (chartEur) chartEur.destroy();
+                Chart.defaults.color = '#6b7280';
+                Chart.defaults.borderColor = '#e5e7eb';
+                const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+                chartUsd = new Chart(document.getElementById('chart-usd'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{ data: usdData, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)', fill: true, tension: 0.3 }]
+                    },
+                    options: { ...chartOpts, scales: { y: { beginAtZero: false } } }
+                });
+                chartEur = new Chart(document.getElementById('chart-eur'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{ data: eurData, borderColor: '#50606e', backgroundColor: 'rgba(80,96,110,0.1)', fill: true, tension: 0.3 }]
+                    },
+                    options: { ...chartOpts, scales: { y: { beginAtZero: false } } }
+                });
+
+                const latest = ratesData.latest;
+                document.getElementById('balance-rate-info').textContent = latest
+                    ? `Última tasa: ${latest.usd?.toLocaleString('es-VE')} VES/USD (${latest.eur?.toLocaleString('es-VE')} EUR) — ${fmtDate(latest.date)}`
+                    : 'Sin tasa BCV registrada';
+
+                const byTenant = summaryData.by_tenant || [];
+                const fmtVes = (v) => v != null ? `Bs. ${Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                document.getElementById('balance-tenant-table').innerHTML = byTenant.length === 0
+                    ? '<tr><td colspan="5" class="text-center text-gray-500 py-4">No hay datos</td></tr>'
+                    : byTenant.map(t => `
+                        <tr>
+                            <td class="font-medium">${t.tenant_name || '-'}</td>
+                            <td>${t.properties || 0}</td>
+                            <td>${fmtVes(t.condo_collected_ves)}</td>
+                            <td>${fmtVes(t.saas_paid_ves)}</td>
+                            <td>${fmtVes(t.saas_pending_ves)}</td>
+                        </tr>
+                    `).join('');
+
+                const totals = summaryData.totals || {};
+                document.getElementById('balance-total-condo').textContent = fmtVes(totals.condo_collected);
+                document.getElementById('balance-saas-pending').textContent = fmtVes(totals.saas_pending_ves) + ' (' + (totals.saas_pending_usd?.toFixed(2) || '0') + ' USD)';
+
+                const comp = summaryData.comparative || [];
+                document.getElementById('balance-comparative-list').innerHTML = comp.map(c => `
+                    <div class="flex justify-between py-1 border-b border-gray-100 last:border-0">
+                        <span>${c.label}</span>
+                        <span class="text-gray-600">SaaS: ${fmtVes(c.saas_paid_ves)} | Condo: ${fmtVes(c.condo_collected_ves)}</span>
+                    </div>
+                `).join('') || '<p class="text-gray-500 text-sm">Sin datos de meses anteriores</p>';
+
+                if (chartComparative) chartComparative.destroy();
+                chartComparative = new Chart(document.getElementById('chart-comparative'), {
+                    type: 'bar',
+                    data: {
+                        labels: comp.map(c => c.label),
+                        datasets: [
+                            { label: 'SaaS (VES)', data: comp.map(c => c.saas_paid_ves), backgroundColor: 'rgba(249,115,22,0.7)' },
+                            { label: 'Condo (VES)', data: comp.map(c => c.condo_collected_ves), backgroundColor: 'rgba(80,96,110,0.7)' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+
+                const proj = summaryData.projection || [];
+                const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                document.getElementById('balance-projection-list').innerHTML = proj.map(p => `
+                    <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                        <span class="font-medium">${months[p.month-1]} ${p.year}</span>
+                        <span class="text-gray-600">${p.properties} und. × $0.50 = $${p.total_usd?.toFixed(2)} USD</span>
+                        <span class="font-medium">${fmtVes(p.total_ves)}</span>
+                    </div>
+                `).join('') || '<p class="text-gray-500 text-sm">Sin proyección</p>';
+            } catch (e) {
+                console.error('Error loadBalanceFinanciero:', e);
+                showSnackbar('Error al cargar Balance Financiero', 'error');
+            }
+        }
+
+        async function openSaaSOverviewModal() {
+            const month = parseInt(document.getElementById('saas-period-month').value);
+            const year = parseInt(document.getElementById('saas-period-year').value);
+            const tenantId = document.getElementById('saas-tenant-select').value || null;
+            document.getElementById('saas-overview-tenants').innerHTML = '<p class="text-sm text-gray-500">Cargando...</p>';
+            document.getElementById('saas-overview-modal').classList.remove('hidden');
+            document.getElementById('saas-overview-rate-info').textContent = 'Cargando tasa BCV...';
+            document.getElementById('saas-overview-ves').textContent = '';
+            try {
+                const [tenantsRes, rateRes] = await Promise.all([
+                    fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/saas-billing/rate', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const { data: tenants } = await tenantsRes.json();
+                const rateData = (await rateRes.json()).data || {};
+                saasOverviewRate = parseFloat(rateData.usd_to_ves) || 0;
+                saasOverviewRateDate = rateData.rate_date;
+                // Evitar timezone: "2026-03-17" en UTC medianoche = 16/03 en Venezuela. Usar noon local.
+                const rateDateStr = rateData.rate_date ? (() => {
+                    const d = rateData.rate_date;
+                    const [y, m, d2] = (d.split?.('T')[0] || d).split('-');
+                    return new Date(parseInt(y), parseInt(m) - 1, parseInt(d2)).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' });
+                })() : '';
+                document.getElementById('saas-overview-rate-info').textContent = rateDateStr ? `Tasa BCV aplicable (${rateDateStr}): días 1-5 del mes usa tasa del 1ro; día 6+ usa tasa diaria` : 'Tasa BCV se aplicará al generar (días 1-5: tasa del 1ro; día 6+: tasa diaria)';
+                const toBill = tenantId ? tenants.filter(t => t.id === tenantId && t.has_invoice === 0) : tenants.filter(t => t.has_invoice === 0);
+                if (toBill.length === 0) {
+                    document.getElementById('saas-overview-tenants').innerHTML = '<p class="text-sm text-amber-600">No hay condominios elegibles (todos ya facturados o ninguno seleccionado).</p>';
+                } else {
+                    const totalUnits = toBill.reduce((s,t) => s + (t.property_count||0), 0);
+                    document.getElementById('saas-overview-tenants').innerHTML = toBill.map(t => 
+                        `<p class="text-sm text-gray-700"><span class="font-medium">${t.name}</span> — ${t.property_count || 0} unidad(es)</p>`
+                    ).join('') + `<p class="text-sm font-medium text-gray-900 mt-2 pt-2 border-t border-gray-100">Total: ${totalUnits} inmuebles</p>`;
+                }
+                renderSaaSOverviewExtras();
+                updateSaaSOverviewTotals(toBill);
+            } catch (e) {
+                document.getElementById('saas-overview-tenants').innerHTML = '<p class="text-sm text-red-500">Error al cargar</p>';
+            }
+        }
+        function closeSaaSOverviewModal() {
+            document.getElementById('saas-overview-modal').classList.add('hidden');
+        }
+        function addSaaSExtraItemInModal() {
+            saasExtraItems.push({ description: '', amount_usd: 0, quantity: 1 });
+            renderSaaSOverviewExtras();
+            const month = parseInt(document.getElementById('saas-period-month').value);
+            const year = parseInt(document.getElementById('saas-period-year').value);
+            const tenantId = document.getElementById('saas-tenant-select').value || null;
+            fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(r => r.json()).then(({ data: tenants }) => {
+                    const toBill = tenantId ? tenants.filter(t => t.id === tenantId && t.has_invoice === 0) : tenants.filter(t => t.has_invoice === 0);
+                    updateSaaSOverviewTotals(toBill);
+                });
+        }
+        function renderSaaSOverviewExtras() {
+            const el = document.getElementById('saas-overview-extra-list');
+            el.innerHTML = saasExtraItems.map((it, i) => `
+                <div class="flex gap-2 items-center">
+                    <input type="text" placeholder="Descripción" value="${(it.description||'').replace(/"/g,'&quot;')}" onchange="saasExtraItems[${i}].description=this.value; updateSaaSOverviewTotalsFromData()" class="flex-1 border border-gray-200 rounded px-2 py-1.5 text-sm">
+                    <input type="number" step="0.01" placeholder="USD" value="${it.amount_usd||0}" onchange="saasExtraItems[${i}].amount_usd=parseFloat(this.value)||0; updateSaaSOverviewTotalsFromData()" class="w-24 border border-gray-200 rounded px-2 py-1.5 text-sm">
+                    <button type="button" onclick="saasExtraItems.splice(${i},1); renderSaaSOverviewExtras(); updateSaaSOverviewTotalsFromData();" class="text-red-500 hover:bg-red-50 rounded p-1">×</button>
+                </div>
+            `).join('');
+        }
+        let saasOverviewTenantsCache = [];
+        let saasOverviewRate = 0;
+        let saasOverviewRateDate = null;
+        function updateSaaSOverviewTotals(tenants) {
+            saasOverviewTenantsCache = tenants || saasOverviewTenantsCache;
+            const totalUnits = (tenants || saasOverviewTenantsCache).reduce((s,t) => s + (t.property_count||0), 0);
+            const baseUsd = totalUnits * 0.5;
+            const extraUsd = saasExtraItems.reduce((s,it) => s + (parseFloat(it.amount_usd)||0), 0);
+            const totalUsd = baseUsd + extraUsd;
+            document.getElementById('saas-overview-base').textContent = '$' + baseUsd.toFixed(2);
+            document.getElementById('saas-overview-extra').textContent = '$' + extraUsd.toFixed(2);
+            document.getElementById('saas-overview-total').textContent = '$' + totalUsd.toFixed(2);
+            const vesEl = document.getElementById('saas-overview-ves');
+            if (saasOverviewRate > 0) {
+                const totalVes = totalUsd * saasOverviewRate;
+                const rateDateStr = saasOverviewRateDate ? (() => {
+                    const raw = String(saasOverviewRateDate).split('T')[0];
+                    const [y, m, d2] = raw.split('-');
+                    return y && m && d2 ? new Date(parseInt(y), parseInt(m) - 1, parseInt(d2)).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+                })() : '';
+                vesEl.textContent = rateDateStr ? `(Bs. ${totalVes.toLocaleString('es-VE')} — tasa del ${rateDateStr})` : `(Bs. ${totalVes.toLocaleString('es-VE')})`;
+            } else {
+                vesEl.textContent = '';
+            }
+        }
+        function updateSaaSOverviewTotalsFromData() {
+            const month = parseInt(document.getElementById('saas-period-month').value);
+            const year = parseInt(document.getElementById('saas-period-year').value);
+            const tenantId = document.getElementById('saas-tenant-select').value || null;
+            fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(r => r.json()).then(({ data: tenants }) => {
+                    const toBill = tenantId ? tenants.filter(t => t.id === tenantId && t.has_invoice === 0) : tenants.filter(t => t.has_invoice === 0);
+                    updateSaaSOverviewTotals(toBill);
+                });
+        }
+        function confirmGenerateSaaSInvoices() {
+            closeSaaSOverviewModal();
+            generateSaaSInvoices();
+        }
+        async function deleteSaaSInvoice(id, name) {
+            openConfirmModal('Eliminar factura', '¿Eliminar la factura de ' + name + '? Solo se permite eliminar facturas pendientes.', async () => {
+                try {
+                    const res = await fetch(`/api/admin/saas-billing/invoices/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const json = await res.json();
+                    if (res.ok) {
+                        loadSaaSBilling();
+                        showSnackbar('Factura eliminada', 'success');
+                    } else {
+                        showSnackbar(json.error || 'Error al eliminar', 'error');
+                    }
+                } catch (e) {
+                    showSnackbar('Error de conexión', 'error');
+                }
+            });
+        }
+        async function saveSaaSPaymentConfig() {
+            try {
+                const res = await fetch('/api/admin/saas-billing/payment-config', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        bank_account: document.getElementById('saas-payment-bank').value?.trim() || '',
+                        mobile_payment: document.getElementById('saas-payment-mobile').value?.trim() || ''
+                    })
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    showSnackbar('Método de pago guardado', 'success');
+                } else {
+                    showSnackbar(json.error || 'Error al guardar', 'error');
+                }
+            } catch (e) {
+                showSnackbar('Error de conexión', 'error');
+            }
+        }
+        let currentSaaSInvoiceDetail = null;
+        async function openSaaSInvoiceDetail(id) {
+            const modal = document.getElementById('saas-invoice-detail-modal');
+            const content = document.getElementById('saas-invoice-detail-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            content.innerHTML = '<p class="text-gray-500">Cargando...</p>';
+            try {
+                const res = await fetch(`/api/admin/saas-billing/invoices/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const { data: inv } = await res.json();
+                if (!res.ok || !inv) {
+                    content.innerHTML = '<p class="text-red-500">Error al cargar la factura</p>';
+                    return;
+                }
+                currentSaaSInvoiceDetail = inv;
+                const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                const itemsHtml = (inv.items || []).map(it => `
+                    <tr class="border-b border-gray-100 last:border-0">
+                        <td class="py-2 text-sm text-gray-900">${it.description || '-'}</td>
+                        <td class="py-2 text-sm text-right text-gray-600">${parseFloat(it.quantity || 0).toLocaleString('es-VE')}</td>
+                        <td class="py-2 text-sm text-right text-gray-600">$${parseFloat(it.unit_price_usd || 0).toFixed(2)}</td>
+                        <td class="py-2 text-sm text-right font-medium text-gray-900">$${parseFloat(it.total_usd || 0).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+                let reportSection = '';
+                if (inv.status === 'PENDING' && inv.payment_report?.status === 'PENDING_CONFIRMATION') {
+                    const r = inv.payment_report;
+                    reportSection = `
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <p class="text-sm font-medium text-gray-900 mb-2">Reporte de pago pendiente de confirmación</p>
+                            <div class="bg-blue-50 rounded-lg p-4 space-y-2 text-sm">
+                                <p><span class="text-gray-600">Banco:</span> ${r.banco_emisor || '-'}</p>
+                                <p><span class="text-gray-600">Fecha:</span> ${r.fecha_transferencia || '-'}</p>
+                                <p><span class="text-gray-600">Referencia:</span> ${r.ref_transferencia || '-'}</p>
+                                <p><span class="text-gray-600">Monto:</span> Bs. ${parseFloat(r.monto_abonado_ves || 0).toLocaleString('es-VE')}</p>
+                                ${r.comentario ? `<p><span class="text-gray-600">Comentario:</span> ${r.comentario}</p>` : ''}
+                                ${r.attachment_path ? `<a href="/uploads/${r.attachment_path}" target="_blank" class="text-[var(--md-sys-color-primary)] hover:underline">Ver comprobante</a>` : ''}
+                            </div>
+                            <div class="flex gap-3 mt-3">
+                                <button onclick="confirmSaaSPayment('${inv.id}')" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">Confirmar pago</button>
+                                <button onclick="showSaaSRejectModal('${inv.id}')" class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-sm font-medium">Rechazar</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (inv.status === 'PAID') {
+                    reportSection = `
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="bg-emerald-50 rounded-lg p-4 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-emerald-600">check_circle</span>
+                                <span class="font-medium text-emerald-800">Pago confirmado</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Período</span>
+                            <span class="font-medium text-gray-900">${months[inv.period_month-1]} ${inv.period_year} - ${inv.tenant_name || '-'}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Estado</span>
+                            <span class="px-2 py-1 rounded text-xs ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Total USD</span>
+                            <span class="font-bold text-gray-900">$${parseFloat(inv.total_usd || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Total VES</span>
+                            <span class="font-medium text-gray-900">Bs. ${parseFloat(inv.total_ves || 0).toLocaleString('es-VE')}</span>
+                        </div>
+                        <table class="w-full text-sm mt-2">
+                            <thead><tr class="text-left text-gray-500 border-b border-gray-100"><th class="py-2">Descripción</th><th class="py-2 text-right">Cant.</th><th class="py-2 text-right">P. unit.</th><th class="py-2 text-right">Total</th></tr></thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+                        ${reportSection}
+                    </div>
+                `;
+            } catch (e) {
+                content.innerHTML = '<p class="text-red-500">Error al cargar</p>';
+            }
+        }
+        function closeSaaSInvoiceDetail() {
+            document.getElementById('saas-invoice-detail-modal').classList.add('hidden');
+            document.getElementById('saas-invoice-detail-modal').classList.remove('flex');
+            currentSaaSInvoiceDetail = null;
+        }
+        async function confirmSaaSPayment(id) {
+            try {
+                const res = await fetch(`/api/admin/saas-billing/invoices/${id}/confirm-payment`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    showSnackbar(json.message || 'Pago confirmado', 'success');
+                    closeSaaSInvoiceDetail();
+                    loadSaaSBilling();
+                    loadStats();
+                } else {
+                    showSnackbar(json.error || 'Error al confirmar', 'error');
+                }
+            } catch (e) {
+                showSnackbar('Error de conexión', 'error');
+            }
+        }
+        let saasRejectInvoiceId = null;
+        function showSaaSRejectModal(id) {
+            saasRejectInvoiceId = id;
+            document.getElementById('saas-reject-reason').value = '';
+            document.getElementById('saas-reject-modal').classList.remove('hidden');
+            document.getElementById('saas-reject-modal').classList.add('flex');
+        }
+        function closeSaaSRejectModal() {
+            saasRejectInvoiceId = null;
+            document.getElementById('saas-reject-modal').classList.add('hidden');
+            document.getElementById('saas-reject-modal').classList.remove('flex');
+        }
+        async function submitSaaSReject() {
+            if (!saasRejectInvoiceId) return;
+            const reason = document.getElementById('saas-reject-reason').value?.trim() || 'Sin motivo indicado';
+            try {
+                const res = await fetch(`/api/admin/saas-billing/invoices/${saasRejectInvoiceId}/reject-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ rejection_reason: reason })
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    showSnackbar(json.message || 'Reporte rechazado', 'success');
+                    closeSaaSRejectModal();
+                    closeSaaSInvoiceDetail();
+                    loadSaaSBilling();
+                } else {
+                    showSnackbar(json.error || 'Error al rechazar', 'error');
+                }
+            } catch (e) {
+                showSnackbar('Error de conexión', 'error');
+            }
+        }
+        function addSaaSExtraItem() {
+            saasExtraItems.push({ description: '', amount_usd: 0, quantity: 1 });
+            document.getElementById('saas-extra-items').classList.remove('hidden');
+            renderSaaSExtraItems();
+        }
+        function renderSaaSExtraItems() {
+            const el = document.getElementById('saas-extra-items-list');
+            el.innerHTML = saasExtraItems.map((it, i) => `
+                <div class="flex gap-2 items-center">
+                    <input type="text" placeholder="Descripción" value="${it.description||''}" onchange="saasExtraItems[${i}].description=this.value" class="flex-1 border rounded px-2 py-1 text-sm">
+                    <input type="number" step="0.01" placeholder="USD" value="${it.amount_usd||0}" onchange="saasExtraItems[${i}].amount_usd=parseFloat(this.value)||0" class="w-24 border rounded px-2 py-1 text-sm">
+                    <button type="button" onclick="saasExtraItems.splice(${i},1); renderSaaSExtraItems();" class="text-red-500">×</button>
+                </div>
+            `).join('');
+        }
+
+        async function loadSuperAdmins() {
+            const tbody = document.getElementById('superadmins-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Cargando...</td></tr>';
+            try {
+                const res = await fetch('/api/admin/superadmins', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const { data } = await res.json();
+                renderSuperAdmins(data);
+            } catch (error) {
+                showSnackbar('Error cargando superadministradores', 'error');
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Error al cargar</td></tr>';
+            }
+        }
+
+        function renderSuperAdmins(superadmins) {
+            const tbody = document.getElementById('superadmins-table-body');
+            if (!superadmins || superadmins.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No hay superadministradores. Cree el primero.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = superadmins.map(u => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-[var(--md-sys-color-primary-container)] flex items-center justify-center text-[var(--md-sys-color-on-primary-container)] font-medium">
+                                ${(u.first_name || 'A')[0]}
+                            </div>
+                            <div class="font-medium text-gray-900">${u.first_name} ${u.last_name}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">${u.email}</td>
+                    <td class="px-6 py-4 text-gray-600">${u.phone || '-'}</td>
+                    <td>
+                        <span class="md-chip ${u.is_active ? 'md-chip-filled' : 'bg-gray-100 text-gray-600'}">
+                            ${u.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500">${new Date(u.created_at).toLocaleDateString('es-VE')}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteSuperAdmin('${u.id}', '${(u.first_name + ' ' + u.last_name).replace(/'/g, "\\'")}')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 text-red-600 transition" title="Eliminar">
+                            <span class="material-symbols-rounded">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function searchOwner() {
+            const dni = document.getElementById('owner-search-dni')?.value?.trim() || '';
+            const email = document.getElementById('owner-search-email')?.value?.trim() || '';
+            if (!dni && !email) {
+                showSnackbar('Ingrese DNI o correo para buscar', 'error');
+                return;
+            }
+            const resultEl = document.getElementById('owner-search-result');
+            const contentEl = document.getElementById('owner-search-result-content');
+            resultEl.classList.remove('hidden');
+            contentEl.innerHTML = '<p class="text-gray-500">Buscando...</p>';
+            try {
+                const params = new URLSearchParams();
+                if (dni) params.set('dni', dni);
+                if (email) params.set('email', email);
+                const res = await fetch('/api/admin/owners/search?' + params.toString(), {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || 'Error');
+                const { user, tenants } = json.data || {};
+                if (!user) {
+                    contentEl.innerHTML = '<p class="text-gray-600">No se encontró ningún propietario con ese DNI o correo.</p>';
+                    return;
+                }
+                contentEl.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="font-medium text-gray-900">${user.first_name} ${user.last_name}</div>
+                        <div class="text-sm text-gray-600">DNI: ${user.dni || '-'} | Email: ${user.email || '-'} | Tel: ${user.phone || '-'}</div>
+                        <div class="mt-3">
+                            <span class="text-sm font-medium text-gray-700">Condominios:</span>
+                            ${tenants && tenants.length > 0 
+                                ? '<ul class="mt-1 list-disc list-inside text-sm text-gray-600">' + tenants.map(t => 
+                                    `<li><a href="/admin/tenants/${t.id}" class="text-[var(--md-sys-color-primary)] hover:underline">${t.name}</a></li>`
+                                  ).join('') + '</ul>'
+                                : '<p class="text-sm text-gray-500 mt-1">No está asociado a ningún condominio activo.</p>'}
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                contentEl.innerHTML = '<p class="text-red-500">' + (e.message || 'Error al buscar') + '</p>';
+            }
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            pendingConfirmAction = onConfirm;
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-message').textContent = message;
+            document.getElementById('confirm-modal-overlay').classList.add('active');
+            document.getElementById('confirm-modal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal-overlay').classList.remove('active');
+            document.getElementById('confirm-modal').classList.remove('active');
+            pendingConfirmAction = null;
+        }
+
+        function executeConfirmAction() {
+            if (pendingConfirmAction) {
+                pendingConfirmAction();
+                closeConfirmModal();
+            }
+        }
+
+        function deleteSuperAdmin(id, name) {
+            openConfirmModal(
+                'Eliminar superadministrador',
+                '¿Eliminar a ' + name + '? Esta acción no se puede deshacer.',
+                async () => {
+                    try {
+                        const res = await fetch('/api/admin/superadmins/' + id, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const json = await res.json();
+                        if (res.ok) {
+                            loadSuperAdmins();
+                            showSnackbar('Superadministrador eliminado', 'success');
+                        } else {
+                            showSnackbar(json.error || 'Error al eliminar', 'error');
+                        }
+                    } catch (e) {
+                        showSnackbar('Error de conexión', 'error');
+                    }
+                }
+            );
+        }
+
+        function openSuperAdminModal() {
+            document.getElementById('superadmin-form').reset();
+            document.getElementById('superadmin-modal-overlay').classList.add('active');
+            document.getElementById('superadmin-modal').classList.add('active');
+        }
+
+        function closeSuperAdminModal() {
+            document.getElementById('superadmin-modal-overlay').classList.remove('active');
+            document.getElementById('superadmin-modal').classList.remove('active');
+        }
+
+        async function submitSuperAdmin() {
+            const firstName = document.getElementById('sa-first-name').value.trim();
+            const lastName = document.getElementById('sa-last-name').value.trim();
+            const email = document.getElementById('sa-email').value.trim().toLowerCase();
+            const password = document.getElementById('sa-password').value;
+            const passwordConfirm = document.getElementById('sa-password-confirm').value;
+            const phone = document.getElementById('sa-phone').value.trim() || null;
+
+            if (!firstName || !lastName || !email || !password) {
+                showSnackbar('Complete todos los campos obligatorios', 'error');
+                return;
+            }
+            if (password.length < 6) {
+                showSnackbar('La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+            if (password !== passwordConfirm) {
+                showSnackbar('Las contraseñas no coinciden', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/superadmins', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email,
+                        password,
+                        phone
+                    })
+                });
+                const json = await res.json();
+
+                if (res.ok) {
+                    closeSuperAdminModal();
+                    loadSuperAdmins();
+                    showSnackbar('Superadministrador creado correctamente', 'success');
+                } else {
+                    showSnackbar(json.error || 'Error al crear', 'error');
+                }
+            } catch (error) {
+                showSnackbar('Error de conexión', 'error');
+            }
+        }
+
+        // Rendering
+        function renderActivity(items) {
+            const container = document.getElementById('activity-list');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Sin actividad reciente</p>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition">
+                    <div class="w-10 h-10 rounded-full ${getActivityColor(item.action)} flex items-center justify-center">
+                        <span class="material-symbols-rounded text-lg">${getActivityIcon(item.action)}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-gray-900 text-sm font-medium truncate">${item.description}</p>
+                        <p class="text-gray-500 text-xs">${item.tenant_name || 'Sistema'} • ${timeAgo(item.created_at)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTenants(tenants) {
+            const tbody = document.getElementById('tenants-table-body');
+            
+            if (tenants.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No hay condominios registrados</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = tenants.map(t => `
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white font-bold">
+                                ${t.name.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">${t.name}</div>
+                                <div class="text-sm text-gray-500">${t.slug}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="font-medium">${t.property_count || 0}</td>
+                    <td class="font-medium">${t.user_count || 0}</td>
+                    <td>
+                        <span class="md-chip ${t.active ? 'md-chip-filled' : 'bg-gray-100 text-gray-600'}">
+                            ${t.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td class="text-gray-500">${new Date(t.created_at).toLocaleDateString('es-VE')}</td>
+                    <td>
+                        <div class="flex items-center justify-end gap-1">
+                            <a href="/admin/tenants/${t.id}" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition" title="Ver detalle">
+                                <span class="material-symbols-rounded text-gray-500">visibility</span>
+                            </a>
+                            <button onclick="deleteTenant('${t.id}', '${t.name.replace(/'/g, "\\'")}', ${t.property_count || 0}, ${t.user_count || 0})" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 text-red-600 transition" title="Eliminar condominio">
+                                <span class="material-symbols-rounded">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteTenant(id, name, propertyCount, ownerCount) {
+            if (propertyCount > 0 || ownerCount > 0) {
+                showSnackbar('No se puede eliminar: el condominio tiene inmuebles o propietarios asociados. Elimine todos primero.', 'error');
+                return;
+            }
+            openConfirmModal(
+                'Eliminar condominio',
+                '¿Eliminar el condominio "' + name + '"? Esta acción no se puede deshacer.',
+                async () => {
+                    try {
+                        const res = await fetch('/api/admin/tenants/' + id, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const json = await res.json();
+                        if (res.ok) {
+                            tenantsData = tenantsData.filter(t => t.id !== id);
+                            filterTenants();
+                            showSnackbar('Condominio eliminado correctamente', 'success');
+                        } else {
+                            showSnackbar(json.error || 'Error al eliminar', 'error');
+                        }
+                    } catch (e) {
+                        showSnackbar('Error de conexión', 'error');
+                    }
+                }
+            );
+        }
+
+        function renderAuditLogs(logs) {
+            const container = document.getElementById('audit-logs-container');
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Sin registros</p>';
+                return;
+            }
+
+            container.innerHTML = logs.map(log => `
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <span class="text-xs font-mono text-gray-400">${new Date(log.created_at).toLocaleTimeString('es-VE')}</span>
+                    <span class="px-3 py-1 rounded-lg text-xs font-medium ${getActionBadgeClass(log.action)}">${log.action}</span>
+                    <span class="text-sm text-gray-700 flex-1">${log.description}</span>
+                    <span class="text-xs text-gray-500">${log.user_name || 'Sistema'}</span>
+                </div>
+            `).join('');
+        }
+
+        // Filter Functions
+        function setFilter(filter, element) {
+            currentFilter = filter;
+            document.querySelectorAll('.md-segment').forEach(s => s.classList.remove('active'));
+            element.classList.add('active');
+            filterTenants();
+        }
+
+        function filterTenants() {
+            const search = document.getElementById('tenant-search').value.toLowerCase();
+            
+            let filtered = tenantsData.filter(t => 
+                t.name.toLowerCase().includes(search) || 
+                t.slug.toLowerCase().includes(search)
+            );
+
+            if (currentFilter === 'active') filtered = filtered.filter(t => t.active);
+            if (currentFilter === 'inactive') filtered = filtered.filter(t => !t.active);
+
+            renderTenants(filtered);
+        }
+
+        // Wizard Functions
+        function openNewTenantModal() {
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById('new-tenant-modal').classList.add('active');
+            resetWizard();
+        }
+
+        function closeNewTenantModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('new-tenant-modal').classList.remove('active');
+        }
+
+        function resetWizard() {
+            currentStep = 1;
+            document.getElementById('new-tenant-form').reset();
+            updateWizardUI();
+            validateAllFields(); // Reset button state
+        }
+
+        // Validación en tiempo real de todos los campos del wizard
+        function validateAllFields() {
+            // Campos requeridos del paso 1
+            const tenantName = document.getElementById('tenant-name')?.value.trim();
+            const tenantSlug = document.getElementById('tenant-slug')?.value.trim();
+            
+            // Campos requeridos del paso 4 (admin)
+            const adminDisplayName = document.getElementById('admin-display-name')?.value.trim();
+            const adminEmail = document.getElementById('admin-email')?.value.trim();
+            const adminPassword = document.getElementById('admin-password')?.value.trim();
+            
+            // Verificar que todos estén completos
+            const isValid = tenantName && tenantSlug && adminDisplayName && adminEmail && adminPassword;
+            
+            // Actualizar estado del botón submit
+            const submitBtn = document.getElementById('btn-submit');
+            if (submitBtn) {
+                submitBtn.disabled = !isValid;
+            }
+            
+            return isValid;
+        }
+
+        // Agregar event listeners para validación en tiempo real
+        function setupValidationListeners() {
+            const fields = ['tenant-name', 'tenant-slug', 'admin-display-name', 'admin-email', 'admin-password'];
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', validateAllFields);
+                    field.addEventListener('change', validateAllFields);
+                }
+            });
+        }
+
+        // Billing Type Functions
+        function updateBillingType(value) {
+            const info = document.getElementById('alicuota-info');
+            if (value === 'ALICUOTA') {
+                info.classList.remove('hidden');
+            } else {
+                info.classList.add('hidden');
+            }
+        }
+
+        // Building Type Functions
+        let buildings = [];
+        
+        function setBuildingType(type) {
+            document.getElementById('building-type').value = type;
+            document.getElementById('segment-single').classList.toggle('active', type === 'SINGLE');
+            document.getElementById('segment-multiple').classList.toggle('active', type === 'MULTIPLE');
+            
+            if (type === 'SINGLE') {
+                document.getElementById('single-building-info').classList.remove('hidden');
+                document.getElementById('multiple-buildings-container').classList.add('hidden');
+            } else {
+                document.getElementById('single-building-info').classList.add('hidden');
+                document.getElementById('multiple-buildings-container').classList.remove('hidden');
+                if (buildings.length === 0) {
+                    addBuilding();
+                }
+            }
+        }
+        
+        function addBuilding() {
+            const id = Date.now();
+            buildings.push({ id, name: '', code: '' });
+            renderBuildings();
+        }
+        
+        function removeBuilding(id) {
+            buildings = buildings.filter(b => b.id !== id);
+            renderBuildings();
+        }
+        
+        function updateBuilding(id, field, value) {
+            const building = buildings.find(b => b.id === id);
+            if (building) {
+                building[field] = value;
+            }
+        }
+        
+        function renderBuildings() {
+            const container = document.getElementById('buildings-list');
+            container.innerHTML = buildings.map(b => `
+                <div class="flex gap-2 items-start">
+                    <div class="flex-1 grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Nombre del edificio *" 
+                            class="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            value="${b.name}" 
+                            onchange="updateBuilding(${b.id}, 'name', this.value)">
+                        <input type="text" placeholder="Código (ej: A, Torre-1)" 
+                            class="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            value="${b.code}" 
+                            onchange="updateBuilding(${b.id}, 'code', this.value)">
+                    </div>
+                    <button type="button" onclick="removeBuilding(${b.id})" 
+                        class="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                        <span class="material-symbols-rounded text-sm">delete</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function updateWizardUI() {
+            // Hide all steps
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`step-${i}`).classList.add('hidden');
+            }
+            
+            // Show current
+            document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+
+            // Update progress
+            const progress = (currentStep / 5) * 100;
+            document.getElementById('progress-bar').style.width = progress + '%';
+
+            // Update step indicators
+            for (let i = 1; i <= 5; i++) {
+                const indicator = document.getElementById(`step-indicator-${i}`).querySelector('div');
+                const label = document.getElementById(`step-indicator-${i}`).querySelector('span');
+                
+                if (i <= currentStep) {
+                    indicator.className = 'w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-medium';
+                    if (label) {
+                        label.classList.remove('text-gray-500');
+                        label.classList.add('text-gray-900');
+                    }
+                } else {
+                    indicator.className = 'w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium';
+                    if (label) {
+                        label.classList.remove('text-gray-900');
+                        label.classList.add('text-gray-500');
+                    }
+                }
+            }
+
+            // Update buttons
+            document.getElementById('btn-prev').classList.toggle('hidden', currentStep === 1);
+            document.getElementById('btn-next').classList.toggle('hidden', currentStep === 5);
+            document.getElementById('btn-submit').classList.toggle('hidden', currentStep !== 5);
+
+            if (currentStep === 5) {
+                updateReviewData();
+                validateAllFields(); // Check if submit button should be enabled
+            }
+        }
+
+        function updateReviewData() {
+            // Tenant info
+            document.getElementById('review-name').textContent = document.getElementById('tenant-name').value;
+            document.getElementById('review-slug').textContent = document.getElementById('tenant-slug').value;
+            document.getElementById('review-address').textContent = document.getElementById('tenant-address').value || 'No especificada';
+            
+            // Billing type
+            const billingType = document.querySelector('input[name="billing_type"]:checked')?.value;
+            document.getElementById('review-billing-type').textContent = billingType === 'ALICUOTA' ? 'Por Alícuota' : 'Cuota Fija';
+            
+            // Building type
+            const buildingType = document.getElementById('building-type').value;
+            document.getElementById('review-building-type').textContent = buildingType === 'MULTIPLE' ? 'Múltiples Edificios' : 'Único Edificio';
+            
+            // Buildings list
+            const buildingsList = document.getElementById('review-buildings-list');
+            if (buildingType === 'MULTIPLE' && buildings.length > 0) {
+                buildingsList.innerHTML = '<ul class="list-disc list-inside mt-2">' + 
+                    buildings.filter(b => b.name).map(b => `<li class="text-gray-700">${b.name} ${b.code ? '(' + b.code + ')' : ''}</li>`).join('') + 
+                    '</ul>';
+            } else {
+                buildingsList.innerHTML = '<p class="text-gray-500 mt-2">Edificio Principal</p>';
+            }
+            
+            // Admin info
+            document.getElementById('review-admin-name').textContent = document.getElementById('admin-display-name').value;
+            document.getElementById('review-admin-email').textContent = document.getElementById('admin-email').value;
+        }
+
+        function nextStep() {
+            if (validateStep(currentStep)) {
+                if (currentStep < 5) {
+                    currentStep++;
+                    updateWizardUI();
+                    // Si llegamos al paso 5, validar campos para habilitar/deshabilitar botón
+                    if (currentStep === 5) {
+                        validateAllFields();
+                    }
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateWizardUI();
+            }
+        }
+
+        function validateStep(step) {
+            // Validación paso 1: Info del condominio
+            if (step === 1) {
+                const ids = ['tenant-name', 'tenant-slug'];
+                for (const id of ids) {
+                    const el = document.getElementById(id);
+                    if (!el.value.trim()) {
+                        el.focus();
+                        el.parentElement.classList.add('animate-pulse');
+                        setTimeout(() => el.parentElement.classList.remove('animate-pulse'), 500);
+                        showSnackbar('Completa todos los campos requeridos');
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
+            // Validación paso 2: Billing type (siempre válido, tiene default)
+            if (step === 2) return true;
+            
+            // Validación paso 3: Buildings
+            if (step === 3) {
+                const buildingType = document.getElementById('building-type').value;
+                if (buildingType === 'MULTIPLE') {
+                    // Validar que haya al menos un edificio con nombre
+                    const validBuildings = buildings.filter(b => b.name.trim());
+                    if (validBuildings.length === 0) {
+                        showSnackbar('Agrega al menos un edificio con nombre');
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
+            // Validación paso 4: Admin info
+            if (step === 4) {
+                const ids = ['admin-display-name', 'admin-email', 'admin-password'];
+                for (const id of ids) {
+                    const el = document.getElementById(id);
+                    if (!el.value.trim()) {
+                        el.focus();
+                        el.parentElement.classList.add('animate-pulse');
+                        setTimeout(() => el.parentElement.classList.remove('animate-pulse'), 500);
+                        showSnackbar('Completa todos los campos requeridos');
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
+            // Paso 5: Review (siempre válido)
+            return true;
+        }
+
+        async function submitTenant() {
+            const buildingType = document.getElementById('building-type').value;
+            const billingType = document.querySelector('input[name="billing_type"]:checked')?.value || 'FIXED';
+            
+            // Preparar edificios
+            let buildingData = [];
+            if (buildingType === 'MULTIPLE') {
+                buildingData = buildings
+                    .filter(b => b.name.trim())
+                    .map(b => ({
+                        name: b.name.trim(),
+                        code: b.code.trim() || b.name.trim().substring(0, 20)
+                    }));
+            }
+            
+            const data = {
+                name: document.getElementById('tenant-name').value,
+                slug: document.getElementById('tenant-slug').value,
+                address: document.getElementById('tenant-address').value,
+                billing_type: billingType,
+                building_type: buildingType,
+                buildings: buildingData,
+                admin: {
+                    display_name: document.getElementById('admin-display-name').value,
+                    email: document.getElementById('admin-email').value,
+                    password: document.getElementById('admin-password').value,
+                    phone: document.getElementById('admin-phone').value
+                }
+            };
+
+            try {
+                const res = await fetch('/api/admin/onboarding', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Error creando condominio');
+                }
+
+                closeNewTenantModal();
+                showSnackbar('Condominio creado exitosamente', 'success');
+                loadTenants();
+                loadStats();
+            } catch (error) {
+                showSnackbar(error.message, 'error');
+            }
+        }
+
+        // Helpers
+        function getActivityColor(action) {
+            const colors = {
+                'TENANT_CREATED': 'bg-emerald-100 text-emerald-600',
+                'USER_LOGIN': 'bg-blue-100 text-blue-600',
+                'TENANT_SUSPENDED': 'bg-red-100 text-red-600'
+            };
+            return colors[action] || 'bg-gray-100 text-gray-600';
+        }
+
+        function getActivityIcon(action) {
+            const icons = {
+                'TENANT_CREATED': 'add_circle',
+                'USER_LOGIN': 'login',
+                'TENANT_SUSPENDED': 'block'
+            };
+            return icons[action] || 'info';
+        }
+
+        function getActionBadgeClass(action) {
+            const classes = {
+                'CREATE': 'bg-emerald-100 text-emerald-700',
+                'UPDATE': 'bg-blue-100 text-blue-700',
+                'DELETE': 'bg-red-100 text-red-700'
+            };
+            return classes[action] || 'bg-gray-100 text-gray-700';
+        }
+
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+            if (seconds < 60) return 'ahora';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `hace ${minutes}m`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `hace ${hours}h`;
+            return `hace ${Math.floor(hours / 24)}d`;
+        }
+
+        function animateNumber(id, target) {
+            const el = document.getElementById(id);
+            const duration = 1000;
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    el.textContent = target.toLocaleString();
+                    clearInterval(timer);
+                } else {
+                    el.textContent = Math.floor(current).toLocaleString();
+                }
+            }, 16);
+        }
+
+        function viewTenant(id) {
+            window.location.href = `/admin/tenants/${id}`;
+        }
+
+        // Snackbar
+        function showSnackbar(message, type = 'info') {
+            const snackbar = document.getElementById('snackbar');
+            document.getElementById('snackbar-message').textContent = message;
+            
+            if (type === 'error') {
+                snackbar.style.background = '#ba1a1a';
+            } else if (type === 'success') {
+                snackbar.style.background = '#006c4c';
+            } else {
+                snackbar.style.background = 'var(--md-sys-color-on-surface)';
+            }
+            
+            snackbar.classList.add('active');
+            setTimeout(hideSnackbar, 5000);
+        }
+
+        function hideSnackbar() {
+            document.getElementById('snackbar').classList.remove('active');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

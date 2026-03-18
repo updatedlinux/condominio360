@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Inmuebles del Edificio - <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'buildings' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Inmuebles del Edificio</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Building Info Card -->
+                <div id="building-info" class="card p-6 mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-2xl flex items-center justify-center">
+                            <span class="material-icons-round text-3xl text-white">apartment</span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-medium text-[#3C4043]" id="info-name">-</h2>
+                            <p class="text-[#5F6368]" id="info-details">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="card p-4">
+                        <p class="text-sm text-[#5F6368]">Total Inmuebles</p>
+                        <p class="text-2xl font-bold text-[#3C4043]" id="stat-total">-</p>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-sm text-[#5F6368]">Con Propietario</p>
+                        <p class="text-2xl font-bold text-green-600" id="stat-with-owner">-</p>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-sm text-[#5F6368]">Sin Propietario</p>
+                        <p class="text-2xl font-bold text-amber-600" id="stat-without-owner">-</p>
+                    </div>
+                </div>
+
+                <!-- Properties Grid -->
+                <div id="properties-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cargado dinámicamente -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-16">
+                    <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="material-icons-round text-4xl text-[#9AA0A6]">home</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay inmuebles</h3>
+                    <p class="text-[#5F6368]">Este edificio no tiene inmuebles registrados</p>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const buildingId = '<%= buildingId %>';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+            loadBuildingInfo();
+            loadProperties();
+        });
+
+        async function loadBuildingInfo() {
+            try {
+                // Get building info from the list
+                const res = await fetch('/api/tenant-admin/buildings', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    const building = data.buildings.find(b => 
+                        (b.id || b.ID || b.Id) === buildingId
+                    );
+                    
+                    if (building) {
+                        const name = building.name || building.NAME || building.Name || 'Edificio';
+                        const code = building.code || building.CODE || building.Code;
+                        const floors = building.floors || building.FLOORS || building.Floors;
+                        
+                        document.getElementById('info-name').textContent = name;
+                        document.getElementById('info-details').textContent = 
+                            `${code ? 'Código: ' + code : ''}${floors ? ' • ' + floors + ' pisos' : ''}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading building info:', error);
+            }
+        }
+
+        async function loadProperties() {
+            try {
+                const res = await fetch(`/api/tenant-admin/buildings/${buildingId}/properties`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    console.error('Error:', data.error);
+                    return;
+                }
+
+                const grid = document.getElementById('properties-grid');
+                const empty = document.getElementById('empty-state');
+
+                if (data.properties.length === 0) {
+                    grid.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    updateStats(0, 0, 0);
+                    return;
+                }
+
+                empty.classList.add('hidden');
+
+                // Calculate stats
+                const withOwner = data.properties.filter(p => p.owner_count > 0 || p.owner_name).length;
+                const withoutOwner = data.properties.length - withOwner;
+                updateStats(data.properties.length, withOwner, withoutOwner);
+
+                grid.innerHTML = data.properties.map(p => {
+                    const propId = p.id || p.ID || p.Id;
+                    const propName = p.name || p.NAME || p.Name || 'Inmueble';
+                    const propType = p.type || p.TYPE || p.Type || 'Unidad';
+                    const propFloor = p.floor || p.FLOOR || p.Floor;
+                    const ownerCount = p.owner_count || p.OWNER_COUNT || p.Owner_Count || 0;
+                    const ownerName = p.owner_name || p.OWNER_NAME || p.Owner_Name;
+                    const hasOwner = ownerCount > 0 || ownerName;
+                    
+                    return `
+                    <div class="card p-6 card-hover cursor-pointer" onclick="viewProperty('${propId}')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
+                                <span class="material-icons-round text-white">home</span>
+                            </div>
+                            <span class="px-2 py-1 rounded-full text-xs ${hasOwner ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
+                                ${hasOwner ? 'Con propietario' : 'Sin propietario'}
+                            </span>
+                        </div>
+                        <h3 class="font-medium text-lg text-[#3C4043] mb-1">${propName}</h3>
+                        <p class="text-sm text-[#5F6368] mb-3">${propType}${propFloor ? ' • Piso ' + propFloor : ''}</p>
+                        
+                        ${hasOwner ? `
+                        <div class="pt-3 border-t border-[#E5E5E5]">
+                            <p class="text-sm text-[#5F6368] flex items-center gap-2">
+                                <span class="material-icons-round text-sm">person</span>
+                                ${ownerName || ownerCount + ' propietario(s)'}
+                            </p>
+                        </div>
+                        ` : `
+                        <div class="pt-3 border-t border-[#E5E5E5]">
+                            <p class="text-sm text-amber-600 flex items-center gap-2">
+                                <span class="material-icons-round text-sm">warning</span>
+                                Sin propietario asignado
+                            </p>
+                        </div>
+                        `}
+                    </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        function updateStats(total, withOwner, withoutOwner) {
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-with-owner').textContent = withOwner;
+            document.getElementById('stat-without-owner').textContent = withoutOwner;
+        }
+
+        function viewProperty(id) {
+            window.location.href = `/tenant-admin/properties/${id}`;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Principal | Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100" id="dashboard-app">
+        <!-- Sidebar -->
+        <div class="hidden md:flex flex-col w-64 bg-gray-900 border-r border-gray-800">
+            <div class="flex items-center justify-center h-16 bg-gray-900 border-b border-gray-800">
+                <span class="text-white font-bold text-xl">Condominio360</span>
+            </div>
+            <div class="flex flex-col flex-1 overflow-y-auto">
+                <nav class="flex-1 px-2 py-4 space-y-2">
+                    <a href="/dashboard" class="flex items-center px-4 py-2 text-gray-100 bg-gray-800 rounded-md">
+                        <svg class="w-6 h-6 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                            </path>
+                        </svg>
+                        Inicio
+                    </a>
+                    <a href="#"
+                        class="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-800 hover:text-gray-100 rounded-md transition-colors">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                            </path>
+                        </svg>
+                        Propiedades
+                    </a>
+                    <a href="#"
+                        class="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-800 hover:text-gray-100 rounded-md transition-colors">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                            </path>
+                        </svg>
+                        Visitantes
+                    </a>
+                    <a href="#"
+                        class="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-800 hover:text-gray-100 rounded-md transition-colors">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Consultas
+                    </a>
+                    <a href="#"
+                        class="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-800 hover:text-gray-100 rounded-md transition-colors">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                            </path>
+                        </svg>
+                        Solicitudes
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Column -->
+        <div class="flex flex-col flex-1 overflow-hidden">
+            <!-- Header -->
+            <header class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+                <div class="flex items-center">
+                    <button class="md:hidden text-gray-500 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-800 ml-4" id="tenantNameHeader">Cargando...</h2>
+                </div>
+                <div class="flex items-center">
+                    <div class="relative">
+                        <button class="flex items-center text-gray-500 focus:outline-none hover:text-gray-700">
+                            <span class="mr-2 text-sm font-medium" id="userNameDisplay">Usuario</span>
+                            <img class="w-8 h-8 rounded-full" src="https://ui-avatars.com/api/?name=User"
+                                alt="User avatar">
+                        </button>
+                    </div>
+                    <!-- Logout -->
+                    <button id="logoutBtn" class="ml-4 text-sm text-red-600 hover:text-red-800">Salir</button>
+                </div>
+            </header>
+
+            <!-- Content Body -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <!-- Welcome Banner -->
+                <div class="bg-blue-600 rounded-lg shadow-lg p-6 mb-8 text-white relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h3 class="text-2xl font-bold mb-2">¡Bienvenido de vuelta!</h3>
+                        <p class="text-blue-100">Aquí tienes un resumen de la actividad reciente en tu condominio.</p>
+                    </div>
+                    <div class="absolute right-0 bottom-0 opacity-20">
+                        <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Card 1 -->
+                    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500 hover:shadow-md transition">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-blue-100 p-3 rounded-full">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-gray-500 text-sm font-medium uppercase">Deuda Pendiente</h4>
+                                <div class="text-2xl font-bold text-gray-800">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-green-500 hover:shadow-md transition">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-green-100 p-3 rounded-full">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-gray-500 text-sm font-medium uppercase">Consultas Activas</h4>
+                                <div class="text-2xl font-bold text-gray-800">1</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-yellow-500 hover:shadow-md transition">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-yellow-100 p-3 rounded-full">
+                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-gray-500 text-sm font-medium uppercase">Visitas Esperadas</h4>
+                                <div class="text-2xl font-bold text-gray-800">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 4 -->
+                    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-indigo-500 hover:shadow-md transition">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-indigo-100 p-3 rounded-full">
+                                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-gray-500 text-sm font-medium uppercase">Mensajes Nuevos</h4>
+                                <div class="text-2xl font-bold text-gray-800">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Content -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Actividad Reciente</h3>
+                    <div class="border-t border-gray-200">
+                        <ul class="divide-y divide-gray-200">
+                            <li class="py-4 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span
+                                        class="bg-blue-100 text-blue-800 text-xs font-semibold mr-3 px-2.5 py-0.5 rounded">INFO</span>
+                                    <span class="text-gray-700">Sistema actualizado a versión 2.0.0</span>
+                                </div>
+                                <span class="text-sm text-gray-500">Hace 1 hora</span>
+                            </li>
+                            <li class="py-4 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span
+                                        class="bg-green-100 text-green-800 text-xs font-semibold mr-3 px-2.5 py-0.5 rounded">CONSULTA</span>
+                                    <span class="text-gray-700">Nueva consulta disponible: "¿Aprobar pintura de
+                                        fachada?"</span>
+                                </div>
+                                <span class="text-sm text-gray-500">Hace 2 horas</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Setup UI
+            document.getElementById('userNameDisplay').textContent = user.name || 'Usuario';
+
+            // Logout handler
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            });
+
+            // Fetch Tenant Info (Mocking it for now from user data or stored token)
+            // In real app, we decode token or fetch /api/me
+            // Assuming user object has tenant info or we fetch it. 
+            // Let's just set a placeholder or fetch from API
+            fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user) {
+                        // Update UI with real data
+                        document.getElementById('userNameDisplay').textContent = data.user.name;
+                        // document.getElementById('tenantNameHeader').textContent = data.tenant.name; // If API returned tenant info
+                    }
+                })
+                .catch(err => console.error('Auth check failed', err));
+
+            // For now, let's hardcode the Tenant Name based on what we selected in select-tenant if possible, 
+            // or just leave it as "Condominio" until we have a proper /me endpoint that returns tenant details.
+            document.getElementById('tenantNameHeader').textContent = 'Mi Condominio';
+
+        });
+    </script>
+</body>
+
+</html>

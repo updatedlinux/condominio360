@@ -1,0 +1,93 @@
+<aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col shrink-0">
+    <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+        <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+        <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+    </div>
+    <div class="flex-1 overflow-y-auto py-4">
+        <nav class="space-y-1 px-3">
+            <a href="/tenant-admin" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'dashboard' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'dashboard' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">dashboard</span>
+                Panel Principal
+            </a>
+            <a href="/tenant-admin/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'requests' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'requests' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">assignment</span>
+                Solicitudes
+                <span id="nav-requests-badge" class="ml-auto bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full hidden">0</span>
+            </a>
+            <a href="/tenant-admin/request-types" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'request-types' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'request-types' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">description</span>
+                Tipos de Solicitud
+            </a>
+            <a href="/tenant-admin/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'consultations' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'consultations' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">how_to_vote</span>
+                Consultas
+            </a>
+            <a href="/tenant-admin/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'communiques' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'communiques' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">mail</span>
+                Comunicados
+            </a>
+            <a href="/tenant-admin/communications" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'communications' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'communications' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">campaign</span>
+                Mensajes
+            </a>
+            <a href="/tenant-admin/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'common-areas' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'common-areas' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">sports_tennis</span>
+                Áreas Comunes
+            </a>
+            <a href="/tenant-admin/billing" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'billing' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'billing' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">receipt_long</span>
+                Facturación
+            </a>
+            <a href="/tenant-admin/saas-invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'saas-invoices' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'saas-invoices' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">payments</span>
+                Cuenta Condominio360
+                <span id="sidebar-saas-pending" class="ml-auto bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full hidden">0</span>
+            </a>
+            <a href="/tenant-admin/balance-financiero" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'balance-financiero' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'balance-financiero' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">account_balance</span>
+                Balance Financiero
+            </a>
+            <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Gestión de Unidades</p>
+                <a href="/tenant-admin/buildings" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'buildings' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                    <span class="material-icons-round mr-3 <%= activePage === 'buildings' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">apartment</span>
+                    Edificios
+                </a>
+                <a href="/tenant-admin/properties" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'properties' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                    <span class="material-icons-round mr-3 <%= activePage === 'properties' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">home_work</span>
+                    Inmuebles
+                </a>
+                <a href="/tenant-admin/owners" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'owners' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                    <span class="material-icons-round mr-3 <%= activePage === 'owners' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">people</span>
+                    Propietarios
+                </a>
+            </div>
+            <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Administración</p>
+                <a href="/tenant-admin/security-users" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'security-users' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                    <span class="material-icons-round mr-3 <%= activePage === 'security-users' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">security</span>
+                    Vigilancia
+                </a>
+                <a href="/tenant-admin/nfc-cards" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'nfc-cards' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                    <span class="material-icons-round mr-3 <%= activePage === 'nfc-cards' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">nfc</span>
+                    Tarjetas NFC
+                </a>
+            </div>
+        </nav>
+    </div>
+    <div class="p-4 border-t border-[#E5E5E5] space-y-1">
+        <div id="superadmin-return-link" class="hidden">
+            <a href="/admin" onclick="sessionStorage.clear();" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#f97316] hover:bg-orange-50 rounded-lg">
+                <span class="material-icons-round mr-3">admin_panel_settings</span>
+                Volver a Super Admin
+            </a>
+        </div>
+        <button id="logoutBtn" onclick="(typeof logout === 'function' ? logout : function(){ if (sessionStorage.getItem('impersonating')) { sessionStorage.clear(); location.href='/admin'; return; } localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('tenant'); sessionStorage.clear(); location.href='/login'; })()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+            <span class="material-icons-round mr-3">logout</span>
+            Cerrar Sesión
+        </button>
+    </div>
+    <script>
+    (function(){ try { var u = JSON.parse(localStorage.getItem('user')||'{}'); if (u.isSuperAdmin) document.getElementById('superadmin-return-link').classList.remove('hidden'); } catch(e){} })();
+    </script>
+</aside>

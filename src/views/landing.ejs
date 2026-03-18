@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-slate-900 antialiased overflow-x-hidden">
+
+    <!-- ==================== NAVBAR ==================== -->
+    <nav class="fixed w-full z-50 transition-all duration-300" id="navbar">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <a href="/" class="flex items-center gap-3 group">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-12 sm:h-14 w-12 sm:w-14 flex-shrink-0 transition group-hover:opacity-90" style="object-fit: contain;">
+                    <span class="text-xl sm:text-2xl text-slate-900 tracking-tight" style="font-weight: 800;">Condominio360</span>
+                </a>
+                
+                <div class="hidden lg:flex items-center gap-10">
+                    <a href="#features" class="text-slate-600 hover:text-orange-600 font-medium transition">Funciones</a>
+                    <a href="#how-it-works" class="text-slate-600 hover:text-orange-600 font-medium transition">Cómo funciona</a>
+                    <a href="#pricing" class="text-slate-600 hover:text-orange-600 font-medium transition">Precios</a>
+                    <a href="#faq" class="text-slate-600 hover:text-orange-600 font-medium transition">FAQ</a>
+                </div>
+
+                <div class="hidden lg:flex items-center gap-4">
+                    <a href="/login" class="text-slate-700 font-semibold hover:text-orange-600 transition">Iniciar Sesión</a>
+                    <a href="#demo" class="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40">
+                        Solicitar Demo
+                    </a>
+                </div>
+
+                <button class="lg:hidden p-3 rounded-lg hover:bg-slate-100 transition" onclick="toggleMobileMenu()" aria-label="Menú">
+                    <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-slate-100 shadow-lg">
+            <div class="px-4 py-6 space-y-1">
+                <a href="#features" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Funciones</a>
+                <a href="#how-it-works" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Cómo funciona</a>
+                <a href="#pricing" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Precios</a>
+                <a href="#faq" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">FAQ</a>
+                <hr class="border-slate-100 my-4">
+                <a href="/login" class="block py-3 px-4 rounded-lg text-slate-900 font-semibold hover:bg-slate-50">Iniciar Sesión</a>
+                <a href="#demo" class="block py-4 px-4 bg-orange-500 text-white text-center rounded-full font-semibold">Solicitar Demo</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="relative pt-28 pb-16 lg:pt-40 lg:pb-24 min-h-[90vh] flex items-center">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-40 -right-40 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/2 -left-20 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                        </span>
+                        Plataforma v2.0 disponible
+                    </div>
+                    
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.1] tracking-tight mb-6">
+                        Gestión de condominios
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">sin esfuerzo</span>
+                    </h1>
+                    
+                    <p class="text-lg lg:text-xl text-slate-600 mb-6 leading-relaxed max-w-xl">
+                        Centraliza la administración, automatiza procesos y mejora la comunicación en tu comunidad. Todo en una plataforma moderna y segura.
+                    </p>
+                    <p class="text-slate-600 mb-8 max-w-xl">
+                        <span class="font-semibold text-slate-700">Compatible con conjuntos multiedificios o mono-edificio.</span> Genera facturación completa o, si tu conjunto tiene empresa administradora, apóyala con preliminares y delegando el cobro.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row gap-4 mb-10">
+                        <a href="#demo" class="inline-flex items-center justify-center px-8 py-4 bg-orange-500 text-white rounded-full font-semibold hover:bg-orange-600 transition shadow-xl shadow-orange-500/25 hover:shadow-orange-500/35 hover:-translate-y-0.5">
+                            Comenzar gratis
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                            </svg>
+                        </a>
+                        <a href="#how-it-works" class="inline-flex items-center justify-center px-8 py-4 bg-white text-slate-900 border-2 border-slate-200 rounded-full font-semibold hover:border-orange-300 hover:text-orange-600 transition">
+                            Ver cómo funciona
+                        </a>
+                    </div>
+
+                    <div class="flex items-center gap-5">
+                        <div class="flex -space-x-3">
+                            <img class="w-11 h-11 rounded-full border-2 border-white shadow" src="https://i.pravatar.cc/100?img=1" alt="">
+                            <img class="w-11 h-11 rounded-full border-2 border-white shadow" src="https://i.pravatar.cc/100?img=2" alt="">
+                            <img class="w-11 h-11 rounded-full border-2 border-white shadow" src="https://i.pravatar.cc/100?img=3" alt="">
+                            <img class="w-11 h-11 rounded-full border-2 border-white shadow" src="https://i.pravatar.cc/100?img=4" alt="">
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-600"><span class="font-bold text-slate-900">+100 condominios</span> nos confían</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mockup / Visual derecho -->
+                <div class="relative hidden lg:block">
+                    <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+                        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex items-center gap-2">
+                            <div class="flex gap-1.5">
+                                <div class="w-3 h-3 rounded-full bg-white/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-white/50"></div>
+                                <div class="w-3 h-3 rounded-full bg-white/30"></div>
+                            </div>
+                            <span class="flex-1 text-center text-white/90 text-sm font-medium">app.condominio360.com</span>
+                        </div>
+                        <div class="p-6 bg-slate-50/50">
+                            <div class="grid grid-cols-3 gap-3 mb-4">
+                                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                    <div class="text-xs text-slate-500 mb-1">Unidades</div>
+                                    <div class="text-2xl font-bold text-slate-900">128</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                    <div class="text-xs text-slate-500 mb-1">Al día</div>
+                                    <div class="text-2xl font-bold text-emerald-600">94%</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                    <div class="text-xs text-slate-500 mb-1">Visitas hoy</div>
+                                    <div class="text-2xl font-bold text-slate-900">24</div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="font-semibold text-slate-900">Próximas mudanzas</span>
+                                    <span class="text-xs text-orange-600 font-medium">Ver todas</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 font-bold text-sm">15</div>
+                                        <div>
+                                            <div class="font-medium text-slate-900 text-sm">Torre A - 1502</div>
+                                            <div class="text-xs text-slate-500">10:00 AM • Entrada</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                        <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold text-sm">22</div>
+                                        <div>
+                                            <div class="font-medium text-slate-900 text-sm">Torre B - 304</div>
+                                            <div class="text-xs text-slate-500">02:00 PM • Salida</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES - ¿Por qué elegir Condominio360? ==================== -->
+    <section id="features" class="py-20 lg:py-28 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Funciones</span>
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-slate-900 mt-3 mb-4">Todo lo que necesitas</h2>
+                <p class="text-lg text-slate-600">Herramientas potentes diseñadas para la administración moderna de condominios.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Votaciones Digitales</h3>
+                    <p class="text-slate-600 leading-relaxed">Cartas consulta y votaciones en línea con verificación por unidad. Resultados transparentes y auditables.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Control de Visitantes</h3>
+                    <p class="text-slate-600 leading-relaxed">Gestiona visitas frecuentes y únicas. Autorización en tiempo real desde la app por parte de propietarios.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Acceso NFC</h3>
+                    <p class="text-slate-600 leading-relaxed">Tarjetas NFC por unidad para acceso rápido y seguro. Registro automático de entradas y salidas.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-amber-200 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-amber-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Solicitudes Inteligentes</h3>
+                    <p class="text-slate-600 leading-relaxed">Mudanzas, sugerencias y reclamos con flujos de aprobación configurables y notificaciones automáticas.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-rose-200 hover:shadow-xl hover:shadow-rose-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-rose-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Facturación Completa o en Apoyo</h3>
+                    <p class="text-slate-600 leading-relaxed">Gestión de cuotas, multas y recibos. Facturación integral o apoyo a empresa administradora con preliminares y delegación del cobro.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Analíticas Avanzadas</h3>
+                    <p class="text-slate-600 leading-relaxed">Dashboard con métricas clave. Reportes de morosidad, ocupación y actividad exportables.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-cyan-200 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                            <circle cx="12" cy="18" r="1" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Compatibilidad Móvil</h3>
+                    <p class="text-slate-600 leading-relaxed">Funciona desde cualquier dispositivo. Interfaz responsive y PWA instalable para acceso rápido desde celular o tablet.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-green-200 hover:shadow-xl hover:shadow-green-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Notificaciones In-App y WhatsApp</h3>
+                    <p class="text-slate-600 leading-relaxed">Alertas en la plataforma y por WhatsApp. Comunicados, recordatorios de pago y actualizaciones en tiempo real.</p>
+                </div>
+
+                <div class="group bg-white p-8 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300">
+                    <div class="w-14 h-14 bg-indigo-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7v6c0 5.5 3.8 10.7 10 12 6.2-1.3 10-6.5 10-12V7L12 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Gestión de Seguridad</h3>
+                    <p class="text-slate-600 leading-relaxed">El personal de vigilancia cuenta con un panel en tiempo real para visualizar visitas programadas, deliveries y autorizaciones. Todo al alcance de un vistazo.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== HOW IT WORKS - 4 pasos ==================== -->
+    <section id="how-it-works" class="py-20 lg:py-28">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Implementación</span>
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-slate-900 mt-3 mb-4">Operativo en días, no meses</h2>
+                <p class="text-lg text-slate-600">Proceso diseñado para minimizar la interrupción de tu operación.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">1</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Configuración inicial</h3>
+                    <p class="text-slate-600 text-sm">Creamos tu condominio e importamos tus datos y tipos de solicitud.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">2</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Onboarding</h3>
+                    <p class="text-slate-600 text-sm">Invitamos a propietarios y vigilancia. Capacitación incluida.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Operación</h3>
+                    <p class="text-slate-600 text-sm">La junta y propietarios comienzan a usar la plataforma.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-500 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">4</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Soporte 24/7</h3>
+                    <p class="text-slate-600 text-sm">Estamos contigo en cada paso del camino.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section id="pricing" class="py-20 lg:py-28 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Precios</span>
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-slate-900 mt-3 mb-4">Plan único, todo incluido</h2>
+                <p class="text-lg text-slate-600">Precio transparente por unidad. Contrato de permanencia aplicable.</p>
+            </div>
+
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-orange-500 rounded-2xl p-8 lg:p-10 shadow-2xl shadow-orange-500/25">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-white mb-2">Condominio360</h3>
+                        <p class="text-orange-100">Plan único para todos los conjuntos</p>
+                        <div class="mt-6 mb-8">
+                            <span class="text-6xl font-bold text-white">$0.50</span>
+                            <span class="text-orange-100 text-lg">/unidad inmobiliaria/mes</span>
+                            <span class="block text-orange-200 text-base font-medium mt-2">(a Tasa BCV)</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center gap-3 text-white/95"><svg class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Votaciones y cartas consulta</li>
+                        <li class="flex items-center gap-3 text-white/95"><svg class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Control de visitantes</li>
+                        <li class="flex items-center gap-3 text-white/95"><svg class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Acceso NFC</li>
+                        <li class="flex items-center gap-3 text-white/95"><svg class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Solicitudes (mudanzas, reclamos, sugerencias)</li>
+                        <li class="flex items-center gap-3 text-white/95"><svg class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Facturación integrada</li>
+                        <li class="flex items-center gap-3 text-white/95"><svg class="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Soporte incluido</li>
+                    </ul>
+                    <a href="#demo" class="block w-full py-4 bg-white text-orange-600 text-center rounded-full font-semibold hover:bg-orange-50 transition shadow-lg text-lg">Comenzar</a>
+                    <div class="mt-8 pt-8 border-t border-white/20">
+                        <p class="text-white/90 text-sm font-semibold mb-3 tracking-wide">Addons disponibles</p>
+                        <p class="text-white/70 text-xs mb-4">Costo adicional según la naturaleza de tu solicitud</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-sm">Gestión de CCTV</span>
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-sm">Sistemas de seguridad</span>
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-sm">Integraciones bancarias</span>
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-sm">Y más según necesidades</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIOS ==================== -->
+    <section class="py-20 lg:py-28">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Testimonios</span>
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-slate-900 mt-3 mb-4">Lo que dicen nuestros clientes</h2>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-slate-50 p-8 rounded-2xl">
+                    <div class="flex gap-1 mb-4">
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    </div>
+                    <p class="text-slate-700 mb-6 leading-relaxed">"Antes usábamos Excel y WhatsApp. Ahora todo está organizado, las votaciones son transparentes y los propietarios pueden ver todo en tiempo real."</p>
+                    <div class="flex items-center gap-4">
+                        <img class="w-12 h-12 rounded-full object-cover" src="https://i.pravatar.cc/100?img=5" alt="María Rodríguez">
+                        <div>
+                            <div class="font-semibold text-slate-900">María Rodríguez</div>
+                            <div class="text-sm text-slate-500">Presidenta, Residencias Los Samanes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-8 rounded-2xl">
+                    <div class="flex gap-1 mb-4">
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    </div>
+                    <p class="text-slate-700 mb-6 leading-relaxed">"El control de acceso NFC cambió la seguridad del conjunto. Los propietarios están más tranquilos y el proceso de vigilancia es mucho más eficiente."</p>
+                    <div class="flex items-center gap-4">
+                        <img class="w-12 h-12 rounded-full object-cover" src="https://i.pravatar.cc/100?img=9" alt="Carlos Mendoza">
+                        <div>
+                            <div class="font-semibold text-slate-900">Carlos Mendoza</div>
+                            <div class="text-sm text-slate-500">Administrador, Torres del Este</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-8 rounded-2xl">
+                    <div class="flex gap-1 mb-4">
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    </div>
+                    <p class="text-slate-700 mb-6 leading-relaxed">"La gestión de mudanzas era un caos. Ahora con calendario y aprobaciones en línea, todo fluye perfecto."</p>
+                    <div class="flex items-center gap-4">
+                        <img class="w-12 h-12 rounded-full object-cover" src="https://i.pravatar.cc/100?img=10" alt="Ana Carolina Pérez">
+                        <div>
+                            <div class="font-semibold text-slate-900">Ana Carolina Pérez</div>
+                            <div class="text-sm text-slate-500">Junta de Condominio, Altos de Guataparo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-20 lg:py-28 bg-slate-50">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">FAQ</span>
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-slate-900 mt-3 mb-4">Preguntas frecuentes</h2>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between hover:bg-slate-50 transition" data-target="faq-0">
+                        <span class="font-semibold text-slate-900">¿Funciona para conjuntos multiedificios o mono-edificio?</span>
+                        <svg class="faq-arrow w-5 h-5 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="faq-0" class="hidden px-6 pb-5 faq-content"><p class="text-slate-600">Sí. Condominio360 es compatible con conjuntos residenciales de uno o varios edificios. La plataforma gestiona edificios, torres y unidades de forma flexible. En facturación, puedes generar cobranza completa o, si tu conjunto tiene empresa administradora, apoyarla con preliminares y delegar el cobro a ella.</p></div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between hover:bg-slate-50 transition" data-target="faq-1">
+                        <span class="font-semibold text-slate-900">¿Cómo se realiza la migración de datos?</span>
+                        <svg class="faq-arrow w-5 h-5 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="faq-1" class="hidden px-6 pb-5 faq-content"><p class="text-slate-600">Nuestro equipo importa tus datos desde Excel o cualquier sistema anterior. Solo necesitas proporcionarnos la información de propietarios y unidades. La migración está incluida sin costo adicional.</p></div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between hover:bg-slate-50 transition" data-target="faq-2">
+                        <span class="font-semibold text-slate-900">¿Los propietarios necesitan instalar una app?</span>
+                        <svg class="faq-arrow w-5 h-5 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="faq-2" class="hidden px-6 pb-5 faq-content"><p class="text-slate-600">No es obligatorio. La plataforma funciona 100% desde el navegador en cualquier dispositivo. Ofrecemos una PWA que los usuarios pueden instalar para una experiencia más fluida.</p></div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between hover:bg-slate-50 transition" data-target="faq-3">
+                        <span class="font-semibold text-slate-900">¿Qué pasa si un propietario no tiene email?</span>
+                        <svg class="faq-arrow w-5 h-5 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="faq-3" class="hidden px-6 pb-5 faq-content"><p class="text-slate-600">El sistema funciona principalmente con cédula de identidad. El email es opcional. Los usuarios pueden registrarse y acceder usando su cédula y contraseña.</p></div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between hover:bg-slate-50 transition" data-target="faq-4">
+                        <span class="font-semibold text-slate-900">¿El sistema NFC requiere hardware especial?</span>
+                        <svg class="faq-arrow w-5 h-5 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="faq-4" class="hidden px-6 pb-5 faq-content"><p class="text-slate-600">Las tarjetas NFC funcionan con lectores estándar. El personal de vigilancia puede usar una tablet con lector NFC USB o celulares con NFC.</p></div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between hover:bg-slate-50 transition" data-target="faq-5">
+                        <span class="font-semibold text-slate-900">¿Aceptan Bolívares a Tasa BCV?</span>
+                        <svg class="faq-arrow w-5 h-5 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="faq-5" class="hidden px-6 pb-5 faq-content"><p class="text-slate-600">Sí. No nos complicamos la vida: te cobramos en dólares a Tasa BCV para facilitar la gestión y recaudación de tu condominio. Así el administrador y los propietarios manejan una referencia clara y actualizada.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CTA FINAL ==================== -->
+    <section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-orange-500 to-orange-600">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl lg:text-4xl font-extrabold text-white mb-6">¿Listo para modernizar tu condominio?</h2>
+            <p class="text-lg text-orange-100 mb-10">Únete a cientos de administradores que han simplificado su gestión. Prueba gratuita de 14 días.</p>
+            
+            <form class="max-w-md mx-auto flex flex-col sm:flex-row gap-3" onsubmit="handleDemoRequest(event)">
+                <input type="email" name="email" placeholder="tu@email.com" required
+                    class="flex-1 px-6 py-4 bg-white/20 border border-white/30 text-white rounded-full placeholder-orange-200 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent">
+                <button type="submit" class="px-8 py-4 bg-white text-orange-600 font-semibold rounded-full hover:bg-orange-50 transition whitespace-nowrap shadow-lg">
+                    Solicitar Demo
+                </button>
+            </form>
+            <p class="text-sm text-orange-200 mt-6">Te contactaremos en menos de 24 horas</p>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-slate-900 text-slate-400 py-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <div class="md:col-span-1">
+                    <a href="/" class="flex items-center gap-3 mb-4">
+                        <img src="/assets/images/CONDOMINIO360-blacklogo.svg" alt="Condominio360" class="h-12 sm:h-14 w-auto max-w-[220px] sm:max-w-[260px]" style="object-fit: contain;">
+                    </a>
+                    <p class="text-sm leading-relaxed">Gestión inteligente de condominios. Moderniza tu comunidad con tecnología de punta.</p>
+                </div>
+                <div>
+                    <h5 class="text-white font-semibold mb-4">Producto</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#features" class="hover:text-white transition">Funciones</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition">Precios</a></li>
+                        <li><a href="/login" class="hover:text-white transition">Iniciar Sesión</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="text-white font-semibold mb-4">Empresa</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-white transition">Nosotros</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contacto</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="text-white font-semibold mb-4">Legal</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-white transition">Términos</a></li>
+                        <li><a href="#" class="hover:text-white transition">Privacidad</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm">© <%= new Date().getFullYear() %> Condominio360. Todos los derechos reservados.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-slate-400 hover:text-white transition" aria-label="Facebook"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+                    <a href="#" class="text-slate-400 hover:text-white transition" aria-label="Instagram"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.072 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/></svg></a>
+                    <a href="#" class="text-slate-400 hover:text-white transition" aria-label="LinkedIn"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href === '#') return;
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.getElementById('mobile-menu').classList.add('hidden');
+                }
+            });
+        });
+
+        document.querySelectorAll('.faq-trigger').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const content = document.getElementById(targetId);
+                const arrow = this.querySelector('.faq-arrow');
+                content.classList.toggle('hidden');
+                arrow.classList.toggle('rotate-180');
+            });
+        });
+
+        function handleDemoRequest(e) {
+            e.preventDefault();
+            const email = e.target.querySelector('input[name="email"]').value;
+            alert('¡Gracias! Te contactaremos en ' + email + ' para coordinar una demo.');
+            e.target.reset();
+        }
+
+        document.querySelectorAll('a[href="#demo"]').forEach(el => {
+            el.addEventListener('click', function(e) {
+                if (this.getAttribute('href') === '#demo') {
+                    e.preventDefault();
+                    document.getElementById('demo').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('bg-white/95', 'backdrop-blur-lg', 'shadow-sm');
+            } else {
+                navbar.classList.remove('bg-white/95', 'backdrop-blur-lg', 'shadow-sm');
+            }
+        });
+    </script>
+</body>
+</html>

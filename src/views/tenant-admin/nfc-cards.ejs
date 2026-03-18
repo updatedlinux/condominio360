@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Tarjetas NFC - <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'nfc-cards' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Tarjetas NFC</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <button onclick="openCreateModal()" 
+                        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-lg hover:shadow-lg">
+                        <span class="material-icons-round">add</span>
+                        Registrar Tarjeta
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-round text-amber-600">nfc</span>
+                        <div class="text-sm text-amber-800">
+                            <p class="font-medium">Acceso Vehicular</p>
+                            <p>Registre las tarjetas NFC asociándolas a inmuebles. Un inmueble puede tener varias tarjetas. El UID se obtiene al escanear la tarjeta o desde el fabricante. En el portal de seguridad el vigilante escaneará la tarjeta para registrar entradas y salidas vehiculares.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cards-list" class="space-y-4">
+                    <div class="card p-12 text-center">
+                        <div class="loading-spinner inline-block w-8 h-8 border-3 border-[#E5E5E5] border-t-[#f97316] rounded-full animate-spin"></div>
+                        <p class="text-[#5F6368] mt-4">Cargando tarjetas...</p>
+                    </div>
+                </div>
+
+                <div id="empty-state" class="hidden text-center py-16">
+                    <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="material-icons-round text-4xl text-[#9AA0A6]">nfc</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay tarjetas registradas</h3>
+                    <p class="text-[#5F6368] mb-4">Registre tarjetas NFC para el acceso vehicular</p>
+                    <button onclick="openCreateModal()" class="px-6 py-3 bg-[#f97316] text-white rounded-xl font-medium hover:bg-[#ea580c]">
+                        Registrar primera tarjeta
+                    </button>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Modal: Crear Tarjeta -->
+    <div id="create-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-medium text-[#3C4043]">Registrar Tarjeta NFC</h2>
+                <button onclick="closeCreateModal()" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="create-form" class="space-y-4">
+                <div class="relative">
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Inmueble *</label>
+                    <input type="text" id="property-search" autocomplete="off"
+                        placeholder="Escriba para buscar unidad (ej: Apt 101, Torre A...)"
+                        class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    <input type="hidden" id="property_id" required>
+                    <div id="property-results" class="absolute z-10 mt-1 w-full bg-white border border-[#E5E5E5] rounded-xl shadow-lg max-h-48 overflow-y-auto hidden"></div>
+                    <div id="property-selected" class="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl hidden">
+                        <p class="font-medium text-green-800" id="selected-property-name">-</p>
+                        <p class="text-sm text-green-700 mt-1" id="selected-property-owners">Propietarios: cargando...</p>
+                        <button type="button" onclick="clearProperty()" class="text-xs text-green-600 hover:underline mt-1">Cambiar unidad</button>
+                    </div>
+                    <p class="text-xs text-[#9AA0A6] mt-1">La tarjeta quedará asociada a esta unidad y sus propietarios</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">UID de la tarjeta *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="card_uid" required placeholder="Escanee con WebNFC" readonly
+                            class="flex-1 px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] font-mono uppercase bg-gray-50"
+                            style="letter-spacing: 0.05em;">
+                        <button type="button" onclick="startNFCScanForCard()" 
+                            class="px-4 py-3 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 flex items-center gap-2 shrink-0">
+                            <span class="material-icons-round">nfc</span>
+                            Escanear
+                        </button>
+                    </div>
+                    <p class="text-xs text-[#9AA0A6] mt-1">Requiere Chrome en Android con Web NFC (HTTPS). <button type="button" onclick="enableManualUid()" class="text-amber-600 hover:underline">Sin NFC: ingresar UID manualmente</button></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Nombre/Etiqueta (opcional)</label>
+                    <input type="text" id="card_name" placeholder="Ej: Tarjeta principal, Vehículo 1" 
+                        class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                </div>
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeCreateModal()" class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg">
+                        Registrar Tarjeta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
+        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
+            <span id="toast-icon" class="material-icons-round"></span>
+            <span id="toast-message" class="font-medium"></span>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+        document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastContent = document.getElementById('toast-content');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toastContent.className = type === 'success' 
+                ? 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white'
+                : 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
+            toastIcon.textContent = type === 'success' ? 'check_circle' : 'error';
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        let propertySearchTimeout = null;
+        let selectedProperty = null;
+        let nfcAbortController = null;
+
+        document.getElementById('property-search')?.addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            clearTimeout(propertySearchTimeout);
+            const resultsEl = document.getElementById('property-results');
+            if (q.length < 2) {
+                resultsEl.classList.add('hidden');
+                resultsEl.innerHTML = '';
+                return;
+            }
+            propertySearchTimeout = setTimeout(() => searchProperties(q), 300);
+        });
+
+        document.getElementById('property-search')?.addEventListener('focus', () => {
+            const q = document.getElementById('property-search').value.trim();
+            if (q.length >= 2 && !selectedProperty) searchProperties(q);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#property-search') && !e.target.closest('#property-results')) {
+                document.getElementById('property-results').classList.add('hidden');
+            }
+        });
+
+        async function searchProperties(q) {
+            const resultsEl = document.getElementById('property-results');
+            try {
+                const res = await fetch(`/api/tenant-admin/properties?search=${encodeURIComponent(q)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const props = data.properties || data.data || [];
+                if (props.length === 0) {
+                    resultsEl.innerHTML = '<div class="p-3 text-sm text-[#5F6368]">No se encontraron inmuebles</div>';
+                } else {
+                    window._nfcSearchResults = props;
+                    resultsEl.innerHTML = props.map((p, i) => {
+                        const label = [p.name, p.building_name || p.building, p.floor ? 'Piso ' + p.floor : ''].filter(Boolean).join(' • ');
+                        return `<div class="p-3 hover:bg-amber-50 cursor-pointer border-b border-[#E5E5E5] last:border-0" 
+                             data-idx="${i}" onclick="selectPropertyByIdx(${i})">
+                            <p class="font-medium text-[#3C4043]">${p.name}</p>
+                            <p class="text-xs text-[#5F6368]">${p.building_name || p.building || '-'}${p.floor ? ' • Piso ' + p.floor : ''}</p>
+                        </div>`;
+                    }).join('');
+                }
+                resultsEl.classList.remove('hidden');
+            } catch (err) {
+                resultsEl.innerHTML = '<div class="p-3 text-sm text-red-600">Error al buscar</div>';
+                resultsEl.classList.remove('hidden');
+            }
+        }
+
+        function selectPropertyByIdx(idx) {
+            const props = window._nfcSearchResults || [];
+            const p = props[idx];
+            if (p) selectProperty(p.id, [p.name, p.building_name || p.building, p.floor ? 'Piso ' + p.floor : ''].filter(Boolean).join(' • '));
+        }
+
+        async function selectProperty(id, displayName) {
+            selectedProperty = { id, displayName };
+            document.getElementById('property_id').value = id;
+            document.getElementById('property-search').value = displayName;
+            document.getElementById('property-results').classList.add('hidden');
+            document.getElementById('property-selected').classList.remove('hidden');
+            document.getElementById('selected-property-name').textContent = displayName;
+            document.getElementById('selected-property-owners').textContent = 'Propietarios: cargando...';
+            try {
+                const res = await fetch(`/api/tenant-admin/properties/${id}/owners`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const owners = data.owners || [];
+                const names = owners.map(o => `${o.first_name || ''} ${o.last_name || ''}`.trim()).filter(Boolean);
+                document.getElementById('selected-property-owners').textContent = names.length > 0 
+                    ? 'Propietarios: ' + names.join(', ') 
+                    : 'Sin propietarios asignados';
+            } catch (e) {
+                document.getElementById('selected-property-owners').textContent = 'Propietarios: error al cargar';
+            }
+        }
+
+        function clearProperty() {
+            selectedProperty = null;
+            document.getElementById('property_id').value = '';
+            document.getElementById('property-search').value = '';
+            document.getElementById('property-selected').classList.add('hidden');
+        }
+
+        function enableManualUid() {
+            const input = document.getElementById('card_uid');
+            input.removeAttribute('readonly');
+            input.classList.remove('bg-gray-50');
+            input.placeholder = 'Ej: 04A1B2C3D4';
+        }
+
+        async function startNFCScanForCard() {
+            if (!('NDEFReader' in window)) {
+                showToast('Web NFC no disponible. Use Chrome en Android con HTTPS.', 'error');
+                return;
+            }
+            try {
+                nfcAbortController = new AbortController();
+                const ndef = new NDEFReader();
+                await ndef.scan({ signal: nfcAbortController.signal });
+                document.getElementById('card_uid').placeholder = 'Escaneando... Acercar tarjeta';
+                ndef.addEventListener('reading', (event) => {
+                    const rawUid = event.serialNumber || (event.message && event.message.records && event.message.records[0] && (() => {
+                        try { return new TextDecoder().decode(event.message.records[0].data); } catch(e) { return null; }
+                    })());
+                    if (rawUid) {
+                        const uid = typeof rawUid === 'string' ? rawUid.replace(/[^A-Fa-f0-9]/g, '').toUpperCase() : String(rawUid).toUpperCase();
+                        if (uid.length > 0) {
+                            document.getElementById('card_uid').value = uid;
+                            document.getElementById('card_uid').placeholder = 'UID capturado';
+                            if (nfcAbortController) nfcAbortController.abort();
+                            showToast('Tarjeta detectada');
+                        }
+                    }
+                });
+            } catch (err) {
+                document.getElementById('card_uid').placeholder = 'Escanee con WebNFC';
+                showToast(err.name === 'NotAllowedError' ? 'Permiso NFC denegado' : (err.message || 'Error al escanear'), 'error');
+            }
+        }
+
+        async function loadCards() {
+            const listEl = document.getElementById('cards-list');
+            const emptyEl = document.getElementById('empty-state');
+            try {
+                const res = await fetch('/api/tenant-admin/nfc/cards?limit=100', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                listEl.classList.remove('hidden');
+                emptyEl.classList.add('hidden');
+
+                if (!data.success || !data.data || data.data.length === 0) {
+                    listEl.innerHTML = '';
+                    listEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                listEl.innerHTML = data.data.map(c => `
+                    <div class="card p-5 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                <span class="material-icons-round text-amber-600">nfc</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-[#3C4043]">${c.card_name || 'Sin nombre'}</p>
+                                <p class="text-sm text-[#5F6368] font-mono">UID: ${c.card_uid}</p>
+                                <p class="text-sm text-[#5F6368]">
+                                    <span class="material-icons-round text-sm align-middle">home</span>
+                                    ${c.property_name || '-'}${c.building ? ' • ' + c.building : ''}${c.floor ? ' Piso ' + c.floor : ''}
+                                </p>
+                                <div class="flex gap-2 mt-1">
+                                    ${c.is_active ? '<span class="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Activa</span>' : '<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">Inactiva</span>'}
+                                    ${c.is_blocked ? '<span class="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded">Bloqueada</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${!c.is_blocked ? `
+                                <button onclick="blockCard('${c.id}')" class="px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg">
+                                    Bloquear
+                                </button>
+                            ` : `
+                                <button onclick="unblockCard('${c.id}')" class="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg">
+                                    Desbloquear
+                                </button>
+                            `}
+                            <button onclick="deleteCard('${c.id}', '${(c.card_name || c.card_uid).replace(/'/g, "\\'")}')" class="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<div class="card p-8 text-center"><p class="text-red-600">Error al cargar tarjetas</p></div>';
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('create-modal').classList.remove('hidden');
+            document.getElementById('create-modal').classList.add('flex');
+            document.getElementById('create-form').reset();
+            clearProperty();
+            const uidInput = document.getElementById('card_uid');
+            uidInput.setAttribute('readonly', 'readonly');
+            uidInput.classList.add('bg-gray-50');
+            uidInput.placeholder = 'Escanee con WebNFC';
+            document.getElementById('property-selected').classList.add('hidden');
+            document.getElementById('property-results').classList.add('hidden');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('create-modal').classList.add('hidden');
+            document.getElementById('create-modal').classList.remove('flex');
+        }
+
+        document.getElementById('create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const property_id = document.getElementById('property_id').value;
+            const card_uid = document.getElementById('card_uid').value.trim().toUpperCase();
+            const card_name = document.getElementById('card_name').value.trim() || null;
+
+            if (!property_id || !card_uid) {
+                showToast('Complete los campos requeridos', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/tenant-admin/nfc/cards', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ property_id, card_uid, card_name })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('Tarjeta registrada exitosamente');
+                    closeCreateModal();
+                    loadCards();
+                } else {
+                    showToast(data.error || 'Error al registrar', 'error');
+                }
+            } catch (err) {
+                showToast('Error de conexión', 'error');
+            }
+        });
+
+        async function blockCard(id) {
+            if (!confirm('¿Bloquear esta tarjeta? No podrá usarse para acceso.')) return;
+            try {
+                const res = await fetch(`/api/tenant-admin/nfc/cards/${id}/block`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Tarjeta bloqueada');
+                    loadCards();
+                } else showToast(data.error || 'Error', 'error');
+            } catch (err) {
+                showToast('Error', 'error');
+            }
+        }
+
+        async function unblockCard(id) {
+            try {
+                const res = await fetch(`/api/tenant-admin/nfc/cards/${id}/unblock`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Tarjeta desbloqueada');
+                    loadCards();
+                } else showToast(data.error || 'Error', 'error');
+            } catch (err) {
+                showToast('Error', 'error');
+            }
+        }
+
+        async function deleteCard(id, label) {
+            if (!confirm(`¿Eliminar la tarjeta "${label}"? Esta acción no se puede deshacer.`)) return;
+            try {
+                const res = await fetch(`/api/tenant-admin/nfc/cards/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Tarjeta eliminada');
+                    loadCards();
+                } else showToast(data.error || 'Error', 'error');
+            } catch (err) {
+                showToast('Error', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCards();
+        });
+    </script>
+</body>
+</html>

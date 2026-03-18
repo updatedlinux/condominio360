@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Panel de Seguridad - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="/js/session-expired.js"></script>
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .tab-active { 
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+        }
+        .tab-inactive { 
+            background: white;
+            color: #5F6368;
+        }
+        .tab-inactive:hover { background: #F5F5F5; }
+        .search-highlight { background-color: #FEF3C7; padding: 0 2px; }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.active { background: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3); }
+        /* Áreas táctiles para móvil (min 44px) */
+        @media (max-width: 640px) {
+            .touch-target { min-height: 44px; min-width: 44px; }
+            .card { border-radius: 12px; }
+        }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .safe-area-bottom { padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0)); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="px-3 py-2 sm:px-6 sm:py-4">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <div class="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-7 w-7 sm:h-8 sm:w-8" style="object-fit: contain;">
+                            <span class="font-bold text-base sm:text-xl text-black truncate">Condominio360</span>
+                        </div>
+                        <div class="h-5 w-px bg-[#E5E5E5] hidden sm:block flex-shrink-0"></div>
+                        <div class="min-w-0 flex-1">
+                            <h1 class="text-sm sm:text-xl font-bold text-[#3C4043] truncate">Panel de Seguridad</h1>
+                            <p class="text-xs text-[#5F6368] truncate" id="header-tenant">Cargando...</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 sm:gap-4 flex-shrink-0">
+                        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+                            <span class="material-icons-round text-sm text-[#5F6368]">today</span>
+                            <span class="text-sm text-[#5F6368] font-medium" id="current-date">--</span>
+                        </div>
+                        <div class="flex items-center gap-1 sm:gap-2" id="polling-status">
+                            <span class="status-dot active"></span>
+                            <span class="text-xs text-[#9AA0A6] hidden sm:inline">Actualizado</span>
+                        </div>
+                        <span class="text-xs sm:text-sm text-[#5F6368] truncate max-w-[80px] sm:max-w-none" id="security-name">Vigilante</span>
+                        <button onclick="logout()" class="touch-target p-2 hover:bg-red-50 rounded-lg text-[#5F6368] hover:text-red-600">
+                            <span class="material-icons-round">logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-3 sm:p-6">
+            <!-- Quick Actions -->
+            <div class="max-w-6xl mx-auto mb-4 sm:mb-6">
+                <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+                    <button onclick="openManualVisitModal()" 
+                        class="touch-target flex items-center justify-center sm:justify-start gap-2 px-3 py-3 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm sm:text-base">
+                        <span class="material-icons-round text-lg sm:text-sm">person_add</span>
+                        <span class="hidden sm:inline">Registrar Visita</span>
+                        <span class="sm:hidden">Visita</span>
+                    </button>
+                    <button onclick="openManualDeliveryModal()" 
+                        class="touch-target flex items-center justify-center sm:justify-start gap-2 px-3 py-3 sm:px-4 sm:py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors text-sm sm:text-base">
+                        <span class="material-icons-round text-lg sm:text-sm">local_shipping</span>
+                        <span class="hidden sm:inline">Registrar Delivery</span>
+                        <span class="sm:hidden">Delivery</span>
+                    </button>
+                    <button onclick="showActiveVisits()" 
+                        class="touch-target flex items-center justify-center sm:justify-start gap-2 px-3 py-3 sm:px-4 sm:py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors text-sm sm:text-base col-span-2 sm:col-span-1">
+                        <span class="material-icons-round text-lg sm:text-sm">sensors</span>
+                        <span>Visitas Activas</span>
+                        <span id="active-visits-badge" class="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs hidden">0</span>
+                    </button>
+                    <button onclick="switchTab('nfc'); openNFCVehicleAccess()" 
+                        class="touch-target flex items-center justify-center sm:justify-start gap-2 px-3 py-3 sm:px-4 sm:py-2.5 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors text-sm sm:text-base col-span-2 sm:col-span-1">
+                        <span class="material-icons-round text-lg sm:text-sm">nfc</span>
+                        <span class="hidden sm:inline">Acceso Vehicular NFC</span>
+                        <span class="sm:hidden">NFC</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="max-w-4xl mx-auto mb-4 sm:mb-6">
+                <div class="card p-3 sm:p-4">
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                        <div class="flex-1 relative">
+                            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-[#9AA0A6] text-lg">search</span>
+                            <input type="text" id="searchInput" 
+                                class="w-full pl-10 pr-4 py-3 sm:pl-12 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] text-base sm:text-lg"
+                                placeholder="Buscar por DNI, propietario o unidad..."
+                                onkeyup="handleSearch(event)">
+                        </div>
+                        <button onclick="performSearch()" 
+                            class="touch-target w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-xl font-medium hover:shadow-lg">
+                            Buscar
+                        </button>
+                    </div>
+                    <p class="text-xs text-[#9AA0A6] mt-2 ml-1 hidden sm:block">
+                        Busca visitantes por DNI, visitas frecuentes, deliveries y mudanzas. Presiona Enter para buscar.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div id="searchResults" class="max-w-4xl mx-auto mb-4 sm:mb-6 hidden">
+                <div class="card p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-medium text-[#3C4043]">Resultados de Búsqueda</h2>
+                        <button onclick="clearSearch()" class="text-sm text-[#5F6368] hover:text-[#f97316]">
+                            Limpiar búsqueda
+                        </button>
+                    </div>
+                    <div id="searchResultsContent" class="space-y-3">
+                        <!-- Cargado dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="max-w-6xl mx-auto">
+                <div class="flex gap-1 sm:gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
+                    <button onclick="switchTab('visits')" id="tab-visits" 
+                        class="touch-target tab-active px-4 sm:px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all flex-shrink-0 text-sm sm:text-base">
+                        <span class="material-icons-round mr-2 align-bottom">person</span>
+                        Visitas Hoy
+                        <span id="count-visits" class="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-sm hidden">0</span>
+                    </button>
+                    <button onclick="switchTab('deliveries')" id="tab-deliveries"
+                        class="touch-target tab-inactive px-4 sm:px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all flex-shrink-0 text-sm sm:text-base">
+                        <span class="material-icons-round mr-2 align-bottom">local_shipping</span>
+                        Deliveries
+                        <span id="count-deliveries" class="ml-2 bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-sm hidden">0</span>
+                    </button>
+                    <button onclick="switchTab('moves')" id="tab-moves"
+                        class="touch-target tab-inactive px-4 sm:px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all flex-shrink-0 text-sm sm:text-base">
+                        <span class="material-icons-round mr-2 align-bottom">moving</span>
+                        Mudanzas
+                        <span id="count-moves" class="ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-sm hidden">0</span>
+                    </button>
+                    <button onclick="switchTab('nfc')" id="tab-nfc"
+                        class="touch-target tab-inactive px-4 sm:px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all flex-shrink-0 text-sm sm:text-base">
+                        <span class="material-icons-round mr-2 align-bottom">nfc</span>
+                        Acceso Vehicular
+                        <span id="count-nfc" class="ml-2 bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-sm hidden">0</span>
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div id="contentArea" class="space-y-4">
+                    <div class="card p-12 text-center">
+                        <div class="loading-spinner inline-block w-8 h-8 border-3 border-[#E5E5E5] border-t-[#f97316] rounded-full animate-spin mb-4"></div>
+                        <p class="text-[#5F6368]">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer negro -->
+        <footer class="bg-[#1a1a1a] text-white py-4 px-6 mt-auto">
+            <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                <img src="/assets/images/CONDOMINIO360-blacklogo.svg" alt="Condominio360" class="h-12 w-auto opacity-95" style="object-fit: contain; max-width: 280px;">
+                <div class="flex items-center gap-4 text-sm text-white/80">
+                    <span>Panel de Seguridad</span>
+                    <span class="hidden sm:inline">•</span>
+                    <span id="footer-tenant" class="truncate max-w-[200px]">Condominio360</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 left-6 sm:left-auto z-50 transform translate-y-20 opacity-0 transition-all duration-300 safe-area-bottom">
+        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
+            <span id="toast-icon" class="material-icons-round"></span>
+            <span id="toast-message" class="font-medium"></span>
+        </div>
+    </div>
+
+    <!-- Modal: Registrar Visita Manual (por teléfono) -->
+    <div id="manualVisitModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden my-auto">
+            <div class="p-4 sm:p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <span class="material-icons-round text-blue-600">person_add</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#3C4043]">Anunciar Visita</h2>
+                        <p class="text-sm text-[#5F6368]">Propietario que llama por teléfono</p>
+                    </div>
+                </div>
+                <button onclick="closeManualVisitModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <span class="material-icons-round text-[#5F6368]">close</span>
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
+                <form id="manualVisitForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI del Propietario *</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="mv-owner-dni" required
+                                class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Ej: 12345678">
+                            <button type="button" onclick="searchOwnerByDNI()"
+                                class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
+                                <span class="material-icons-round">search</span>
+                            </button>
+                        </div>
+                        <p id="mv-owner-info" class="mt-2 text-sm text-green-600 hidden"></p>
+                        <div id="mv-property-wrap" class="mt-2 hidden">
+                            <label class="block text-sm font-medium text-[#3C4043] mb-1">Inmueble *</label>
+                            <select id="mv-property-select" class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Seleccione el inmueble</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-[#3C4043] mb-1">Nombre Visitante *</label>
+                            <input type="text" id="mv-visitor-firstname" required
+                                class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Nombre">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[#3C4043] mb-1">Apellido *</label>
+                            <input type="text" id="mv-visitor-lastname" required
+                                class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Apellido">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI Visitante *</label>
+                        <input type="text" id="mv-visitor-dni" required
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ej: 87654321">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-[#3C4043] mb-1">Fecha Visita *</label>
+                            <input type="date" id="mv-visit-date" required
+                                class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[#3C4043] mb-1">Hora (opcional)</label>
+                            <input type="time" id="mv-visit-time"
+                                class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Placa Vehículo (opcional)</label>
+                        <input type="text" id="mv-vehicle-plate"
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ej: ABC123">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Notas</label>
+                        <textarea id="mv-notes" rows="2"
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Información adicional..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 sm:p-6 border-t border-[#E5E5E5] bg-gray-50 flex gap-3">
+                <button onclick="closeManualVisitModal()" 
+                    class="touch-target flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-100">
+                    Cancelar
+                </button>
+                <button onclick="submitManualVisit()" 
+                    class="touch-target flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">
+                    Registrar Visita
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Registrar Delivery Manual -->
+    <div id="manualDeliveryModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden my-auto">
+            <div class="p-4 sm:p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <span class="material-icons-round text-purple-600">local_shipping</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#3C4043]">Anunciar Delivery</h2>
+                        <p class="text-sm text-[#5F6368]">Propietario que llama por teléfono</p>
+                    </div>
+                </div>
+                <button onclick="closeManualDeliveryModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <span class="material-icons-round text-[#5F6368]">close</span>
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
+                <form id="manualDeliveryForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI del Propietario *</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="md-owner-dni" required
+                                class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="Ej: 12345678">
+                            <button type="button" onclick="searchOwnerByDNIDelivery()"
+                                class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
+                                <span class="material-icons-round">search</span>
+                            </button>
+                        </div>
+                        <p id="md-owner-info" class="mt-2 text-sm text-green-600 hidden"></p>
+                        <div id="md-property-wrap" class="mt-2 hidden">
+                            <label class="block text-sm font-medium text-[#3C4043] mb-1">Inmueble *</label>
+                            <select id="md-property-select" class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="">Seleccione el inmueble</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Nombre/Descripción</label>
+                        <input type="text" id="md-name"
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Ej: Juan Pérez o Delivery Express (opcional)">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Empresa *</label>
+                        <input type="text" id="md-company" required
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Ej: PedidosYa, Rappi, Mercado Libre">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Fecha Esperada *</label>
+                        <input type="date" id="md-expected-date" required
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Notas</label>
+                        <textarea id="md-notes" rows="2"
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Instrucciones especiales..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 sm:p-6 border-t border-[#E5E5E5] bg-gray-50 flex gap-3">
+                <button onclick="closeManualDeliveryModal()" 
+                    class="touch-target flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-100">
+                    Cancelar
+                </button>
+                <button onclick="submitManualDelivery()" 
+                    class="touch-target flex-1 px-4 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700">
+                    Registrar Delivery
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Entrada de Visita -->
+    <div id="entryModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-4 sm:p-6 my-auto">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span class="material-icons-round text-3xl text-green-600">login</span>
+                </div>
+                <h3 class="text-xl font-bold text-[#3C4043]">Registrar Entrada</h3>
+                <p class="text-sm text-[#5F6368] mt-1" id="entry-visitor-name">Visitante</p>
+                <p class="text-xs text-amber-600 mt-1" id="entry-visitor-type"></p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#3C4043] mb-2">Tipo de Acceso</label>
+                    <div class="flex gap-2 sm:gap-3">
+                        <button type="button" id="btn-pedestrian" onclick="setAccessType('PEDESTRIAN')"
+                            class="touch-target flex-1 py-3 border-2 border-green-500 bg-green-50 text-green-700 rounded-xl font-medium">
+                            <span class="material-icons-round block mb-1">directions_walk</span>
+                            Peatonal
+                        </button>
+                        <button type="button" id="btn-vehicle" onclick="setAccessType('VEHICLE')"
+                            class="touch-target flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-medium">
+                            <span class="material-icons-round block mb-1">directions_car</span>
+                            Vehículo
+                        </button>
+                    </div>
+                </div>
+                <div id="vehicle-plate-container" class="hidden">
+                    <label class="block text-sm font-medium text-[#3C4043] mb-1">Placa del Vehículo *</label>
+                    <input type="text" id="entry-vehicle-plate"
+                        class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg uppercase"
+                        placeholder="ABC-123">
+                </div>
+            </div>
+            <div class="flex gap-2 sm:gap-3 mt-6">
+                <button onclick="closeEntryModal()" 
+                    class="touch-target flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium">
+                    Cancelar
+                </button>
+                <button onclick="confirmEntry()" 
+                    class="touch-target flex-1 px-4 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Visitas Activas -->
+    <div id="activeVisitsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden my-auto">
+            <div class="p-4 sm:p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                        <span class="material-icons-round text-green-600">sensors</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#3C4043]">Visitas Activas</h2>
+                        <p class="text-sm text-[#5F6368]">Personas dentro del condominio</p>
+                    </div>
+                </div>
+                <button onclick="closeActiveVisitsModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <span class="material-icons-round text-[#5F6368]">close</span>
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
+                <div id="activeVisitsList" class="space-y-3">
+                    <!-- Cargado dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Acceso Vehicular NFC -->
+    <div id="nfcVehicleModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-md w-full my-auto">
+            <div class="p-4 sm:p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" id="nfc-modal-icon-bg">
+                        <span class="material-icons-round" id="nfc-modal-icon">nfc</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#3C4043]" id="nfc-modal-title">Acceso Vehicular</h2>
+                        <p class="text-sm text-[#5F6368]">Escanea la tarjeta NFC</p>
+                    </div>
+                </div>
+                <button onclick="closeNFCVehicleModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <span class="material-icons-round text-[#5F6368]">close</span>
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 space-y-4">
+                <div id="nfc-scan-status" class="text-sm text-[#5F6368] p-3 bg-gray-50 rounded-xl">
+                    <span id="nfc-status-text">Seleccione Ingreso o Salida e inicie el escaneo</span>
+                </div>
+                <div class="flex gap-3" id="nfc-type-buttons">
+                    <button onclick="setNFCType('ENTRY')" id="nfc-btn-entry" 
+                        class="touch-target flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-green-500 hover:text-green-700">
+                        <span class="material-icons-round block mb-1">login</span> Ingreso
+                    </button>
+                    <button onclick="setNFCType('EXIT')" id="nfc-btn-exit" 
+                        class="touch-target flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-red-500 hover:text-red-700">
+                        <span class="material-icons-round block mb-1">logout</span> Salida
+                    </button>
+                </div>
+                <button onclick="startNFCScan()" id="nfc-scan-btn" disabled
+                    class="touch-target w-full py-4 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 flex items-center justify-center gap-2">
+                    <span class="material-icons-round text-xl">nfc</span>
+                    Iniciar escaneo NFC
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+
+        // Protección: sin token o rol incorrecto -> login
+        function ensureAuth() {
+            if (!token) {
+                window.location.href = '/login?redirect=' + encodeURIComponent('/security');
+                return false;
+            }
+            const allowed = ['SECURITY', 'TENANT_ADMIN'];
+            if (!allowed.includes(user?.type)) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('tenant');
+                window.location.href = '/login?redirect=' + encodeURIComponent('/security');
+                return false;
+            }
+            return true;
+        }
+        // fetch que redirige a login si 401
+        async function fetchWithAuth(url, opts = {}) {
+            const res = await fetch(url, {
+                ...opts,
+                headers: { ...opts.headers, 'Authorization': `Bearer ${token}` }
+            });
+            if (res.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('tenant');
+                showToast('Sesión expirada. Inicie sesión nuevamente.', 'error');
+                setTimeout(() => { window.location.href = '/login?redirect=' + encodeURIComponent('/security'); }, 1500);
+                throw new Error('Unauthorized');
+            }
+            return res;
+        }
+        
+        let currentTab = 'visits';
+        let selectedOwnerVisit = null;
+        let selectedOwnerDelivery = null;
+        let searchResults = [];
+        let currentDataHash = null;
+        let pollingInterval = null;
+        let pendingEntryId = null;
+        let pendingEntryType = null;
+        let currentAccessType = 'PEDESTRIAN';
+        let lastSearchResults = {};
+        let nfcPendingType = null;
+        let nfcAbortController = null;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!ensureAuth()) return;
+            // Obtener nombre del conjunto residencial de múltiples fuentes posibles
+            const tenantName = tenant?.name || tenant?.tenantName || user?.tenantName || user?.tenant?.name || 'Conjunto Residencial';
+            document.getElementById('header-tenant').textContent = tenantName;
+            const footerTenant = document.getElementById('footer-tenant');
+            if (footerTenant) footerTenant.textContent = tenantName;
+            document.getElementById('security-name').textContent = user?.firstName || user?.first_name || 'Vigilante';
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            
+            document.getElementById('mv-visit-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('md-expected-date').value = new Date().toISOString().split('T')[0];
+            
+            loadTabData('visits');
+            startPolling();
+        });
+
+        // Polling inteligente cada 30 segundos
+        function startPolling() {
+            checkForUpdates();
+            pollingInterval = setInterval(checkForUpdates, 30000);
+        }
+
+        async function checkForUpdates() {
+            try {
+                const response = await fetchWithAuth('/api/security/dashboard/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const activeCount = data.data.counts.activeVisits;
+                    const badge = document.getElementById('active-visits-badge');
+                    if (activeCount > 0) {
+                        badge.textContent = activeCount;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+
+                    if (currentDataHash && currentDataHash !== data.data.hash) {
+                        showToast('Nuevas actualizaciones disponibles', 'success');
+                        loadTabData(currentTab);
+                        updatePollingStatus(true);
+                    } else {
+                        updatePollingStatus(false);
+                    }
+                    
+                    currentDataHash = data.data.hash;
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+                updatePollingStatus(false, true);
+            }
+        }
+
+        function updatePollingStatus(hasChanges, hasError = false) {
+            const statusEl = document.getElementById('polling-status');
+            if (hasError) {
+                statusEl.innerHTML = `<span class="status-dot" style="background: #ef4444;"></span><span class="text-xs text-red-500">Error</span>`;
+            } else if (hasChanges) {
+                statusEl.innerHTML = `<span class="status-dot" style="background: #3b82f6;"></span><span class="text-xs text-blue-500">Actualizado</span>`;
+            } else {
+                statusEl.innerHTML = `<span class="status-dot active"></span><span class="text-xs text-[#9AA0A6]">Actualizado</span>`;
+            }
+        }
+
+        function logout() {
+            clearInterval(pollingInterval);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastContent = document.getElementById('toast-content');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastMessage = document.getElementById('toast-message');
+
+            toastMessage.textContent = message;
+            
+            if (type === 'success') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white';
+                toastIcon.textContent = 'check_circle';
+            } else if (type === 'error') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
+                toastIcon.textContent = 'error';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('tab-active');
+                el.classList.add('tab-inactive');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('tab-inactive');
+            document.getElementById(`tab-${tab}`).classList.add('tab-active');
+            
+            loadTabData(tab);
+        }
+
+        async function loadTabData(tab) {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="card p-12 text-center">
+                    <div class="loading-spinner inline-block w-8 h-8 border-3 border-[#E5E5E5] border-t-[#f97316] rounded-full animate-spin mb-4"></div>
+                    <p class="text-[#5F6368]">Cargando...</p>
+                </div>
+            `;
+
+            try {
+                let data = [];
+                
+                switch(tab) {
+                    case 'visits':
+                        data = await fetchVisits();
+                        renderVisits(data);
+                        break;
+                    case 'deliveries':
+                        data = await fetchDeliveries();
+                        renderDeliveries(data);
+                        break;
+                    case 'moves':
+                        data = await fetchMoves();
+                        renderMoves(data);
+                        break;
+                    case 'nfc':
+                        data = await fetchNfcLogs();
+                        renderNfc(data);
+                        break;
+                }
+                
+                updateCount(tab, Array.isArray(data) ? data.length : 0);
+            } catch (error) {
+                console.error('Error loading tab data:', error);
+                contentArea.innerHTML = `
+                    <div class="card p-8 text-center">
+                        <span class="material-icons-round text-4xl text-red-400 mb-2">error</span>
+                        <p class="text-[#5F6368]">Error al cargar datos</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateCount(tab, count) {
+            const badge = document.getElementById(`count-${tab}`);
+            if (badge) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            }
+        }
+
+        // API Calls
+        async function fetchVisits() {
+            const today = new Date().toISOString().split('T')[0];
+            const response = await fetchWithAuth(`/api/security/visits?type=unique&date=${today}`);
+            const data = await response.json();
+            return data.success ? data.data : [];
+        }
+
+        async function fetchDeliveries() {
+            const today = new Date().toISOString().split('T')[0];
+            const response = await fetchWithAuth(`/api/security/deliveries?status=ANNOUNCED&date=${today}`);
+            const data = await response.json();
+            return data.success ? data.data : [];
+        }
+
+        async function fetchMoves() {
+            const response = await fetchWithAuth('/api/security/moves?status=APPROVED');
+            const data = await response.json();
+            return data.success ? data.data : [];
+        }
+
+        async function fetchNfcLogs() {
+            const response = await fetchWithAuth('/api/security/nfc/today-logs');
+            const data = await response.json();
+            return data.success ? data.data : [];
+        }
+
+        // Render functions
+        function renderVisits(visits) {
+            const contentArea = document.getElementById('contentArea');
+            
+            if (visits.length === 0) {
+                contentArea.innerHTML = `
+                    <div class="card p-12 text-center">
+                        <span class="material-icons-round text-6xl text-[#E5E5E5] mb-4">people_outline</span>
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay visitas anunciadas para hoy</h3>
+                        <p class="text-[#5F6368]">Las visitas anunciadas aparecerán aquí</p>
+                        <p class="text-sm text-[#9AA0A6] mt-2">Para visitas frecuentes, use el buscador arriba</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contentArea.innerHTML = visits.map(v => {
+                const isInside = v.entry_time && !v.exit_time;
+                const hasExited = v.exit_time !== null;
+                
+                return `
+                <div class="card p-4 sm:p-5 ${isInside ? 'border-l-4 border-green-500' : ''}">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${isInside ? 'bg-green-100' : 'bg-blue-100'}">
+                                <span class="material-icons-round ${isInside ? 'text-green-600' : 'text-blue-600'}">
+                                    ${isInside ? 'sensors' : 'person'}
+                                </span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="font-medium text-[#3C4043] text-base sm:text-lg">${v.first_name} ${v.last_name}</h3>
+                                <p class="text-[#5F6368]">
+                                    <span class="material-icons-round text-sm align-middle">badge</span>
+                                    DNI: ${v.visitor_dni || v.dni}
+                                </p>
+                                <p class="text-[#5F6368] mt-1">
+                                    <span class="material-icons-round text-sm align-middle">home</span>
+                                    ${v.property_name} • ${v.owner_name}
+                                </p>
+                                ${v.vehicle_plate ? `
+                                    <p class="text-[#5F6368]">
+                                        <span class="material-icons-round text-sm align-middle">directions_car</span>
+                                        Placa: ${v.vehicle_plate}
+                                    </p>
+                                ` : ''}
+                                ${isInside ? `
+                                    <p class="text-green-600 text-sm mt-1 font-medium">
+                                        <span class="material-icons-round text-sm align-middle">login</span>
+                                        Dentro desde: ${formatTime(v.entry_time)}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            ${isInside ? `
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                                    Dentro
+                                </span>
+                            ` : hasExited ? `
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                                    Salió: ${formatTime(v.exit_time)}
+                                </span>
+                            ` : `
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                                    Pendiente
+                                </span>
+                            `}
+                            <p class="text-xs text-[#9AA0A6] mt-2">${formatDate(v.valid_from)}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-[#E5E5E5] flex flex-col sm:flex-row gap-2">
+                        ${!isInside && !hasExited ? `
+                            <button onclick="openEntryModal('${v.id}', 'unique', '${v.first_name} ${v.last_name}')" 
+                                class="touch-target flex-1 px-4 py-3 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                                <span class="material-icons-round text-sm align-middle mr-1">login</span>
+                                Registrar Entrada
+                            </button>
+                        ` : ''}
+                        ${isInside ? `
+                            <button onclick="registerExit('${v.log_id || v.id}')" 
+                                class="touch-target flex-1 px-4 py-3 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+                                <span class="material-icons-round text-sm align-middle mr-1">logout</span>
+                                Registrar Salida
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function renderDeliveries(deliveries) {
+            const contentArea = document.getElementById('contentArea');
+            
+            if (deliveries.length === 0) {
+                contentArea.innerHTML = `
+                    <div class="card p-12 text-center">
+                        <span class="material-icons-round text-6xl text-[#E5E5E5] mb-4">local_shipping</span>
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay deliveries para hoy</h3>
+                        <p class="text-[#5F6368]">Los deliveries anunciados aparecerán aquí</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contentArea.innerHTML = deliveries.map(d => `
+                <div class="card p-4 sm:p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-purple-600">local_shipping</span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="font-medium text-[#3C4043] text-base sm:text-lg">${d.name}</h3>
+                                <p class="text-[#5F6368]">
+                                    <span class="material-icons-round text-sm align-middle">business</span>
+                                    ${d.company}
+                                </p>
+                                <p class="text-[#5F6368] mt-1">
+                                    <span class="material-icons-round text-sm align-middle">home</span>
+                                    ${d.property_name}${d.building_name ? ' • ' + d.building_name : ''}
+                                </p>
+                                <p class="text-[#5F6368]">
+                                    <span class="material-icons-round text-sm align-middle">person</span>
+                                    ${d.owner_name}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                                Anunciado
+                            </span>
+                            <p class="text-xs text-[#9AA0A6] mt-2">${formatDate(d.expected_date)}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
+                        <button onclick="registerDeliveryArrival('${d.id}')" 
+                            class="touch-target w-full px-4 py-3 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
+                            <span class="material-icons-round text-sm align-middle mr-1">check_circle</span>
+                            Registrar Llegada
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMoves(moves) {
+            const contentArea = document.getElementById('contentArea');
+            
+            if (moves.length === 0) {
+                contentArea.innerHTML = `
+                    <div class="card p-12 text-center">
+                        <span class="material-icons-round text-6xl text-[#E5E5E5] mb-4">moving</span>
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay mudanzas autorizadas</h3>
+                        <p class="text-[#5F6368]">Las mudanzas autorizadas aparecerán aquí</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contentArea.innerHTML = moves.map(m => {
+                const data = m.data || {};
+                const moveDate = data.move_date || data.fecha_mudanza;
+                const timeSlot = data.time_slot || data.hora;
+                const companyName = data.company_name || data.empresa;
+                const vehiclePlate = data.vehicle_plate || data.placa;
+                
+                const isApproved = m.status === 'APPROVED';
+                const statusConfig = isApproved ? {
+                    bg: 'bg-green-100', text: 'text-green-800', label: 'APROBADA',
+                    iconColor: 'text-green-600', iconBg: 'bg-green-100'
+                } : {
+                    bg: 'bg-red-100', text: 'text-red-800', label: 'RECHAZADA',
+                    iconColor: 'text-red-600', iconBg: 'bg-red-100'
+                };
+                
+                return `
+                <div class="card p-4 sm:p-5 ${!isApproved ? 'border-l-4 border-red-500' : ''}">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 ${statusConfig.iconBg} rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round ${statusConfig.iconColor}">moving</span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="font-medium text-[#3C4043] text-base sm:text-lg">${m.request_type_name || 'Mudanza'}</h3>
+                                <p class="text-[#5F6368]">
+                                    <span class="material-icons-round text-sm align-middle">home</span>
+                                    ${m.property_name}${m.building_name ? ' • ' + m.building_name : ''}
+                                </p>
+                                <p class="text-[#5F6368]">
+                                    <span class="material-icons-round text-sm align-middle">person</span>
+                                    ${m.owner_name}
+                                </p>
+                                ${companyName ? `
+                                    <p class="text-[#5F6368]">
+                                        <span class="material-icons-round text-sm align-middle">business</span>
+                                        ${companyName}
+                                    </p>
+                                ` : ''}
+                                ${vehiclePlate ? `
+                                    <p class="text-[#5F6368]">
+                                        <span class="material-icons-round text-sm align-middle">directions_car</span>
+                                        Placa: ${vehiclePlate}
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bg} ${statusConfig.text}">
+                                ${isApproved ? '✓ APROBADA' : '✕ RECHAZADA'}
+                            </span>
+                            <p class="text-xs text-[#9AA0A6] mt-2">${moveDate ? formatDate(moveDate) : formatDate(m.created_at)}</p>
+                        </div>
+                    </div>
+                    ${!isApproved ? `
+                        <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <span class="material-icons-round text-red-600 text-sm">block</span>
+                                <span class="text-sm font-medium text-red-800">NO AUTORIZADA</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="mt-4 pt-4 border-t border-[#E5E5E5] flex gap-2">
+                        <button onclick="showMoveDetails(${JSON.stringify(m).replace(/"/g, '&quot;')})" 
+                            class="flex-1 px-4 py-2 ${isApproved ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg font-medium">
+                            <span class="material-icons-round text-sm align-middle mr-1">visibility</span>
+                            Ver Detalles
+                        </button>
+                    </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderNfc(logs) {
+            const contentArea = document.getElementById('contentArea');
+            
+            const scanSection = `
+                <div class="card p-6 mb-6">
+                    <h3 class="text-lg font-medium text-[#3C4043] mb-4">Registrar Acceso Vehicular</h3>
+                    <p class="text-sm text-[#5F6368] mb-4">Seleccione Ingreso o Salida y escanee la tarjeta NFC para registrar.</p>
+                    <div class="flex gap-4 flex-wrap">
+                        <button onclick="openNFCVehicleAccess('ENTRY')" 
+                            class="flex-1 min-w-[180px] flex items-center justify-center gap-3 px-6 py-4 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors">
+                            <span class="material-icons-round text-2xl">login</span>
+                            Registrar Ingreso
+                        </button>
+                        <button onclick="openNFCVehicleAccess('EXIT')" 
+                            class="flex-1 min-w-[180px] flex items-center justify-center gap-3 px-6 py-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors">
+                            <span class="material-icons-round text-2xl">logout</span>
+                            Registrar Salida
+                        </button>
+                    </div>
+                    <p class="text-xs text-[#9AA0A6] mt-3">Requiere Chrome en Android con soporte Web NFC (HTTPS)</p>
+                </div>
+            `;
+
+            let logsSection = '';
+            if (logs && logs.length > 0) {
+                logsSection = `
+                    <div class="card p-6">
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-4">Accesos de Hoy</h3>
+                        <div class="space-y-3">
+                            ${logs.map(l => {
+                                const isEntry = l.access_type === 'ENTRY';
+                                return `
+                                <div class="flex items-center justify-between p-3 rounded-xl ${isEntry ? 'bg-green-50' : 'bg-red-50'}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center ${isEntry ? 'bg-green-200' : 'bg-red-200'}">
+                                            <span class="material-icons-round ${isEntry ? 'text-green-700' : 'text-red-700'}">${isEntry ? 'login' : 'logout'}</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-[#3C4043]">${l.owner_name || '-'} • ${l.property_name || '-'}</p>
+                                            <p class="text-sm text-[#5F6368]">Tarjeta: ${l.card_uid || '-'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-sm font-medium ${isEntry ? 'text-green-700' : 'text-red-700'}">${isEntry ? 'Ingreso' : 'Salida'}</span>
+                                        <p class="text-xs text-[#9AA0A6]">${formatNFCTime(l.access_time)}</p>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                logsSection = `
+                    <div class="card p-12 text-center">
+                        <span class="material-icons-round text-6xl text-[#E5E5E5] mb-4">nfc</span>
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay accesos vehiculares hoy</h3>
+                        <p class="text-[#5F6368]">Los accesos registrados vía NFC aparecerán aquí</p>
+                    </div>
+                `;
+            }
+
+            contentArea.innerHTML = scanSection + logsSection;
+        }
+
+        function formatNFCTime(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
+        }
+
+        // NFC Vehicle Access Modal
+        function openNFCVehicleAccess(accessType) {
+            document.getElementById('nfcVehicleModal').classList.remove('hidden');
+            nfcPendingType = accessType || null;
+            if (accessType) setNFCType(accessType);
+            else {
+                document.getElementById('nfc-btn-entry').className = 'flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-green-500';
+                document.getElementById('nfc-btn-exit').className = 'flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-red-500';
+                document.getElementById('nfc-scan-btn').disabled = true;
+                document.getElementById('nfc-status-text').textContent = 'Seleccione Ingreso o Salida';
+            }
+        }
+
+        function closeNFCVehicleModal() {
+            document.getElementById('nfcVehicleModal').classList.add('hidden');
+            if (nfcAbortController) {
+                nfcAbortController.abort();
+                nfcAbortController = null;
+            }
+        }
+
+        function setNFCType(type) {
+            nfcPendingType = type;
+            const isEntry = type === 'ENTRY';
+            document.getElementById('nfc-btn-entry').className = isEntry 
+                ? 'flex-1 py-3 border-2 border-green-500 bg-green-50 rounded-xl font-medium text-green-700' 
+                : 'flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-green-500';
+            document.getElementById('nfc-btn-exit').className = !isEntry 
+                ? 'flex-1 py-3 border-2 border-red-500 bg-red-50 rounded-xl font-medium text-red-700' 
+                : 'flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-red-500';
+            document.getElementById('nfc-scan-btn').disabled = false;
+            document.getElementById('nfc-modal-title').textContent = isEntry ? 'Registrar Ingreso' : 'Registrar Salida';
+            document.getElementById('nfc-modal-icon-bg').className = isEntry ? 'w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center' : 'w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center';
+            document.getElementById('nfc-modal-icon').className = isEntry ? 'material-icons-round text-green-600' : 'material-icons-round text-red-600';
+            document.getElementById('nfc-modal-icon').textContent = isEntry ? 'login' : 'logout';
+            document.getElementById('nfc-status-text').textContent = 'Listo para escanear. Acerque la tarjeta NFC.';
+        }
+
+        async function startNFCScan() {
+            if (!nfcPendingType) {
+                showToast('Seleccione Ingreso o Salida primero', 'error');
+                return;
+            }
+            if (!('NDEFReader' in window)) {
+                document.getElementById('nfc-status-text').textContent = 'Web NFC no disponible. Use el UID manual.';
+                showToast('Web NFC no soportado en este navegador (requiere Chrome Android + HTTPS)', 'error');
+                return;
+            }
+            try {
+                nfcAbortController = new AbortController();
+                document.getElementById('nfc-status-text').textContent = 'Escaneando... Acercar tarjeta NFC';
+                const ndef = new NDEFReader();
+                await ndef.scan({ signal: nfcAbortController.signal });
+                ndef.addEventListener('reading', async (event) => {
+                    const rawUid = event.serialNumber || readUidFromMessage(event.message);
+                    if (rawUid) {
+                        const uid = typeof rawUid === 'string' ? rawUid.replace(/[^A-Fa-f0-9]/g, '').toUpperCase() : String(rawUid).toUpperCase();
+                        if (uid.length > 0) {
+                            document.getElementById('nfc-status-text').textContent = 'Tarjeta detectada: ' + uid;
+                            if (nfcAbortController) nfcAbortController.abort();
+                            await submitNFCWithUid(uid);
+                        }
+                    }
+                });
+                ndef.addEventListener('readingerror', () => {
+                    document.getElementById('nfc-status-text').textContent = 'Error de lectura. Intente de nuevo.';
+                });
+            } catch (err) {
+                if (err.name === 'NotAllowedError') {
+                    document.getElementById('nfc-status-text').textContent = 'Permiso denegado. Use UID manual.';
+                } else {
+                    document.getElementById('nfc-status-text').textContent = err.message || 'Error. Use UID manual.';
+                }
+                console.error('NFC scan error:', err);
+            }
+        }
+
+        function readUidFromMessage(message) {
+            try {
+                for (const record of message.records) {
+                    if (record.data) {
+                        const decoder = new TextDecoder();
+                        return decoder.decode(record.data);
+                    }
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        async function submitNFCWithUid(uid) {
+            const accessType = nfcPendingType === 'ENTRY' ? 'ingreso' : 'salida';
+            try {
+                document.getElementById('nfc-status-text').textContent = 'Registrando...';
+                const res = await fetchWithAuth('/api/security/nfc/log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ card_uid: uid, access_type: accessType })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message + ': ' + (data.data?.owner_name || uid));
+                    closeNFCVehicleModal();
+                    loadTabData('nfc');
+                } else {
+                    showToast(data.error || 'Error al registrar', 'error');
+                    document.getElementById('nfc-status-text').textContent = data.error || 'Error';
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error de conexión', 'error');
+                document.getElementById('nfc-status-text').textContent = 'Error';
+            }
+        }
+
+        // Modal functions
+        function openManualVisitModal() {
+            selectedOwnerVisit = null;
+            document.getElementById('mv-property-wrap').classList.add('hidden');
+            document.getElementById('manualVisitModal').classList.remove('hidden');
+            document.getElementById('mv-owner-dni').focus();
+        }
+
+        function closeManualVisitModal() {
+            selectedOwnerVisit = null;
+            document.getElementById('manualVisitModal').classList.add('hidden');
+            document.getElementById('manualVisitForm').reset();
+            document.getElementById('mv-owner-info').classList.add('hidden');
+            document.getElementById('mv-property-wrap').classList.add('hidden');
+            document.getElementById('mv-visit-date').value = new Date().toISOString().split('T')[0];
+        }
+
+        function openManualDeliveryModal() {
+            selectedOwnerDelivery = null;
+            document.getElementById('md-property-wrap').classList.add('hidden');
+            document.getElementById('manualDeliveryModal').classList.remove('hidden');
+            document.getElementById('md-owner-dni').focus();
+        }
+
+        function closeManualDeliveryModal() {
+            selectedOwnerDelivery = null;
+            document.getElementById('manualDeliveryModal').classList.add('hidden');
+            document.getElementById('manualDeliveryForm').reset();
+            document.getElementById('md-owner-info').classList.add('hidden');
+            document.getElementById('md-property-wrap').classList.add('hidden');
+            document.getElementById('md-expected-date').value = new Date().toISOString().split('T')[0];
+        }
+
+        function openEntryModal(id, type, visitorName, isFrequent = false) {
+            pendingEntryId = id;
+            pendingEntryType = type;
+            document.getElementById('entry-visitor-name').textContent = visitorName;
+            document.getElementById('entry-visitor-type').textContent = isFrequent ? '⚡ Visita Frecuente' : '';
+            document.getElementById('entryModal').classList.remove('hidden');
+            setAccessType('PEDESTRIAN');
+        }
+
+        function closeEntryModal() {
+            document.getElementById('entryModal').classList.add('hidden');
+            pendingEntryId = null;
+            pendingEntryType = null;
+            document.getElementById('entry-vehicle-plate').value = '';
+        }
+
+        function setAccessType(type) {
+            currentAccessType = type;
+            const btnPed = document.getElementById('btn-pedestrian');
+            const btnVeh = document.getElementById('btn-vehicle');
+            const plateContainer = document.getElementById('vehicle-plate-container');
+            
+            if (type === 'PEDESTRIAN') {
+                btnPed.className = 'flex-1 py-3 border-2 border-green-500 bg-green-50 text-green-700 rounded-xl font-medium';
+                btnVeh.className = 'flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-medium';
+                plateContainer.classList.add('hidden');
+            } else {
+                btnVeh.className = 'flex-1 py-3 border-2 border-green-500 bg-green-50 text-green-700 rounded-xl font-medium';
+                btnPed.className = 'flex-1 py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-medium';
+                plateContainer.classList.remove('hidden');
+                document.getElementById('entry-vehicle-plate').focus();
+            }
+        }
+
+        async function confirmEntry() {
+            const vehiclePlate = document.getElementById('entry-vehicle-plate').value.trim();
+            
+            if (currentAccessType === 'VEHICLE' && !vehiclePlate) {
+                showToast('Ingrese la placa del vehículo', 'error');
+                return;
+            }
+
+            // Determinar el endpoint según el tipo de visita
+            const isFrequent = pendingEntryType === 'frequent';
+            const endpoint = isFrequent 
+                ? `/api/security/frequent-visits/${pendingEntryId}/entry`
+                : `/api/security/visits/${pendingEntryId}/entry`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        access_method: currentAccessType,
+                        vehicle_plate: vehiclePlate || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(isFrequent ? 'Entrada de visita frecuente registrada' : 'Entrada registrada exitosamente');
+                    closeEntryModal();
+                    loadTabData(currentTab);
+                } else {
+                    showToast(data.error || 'Error al registrar entrada', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al registrar entrada', 'error');
+            }
+        }
+
+        async function showActiveVisits() {
+            try {
+                const response = await fetchWithAuth('/api/security/active-visits');
+                const data = await response.json();
+                
+                const listEl = document.getElementById('activeVisitsList');
+                
+                if (!data.success || data.data.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-8">
+                            <span class="material-icons-round text-4xl text-[#E5E5E5]">sensors_off</span>
+                            <p class="text-[#5F6368] mt-2">No hay visitas activas</p>
+                        </div>
+                    `;
+                } else {
+                    listEl.innerHTML = data.data.map(v => {
+                        const isFrequent = !v.pass_id; // Si no tiene pass_id, es visita frecuente (acceso directo)
+                        return `
+                        <div class="card p-4 border-l-4 border-green-500">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <span class="material-icons-round text-green-600">person</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h4 class="font-medium text-[#3C4043]">${v.first_name} ${v.last_name}</h4>
+                                        <p class="text-sm text-[#5F6368]">${v.property_name} • Entrada: ${formatTime(v.entry_time)}</p>
+                                        ${isFrequent ? '<span class="text-xs text-amber-600 font-medium">⚡ Visita Frecuente</span>' : ''}
+                                    </div>
+                                </div>
+                                <button onclick="registerExit('${v.id}'); closeActiveVisitsModal();" 
+                                    class="touch-target w-full sm:w-auto px-4 py-3 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium">
+                                    Registrar Salida
+                                </button>
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                }
+                
+                document.getElementById('activeVisitsModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al cargar visitas activas', 'error');
+            }
+        }
+
+        function closeActiveVisitsModal() {
+            document.getElementById('activeVisitsModal').classList.add('hidden');
+        }
+
+        // Form submissions
+        async function searchOwnerByDNI() {
+            const dni = document.getElementById('mv-owner-dni').value.trim();
+            if (!dni) {
+                showToast('Ingrese un DNI', 'error');
+                return;
+            }
+            
+            const infoEl = document.getElementById('mv-owner-info');
+            infoEl.textContent = 'Buscando...';
+            infoEl.classList.remove('hidden');
+            infoEl.className = 'mt-2 text-sm text-gray-600';
+            
+            try {
+                const response = await fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(dni)}`);
+                const data = await response.json();
+                
+                const records = data.data || [];
+                const ownerName = records[0] ? [records[0].first_name, records[0].last_name].filter(Boolean).join(' ') || 'Propietario' : '';
+                
+                if (records.length > 0) {
+                    selectedOwnerVisit = { id: records[0].id, dni: records[0].dni, properties: records.map(r => ({ id: r.property_id, name: r.property_name })) };
+                    const propWrap = document.getElementById('mv-property-wrap');
+                    const propSelect = document.getElementById('mv-property-select');
+                    if (records.length === 1) {
+                        propWrap.classList.add('hidden');
+                        infoEl.textContent = `✓ ${ownerName} - ${records[0].property_name}`;
+                        infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
+                        if (propSelect) propSelect.value = records[0].property_id;
+                    } else {
+                        propWrap.classList.remove('hidden');
+                        if (propSelect) {
+                            propSelect.innerHTML = '<option value="">Seleccione el inmueble</option>' + records.map(r => 
+                                `<option value="${r.property_id}">${r.property_name}</option>`).join('');
+                            propSelect.required = true;
+                        }
+                        infoEl.textContent = `✓ ${ownerName} - Seleccione inmueble`;
+                        infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
+                    }
+                } else {
+                    selectedOwnerVisit = null;
+                    document.getElementById('mv-property-wrap')?.classList.add('hidden');
+                    infoEl.textContent = '✗ No encontrado';
+                    infoEl.className = 'mt-2 text-sm text-red-600';
+                }
+            } catch (error) {
+                infoEl.textContent = 'Error al buscar';
+                infoEl.className = 'mt-2 text-sm text-red-600';
+            }
+        }
+
+        async function searchOwnerByDNIDelivery() {
+            const dni = document.getElementById('md-owner-dni').value.trim();
+            if (!dni) return;
+            
+            const infoEl = document.getElementById('md-owner-info');
+            infoEl.textContent = 'Buscando...';
+            infoEl.classList.remove('hidden');
+            
+            try {
+                const response = await fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(dni)}`);
+                const data = await response.json();
+                const records = data.data || [];
+                const ownerName = records[0] ? [records[0].first_name, records[0].last_name].filter(Boolean).join(' ') || 'Propietario' : '';
+                
+                if (records.length > 0) {
+                    selectedOwnerDelivery = { id: records[0].id, dni: records[0].dni, properties: records.map(r => ({ id: r.property_id, name: r.property_name })) };
+                    const propWrap = document.getElementById('md-property-wrap');
+                    const propSelect = document.getElementById('md-property-select');
+                    if (records.length === 1) {
+                        propWrap.classList.add('hidden');
+                        infoEl.textContent = `✓ ${ownerName} - ${records[0].property_name}`;
+                        infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
+                        if (propSelect) propSelect.value = records[0].property_id;
+                    } else {
+                        propWrap.classList.remove('hidden');
+                        if (propSelect) {
+                            propSelect.innerHTML = '<option value="">Seleccione el inmueble</option>' + records.map(r => 
+                                `<option value="${r.property_id}">${r.property_name}</option>`).join('');
+                            propSelect.required = true;
+                        }
+                        infoEl.textContent = `✓ ${ownerName} - Seleccione inmueble`;
+                        infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
+                    }
+                } else {
+                    selectedOwnerDelivery = null;
+                    document.getElementById('md-property-wrap')?.classList.add('hidden');
+                    infoEl.textContent = '✗ No encontrado';
+                    infoEl.className = 'mt-2 text-sm text-red-600';
+                }
+            } catch (error) {
+                infoEl.textContent = 'Error al buscar';
+                infoEl.className = 'mt-2 text-sm text-red-600';
+            }
+        }
+
+        async function submitManualVisit() {
+            const formData = {
+                owner_dni: document.getElementById('mv-owner-dni').value.trim(),
+                visitor_first_name: document.getElementById('mv-visitor-firstname').value.trim(),
+                visitor_last_name: document.getElementById('mv-visitor-lastname').value.trim(),
+                visitor_dni: document.getElementById('mv-visitor-dni').value.trim(),
+                visit_date: document.getElementById('mv-visit-date').value,
+                visit_time: document.getElementById('mv-visit-time').value,
+                vehicle_plate: document.getElementById('mv-vehicle-plate').value.trim(),
+                notes: document.getElementById('mv-notes').value.trim()
+            };
+            if (selectedOwnerVisit && selectedOwnerVisit.properties.length > 1) {
+                const propId = document.getElementById('mv-property-select')?.value;
+                if (!propId) {
+                    showToast('Seleccione el inmueble del propietario', 'error');
+                    return;
+                }
+                formData.property_id = propId;
+            }
+
+            if (!formData.owner_dni || !formData.visitor_first_name || !formData.visitor_last_name || 
+                !formData.visitor_dni || !formData.visit_date) {
+                showToast('Complete todos los campos requeridos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth('/api/security/visits/manual', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Visita registrada exitosamente');
+                    closeManualVisitModal();
+                    loadTabData('visits');
+                } else {
+                    showToast(data.error || 'Error al registrar visita', 'error');
+                }
+            } catch (error) {
+                showToast('Error al registrar visita', 'error');
+            }
+        }
+
+        async function submitManualDelivery() {
+            const formData = {
+                owner_dni: document.getElementById('md-owner-dni').value.trim(),
+                name: document.getElementById('md-name').value.trim(),
+                company: document.getElementById('md-company').value.trim(),
+                expected_date: document.getElementById('md-expected-date').value,
+                notes: document.getElementById('md-notes').value.trim()
+            };
+            if (selectedOwnerDelivery && selectedOwnerDelivery.properties.length > 1) {
+                const propId = document.getElementById('md-property-select')?.value;
+                if (!propId) {
+                    showToast('Seleccione el inmueble del propietario', 'error');
+                    return;
+                }
+                formData.property_id = propId;
+            }
+
+            if (!formData.owner_dni || !formData.name || !formData.company || !formData.expected_date) {
+                showToast('Complete todos los campos requeridos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth('/api/security/deliveries/manual', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Delivery registrado exitosamente');
+                    closeManualDeliveryModal();
+                    loadTabData('deliveries');
+                } else {
+                    showToast(data.error || 'Error al registrar delivery', 'error');
+                }
+            } catch (error) {
+                showToast('Error al registrar delivery', 'error');
+            }
+        }
+
+        // Actions
+        async function registerExit(id) {
+            try {
+                const response = await fetchWithAuth(`/api/security/visits/${id}/exit`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Salida registrada exitosamente');
+                    loadTabData(currentTab);
+                } else {
+                    showToast(data.error || 'Error al registrar salida', 'error');
+                }
+            } catch (error) {
+                showToast('Error al registrar salida', 'error');
+            }
+        }
+
+        async function registerDeliveryArrival(id) {
+            try {
+                const response = await fetchWithAuth(`/api/security/deliveries/${id}/arrive`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Llegada registrada exitosamente');
+                    loadTabData('deliveries');
+                } else {
+                    showToast(data.error || 'Error al registrar llegada', 'error');
+                }
+            } catch (error) {
+                showToast('Error al registrar llegada', 'error');
+            }
+        }
+
+        // Search functionality
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query.length < 2) {
+                showToast('Ingrese al menos 2 caracteres', 'error');
+                return;
+            }
+
+            try {
+                // Buscar en todas las categorías incluyendo visitas frecuentes
+                const [visitsUnique, visitsFrequent, deliveries, moves] = await Promise.all([
+                    fetchWithAuth(`/api/security/visits/search?q=${encodeURIComponent(query)}&type=unique`).then(r => r.json()),
+                    fetchWithAuth(`/api/security/visits/search?q=${encodeURIComponent(query)}&type=frequent`).then(r => r.json()),
+                    fetchWithAuth(`/api/security/deliveries/search?q=${encodeURIComponent(query)}`).then(r => r.json()),
+                    fetchWithAuth(`/api/security/moves/search?q=${encodeURIComponent(query)}`).then(r => r.json())
+                ]);
+
+                const results = [
+                    ...(visitsUnique.data || []).map(v => ({ ...v, type: 'visit-unique' })),
+                    ...(visitsFrequent.data || []).map(v => ({ ...v, type: 'visit-frequent' })),
+                    ...(deliveries.data || []).map(d => ({ ...d, type: 'delivery' })),
+                    ...(moves.data || []).map(m => ({ ...m, type: 'move' }))
+                ];
+
+                displaySearchResults(results, query);
+            } catch (error) {
+                console.error('Search error:', error);
+                showToast('Error al buscar', 'error');
+            }
+        }
+
+        function displaySearchResults(results, query) {
+            const container = document.getElementById('searchResults');
+            const content = document.getElementById('searchResultsContent');
+            
+            container.classList.remove('hidden');
+            
+            if (results.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-[#E5E5E5] mb-2">search_off</span>
+                        <p class="text-[#5F6368]">No se encontraron resultados para "${query}"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            lastSearchResults = {};
+            results.forEach((r, index) => {
+                lastSearchResults[`item_${index}`] = r;
+            });
+
+            content.innerHTML = results.map((r, index) => {
+                const isVisit = r.type.includes('visit');
+                const isFrequent = r.type === 'visit-frequent';
+                const isDelivery = r.type === 'delivery';
+                const isMove = r.type === 'move';
+                
+                const data = r.data || {};
+                const moveDate = data.move_date || data.fecha_mudanza;
+                const timeSlot = data.time_slot || data.hora;
+                const isInside = r.entry_time && !r.exit_time;
+                
+                return `
+                    <div class="card p-4 border-l-4 ${isVisit ? isInside ? 'border-green-500' : isFrequent ? 'border-amber-500' : 'border-blue-500' : isDelivery ? 'border-purple-500' : r.status === 'APPROVED' ? 'border-green-500' : 'border-red-500'}">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-icons-round text-[#5F6368]">
+                                        ${isVisit ? isInside ? 'sensors' : isFrequent ? 'star' : 'person' : isDelivery ? 'local_shipping' : 'moving'}
+                                    </span>
+                                    <h4 class="font-medium text-[#3C4043]">
+                                        ${isVisit ? (r.first_name || r.visitor_name) + ' ' + (r.last_name || '') : isDelivery ? r.name : (r.request_type_name || 'Mudanza')}
+                                    </h4>
+                                    ${isFrequent ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Frecuente</span>' : ''}
+                                    ${isInside ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Dentro</span>' : ''}
+                                </div>
+                                <p class="text-sm text-[#5F6368] mt-1">
+                                    ${isVisit ? `DNI: ${r.dni || r.visitor_dni}` : isDelivery ? `Empresa: ${r.company}` : `Propietario: ${r.owner_name}`}
+                                </p>
+                                <p class="text-sm text-[#5F6368]">
+                                    ${isMove ? `Unidad: ${r.property_name}${moveDate ? ' • Fecha: ' + formatDate(moveDate) : ''}` : `Unidad: ${r.property_name} • Prop: ${r.owner_name}`}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-2 py-1 rounded text-xs font-medium ${isVisit ? isInside ? 'bg-green-100 text-green-800' : isFrequent ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' : isDelivery ? 'bg-purple-100 text-purple-800' : r.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${isVisit ? isFrequent ? 'Visita Frecuente' : 'Visita' : isDelivery ? 'Delivery' : r.status === 'APPROVED' ? 'Mudanza Aprobada' : 'Rechazada'}
+                                </span>
+                                ${isVisit && isFrequent && !isInside ? `
+                                    <button onclick="openEntryModal('${r.id}', 'frequent', '${r.first_name || r.visitor_name} ${r.last_name || ''}', true)" 
+                                        class="touch-target block mt-2 text-sm text-green-700 hover:underline font-medium py-2">
+                                        Registrar Entrada
+                                    </button>
+                                ` : ''}
+                                ${isVisit && !isFrequent && !isInside && !r.exit_time ? `
+                                    <button onclick="openEntryModal('${r.id}', 'unique', '${r.first_name || r.visitor_name} ${r.last_name || ''}')" 
+                                        class="touch-target block mt-2 text-sm text-green-700 hover:underline font-medium py-2">
+                                        Registrar Entrada
+                                    </button>
+                                ` : ''}
+                                ${isVisit && isInside ? `
+                                    <button onclick="registerExit('${r.log_id || r.id}')" 
+                                        class="touch-target block mt-2 text-sm text-red-700 hover:underline font-medium py-2">
+                                        Registrar Salida
+                                    </button>
+                                ` : ''}
+                                ${isMove ? `
+                                    <button onclick="showMoveDetailFromSearch(${index})"
+                                        class="touch-target block mt-2 text-sm ${r.status === 'APPROVED' ? 'text-green-700' : 'text-red-700'} hover:underline font-medium cursor-pointer py-2">
+                                        Ver detalles
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showMoveDetailFromSearch(index) {
+            const move = lastSearchResults[`item_${index}`];
+            if (move) {
+                showMoveDetails(move);
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').classList.add('hidden');
+        }
+
+        function showMoveDetails(move) {
+            const data = move.data || {};
+            const isApproved = move.status === 'APPROVED';
+            
+            let detailsHtml = '';
+            const schema = move.form_schema || {};
+            const fields = schema.fields || [];
+            
+            for (const field of fields) {
+                const value = data[field.name];
+                if (value !== undefined && value !== null && value !== '') {
+                    const icon = getFieldIcon(field.type, field.name);
+                    let displayValue = value;
+                    if (field.type === 'date' && value) displayValue = formatDate(value);
+                    else if (field.type === 'checkbox') displayValue = value ? 'Sí' : 'No';
+                    
+                    detailsHtml += `
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <span class="material-icons-round text-[#f97316]">${icon}</span>
+                            <div>
+                                <span class="text-xs text-[#9AA0A6]">${field.label}</span>
+                                <p class="font-medium text-[#3C4043]">${displayValue}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            const statusBanner = isApproved ? `
+                <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-xl flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="material-icons-round text-green-600">check_circle</span>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-green-800">Mudanza APROBADA</h3>
+                        <p class="text-sm text-green-600">Autorizada por la Junta</p>
+                    </div>
+                </div>
+            ` : `
+                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <span class="material-icons-round text-red-600">cancel</span>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-red-800">Mudanza RECHAZADA</h3>
+                        <p class="text-sm text-red-600">No autorizada</p>
+                    </div>
+                </div>
+            `;
+
+            const modalHtml = `
+                <div id="moveDetailsModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick="closeMoveModal(event)">
+                    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+                        <div class="p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 ${isApproved ? 'bg-green-100' : 'bg-red-100'} rounded-xl flex items-center justify-center">
+                                    <span class="material-icons-round ${isApproved ? 'text-green-600' : 'text-red-600'}">moving</span>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-[#3C4043]">${move.request_type_name || 'Mudanza'}</h2>
+                                    <p class="text-sm text-[#5F6368]">${move.property_name}</p>
+                                </div>
+                            </div>
+                            <button onclick="closeMoveModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                                <span class="material-icons-round text-[#5F6368]">close</span>
+                            </button>
+                        </div>
+                        <div class="p-6 overflow-y-auto max-h-[60vh]">
+                            ${statusBanner}
+                            <div class="mb-6 p-4 bg-blue-50 rounded-xl">
+                                <h4 class="text-sm font-medium text-blue-800 mb-3">Propietario</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span class="text-xs text-[#9AA0A6]">Nombre</span>
+                                        <p class="font-medium text-[#3C4043]">${move.owner_name}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs text-[#9AA0A6]">DNI</span>
+                                        <p class="font-medium text-[#3C4043]">${move.owner_dni || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <h4 class="text-sm font-medium text-[#3C4043] mb-3">Detalles</h4>
+                            <div class="space-y-2">${detailsHtml || '<p class="text-[#5F6368] text-sm">Sin detalles adicionales</p>'}</div>
+                        </div>
+                        <div class="p-6 border-t border-[#E5E5E5] bg-gray-50">
+                            <button onclick="closeMoveModal()" class="w-full px-4 py-3 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-xl font-medium hover:shadow-lg">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function closeMoveModal(event) {
+            const modal = document.getElementById('moveDetailsModal');
+            if (!event || event.target === modal || event.target.closest('button')) {
+                if (modal) modal.remove();
+            }
+        }
+
+        function getFieldIcon(type, name) {
+            const nameLower = name.toLowerCase();
+            if (nameLower.includes('date') || nameLower.includes('fecha')) return 'event';
+            if (nameLower.includes('time') || nameLower.includes('hora')) return 'schedule';
+            if (nameLower.includes('plate') || nameLower.includes('placa')) return 'directions_car';
+            if (nameLower.includes('company') || nameLower.includes('empresa')) return 'business';
+            if (nameLower.includes('phone') || nameLower.includes('telefono')) return 'phone';
+            if (nameLower.includes('elevator') || nameLower.includes('elevador')) return 'elevator';
+            if (nameLower.includes('insurance') || nameLower.includes('seguro')) return 'verified';
+            if (nameLower.includes('note')) return 'notes';
+            if (type === 'checkbox') return 'check_box';
+            return 'label';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('es-VE', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric',
+                timeZone: 'America/Caracas'
+            });
+        }
+
+        function formatTime(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleTimeString('es-VE', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'America/Caracas'
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Panel de Propietario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Panel de Propietario</h1>
+                            <p class="text-sm text-[#5F6368] mt-1" id="header-property">Cargando...</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <!-- Selector de Unidad -->
+                            <select id="propertySelector" class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] hidden">
+                                <!-- Cargado dinámicamente -->
+                            </select>
+                            
+                            <!-- Perfil -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center text-white font-semibold" id="user-avatar">
+                                    -
+                                </div>
+                                <span class="text-sm font-medium text-[#3C4043] hidden md:block" id="user-name">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Property Info Card -->
+                <div class="card p-6 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-2xl flex items-center justify-center">
+                                <span class="material-icons-round text-3xl text-white">home</span>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-medium text-[#3C4043]" id="property-name">Cargando...</h2>
+                                <p class="text-[#5F6368] mt-1" id="property-details">
+                                    <!-- Cargado dinámicamente -->
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right" id="alicuota-container">
+                            <div class="text-sm text-[#5F6368]">Alícuota</div>
+                            <div class="text-2xl font-bold text-[#f97316]" id="property-alicuota">-</div>
+                            <div class="text-sm text-[#9AA0A6]" id="property-area"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Solicitudes -->
+                    <div class="card p-5 card-hover cursor-pointer" onclick="location.href='/owner/requests'">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Solicitudes Pendientes</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-requests">-</p>
+                            </div>
+                            <div class="p-2 bg-amber-100 rounded-lg">
+                                <span class="material-icons-round text-amber-600">assignment</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consultas -->
+                    <div class="card p-5 card-hover cursor-pointer" onclick="location.href='/owner/consultations'">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Consultas Activas</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-consultations">-</p>
+                            </div>
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <span class="material-icons-round text-blue-600">how_to_vote</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visitas -->
+                    <div class="card p-5 card-hover cursor-pointer" onclick="location.href='/owner/visitors'">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Visitas Hoy</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-visits">-</p>
+                            </div>
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <span class="material-icons-round text-green-600">people</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Facturas -->
+                    <div class="card p-5 card-hover cursor-pointer" onclick="location.href='/owner/invoices'">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Facturas Pendientes</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-invoices">-</p>
+                            </div>
+                            <div class="p-2 bg-red-100 rounded-lg">
+                                <span class="material-icons-round text-red-600">receipt_long</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid de 4 Contenedores: 2x2 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- 1. Acciones Rápidas -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-4">Acciones Rápidas</h3>
+                        <div class="space-y-3">
+                            <a href="/owner/requests/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition">
+                                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
+                                    <span class="material-icons-round text-amber-600">add_circle</span>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-[#3C4043]">Nueva Solicitud</div>
+                                    <div class="text-sm text-[#5F6368]">Crear PQRS</div>
+                                </div>
+                            </a>
+                            
+                            <a href="/owner/visitors/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                    <span class="material-icons-round text-green-600">person_add</span>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-[#3C4043]">Anunciar Visita</div>
+                                    <div class="text-sm text-[#5F6368]">Frecuente o única</div>
+                                </div>
+                            </a>
+                            
+                            <a href="/owner/delivery/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition">
+                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                    <span class="material-icons-round text-purple-600">local_shipping</span>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-[#3C4043]">Anunciar Delivery</div>
+                                    <div class="text-sm text-[#5F6368]">Pedidos y encomiendas</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 2. Notificaciones (Placeholder) -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-[#3C4043]">Notificaciones</h3>
+                        </div>
+                        <div id="notifications-loading" class="flex items-center justify-center py-8">
+                            <div class="loading-spinner mr-3"></div>
+                            <span class="text-[#5F6368] text-sm">Cargando...</span>
+                        </div>
+                        <div id="notifications-list" class="space-y-3 hidden min-h-[120px]">
+                            <!-- Últimas 4 notificaciones -->
+                        </div>
+                        <div id="notifications-empty" class="text-center py-8 hidden">
+                            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="material-icons-round text-3xl text-blue-400">notifications_none</span>
+                            </div>
+                            <p class="text-[#5F6368] text-sm mb-2">Sin notificaciones</p>
+                            <p class="text-[#9AA0A6] text-xs">Aquí verás los mensajes cortos que envíe la administración del condominio.</p>
+                        </div>
+                    </div>
+
+                    <!-- 3. Tasas BCV -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-[#3C4043]">Tasas BCV</h3>
+                            <span id="bcv-page-info" class="text-sm text-[#5F6368]"></span>
+                        </div>
+                        <div id="bcv-container">
+                            <div class="flex items-center justify-center py-8" id="bcv-loading">
+                                <div class="loading-spinner mr-3"></div>
+                                <span class="text-[#5F6368] text-sm">Cargando tasas...</span>
+                            </div>
+                            <div id="bcv-list" class="space-y-3 hidden">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                            <div id="bcv-empty" class="text-center py-8 hidden">
+                                <span class="material-icons-round text-3xl text-[#9AA0A6] mb-2">trending_up</span>
+                                <p class="text-[#5F6368] text-sm">No hay tasas disponibles</p>
+                            </div>
+                        </div>
+                        <!-- Pagination -->
+                        <div id="bcv-pagination" class="flex items-center justify-between mt-4 pt-4 border-t border-[#E5E5E5] hidden">
+                            <button id="bcv-prev" onclick="changeBCVPage(-1)" disabled
+                                class="flex items-center gap-1 px-3 py-2 text-sm text-[#5F6368] hover:text-[#f97316] disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="material-icons-round text-sm">chevron_left</span>
+                                Anterior
+                            </button>
+                            <button id="bcv-next" onclick="changeBCVPage(1)" disabled
+                                class="flex items-center gap-1 px-3 py-2 text-sm text-[#5F6368] hover:text-[#f97316] disabled:opacity-50 disabled:cursor-not-allowed">
+                                Siguiente
+                                <span class="material-icons-round text-sm">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4. Actividad Reciente -->
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-[#3C4043]">Actividad Reciente</h3>
+                            <span id="activity-page-info" class="text-sm text-[#5F6368]"></span>
+                        </div>
+                        <div id="recent-activity-container">
+                            <div class="flex items-center justify-center py-8" id="activity-loading">
+                                <div class="loading-spinner mr-3"></div>
+                                <span class="text-[#5F6368] text-sm">Cargando actividad...</span>
+                            </div>
+                            <div id="activity-list" class="space-y-3 hidden min-h-[200px]">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                            <div id="activity-empty" class="text-center py-8 hidden">
+                                <span class="material-icons-round text-3xl text-[#9AA0A6] mb-2">notifications_none</span>
+                                <p class="text-[#5F6368] text-sm">No hay actividad reciente</p>
+                            </div>
+                        </div>
+                        <!-- Pagination -->
+                        <div id="activity-pagination" class="flex items-center justify-between mt-4 pt-4 border-t border-[#E5E5E5] hidden">
+                            <button id="activity-prev" onclick="changeActivityPage(-1)" disabled
+                                class="flex items-center gap-1 px-3 py-2 text-sm text-[#5F6368] hover:text-[#f97316] disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="material-icons-round text-sm">chevron_left</span>
+                                Anterior
+                            </button>
+                            <button id="activity-next" onclick="changeActivityPage(1)" disabled
+                                class="flex items-center gap-1 px-3 py-2 text-sm text-[#5F6368] hover:text-[#f97316] disabled:opacity-50 disabled:cursor-not-allowed">
+                                Siguiente
+                                <span class="material-icons-round text-sm">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+        const availableProperties = JSON.parse(localStorage.getItem('availableProperties') || '[]');
+        let tenantBillingType = null;  // Se carga desde el dashboard API
+
+        // Inicializar datos del usuario
+        document.getElementById('user-name').textContent = user?.firstName || 'Usuario';
+        document.getElementById('user-avatar').textContent = (user?.firstName || 'U').charAt(0).toUpperCase();
+        document.getElementById('header-property').textContent = selectedProperty?.tenantName || selectedProperty?.name || 'Condominio';
+
+        // Cargar datos de la propiedad
+        function loadPropertyData() {
+            if (!selectedProperty || !selectedProperty.id) {
+                window.location.href = '/select-property';
+                return;
+            }
+
+            document.getElementById('property-name').textContent = selectedProperty.name || 'Mi Propiedad';
+            
+            // Detalles de la propiedad - Traducir tipos comunes
+            let details = [];
+            if (selectedProperty.type) {
+                const typeMap = {
+                    'APARTMENTO': 'Apartamento',
+                    'APARTMENT': 'Apartamento',
+                    'Apartment': 'Apartamento',
+                    'CASA': 'Casa',
+                    'HOUSE': 'Casa',
+                    'House': 'Casa',
+                    'LOCAL': 'Local Comercial',
+                    'OFFICE': 'Oficina',
+                    'PARKING': 'Estacionamiento',
+                    'STORAGE': 'Depósito'
+                };
+                const typeName = typeMap[selectedProperty.type] || selectedProperty.type;
+                details.push(typeName);
+            }
+            if (selectedProperty.building) details.push(selectedProperty.building);
+            if (selectedProperty.floor) details.push('Piso ' + selectedProperty.floor);
+            document.getElementById('property-details').textContent = details.join(' • ') || 'Propiedad';
+            
+            // Renderizar info de facturación/alícuota
+            renderPropertyInfo();
+        }
+
+        // Renderizar información de facturación/alícuota
+        function renderPropertyInfo() {
+            if (!selectedProperty) return;
+            
+            const billingType = tenantBillingType;
+            const alicuota = selectedProperty.alicuota || selectedProperty.percentage;
+            
+            if (billingType === 'FIXED') {
+                // Facturación Fija
+                document.getElementById('alicuota-container').querySelector('.text-sm').textContent = 'Facturación';
+                document.getElementById('property-alicuota').textContent = 'Fija';
+                document.getElementById('property-alicuota').className = 'text-2xl font-bold text-gray-500';
+                document.getElementById('property-area').textContent = selectedProperty.area ? selectedProperty.area + ' m²' : '';
+            } else if (alicuota && alicuota > 0) {
+                // Facturación por Alícuota
+                document.getElementById('alicuota-container').querySelector('.text-sm').textContent = 'Alícuota';
+                document.getElementById('property-alicuota').textContent = alicuota + '%';
+                document.getElementById('property-alicuota').className = 'text-2xl font-bold text-[#f97316]';
+                if (selectedProperty.area) {
+                    document.getElementById('property-area').textContent = selectedProperty.area + ' m²';
+                }
+            } else {
+                // Sin alícuota configurada (aún no se sabe el tipo de facturación o es ALICUOTA sin valor)
+                document.getElementById('alicuota-container').querySelector('.text-sm').textContent = 'Alícuota';
+                document.getElementById('property-alicuota').textContent = billingType === 'ALICUOTA' ? '0%' : '-';
+                document.getElementById('property-alicuota').className = 'text-2xl font-bold text-gray-400';
+                document.getElementById('property-area').textContent = selectedProperty.area ? selectedProperty.area + ' m²' : '';
+            }
+        }
+
+        // Cargar selector de propiedades
+        function loadPropertySelector() {
+            const selector = document.getElementById('propertySelector');
+            
+            if (!availableProperties || availableProperties.length <= 1) {
+                selector.classList.add('hidden');
+                return;
+            }
+
+            selector.classList.remove('hidden');
+            selector.innerHTML = availableProperties.map(prop => `
+                <option value="${prop.id}" ${prop.id === selectedProperty?.id ? 'selected' : ''}>
+                    ${prop.name} ${prop.isPrimary ? '(Principal)' : ''}
+                </option>
+            `).join('');
+        }
+
+        // Cargar estadísticas
+        async function loadStats() {
+            try {
+                const propertyId = selectedProperty?.id;
+                if (!propertyId || !token) return;
+
+                const response = await fetch(`/api/owner/dashboard?propertyId=${propertyId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('stat-requests').textContent = data.stats?.pendingRequests ?? '0';
+                    document.getElementById('stat-consultations').textContent = data.stats?.activeConsultations ?? '0';
+                    document.getElementById('stat-visits').textContent = data.stats?.todayVisits ?? '0';
+                    document.getElementById('stat-invoices').textContent = data.stats?.pendingInvoices ?? '0';
+                    
+                    // Guardar billing_type del tenant para mostrar alícuota o Facturación Fija
+                    tenantBillingType = data.property?.tenant?.billing_type;
+                    // Re-renderizar info de propiedad con el billing_type correcto
+                    renderPropertyInfo();
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('stat-requests').textContent = '0';
+                document.getElementById('stat-consultations').textContent = '0';
+                document.getElementById('stat-visits').textContent = '0';
+                document.getElementById('stat-invoices').textContent = '0';
+            }
+        }
+
+        // Formato de fecha/hora Venezuela (GMT-4)
+        function formatDateTimeVenezuela(dateStr) {
+            if (!dateStr) return '';
+            return new Date(dateStr).toLocaleString('es-VE', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'America/Caracas'
+            });
+        }
+
+        function timeAgoVenezuela(dateStr) {
+            if (!dateStr) return '';
+            
+            // La fecha viene en UTC desde el servidor, convertir a Venezuela (GMT-4)
+            const date = new Date(dateStr);
+            // Obtener timestamp real en UTC
+            const utcTimestamp = date.getTime();
+            // Venezuela es GMT-4, restamos 4 horas (pero como la fecha ya es UTC,
+            // solo necesitamos comparar correctamente)
+            const nowUtc = new Date().getTime();
+            
+            const diffMs = nowUtc - utcTimestamp;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Hace un momento';
+            if (diffMins < 60) return `Hace ${diffMins} min`;
+            if (diffHours < 24) return `Hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+            if (diffDays < 7) return `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+            return formatDateTimeVenezuela(dateStr);
+        }
+
+        // Variables para paginación de actividad
+        let activityData = [];
+        let activityPage = 1;
+        const ACTIVITIES_PER_PAGE = 4;
+
+        // Cargar actividad reciente
+        async function loadActivity() {
+            const loadingEl = document.getElementById('activity-loading');
+            const listEl = document.getElementById('activity-list');
+            const emptyEl = document.getElementById('activity-empty');
+            const paginationEl = document.getElementById('activity-pagination');
+
+            try {
+                const propertyId = selectedProperty?.id;
+                if (!propertyId || !token) {
+                    loadingEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                const response = await fetch(`/api/owner/activity?propertyId=${propertyId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar actividad');
+                }
+                
+                const data = await response.json();
+                
+                loadingEl.classList.add('hidden');
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    activityData = data.data;
+                    activityPage = 1;
+                    renderActivityPage();
+                    listEl.classList.remove('hidden');
+                    
+                    // Mostrar paginación si hay más de 4 actividades
+                    if (activityData.length > ACTIVITIES_PER_PAGE) {
+                        paginationEl.classList.remove('hidden');
+                    }
+                } else {
+                    emptyEl.classList.remove('hidden');
+                    paginationEl.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+                paginationEl.classList.add('hidden');
+            }
+        }
+
+        // Renderizar página de actividad
+        function renderActivityPage() {
+            const listEl = document.getElementById('activity-list');
+            const prevBtn = document.getElementById('activity-prev');
+            const nextBtn = document.getElementById('activity-next');
+            const pageInfo = document.getElementById('activity-page-info');
+            
+            const colorMap = {
+                'blue': 'bg-blue-100 text-blue-600',
+                'green': 'bg-green-100 text-green-600',
+                'amber': 'bg-amber-100 text-amber-600',
+                'purple': 'bg-purple-100 text-purple-600',
+                'red': 'bg-red-100 text-red-600',
+                'indigo': 'bg-indigo-100 text-indigo-600',
+                'gray': 'bg-gray-100 text-gray-600',
+                'teal': 'bg-teal-100 text-teal-600'
+            };
+            
+            // Calcular rango
+            const start = (activityPage - 1) * ACTIVITIES_PER_PAGE;
+            const end = start + ACTIVITIES_PER_PAGE;
+            const pageData = activityData.slice(start, end);
+            const totalPages = Math.ceil(activityData.length / ACTIVITIES_PER_PAGE);
+            
+            // Renderizar actividades
+            listEl.innerHTML = pageData.map(item => `
+                <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#FAFAFA] transition">
+                    <div class="w-10 h-10 rounded-full ${colorMap[item.color] || 'bg-gray-100 text-gray-600'} flex items-center justify-center flex-shrink-0">
+                        <span class="material-icons-round text-sm">${item.icon}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-[#3C4043] truncate">${item.title}</p>
+                        <p class="text-xs text-[#5F6368] truncate">${item.description}</p>
+                        <p class="text-xs text-[#9AA0A6] mt-0.5">${timeAgoVenezuela(item.date)}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Actualizar controles
+            prevBtn.disabled = activityPage <= 1;
+            nextBtn.disabled = activityPage >= totalPages;
+            pageInfo.textContent = `Página ${activityPage} de ${totalPages} (${activityData.length} total)`;
+        }
+
+        // Cambiar página de actividad
+        function changeActivityPage(delta) {
+            const totalPages = Math.ceil(activityData.length / ACTIVITIES_PER_PAGE);
+            const newPage = activityPage + delta;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                activityPage = newPage;
+                renderActivityPage();
+            }
+        }
+
+        // Cambiar de unidad
+        document.getElementById('propertySelector')?.addEventListener('change', async (e) => {
+            const propertyId = e.target.value;
+            
+            try {
+                const response = await fetch('/api/auth/select-property', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ propertyId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    if (data.property) {
+                        localStorage.setItem('selectedProperty', JSON.stringify(data.property));
+                    }
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error al cambiar de unidad:', error);
+            }
+        });
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('selectedProperty');
+            localStorage.removeItem('availableProperties');
+            window.location.href = '/login';
+        }
+
+        // ==================== TASAS BCV ====================
+        let bcvData = [];
+        let bcvPage = 1;
+        const BCV_PER_PAGE = 4;
+
+        // Cargar tasas BCV
+        async function loadBCVRates() {
+            const loadingEl = document.getElementById('bcv-loading');
+            const listEl = document.getElementById('bcv-list');
+            const emptyEl = document.getElementById('bcv-empty');
+            const paginationEl = document.getElementById('bcv-pagination');
+
+            try {
+                loadingEl.classList.remove('hidden');
+                listEl.classList.add('hidden');
+                emptyEl.classList.add('hidden');
+                paginationEl.classList.add('hidden');
+
+                const response = await fetch(`/api/owner/exchange-rates?page=${bcvPage}&limit=${BCV_PER_PAGE}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                loadingEl.classList.add('hidden');
+
+                if (data.success && data.data && data.data.length > 0) {
+                    bcvData = data.data;
+                    renderBCVPage();
+                    listEl.classList.remove('hidden');
+                    
+                    // Mostrar paginación si hay más páginas
+                    if (data.pagination.totalPages > 1) {
+                        paginationEl.classList.remove('hidden');
+                    }
+                } else {
+                    emptyEl.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading BCV rates:', error);
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+            }
+        }
+
+        // Renderizar página de BCV
+        function renderBCVPage() {
+            const listEl = document.getElementById('bcv-list');
+            const prevBtn = document.getElementById('bcv-prev');
+            const nextBtn = document.getElementById('bcv-next');
+            const pageInfo = document.getElementById('bcv-page-info');
+
+            // Formatear fecha (la fecha ya viene en formato local desde la API/DB)
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '-';
+                // La fecha viene como '2026-03-17', la parseamos manualmente para evitar problemas de timezone
+                const [year, month, day] = dateStr.split('T')[0].split('-');
+                const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                return `${day} ${monthNames[parseInt(month) - 1]}. ${year}`;
+            };
+
+            // Formatear número
+            const formatRate = (rate) => {
+                return new Intl.NumberFormat('es-VE', {
+                    style: 'currency',
+                    currency: 'VES',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(rate);
+            };
+
+            // Renderizar tasas
+            listEl.innerHTML = bcvData.map(rate => {
+                const usdChange = rate.changeUsd || 0;
+                const eurChange = rate.changeEur || 0;
+                const usdChangeClass = usdChange >= 0 ? 'text-green-600' : 'text-red-600';
+                const eurChangeClass = eurChange >= 0 ? 'text-green-600' : 'text-red-600';
+                const usdArrow = usdChange >= 0 ? '↑' : '↓';
+                const eurArrow = eurChange >= 0 ? '↑' : '↓';
+
+                return `
+                    <div class="p-3 bg-[#FAFAFA] rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-[#5F6368]">${formatDate(rate.date)}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-bold text-[#3C4043]">$</span>
+                                <div>
+                                    <div class="text-sm font-semibold text-[#3C4043]">${formatRate(rate.usd)}</div>
+                                    ${rate.changeUsd !== undefined ? `
+                                        <div class="text-xs ${usdChangeClass}">${usdArrow} ${Math.abs(usdChange).toFixed(2)}%</div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-bold text-[#3C4043]">€</span>
+                                <div>
+                                    <div class="text-sm font-semibold text-[#3C4043]">${formatRate(rate.eur)}</div>
+                                    ${rate.changeEur !== undefined ? `
+                                        <div class="text-xs ${eurChangeClass}">${eurArrow} ${Math.abs(rate.changeEur).toFixed(2)}%</div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Actualizar controles de paginación
+            const totalPages = Math.ceil(bcvData.length / BCV_PER_PAGE) || 1;
+            prevBtn.disabled = bcvPage <= 1;
+            nextBtn.disabled = bcvPage >= totalPages || bcvData.length < BCV_PER_PAGE;
+            pageInfo.textContent = `Página ${bcvPage}`;
+        }
+
+        // Cambiar página de BCV
+        async function changeBCVPage(delta) {
+            const newPage = bcvPage + delta;
+            if (newPage >= 1) {
+                bcvPage = newPage;
+                await loadBCVRates();
+            }
+        }
+
+        // Cargar notificaciones in-app (últimas 4)
+        async function loadNotifications() {
+            const loadingEl = document.getElementById('notifications-loading');
+            const listEl = document.getElementById('notifications-list');
+            const emptyEl = document.getElementById('notifications-empty');
+
+            try {
+                const propertyId = selectedProperty?.id;
+                if (!propertyId || !token) {
+                    loadingEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                const r = await fetch(`/api/owner/in-app-notifications?propertyId=${propertyId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const d = await r.json();
+
+                loadingEl.classList.add('hidden');
+
+                if (d.success && d.data && d.data.length > 0) {
+                    listEl.classList.remove('hidden');
+                    emptyEl.classList.add('hidden');
+                    listEl.innerHTML = d.data.map(n => `
+                        <div class="flex gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <div class="w-10 h-10 rounded-full bg-[#f97316]/10 flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-[#f97316] text-lg">campaign</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[#3C4043] text-sm">${escapeHtml(n.message)}</p>
+                                <p class="text-[#9AA0A6] text-xs mt-1">${n.author_name || 'Administración'} · ${timeAgoVenezuela(n.sent_at)}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                loadingEl.classList.add('hidden');
+                listEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+            }
+        }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+
+        // Cargar al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPropertyData();
+            loadPropertySelector();
+            loadStats();
+            loadBCVRates();
+            loadActivity();
+            loadNotifications();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completar Registro - Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col antialiased">
+    <div class="flex-1 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full">
+            <!-- Estado: Cargando -->
+            <div id="state-loading" class="bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-100 text-center">
+                <div class="animate-spin w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full mx-auto mb-6"></div>
+                <p class="text-slate-600">Verificando invitación...</p>
+            </div>
+
+            <!-- Estado: Token inválido/expirado -->
+            <div id="state-error" class="hidden bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-100 text-center">
+                <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900">Enlace inválido o expirado</h2>
+                <p id="error-text" class="mt-2 text-slate-600">El enlace de invitación no es válido o ha expirado (7 días).</p>
+                <a href="/login" class="mt-6 inline-block px-6 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition">Ir a Iniciar Sesión</a>
+            </div>
+
+            <!-- Estado: Formulario -->
+            <div id="state-form" class="hidden bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-100">
+                <div class="flex flex-col items-center">
+                    <a href="/" class="flex items-center gap-2 mb-6">
+                        <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-12 w-12" style="object-fit: contain;">
+                        <span class="text-xl text-slate-900 tracking-tight font-extrabold">Condominio360</span>
+                    </a>
+                    <h2 class="text-2xl font-extrabold text-slate-900">Completar Registro</h2>
+                    <p class="mt-1 text-sm text-slate-600">Hola, <span id="user-name" class="font-medium"></span>. Define tu contraseña para activar tu cuenta.</p>
+                </div>
+                <form id="completeForm" class="mt-8 space-y-5">
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Contraseña *</label>
+                        <input id="password" name="password" type="password" required minlength="8"
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                            placeholder="Mínimo 8 caracteres">
+                    </div>
+                    <div>
+                        <label for="passwordConfirm" class="block text-sm font-medium text-slate-700 mb-1">Confirmar contraseña *</label>
+                        <input id="passwordConfirm" name="passwordConfirm" type="password" required minlength="8"
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                            placeholder="Repite tu contraseña">
+                    </div>
+                    <button type="submit" id="btn-submit"
+                        class="w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-xl text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition shadow-lg shadow-orange-500/25">
+                        Activar cuenta
+                    </button>
+                    <div id="form-error" class="hidden text-red-600 text-sm text-center py-3 bg-red-50 px-4 rounded-xl"></div>
+                </form>
+            </div>
+
+            <!-- Estado: Éxito -->
+            <div id="state-success" class="hidden bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-100 text-center">
+                <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900">Registro confirmado</h2>
+                <p class="mt-2 text-slate-600">Tu cuenta ha sido activada. Ya puedes iniciar sesión como propietario.</p>
+                <a href="/login" class="mt-6 inline-block px-6 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">
+                    Ir a Iniciar Sesión
+                </a>
+            </div>
+        </div>
+    </div>
+    <p class="pb-6 text-center">
+        <a href="/" class="text-slate-600 hover:text-orange-600 font-medium text-sm transition">← Volver al inicio</a>
+    </p>
+
+    <script>
+        (function() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            const states = {
+                loading: document.getElementById('state-loading'),
+                error: document.getElementById('state-error'),
+                form: document.getElementById('state-form'),
+                success: document.getElementById('state-success')
+            };
+
+            function show(state) {
+                Object.values(states).forEach(s => s.classList.add('hidden'));
+                states[state].classList.remove('hidden');
+            }
+
+            function setError(msg) {
+                const el = document.getElementById('error-text');
+                if (el) el.textContent = msg || 'El enlace no es válido o ha expirado.';
+            }
+
+            if (!token) {
+                show('error');
+                setError('Falta el token de invitación.');
+                return;
+            }
+
+            fetch('/api/auth/verify-invitation?token=' + encodeURIComponent(token))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.valid && data.user) {
+                        document.getElementById('user-name').textContent = (data.user.firstName || '') + ' ' + (data.user.lastName || '');
+                        document.getElementById('completeForm').dataset.token = token;
+                        show('form');
+                    } else {
+                        setError(data.error || 'Token inválido o expirado');
+                        show('error');
+                    }
+                })
+                .catch(() => {
+                    setError('Error al verificar la invitación.');
+                    show('error');
+                });
+
+            document.getElementById('completeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const pwd = document.getElementById('password').value;
+                const pwdConfirm = document.getElementById('passwordConfirm').value;
+                const formError = document.getElementById('form-error');
+                const btn = document.getElementById('btn-submit');
+
+                formError.classList.add('hidden');
+                if (pwd.length < 8) {
+                    formError.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+                    formError.classList.remove('hidden');
+                    return;
+                }
+                if (pwd !== pwdConfirm) {
+                    formError.textContent = 'Las contraseñas no coinciden.';
+                    formError.classList.remove('hidden');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = 'Activando...';
+
+                fetch('/api/auth/complete-registration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: document.getElementById('completeForm').dataset.token, password: pwd })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            show('success');
+                        } else {
+                            formError.textContent = data.error || 'Error al completar el registro.';
+                            formError.classList.remove('hidden');
+                            btn.disabled = false;
+                            btn.textContent = 'Activar cuenta';
+                        }
+                    })
+                    .catch(() => {
+                        formError.textContent = 'Error de conexión. Intenta de nuevo.';
+                        formError.classList.remove('hidden');
+                        btn.disabled = false;
+                        btn.textContent = 'Activar cuenta';
+                    });
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= tenant.name %> | Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        :root {
+            --md-sys-color-primary: #f97316;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #fff7ed;
+            --md-sys-color-on-primary-container: #9a3412;
+            --md-sys-color-secondary: #50606e;
+            --md-sys-color-on-secondary: #ffffff;
+            --md-sys-color-secondary-container: #d3e5f5;
+            --md-sys-color-on-secondary-container: #0c1d29;
+            --md-sys-color-surface: #fdfcff;
+            --md-sys-color-surface-variant: #dfe2eb;
+            --md-sys-color-on-surface: #1a1c1e;
+            --md-sys-color-on-surface-variant: #43474e;
+            --md-sys-color-outline: #73777f;
+            --md-sys-color-error: #ba1a1a;
+            --md-sys-color-error-container: #ffdad6;
+            --md-elevation-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+            --md-elevation-2: 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12);
+            --md-elevation-3: 0 10px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.10);
+            --md-radius-small: 8px;
+            --md-radius-medium: 12px;
+            --md-radius-large: 16px;
+        }
+        
+        .nav-rail {
+            background: var(--md-sys-color-surface);
+            border-right: 1px solid var(--md-sys-color-surface-variant);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-rail.collapsed { width: 80px; }
+        .nav-rail.expanded { width: 300px; }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            margin: 4px 12px;
+            border-radius: var(--md-radius-large);
+            color: var(--md-sys-color-on-surface-variant);
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            text-decoration: none;
+        }
+        
+        .nav-item:hover { background: rgba(249, 115, 22, 0.08); }
+        .nav-item.active {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .nav-item .icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-item .label {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .nav-rail.collapsed .nav-item .label {
+            opacity: 0;
+            width: 0;
+        }
+        
+        .md-card {
+            background: var(--md-sys-color-surface);
+            border-radius: var(--md-radius-large);
+            box-shadow: var(--md-elevation-1);
+        }
+        
+        .md-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .md-button-filled {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }
+        
+        .md-button-tonal {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+        
+        .md-button-text {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            padding: 10px 12px;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+        }
+        
+        .modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+        
+        .modal-content {
+            background: white;
+            border-radius: var(--md-radius-large);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--md-elevation-3);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div class="h-screen flex overflow-hidden">
+        <!-- Navigation Rail / Sidebar -->
+        <aside id="sidebar" class="nav-rail expanded fixed h-full z-40 flex flex-col">
+            <!-- Logo Section -->
+            <div class="px-5 pl-6 py-4 flex items-center gap-4 h-16">
+                <button id="menu-toggle" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-slate-700">menu</span>
+                </button>
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10 flex-shrink-0" style="object-fit: contain;">
+                    <div class="whitespace-nowrap flex-shrink-0">
+                        <h1 class="font-bold text-slate-900 text-lg leading-tight tracking-tight">Condominio360</h1>
+                        <p class="text-xs text-slate-500">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="h-px bg-gray-200 mx-4"></div>
+
+            <!-- Navigation Items (homologados con dashboard) -->
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">space_dashboard</span>
+                    <span class="label">Dashboard</span>
+                </a>
+                <a href="/admin" class="nav-item active">
+                    <span class="icon material-symbols-rounded">apartment</span>
+                    <span class="label">Condominios</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">group</span>
+                    <span class="label">Usuarios</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">receipt_long</span>
+                    <span class="label">Auditoría</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">payments</span>
+                    <span class="label">Facturación C360</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">account_balance</span>
+                    <span class="label">Balance Financiero</span>
+                </a>
+                <a href="/admin" class="nav-item">
+                    <span class="icon material-symbols-rounded">settings</span>
+                    <span class="label">Configuración</span>
+                </a>
+            </nav>
+
+            <!-- Bottom Actions -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="nav-item text-red-600 hover:bg-red-50" onclick="logout()">
+                    <span class="icon material-symbols-rounded">logout</span>
+                    <span class="label">Cerrar sesión</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-10 flex-shrink-0">
+                <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <a href="/admin" class="p-2 hover:bg-gray-100 rounded-full inline-flex">
+                            <span class="material-symbols-rounded">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900"><%= tenant.name %></h1>
+                            <p class="text-sm text-gray-500">Slug: <%= tenant.slug %></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="switchToTenantAdmin('<%= tenant.id %>')" class="md-button md-button-filled">
+                            <span class="material-symbols-rounded">open_in_new</span>
+                            Ver panel de junta
+                        </button>
+                        <button onclick="editTenant('<%= tenant.id %>')" class="md-button md-button-tonal">
+                            <span class="material-symbols-rounded">edit</span>
+                            Editar
+                        </button>
+                        <button onclick="toggleTenantStatus('<%= tenant.id %>', <%= tenant.active === false ? 'false' : 'true' %>)" 
+                            class="md-button <%= tenant.active === false ? 'md-button-filled' : 'bg-red-100 text-red-600 hover:bg-red-200' %>">
+                            <span class="material-symbols-rounded"><%= tenant.active === false ? 'check_circle' : 'pause_circle' %></span>
+                            <%= tenant.active === false ? 'Activar' : 'Suspender' %>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto">
+            <div class="p-6 max-w-7xl mx-auto">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div class="md-card p-6 border border-slate-100 hover:border-orange-200/60 hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                                <span class="material-symbols-rounded text-orange-600">home</span>
+                            </div>
+                            <span class="text-sm text-slate-500">Unidades</span>
+                        </div>
+                        <p class="text-3xl font-bold text-slate-900"><%= stats.properties %></p>
+                    </div>
+                    <div class="md-card p-6 border border-slate-100 hover:border-orange-200/60 hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                                <span class="material-symbols-rounded text-emerald-600">people</span>
+                            </div>
+                            <span class="text-sm text-slate-500">Propietarios</span>
+                        </div>
+                        <p class="text-3xl font-bold text-slate-900"><%= stats.owners %></p>
+                    </div>
+                    <div class="md-card p-6 border border-slate-100 hover:border-orange-200/60 hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                                <span class="material-symbols-rounded text-amber-600">admin_panel_settings</span>
+                            </div>
+                            <span class="text-sm text-slate-500">Admins</span>
+                        </div>
+                        <p class="text-3xl font-bold text-slate-900"><%= admins.length %></p>
+                    </div>
+                    <div class="md-card p-6 border border-slate-100 hover:border-orange-200/60 hover:shadow-md transition">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                                <span class="material-symbols-rounded text-orange-600">receipt</span>
+                            </div>
+                            <span class="text-sm text-slate-500">Facturación</span>
+                        </div>
+                        <p class="text-lg font-bold text-slate-900"><%= tenant.billing_type === 'ALICUOTA' ? 'Por Alícuota' : 'Cuota Fija' %></p>
+                        <p class="text-xs mt-1 <%= tenant.billing_mode === 'FULL' ? 'text-emerald-600' : 'text-amber-600' %> font-medium">
+                            <%= tenant.billing_mode === 'FULL' ? '● Modo Completo' : '● Modo Apoyo' %>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Grid: Info | Acciones | Edificios | Admins -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Información General -->
+                    <div class="md-card p-6 border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-0">
+                        <h2 class="text-lg font-bold text-slate-900 mb-5">Información General</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="flex items-start gap-3 p-4 rounded-xl bg-slate-50/80 border border-slate-100">
+                                <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-rounded text-orange-600">apartment</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Tipo de Conjunto</p>
+                                    <p class="font-semibold text-slate-900 mt-0.5"><%= tenant.building_type === 'MULTIPLE' ? 'Múltiples Edificios' : 'Edificio Único' %></p>
+                                    <span class="inline-block mt-2 px-2.5 py-1 rounded-lg text-xs font-semibold <%= tenant.building_type === 'MULTIPLE' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700' %>">
+                                        <%= tenant.building_type === 'MULTIPLE' ? 'MULTI-EDIFICIO' : 'MONO-EDIFICIO' %>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 p-4 rounded-xl bg-slate-50/80 border border-slate-100">
+                                <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-rounded text-orange-600">receipt</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Facturación</p>
+                                    <p class="font-semibold text-slate-900 mt-0.5"><%= tenant.billing_type === 'ALICUOTA' ? 'Por Alícuota' : 'Cuota Fija' %></p>
+                                    <p class="text-xs mt-1 font-medium <%= tenant.billing_mode === 'FULL' ? 'text-emerald-600' : 'text-amber-600' %>">
+                                        <%= tenant.billing_mode === 'FULL' ? '● Modo Completo' : '● Modo Apoyo' %>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 p-4 rounded-xl bg-slate-50/80 border border-slate-100 sm:col-span-2">
+                                <div class="w-10 h-10 rounded-xl <%= tenant.active !== false ? 'bg-emerald-100' : 'bg-red-100' %> flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-rounded <%= tenant.active !== false ? 'text-emerald-600' : 'text-red-600' %>">check_circle</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Estado</p>
+                                    <p class="font-semibold <%= tenant.active !== false ? 'text-emerald-700' : 'text-red-700' %>"><%= tenant.active !== false ? 'Activo' : 'Suspendido' %></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center pt-6 mt-6 border-t border-slate-100">
+                            <button onclick="manageBuildings()" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">
+                                <span class="material-symbols-rounded text-lg">apartment</span>
+                                Gestionar Edificios
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Acciones Rápidas -->
+                    <div class="md-card p-6 border border-slate-100 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-900 mb-4">Acciones Rápidas</h2>
+                        <div class="space-y-3">
+                            <button onclick="viewProperties('<%= tenant.id %>')" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center group-hover:bg-orange-200/80 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-orange-600">home_work</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-slate-900">Inmuebles</p>
+                                    <p class="text-sm text-slate-500">Ver y gestionar unidades</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
+                            </button>
+                            <button onclick="viewUsers('<%= tenant.id %>')" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200/80 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-emerald-600">people</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-slate-900">Propietarios</p>
+                                    <p class="text-sm text-slate-500">Ver usuarios registrados</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
+                            </button>
+                            <button onclick="addAdmin('<%= tenant.id %>')" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200/80 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-amber-600">person_add</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-slate-900">Nuevo Admin</p>
+                                    <p class="text-sm text-slate-500">Agregar administrador de junta</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
+                            </button>
+                            <button onclick="configureBilling('<%= tenant.id %>')" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center group-hover:bg-orange-200/80 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-orange-600">payments</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-slate-900">Facturación</p>
+                                    <p class="text-sm text-slate-500">Configurar tipo y modo</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Edificios -->
+                    <div class="md-card p-6 border border-slate-100 shadow-sm overflow-hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900">Edificios</h2>
+                                <p class="text-sm text-slate-500 mt-0.5">Configuración del tipo de conjunto y edificios</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="changeBuildingType()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-semibold hover:bg-orange-100 transition text-sm">
+                                    <span class="material-symbols-rounded text-lg">swap_horiz</span>
+                                    Cambiar Tipo
+                                </button>
+                                <button onclick="addBuilding()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/25 text-sm">
+                                    <span class="material-symbols-rounded text-lg">add</span>
+                                    Agregar Edificio
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Building Type Banner -->
+                        <div class="rounded-xl p-4 mb-5 <%= tenant.building_type === 'MULTIPLE' ? 'bg-orange-50 border border-orange-100' : 'bg-emerald-50 border border-emerald-100' %>">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span class="px-3 py-1.5 rounded-lg text-sm font-bold <%= tenant.building_type === 'MULTIPLE' ? 'bg-orange-500 text-white' : 'bg-emerald-500 text-white' %>" id="current-building-type">
+                                    <%= tenant.building_type === 'MULTIPLE' ? 'MULTI-EDIFICIO' : 'MONO-EDIFICIO' %>
+                                </span>
+                                <p class="text-sm text-slate-600">
+                                    <% if (tenant.building_type === 'MULTIPLE') { %>
+                                        Los inmuebles deben estar asociados a un edificio específico.
+                                    <% } else { %>
+                                        Todos los inmuebles pertenecen al edificio principal.
+                                    <% } %>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Buildings List (Collapsible) -->
+                        <div class="rounded-xl border border-slate-200 overflow-hidden">
+                            <button type="button" id="buildings-toggle" onclick="toggleBuildingsList()" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition text-left">
+                                <span class="font-semibold text-slate-700">
+                                    <span id="buildings-summary">Listado de edificios</span>
+                                    <span id="buildings-count" class="ml-2 text-slate-500 font-normal">(cargando...)</span>
+                                </span>
+                                <span id="buildings-chevron" class="material-symbols-rounded text-slate-500 transition-transform">expand_more</span>
+                            </button>
+                            <div id="buildings-list-content" class="border-t border-slate-200 max-h-[320px] overflow-y-auto">
+                                <table class="w-full">
+                                    <thead class="bg-slate-50 sticky top-0">
+                                        <tr>
+                                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
+                                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Código</th>
+                                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Pisos</th>
+                                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Inmuebles</th>
+                                            <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="buildings-table-body" class="divide-y divide-slate-100">
+                                        <tr>
+                                            <td colspan="5" class="py-12 text-center text-slate-400">
+                                                Cargando edificios...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Administradores de Junta -->
+                    <div class="md-card p-6 border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-bold text-slate-900">Administradores de Junta</h2>
+                            <button onclick="addAdmin('<%= tenant.id %>')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/25 text-sm">
+                                <span class="material-symbols-rounded text-lg">add</span>
+                                Agregar
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="w-full">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
+                                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <% admins.forEach(admin => { %>
+                                    <tr class="hover:bg-slate-50/50 transition">
+                                        <td class="py-3 px-4 font-medium text-slate-900"><%= admin.first_name || admin.display_name || 'N/A' %></td>
+                                        <td class="py-3 px-4 text-sm text-slate-500"><%= admin.email %></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold <%= admin.is_active !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' %>">
+                                                <%= admin.is_active !== false ? 'Activo' : 'Inactivo' %>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+            </div>
+            </div>
+            <%- include('../partials/panels-footer') %>
+        </main>
+    </div>
+
+    <!-- Edit Tenant Modal -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">Editar Condominio</h2>
+                <button onclick="closeModal('edit-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <form id="edit-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <input type="text" id="edit-name" name="name" value="<%= tenant.name %>" 
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                    <textarea id="edit-address" name="address" rows="3"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"><%= tenant.address || '' %></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Facturación</label>
+                    <select id="edit-billing-type" name="billing_type"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        <option value="FIXED" <%= tenant.billing_type === 'FIXED' ? 'selected' : '' %>>Cuota Fija</option>
+                        <option value="ALICUOTA" <%= tenant.billing_type === 'ALICUOTA' ? 'selected' : '' %>>Por Alícuota</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeModal('edit-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Admin Modal -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-content p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">Agregar Administrador</h2>
+                <button onclick="closeModal('admin-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <form id="admin-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de Usuario *</label>
+                    <input type="text" id="admin-name" required
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input type="email" id="admin-email" required
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+                    <input type="password" id="admin-password" required minlength="6"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <input type="tel" id="admin-phone"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeModal('admin-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                        Crear Administrador
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Buildings Management Modal -->
+    <div id="buildings-modal" class="modal-overlay">
+        <div class="modal-content p-6" style="max-width: 700px;">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">Gestionar Edificios</h2>
+                <button onclick="closeModal('buildings-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div id="buildings-list" class="space-y-3 max-h-[400px] overflow-y-auto mb-4">
+                <!-- Buildings loaded dynamically -->
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('buildings-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Building Modal -->
+    <div id="building-form-modal" class="modal-overlay">
+        <div class="modal-content p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold" id="building-form-title">Agregar Edificio</h2>
+                <button onclick="closeModal('building-form-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <form id="building-form" class="space-y-4">
+                <input type="hidden" id="building-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Edificio *</label>
+                    <input type="text" id="building-name" required
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: Torre A, Edificio Principal">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Código (opcional)</label>
+                    <input type="text" id="building-code"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: A, TORRE-1">
+                    <p class="text-xs text-gray-500 mt-1">Código corto para referencia</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Número de Pisos</label>
+                    <input type="number" id="building-floors" min="1"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: 10">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Dirección/Sufijo</label>
+                    <input type="text" id="building-address"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: Entrada por Calle A">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeModal('building-form-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                        Guardar Edificio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Building Type Modal -->
+    <div id="building-type-modal" class="modal-overlay">
+        <div class="modal-content p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">Cambiar Tipo de Conjunto</h2>
+                <button onclick="closeModal('building-type-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div class="p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-orange-400 transition building-type-option" 
+                    data-type="SINGLE" onclick="selectBuildingType('SINGLE')">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-rounded text-3xl text-gray-400 building-type-icon" id="icon-SINGLE">radio_button_unchecked</span>
+                        <div>
+                            <p class="font-medium text-gray-900">Edificio Único</p>
+                            <p class="text-sm text-gray-500">Todos los inmuebles pertenecen a un solo edificio. Ideal para condominios pequeños o casas en fila.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-orange-400 transition building-type-option" 
+                    data-type="MULTIPLE" onclick="selectBuildingType('MULTIPLE')">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-rounded text-3xl text-gray-400 building-type-icon" id="icon-MULTIPLE">radio_button_unchecked</span>
+                        <div>
+                            <p class="font-medium text-gray-900">Múltiples Edificios</p>
+                            <p class="text-sm text-gray-500">Los inmuebles están distribuidos en varios edificios o torres. Cada inmueble debe estar asociado a un edificio.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div class="flex items-start gap-2">
+                    <span class="material-symbols-rounded text-amber-600">warning</span>
+                    <p class="text-sm text-amber-800">
+                        <strong>Atención:</strong> Cambiar el tipo de conjunto puede afectar la organización de los inmuebles existentes. Asegúrese de que todos los inmuebles tengan asignado un edificio correcto.
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-4 mt-4">
+                <button type="button" onclick="closeModal('building-type-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveBuildingType()" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                    Confirmar Cambio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const tenantId = '<%= tenant.id %>';
+        let currentBuildingType = '<%= tenant.building_type %>';
+        let selectedNewBuildingType = null;
+        let buildings = [];
+        let buildingsListExpanded = true;
+
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        function switchToTenantAdmin(tenantId) {
+            window.open('/admin/impersonate-tenant/' + tenantId, '_blank', 'noopener,noreferrer');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function editTenant(id) {
+            openModal('edit-modal');
+        }
+
+        document.getElementById('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('edit-name').value,
+                address: document.getElementById('edit-address').value,
+                billing_type: document.getElementById('edit-billing-type').value
+            };
+
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al actualizar');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        });
+
+        function addAdmin(tenantId) {
+            openModal('admin-modal');
+        }
+
+        document.getElementById('admin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Implementar creación de admin adicional
+            alert('Funcionalidad: Crear administrador adicional para este tenant');
+            closeModal('admin-modal');
+        });
+
+        function viewProperties(tenantId) {
+            window.location.href = `/admin/tenants/${tenantId}/properties`;
+        }
+
+        function viewUsers(tenantId) {
+            window.location.href = `/admin/tenants/${tenantId}/owners`;
+        }
+
+        function configureBilling(tenantId) {
+            openModal('billing-mode-modal');
+        }
+
+        function selectBillingMode(mode) {
+            document.querySelectorAll('.billing-mode-option').forEach(el => {
+                el.classList.remove('border-orange-500', 'bg-orange-50');
+                el.classList.add('border-slate-200');
+                document.getElementById(`billing-mode-icon-${el.dataset.mode}`).textContent = 'radio_button_unchecked';
+                document.getElementById(`billing-mode-icon-${el.dataset.mode}`).classList.remove('text-orange-600');
+            });
+            
+            const selected = document.querySelector(`.billing-mode-option[data-mode="${mode}"]`);
+            selected.classList.remove('border-slate-200');
+            selected.classList.add('border-orange-500', 'bg-orange-50');
+            document.getElementById(`billing-mode-icon-${mode}`).textContent = 'radio_button_checked';
+            document.getElementById(`billing-mode-icon-${mode}`).classList.add('text-orange-600');
+            
+            document.getElementById('selected-billing-mode').value = mode;
+        }
+
+        async function saveBillingMode() {
+            const mode = document.getElementById('selected-billing-mode').value;
+            if (!mode) {
+                alert('Selecciona un modo de facturación');
+                return;
+            }
+
+            const paymentInfo = mode === 'FULL' ? {
+                bank_account: document.getElementById('billing-bank-account')?.value || '',
+                mobile_payment: document.getElementById('billing-mobile-payment')?.value || ''
+            } : null;
+
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/billing-mode`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        billing_mode: mode,
+                        payment_info: paymentInfo
+                    })
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al cambiar el modo de facturación');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Sidebar Toggle (homologado con dashboard)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const icon = document.querySelector('#menu-toggle .material-symbols-rounded');
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                sidebar.classList.add('collapsed');
+                mainContent.style.marginLeft = '80px';
+                if (icon) icon.textContent = 'menu_open';
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.add('expanded');
+                mainContent.style.marginLeft = '300px';
+                if (icon) icon.textContent = 'menu';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('menu-toggle')?.addEventListener('click', toggleSidebar);
+            loadBuildings();
+        });
+
+        async function loadBuildings() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/buildings`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    buildings = data.buildings;
+                    renderBuildingsTable();
+                }
+            } catch (error) {
+                console.error('Error loading buildings:', error);
+            }
+        }
+
+        function updateBuildingsCount() {
+            const countEl = document.getElementById('buildings-count');
+            if (!countEl) return;
+            const n = buildings.length;
+            countEl.textContent = n === 0 ? '(ninguno)' : `(${n} edificio${n !== 1 ? 's' : ''})`;
+        }
+
+        function toggleBuildingsList() {
+            buildingsListExpanded = !buildingsListExpanded;
+            const content = document.getElementById('buildings-list-content');
+            const chevron = document.getElementById('buildings-chevron');
+            if (content) content.classList.toggle('hidden', !buildingsListExpanded);
+            if (chevron) chevron.textContent = buildingsListExpanded ? 'expand_less' : 'expand_more';
+        }
+
+        function renderBuildingsTable() {
+            const tbody = document.getElementById('buildings-table-body');
+            updateBuildingsCount();
+            if (buildings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400">
+                            No hay edificios registrados
+                            ${currentBuildingType === 'MULTIPLE' ? '<br><button onclick="addBuilding()" class="text-orange-600 font-semibold hover:underline mt-2">Agregar el primer edificio</button>' : ''}
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('buildings-list-content')?.classList.remove('hidden');
+                return;
+            }
+            buildingsListExpanded = buildings.length <= 6;
+            document.getElementById('buildings-list-content')?.classList.toggle('hidden', !buildingsListExpanded);
+            document.getElementById('buildings-chevron').textContent = buildingsListExpanded ? 'expand_less' : 'expand_more';
+
+            tbody.innerHTML = buildings.map(b => `
+                <tr class="hover:bg-slate-50/50 transition">
+                    <td class="py-3 px-4 font-medium text-slate-900">${b.name}</td>
+                    <td class="py-3 px-4 text-slate-600">${b.code || '-'}</td>
+                    <td class="py-3 px-4 text-slate-600">${b.floors || '-'}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-semibold">
+                            ${b.property_count || 0} inmuebles
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="editBuilding('${b.id}')" class="inline-flex p-2 rounded-lg text-orange-600 hover:bg-orange-50 transition">
+                            <span class="material-symbols-rounded text-lg">edit</span>
+                        </button>
+                        <button onclick="deleteBuilding('${b.id}')" class="inline-flex p-2 rounded-lg text-red-600 hover:bg-red-50 transition">
+                            <span class="material-symbols-rounded text-lg">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function manageBuildings() {
+            openModal('buildings-modal');
+            renderBuildingsList();
+        }
+
+        function renderBuildingsList() {
+            const container = document.getElementById('buildings-list');
+            if (buildings.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <span class="material-symbols-rounded text-4xl mb-2">apartment</span>
+                        <p>No hay edificios registrados</p>
+                    </div>
+                `;
+                return;
+            }
+
+                container.innerHTML = buildings.map(b => `
+                <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:bg-orange-50/50 hover:border-orange-200 transition">
+                    <div>
+                        <p class="font-semibold text-slate-900">${b.name}</p>
+                        <p class="text-sm text-slate-500">${b.code || 'Sin código'} • ${b.floors ? b.floors + ' pisos' : 'Pisos no especificados'}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-semibold">${b.property_count || 0} inm.</span>
+                        <button onclick="editBuilding('${b.id}')" class="p-2 hover:bg-orange-100 rounded-lg text-orange-600 transition">
+                            <span class="material-symbols-rounded">edit</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addBuilding() {
+            document.getElementById('building-form-title').textContent = 'Agregar Edificio';
+            document.getElementById('building-form').reset();
+            document.getElementById('building-id').value = '';
+            openModal('building-form-modal');
+        }
+
+        function editBuilding(id) {
+            const building = buildings.find(b => b.id === id);
+            if (!building) return;
+
+            document.getElementById('building-form-title').textContent = 'Editar Edificio';
+            document.getElementById('building-id').value = building.id;
+            document.getElementById('building-name').value = building.name;
+            document.getElementById('building-code').value = building.code || '';
+            document.getElementById('building-floors').value = building.floors || '';
+            document.getElementById('building-address').value = building.address_suffix || '';
+            openModal('building-form-modal');
+        }
+
+        document.getElementById('building-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('building-id').value;
+            const data = {
+                name: document.getElementById('building-name').value,
+                code: document.getElementById('building-code').value,
+                floors: document.getElementById('building-floors').value,
+                address_suffix: document.getElementById('building-address').value
+            };
+
+            try {
+                const url = id 
+                    ? `/api/admin/buildings/${id}`
+                    : `/api/admin/tenants/${tenantId}/buildings`;
+                
+                const res = await fetch(url, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    closeModal('building-form-modal');
+                    await loadBuildings();
+                    renderBuildingsList();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al guardar el edificio');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        });
+
+        async function deleteBuilding(id) {
+            if (!confirm('¿Eliminar este edificio? Los inmuebles asociados quedarán sin edificio asignado.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/buildings/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    await loadBuildings();
+                    renderBuildingsList();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al eliminar el edificio');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        function changeBuildingType() {
+            selectedNewBuildingType = currentBuildingType;
+            updateBuildingTypeSelection();
+            openModal('building-type-modal');
+        }
+
+        function selectBuildingType(type) {
+            selectedNewBuildingType = type;
+            updateBuildingTypeSelection();
+        }
+
+        function updateBuildingTypeSelection() {
+            document.querySelectorAll('.building-type-option').forEach(el => {
+                const type = el.dataset.type;
+                const icon = document.getElementById(`icon-${type}`);
+                if (type === selectedNewBuildingType) {
+                    el.classList.add('border-orange-500', 'bg-orange-50');
+                    el.classList.remove('border-slate-200');
+                    icon.textContent = 'radio_button_checked';
+                    icon.classList.add('text-orange-600');
+                    icon.classList.remove('text-slate-400');
+                } else {
+                    el.classList.remove('border-orange-500', 'bg-orange-50');
+                    el.classList.add('border-slate-200');
+                    icon.textContent = 'radio_button_unchecked';
+                    icon.classList.remove('text-orange-600');
+                    icon.classList.add('text-slate-400');
+                }
+            });
+        }
+
+        async function saveBuildingType() {
+            if (!selectedNewBuildingType || selectedNewBuildingType === currentBuildingType) {
+                closeModal('building-type-modal');
+                return;
+            }
+
+            const confirmMsg = selectedNewBuildingType === 'MULTIPLE' 
+                ? '¿Cambiar a Múltiples Edificios? Deberá crear al menos un edificio y asignar los inmuebles.'
+                : '¿Cambiar a Edificio Único? Todos los inmuebles se asociarán al edificio principal.';
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ building_type: selectedNewBuildingType })
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al cambiar el tipo de conjunto');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        async function toggleTenantStatus(id, currentStatus) {
+            const newStatus = !currentStatus;
+            const action = newStatus ? 'activar' : 'suspender';
+            
+            if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este condominio?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/tenants/${id}/toggle-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ active: newStatus })
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Error al cambiar el estado');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+
+    <!-- Billing Mode Configuration Modal -->
+    <div id="billing-mode-modal" class="modal-overlay">
+        <div class="modal-content p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">Configurar Modo de Facturación</h2>
+                <button onclick="closeModal('billing-mode-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600">Modo actual: <span class="font-medium text-gray-900"><%= tenant.billing_mode === 'FULL' ? 'Modo Completo' : 'Modo Apoyo' %></span></p>
+                </div>
+                
+                <div class="p-4 border-2 <%= tenant.billing_mode === 'FULL' ? 'border-orange-500 bg-orange-50' : 'border-slate-200' %> rounded-xl cursor-pointer hover:border-orange-400 transition billing-mode-option" 
+                    data-mode="FULL" onclick="selectBillingMode('FULL')">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-rounded text-3xl <%= tenant.billing_mode === 'FULL' ? 'text-orange-600' : 'text-slate-400' %> billing-mode-icon" id="billing-mode-icon-FULL">
+                            <%= tenant.billing_mode === 'FULL' ? 'radio_button_checked' : 'radio_button_unchecked' %>
+                        </span>
+                        <div>
+                            <p class="font-medium text-gray-900">Modo Completo (FULL)</p>
+                            <p class="text-sm text-gray-500">Condominio360 gestiona todo el proceso: generación de recibos, envío a propietarios y registro de pagos.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 border-2 <%= tenant.billing_mode === 'SUPPORT' ? 'border-orange-500 bg-orange-50' : 'border-slate-200' %> rounded-xl cursor-pointer hover:border-orange-400 transition billing-mode-option" 
+                    data-mode="SUPPORT" onclick="selectBillingMode('SUPPORT')">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-rounded text-3xl <%= tenant.billing_mode === 'SUPPORT' ? 'text-orange-600' : 'text-slate-400' %> billing-mode-icon" id="billing-mode-icon-SUPPORT">
+                            <%= tenant.billing_mode === 'SUPPORT' ? 'radio_button_checked' : 'radio_button_unchecked' %>
+                        </span>
+                        <div>
+                            <p class="font-medium text-gray-900">Modo Apoyo (SUPPORT)</p>
+                            <p class="text-sm text-gray-500">Condominio360 solo genera preliminares. Una empresa/administrador externo gestiona la facturación y cobros.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Info (only for FULL mode) -->
+                <div id="payment-info-section" class="border-t border-gray-200 pt-4 <%= tenant.billing_mode === 'FULL' ? '' : 'hidden' %>">
+                    <h3 class="font-medium text-gray-900 mb-3">Datos de Pago (solo Modo Completo)</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cuenta Bancaria</label>
+                            <input type="text" id="billing-bank-account" 
+                                value="<%= tenant.payment_info ? JSON.parse(tenant.payment_info).bank_account || '' : '' %>"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                placeholder="Ej: Banco XXX, Cuenta Corriente 1234-5678-90">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pago Móvil</label>
+                            <input type="text" id="billing-mobile-payment" 
+                                value="<%= tenant.payment_info ? JSON.parse(tenant.payment_info).mobile_payment || '' : '' %>"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                placeholder="Ej: 0412-1234567, Banco, CI">
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="selected-billing-mode" value="<%= tenant.billing_mode %>">
+            </div>
+            
+            <div class="flex gap-3 pt-4 mt-4">
+                <button type="button" onclick="closeModal('billing-mode-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveBillingMode()" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
+</body>
+</html>

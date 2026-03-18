@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Facturación Condominio360 | <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'saas-invoices' }) %>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white border-b border-[#E5E5E5] px-6 py-4">
+                <h1 class="text-2xl font-medium text-[#3C4043]">Facturación Condominio360</h1>
+                <p class="text-sm text-[#5F6368] mt-1">Facturas y deudas con la plataforma</p>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-6">
+                <!-- Métodos de pago Condominio360 -->
+                <div id="saas-payment-methods" class="mb-6 hidden">
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] p-4">
+                        <p class="text-sm font-medium text-[#5F6368] mb-2">Formas de pago a Condominio360</p>
+                        <div class="flex items-center gap-3">
+                            <span class="material-icons-round text-[#f97316] text-2xl">account_balance</span>
+                            <div>
+                                <p class="font-medium text-[#3C4043]">Transferencia Bancaria</p>
+                                <p id="saas-payment-bank" class="text-sm text-[#5F6368]">—</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 mt-3 pt-3 border-t border-[#E5E5E5]">
+                            <span class="material-icons-round text-[#f97316] text-2xl">phone_android</span>
+                            <div>
+                                <p class="font-medium text-[#3C4043]">Pago Móvil</p>
+                                <p id="saas-payment-mobile" class="text-sm text-[#5F6368]">—</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+                        <p class="text-sm text-[#5F6368]">Facturas Pendientes</p>
+                        <p class="text-2xl font-bold text-amber-600" id="stat-pending">0</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+                        <p class="text-sm text-[#5F6368]">Total por Pagar (VES)</p>
+                        <p class="text-2xl font-bold text-[#3C4043]" id="stat-total-ves">Bs. 0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+                    <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                        <h2 class="text-lg font-medium text-[#3C4043]">Historial de Facturas</h2>
+                        <p class="text-xs text-[#9AA0A6] mt-1">Montos en USD mostrados con equivalente en Bs. según tasa BCV</p>
+                    </div>
+                    <div id="invoices-list" class="divide-y divide-[#E5E5E5]">
+                        <p class="px-6 py-8 text-center text-[#9AA0A6]">Cargando...</p>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Modal reportar pago -->
+    <div id="report-payment-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/50 p-4" onclick="if(event.target===this)closeReportPaymentModal()">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <h3 class="text-lg font-medium text-[#3C4043]">Reportar Pago</h3>
+                <button onclick="closeReportPaymentModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#F5F5F5]">
+                    <span class="material-icons-round text-[#5F6368]">close</span>
+                </button>
+            </div>
+            <div id="report-payment-content" class="p-6 overflow-y-auto flex-1">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal detalle factura -->
+    <div id="invoice-detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 p-4" onclick="if(event.target===this)closeInvoiceDetail()">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <h3 class="text-lg font-medium text-[#3C4043]">Detalle de factura</h3>
+                <button onclick="closeInvoiceDetail()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#F5F5F5]">
+                    <span class="material-icons-round text-[#5F6368]">close</span>
+                </button>
+            </div>
+            <div id="invoice-detail-content" class="p-6 overflow-y-auto flex-1">
+                <p class="text-[#9AA0A6]">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        async function loadData() {
+            try {
+                const [summaryRes, listRes, configRes] = await Promise.all([
+                    fetch('/api/tenant-admin/saas-invoices/summary', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/tenant-admin/saas-invoices', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/tenant-admin/saas-invoices/payment-config', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const summary = (await summaryRes.json()).data || {};
+                const invoices = (await listRes.json()).data || [];
+                const config = (await configRes.json()).data || {};
+
+                const pmSection = document.getElementById('saas-payment-methods');
+                if (config && (config.bank_account || config.mobile_payment)) {
+                    pmSection.classList.remove('hidden');
+                    document.getElementById('saas-payment-bank').textContent = config.bank_account || 'No configurado';
+                    document.getElementById('saas-payment-mobile').textContent = config.mobile_payment || 'No configurado';
+                } else {
+                    pmSection.classList.add('hidden');
+                }
+
+                document.getElementById('stat-pending').textContent = summary.pending_count || 0;
+                document.getElementById('stat-total-ves').textContent = 'Bs. ' + (summary.total_pending_ves || 0).toLocaleString('es-VE');
+                const saasBadge = document.getElementById('sidebar-saas-pending');
+                if (saasBadge) {
+                    const pc = summary.pending_count || 0;
+                    saasBadge.textContent = pc;
+                    saasBadge.classList.toggle('hidden', pc === 0);
+                }
+
+                const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                const listEl = document.getElementById('invoices-list');
+                if (invoices.length === 0) {
+                    listEl.innerHTML = '<p class="px-6 py-8 text-center text-[#9AA0A6]">No hay facturas registradas.</p>';
+                } else {
+                    listEl.innerHTML = invoices.map(inv => `
+                        <div class="px-6 py-4 hover:bg-[#FAFAFA] flex items-center justify-between cursor-pointer" onclick="openInvoiceDetail('${inv.id}')">
+                            <div>
+                                <span class="font-medium text-[#3C4043]">${months[inv.period_month-1]} ${inv.period_year}</span>
+                                <span class="ml-2 text-sm text-[#9AA0A6]">${inv.property_count} unidad(es) × $0.50</span>
+                            </div>
+                            <div class="flex items-center gap-6">
+                                <span class="text-[#5F6368]">$${parseFloat(inv.total_usd).toFixed(2)} USD</span>
+                                <span class="font-medium text-[#3C4043]">Bs. ${parseFloat(inv.total_ves).toLocaleString('es-VE')}</span>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status === 'PENDING' ? 'Pendiente' : 'Pagada'}</span>
+                                <span class="material-icons-round text-[#9AA0A6] text-lg">chevron_right</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                document.getElementById('invoices-list').innerHTML = '<p class="px-6 py-8 text-center text-red-500">Error al cargar</p>';
+            }
+        }
+
+        let currentSaasInvoiceDetail = null;
+        async function openInvoiceDetail(id) {
+            const modal = document.getElementById('invoice-detail-modal');
+            const content = document.getElementById('invoice-detail-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = '<p class="text-[#9AA0A6]">Cargando...</p>';
+            try {
+                const res = await fetch('/api/tenant-admin/saas-invoices/' + id, { headers: { 'Authorization': 'Bearer ' + token } });
+                const { data: inv } = await res.json();
+                if (!res.ok || !inv) {
+                    content.innerHTML = '<p class="text-red-500">Error al cargar la factura</p>';
+                    return;
+                }
+                const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                const rateDate = inv.bcv_rate_date ? new Date(inv.bcv_rate_date).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                const itemsHtml = (inv.items || []).map(it => `
+                    <tr class="border-b border-[#E5E5E5] last:border-0">
+                        <td class="py-2 text-sm text-[#3C4043]">${it.description || '-'}</td>
+                        <td class="py-2 text-sm text-right text-[#5F6368]">${parseFloat(it.quantity || 0).toLocaleString('es-VE')}</td>
+                        <td class="py-2 text-sm text-right text-[#5F6368]">$${parseFloat(it.unit_price_usd || 0).toFixed(2)}</td>
+                        <td class="py-2 text-sm text-right font-medium text-[#3C4043]">$${parseFloat(it.total_usd || 0).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[#5F6368]">Período</span>
+                            <span class="font-medium text-[#3C4043]">${months[inv.period_month-1]} ${inv.period_year}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[#5F6368]">Estado</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-medium ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status === 'PENDING' ? 'Pendiente' : 'Pagada'}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[#5F6368]">Tasa BCV utilizada (${rateDate})</span>
+                            <span class="font-medium text-[#3C4043]">Bs. ${parseFloat(inv.bcv_rate || 0).toLocaleString('es-VE')} / USD</span>
+                        </div>
+                        <div class="pt-2">
+                            <p class="text-sm font-medium text-[#5F6368] mb-2">Desglose de ítems</p>
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-[#9AA0A6] border-b border-[#E5E5E5]">
+                                        <th class="py-2">Descripción</th>
+                                        <th class="py-2 text-right">Cant.</th>
+                                        <th class="py-2 text-right">P. unit.</th>
+                                        <th class="py-2 text-right">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${itemsHtml}</tbody>
+                            </table>
+                        </div>
+                        <div class="pt-4 border-t border-[#E5E5E5] flex justify-between items-center">
+                            <span class="font-medium text-[#3C4043]">Total USD</span>
+                            <span class="font-bold text-[#3C4043]">$${parseFloat(inv.total_usd || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium text-[#3C4043]">Total Bs.</span>
+                            <span class="font-bold text-[#3C4043]">Bs. ${parseFloat(inv.total_ves || 0).toLocaleString('es-VE')}</span>
+                        </div>
+                        ${inv.status === 'PENDING' && (!inv.payment_report || inv.payment_report.status === 'REJECTED') ? `
+                        <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                            <button type="button" onclick="showReportPaymentForm('${inv.id}')" class="w-full py-3 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] font-medium flex items-center justify-center gap-2">
+                                <span class="material-icons-round">payments</span>
+                                Reportar Pago
+                            </button>
+                        </div>
+                        ` : inv.status === 'PENDING' && inv.payment_report?.status === 'PENDING_CONFIRMATION' ? `
+                        <div class="pt-4 mt-4 border-t border-[#E5E5E5] bg-blue-50 rounded-lg p-4">
+                            <div class="flex items-center gap-2">
+                                <span class="material-icons-round text-blue-600">schedule</span>
+                                <span class="font-medium text-blue-800">Reporte de pago pendiente de confirmación</span>
+                            </div>
+                            <p class="text-sm text-blue-700 mt-1">Condominio360 verificará tu comprobante y te notificará.</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                currentSaasInvoiceDetail = inv;
+            } catch (e) {
+                content.innerHTML = '<p class="text-red-500">Error al cargar</p>';
+            }
+        }
+        function closeInvoiceDetail() {
+            document.getElementById('invoice-detail-modal').classList.add('hidden');
+        }
+
+        let saasBanksCache = [];
+        async function showReportPaymentForm(invoiceId) {
+            if (!currentSaasInvoiceDetail || currentSaasInvoiceDetail.id !== invoiceId) return;
+            const inv = currentSaasInvoiceDetail;
+
+            if (saasBanksCache.length === 0) {
+                try {
+                    const res = await fetch('/api/tenant-admin/saas-invoices/banks', { headers: { 'Authorization': `Bearer ${token}` } });
+                    const data = await res.json();
+                    if (data.success) saasBanksCache = data.data || [];
+                } catch (e) {
+                    alert('Error al cargar bancos');
+                    return;
+                }
+            }
+
+            const formatCurrency = (a) => a == null ? '-' : `Bs. ${Number(a).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const content = document.getElementById('report-payment-content');
+            content.innerHTML = `
+                <form id="report-payment-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#5F6368] mb-1">Banco Emisor *</label>
+                            <select id="report-banco" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                                <option value="">Seleccionar banco...</option>
+                                ${saasBanksCache.map(b => `<option value="${(b.name || '').replace(/"/g, '&quot;')}">${b.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[#5F6368] mb-1">Fecha de Transferencia *</label>
+                            <input type="text" id="report-fecha" required placeholder="dd/mm/aaaa" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" maxlength="10">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Ref./N Transferencia *</label>
+                        <input type="text" id="report-ref" required placeholder="Número de referencia" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Monto Abonado (Bs)</label>
+                        <input type="text" id="report-monto" readonly class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg bg-[#F5F5F5]" value="${formatCurrency(inv.total_ves)}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Comentario (opcional)</label>
+                        <textarea id="report-comentario" placeholder="Comentario..." class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Adjuntar comprobante (opcional)</label>
+                        <p class="text-xs text-[#9AA0A6] mb-1">Solo imágenes (JPG, PNG, GIF, WebP) o PDF. Máx. 10MB.</p>
+                        <input type="file" id="report-receipt" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeReportPaymentModal()" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">Volver</button>
+                        <button type="submit" class="flex-1 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] font-medium">Enviar Reporte</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('report-payment-modal').classList.remove('hidden');
+            document.getElementById('report-payment-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const banco = document.getElementById('report-banco').value.trim();
+                const fecha = document.getElementById('report-fecha').value.trim();
+                const ref = document.getElementById('report-ref').value.trim();
+                const comentario = document.getElementById('report-comentario').value.trim();
+                const fileInput = document.getElementById('report-receipt');
+
+                if (!banco || !fecha || !ref) {
+                    alert('Complete los campos obligatorios');
+                    return;
+                }
+                const dateMatch = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                if (!dateMatch) {
+                    alert('Fecha debe estar en formato dd/mm/aaaa');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('banco_emisor', banco);
+                formData.append('fecha_transferencia', fecha);
+                formData.append('ref_transferencia', ref);
+                if (comentario) formData.append('comentario', comentario);
+                if (fileInput.files[0]) formData.append('receipt', fileInput.files[0]);
+
+                try {
+                    const res = await fetch(`/api/tenant-admin/saas-invoices/${inv.id}/report-payment`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        closeReportPaymentModal();
+                        closeInvoiceDetail();
+                        loadData();
+                    } else {
+                        alert(data.error || 'Error al enviar reporte');
+                    }
+                } catch (err) {
+                    alert('Error al enviar reporte');
+                }
+            });
+        }
+        function closeReportPaymentModal() {
+            document.getElementById('report-payment-modal').classList.add('hidden');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            sessionStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración | <%= tenant?.name || 'Condominio' %></title>
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .stat-card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'dashboard' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto py-4 px-6 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Panel de Administración</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-condominio">Cargando...</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="px-3 py-1 bg-[#fff7ed] text-[#f97316] text-sm font-medium rounded-full">Junta de Condominio</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main -->
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Solicitudes Pendientes</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-pending-requests">-</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <span class="material-icons-round text-blue-600">assignment</span>
+                            </div>
+                        </div>
+                        <a href="/tenant-admin/requests" class="mt-4 inline-flex items-center text-sm text-[#f97316] hover:underline">
+                            Ver solicitudes <span class="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </a>
+                    </div>
+
+                    <div class="stat-card p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Consultas Activas</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-active-consultations">-</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                <span class="material-icons-round text-green-600">how_to_vote</span>
+                            </div>
+                        </div>
+                        <a href="/tenant-admin/consultations" class="mt-4 inline-flex items-center text-sm text-[#f97316] hover:underline">
+                            Ver consultas <span class="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </a>
+                    </div>
+
+                    <div class="stat-card p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Comunicados</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-communications">-</p>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                <span class="material-icons-round text-amber-600">mail</span>
+                            </div>
+                        </div>
+                        <a href="/tenant-admin/communiques" class="mt-4 inline-flex items-center text-sm text-[#f97316] hover:underline">
+                            Ver comunicados <span class="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </a>
+                    </div>
+
+                    <div class="stat-card p-6 card-hover">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Reservas Hoy</p>
+                                <p class="text-3xl font-semibold text-[#3C4043] mt-1" id="stat-today-reservations">-</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                <span class="material-icons-round text-purple-600">event</span>
+                            </div>
+                        </div>
+                        <a href="/tenant-admin/common-areas" class="mt-4 inline-flex items-center text-sm text-[#f97316] hover:underline">
+                            Ver áreas comunes <span class="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <h2 class="text-lg font-medium text-[#3C4043] mb-4">Acciones Rápidas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <a href="/tenant-admin/communiques" class="card p-6 card-hover group">
+                        <div class="w-12 h-12 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <span class="material-icons-round text-white">add</span>
+                        </div>
+                        <h3 class="font-medium text-[#3C4043]">Nuevo Comunicado</h3>
+                        <p class="text-sm text-[#5F6368] mt-1">Enviar carta o aviso a propietarios</p>
+                    </a>
+
+                    <a href="/tenant-admin/consultations" class="card p-6 card-hover group">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <span class="material-icons-round text-white">add</span>
+                        </div>
+                        <h3 class="font-medium text-[#3C4043]">Nueva Consulta</h3>
+                        <p class="text-sm text-[#5F6368] mt-1">Crear votación para la asamblea</p>
+                    </a>
+
+                    <a href="/tenant-admin/request-types" class="card p-6 card-hover group">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <span class="material-icons-round text-white">add</span>
+                        </div>
+                        <h3 class="font-medium text-[#3C4043]">Tipo de Solicitud</h3>
+                        <p class="text-sm text-[#5F6368] mt-1">Crear formulario personalizado</p>
+                    </a>
+
+                    <a href="/tenant-admin/common-areas" class="card p-6 card-hover group">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <span class="material-icons-round text-white">add</span>
+                        </div>
+                        <h3 class="font-medium text-[#3C4043]">Área Común</h3>
+                        <p class="text-sm text-[#5F6368] mt-1">Configurar espacio para reservas</p>
+                    </a>
+                </div>
+
+                <!-- Recent Activity -->
+                <h2 class="text-lg font-medium text-[#3C4043] mb-4">Actividad Reciente</h2>
+                <div class="card p-6">
+                    <div id="recent-activity" class="space-y-4">
+                        <div class="text-center py-8 text-[#9AA0A6]">
+                            <span class="material-icons-round text-4xl">schedule</span>
+                            <p class="mt-2">Cargando actividad...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Load tenant name
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            if (tenant.name) {
+                document.getElementById('header-condominio').textContent = tenant.name;
+            }
+
+            function logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('tenant');
+                sessionStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+            window.logout = logout;
+
+            loadStats();
+            loadRecentActivity();
+        });
+
+        async function loadStats() {
+            try {
+                // Load all stats in parallel
+                const [statsRes, commsRes, areasRes, saasRes] = await Promise.all([
+                    fetch('/api/tenant-admin/stats', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/tenant-admin/communications/stats', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
+                    fetch('/api/tenant-admin/common-areas/stats', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
+                    fetch('/api/tenant-admin/saas-invoices/summary', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
+                ]);
+
+                const statsData = await statsRes.json();
+                
+                // Update dashboard stats
+                document.getElementById('stat-pending-requests').textContent = statsData.pendingRequests || 0;
+                document.getElementById('stat-active-consultations').textContent = statsData.activeConsultations || 0;
+
+                // Update badge
+                if (statsData.pendingRequests > 0) {
+                    const badge = document.getElementById('nav-requests-badge');
+                    badge.textContent = statsData.pendingRequests;
+                    badge.classList.remove('hidden');
+                }
+
+                // Communications stats
+                if (commsRes) {
+                    const commsData = await commsRes.json();
+                    if (commsData.success) {
+                        document.getElementById('stat-communications').textContent = commsData.stats?.published || 0;
+                    }
+                }
+
+                // Common areas stats
+                if (areasRes) {
+                    const areasData = await areasRes.json();
+                    if (areasData.success) {
+                        document.getElementById('stat-today-reservations').textContent = areasData.stats?.today_reservations || 0;
+                    }
+                }
+
+                // Cuenta Condominio360
+                if (saasRes) {
+                    try {
+                        const saasData = await saasRes.json();
+                        const pending = saasData.data?.pending_count || 0;
+                        const badge = document.getElementById('sidebar-saas-pending');
+                        if (pending > 0 && badge) {
+                            badge.textContent = pending;
+                            badge.classList.remove('hidden');
+                        }
+                    } catch (_) {}
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                const activityRes = await fetch('/api/tenant-admin/activity?limit=5', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const activityData = await activityRes.json();
+
+                const container = document.getElementById('recent-activity');
+                
+                if (!activityData.success || !activityData.data || activityData.data.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-[#9AA0A6]">
+                            <span class="material-icons-round text-4xl">inbox</span>
+                            <p class="mt-2">No hay actividad reciente</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = activityData.data.map(r => {
+                    const isReservation = r.type === 'reservation_action';
+                    const title = isReservation ? (r.status === 'CONFIRMED' ? 'Reserva aprobada' : 'Reserva rechazada') : (r.request_type_name || 'Solicitud');
+                    const statusLabels = { CONFIRMED: 'Aprobada', REJECTED: 'Rechazada' };
+                    const statusText = isReservation ? (statusLabels[r.status] || r.status) : formatStatus(r.status);
+                    const subtext = isReservation ? `${r.owner_name} • ${r.area_name}` : `${r.owner_name} • ${r.request_type_name}`;
+                    return `
+                    <div class="flex items-start gap-4 p-4 hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background: ${(r.color || '#6B7280')}20">
+                            <span class="material-icons-round" style="color: ${r.color || '#6B7280'}">${r.icon || 'description'}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-medium text-[#3C4043] truncate">${title}</h4>
+                                <span class="px-2 py-0.5 text-xs rounded ${isReservation ? (r.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') : getStatusClass(r.status)}">${statusText}</span>
+                            </div>
+                            <p class="text-sm text-[#5F6368] mt-1">${subtext}</p>
+                            <p class="text-xs text-[#9AA0A6] mt-1">${formatDate(r.date)}</p>
+                        </div>
+                        <a href="${r.link || '/tenant-admin/requests'}" class="text-[#f97316] hover:bg-[#fff7ed] p-2 rounded-lg">
+                            <span class="material-icons-round">chevron_right</span>
+                        </a>
+                    </div>
+                `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'OPEN': 'bg-blue-100 text-blue-700',
+                'IN_PROGRESS': 'bg-amber-100 text-amber-700',
+                'RESOLVED': 'bg-green-100 text-green-700',
+                'CLOSED': 'bg-gray-100 text-gray-600'
+            };
+            return classes[status] || 'bg-gray-100 text-gray-600';
+        }
+
+        function formatStatus(status) {
+            const labels = {
+                'OPEN': 'Abierta',
+                'IN_PROGRESS': 'En Progreso',
+                'RESOLVED': 'Resuelta',
+                'CLOSED': 'Cerrada'
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+</body>
+</html>

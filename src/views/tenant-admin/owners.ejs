@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Propietarios - <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="/js/session-expired.js"></script>
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'owners' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Propietarios</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="search-input" placeholder="Buscar propietario..." onkeyup="searchOwners()" 
+                            class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+        <!-- Info Banner -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <span class="material-icons-round text-blue-600">info</span>
+            <div class="text-sm text-blue-800">
+                <p class="font-medium">Gestión de propietarios</p>
+                <p>Se muestran los propietarios asociados a inmuebles de este condominio. Para agregar nuevos propietarios, primero debe crear el inmueble y asignarle un propietario.</p>
+            </div>
+        </div>
+
+        <!-- Owners List -->
+        <div id="owners-list" class="space-y-4">
+            <!-- Cargado dinámicamente -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-16">
+            <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="material-icons-round text-4xl text-[#9AA0A6]">people</span>
+            </div>
+            <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay propietarios</h3>
+            <p class="text-[#5F6368]">Los propietarios se crean durante el proceso de onboarding</p>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-center gap-2 mt-6" id="pagination"></div>
+    </main>
+
+    </div></div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
+        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
+            <span id="toast-icon" class="material-icons-round"></span>
+            <span id="toast-message" class="font-medium"></span>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+        document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+        let currentPage = 1;
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastContent = document.getElementById('toast-content');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastMessage = document.getElementById('toast-message');
+
+            // Set content
+            toastMessage.textContent = message;
+            
+            // Set styles based on type
+            if (type === 'success') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white';
+                toastIcon.textContent = 'check_circle';
+            } else if (type === 'error') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
+                toastIcon.textContent = 'error';
+            } else if (type === 'warning') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-amber-500 text-white';
+                toastIcon.textContent = 'warning';
+            }
+
+            // Show toast
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOwners();
+        });
+
+        async function loadOwners(page = 1, search = '') {
+            currentPage = page;
+            
+            try {
+                let url = `/api/tenant-admin/owners?page=${page}&limit=20`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    console.error('Error:', data.error);
+                    return;
+                }
+
+                const list = document.getElementById('owners-list');
+                const empty = document.getElementById('empty-state');
+                const pagination = document.getElementById('pagination');
+
+                if (data.owners.length === 0) {
+                    list.innerHTML = '';
+                    pagination.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+
+                list.innerHTML = data.owners.map(o => `
+                    <div class="card p-6 card-hover">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start gap-4">
+                                <div class="w-14 h-14 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-2xl flex items-center justify-center flex-shrink-0">
+                                    <span class="material-icons-round text-2xl text-white">person</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-lg text-[#3C4043]">${o.first_name} ${o.last_name}</h3>
+                                    <p class="text-sm text-[#5F6368]">${o.email || 'Sin email'}</p>
+                                    <p class="text-sm text-[#5F6368]">${o.phone || 'Sin teléfono'}</p>
+                                    ${o.properties ? `
+                                        <p class="text-xs text-[#9AA0A6] mt-2">Inmuebles: ${o.properties}</p>
+                                    ` : `
+                                        <p class="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                            <span class="material-icons-round text-xs">warning</span>
+                                            Sin inmuebles asignados
+                                        </p>
+                                    `}
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">DNI: ${o.dni || 'N/A'}</span>
+                                        <span class="px-2 py-0.5 ${o.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs rounded">
+                                            ${o.is_active ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <!-- Sin acciones: edición y contraseña solo las gestiona el SuperAdmin -->
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Pagination
+                const totalPages = data.pagination?.pages || 1;
+                pagination.innerHTML = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    pagination.innerHTML += `
+                        <button onclick="loadOwners(${i})" class="w-10 h-10 rounded-lg font-medium transition-all ${i === page ? 'bg-[#f97316] text-white' : 'bg-white text-[#5F6368] hover:bg-[#F5F5F5]'}">
+                            ${i}
+                        </button>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading owners:', error);
+            }
+        }
+
+        function searchOwners() {
+            const query = document.getElementById('search-input').value;
+            loadOwners(1, query);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title><%= title || 'Panel de Administración' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        
+        /* Sidebar transitions */
+        .sidebar {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        
+        .sidebar-collapsed {
+            width: 72px;
+        }
+        
+        .sidebar-collapsed .sidebar-text,
+        .sidebar-collapsed .nav-badge {
+            display: none;
+        }
+        
+        .sidebar-collapsed .nav-section-title {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .sidebar-collapsed .nav-icon {
+            margin-right: 0;
+        }
+        
+        /* Mobile overlay */
+        .mobile-overlay {
+            display: none;
+        }
+        
+        @media (max-width: 1023px) {
+            .mobile-overlay.active {
+                display: block;
+            }
+        }
+        
+        /* Nav item styles */
+        .nav-item {
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .nav-item:hover, .nav-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        
+        .nav-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%);
+        }
+        
+        /* Card styles */
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); 
+            transition: all 0.2s; 
+        }
+        
+        .card-hover:hover { 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12); 
+            transform: translateY(-2px); 
+        }
+        
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <!-- Mobile Overlay -->
+    <div id="mobileOverlay" class="mobile-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" onclick="toggleMobileSidebar()"></div>
+    
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#E5E5E5] flex flex-col transform -translate-x-full lg:translate-x-0">
+            <!-- Header -->
+            <div class="h-16 flex items-center justify-between px-4 border-b border-[#E5E5E5]">
+                <div class="flex items-center overflow-hidden">
+                    <div class="flex items-center gap-2">
+                        <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0 sidebar-text" style="object-fit: contain;">
+                        <span class="font-bold text-xl text-[#f97316] whitespace-nowrap sidebar-text">Condominio360</span>
+                    </div>
+                    <span class="material-icons-round text-[#f97316] sidebar-text hidden">apartment</span>
+                </div>
+                <!-- Collapse button (desktop only) -->
+                <button onclick="toggleSidebar()" class="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
+                    <span class="material-icons-round text-sm" id="collapseIcon">chevron_left</span>
+                </button>
+                <!-- Close button (mobile only) -->
+                <button onclick="toggleMobileSidebar()" class="lg:hidden w-8 h-8 items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/tenant-admin" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="dashboard">
+                        <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">dashboard</span>
+                        <span class="sidebar-text">Panel Principal</span>
+                    </a>
+                    <a href="/tenant-admin/requests" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="requests">
+                        <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">assignment</span>
+                        <span class="sidebar-text">Solicitudes</span>
+                        <span id="nav-requests-badge" class="nav-badge ml-auto bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    </a>
+                    <a href="/tenant-admin/request-types" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="request-types">
+                        <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">description</span>
+                        <span class="sidebar-text">Tipos de Solicitud</span>
+                    </a>
+                    <a href="/tenant-admin/consultations" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="consultations">
+                        <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">how_to_vote</span>
+                        <span class="sidebar-text">Consultas</span>
+                    </a>
+                    <a href="/tenant-admin/communiques" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="communiques">
+                        <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">mail</span>
+                        <span class="sidebar-text">Comunicados</span>
+                    </a>
+                    <a href="/tenant-admin/common-areas" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="common-areas">
+                        <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">sports_tennis</span>
+                        <span class="sidebar-text">Áreas Comunes</span>
+                    </a>
+                    
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="nav-section-title px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2 transition-opacity">Gestión de Unidades</p>
+                        <a href="/tenant-admin/buildings" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="buildings">
+                            <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">apartment</span>
+                            <span class="sidebar-text">Edificios</span>
+                        </a>
+                        <a href="/tenant-admin/properties" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="properties">
+                            <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">home_work</span>
+                            <span class="sidebar-text">Inmuebles</span>
+                        </a>
+                        <a href="/tenant-admin/owners" class="nav-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]" data-nav="owners">
+                            <span class="material-icons-round nav-icon mr-3 text-[#5F6368]">people</span>
+                            <span class="sidebar-text">Propietarios</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            
+            <!-- Footer -->
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round nav-icon mr-3">logout</span>
+                    <span class="sidebar-text">Cerrar Sesión</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <!-- Top Header -->
+            <header class="h-16 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 lg:px-6">
+                <div class="flex items-center gap-4">
+                    <!-- Mobile menu button -->
+                    <button onclick="toggleMobileSidebar()" class="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5]">
+                        <span class="material-icons-round text-[#5F6368]">menu</span>
+                    </button>
+                    <h1 class="text-lg font-medium text-[#3C4043] truncate"><%= title || 'Panel de Administración' %></h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span class="text-sm font-medium text-[#3C4043] block" id="tenantName">Cargando...</span>
+                        <span class="text-xs text-[#5F6368]" id="userEmail">Admin</span>
+                    </div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-full flex items-center justify-center">
+                        <span class="material-icons-round text-white">apartment</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+                <%- body %>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Toggle sidebar collapse (desktop)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('collapseIcon');
+            sidebar.classList.toggle('sidebar-collapsed');
+            icon.textContent = sidebar.classList.contains('sidebar-collapsed') ? 'chevron_right' : 'chevron_left';
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed'));
+        }
+
+        // Toggle mobile sidebar
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('active');
+        }
+
+        // Set active nav item based on current path
+        function setActiveNav() {
+            const path = window.location.pathname;
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                const href = item.getAttribute('href');
+                if (path === href || path.startsWith(href + '/')) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        // Load user and tenant info
+        function loadUserInfo() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            
+            if (user.email) {
+                document.getElementById('userEmail').textContent = user.email;
+            }
+            
+            if (tenant.name) {
+                document.getElementById('tenantName').textContent = tenant.name;
+            } else if (user.firstName) {
+                document.getElementById('tenantName').textContent = user.firstName + ' ' + (user.lastName || '');
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav();
+            loadUserInfo();
+            
+            // Restore sidebar state
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed && window.innerWidth >= 1024) {
+                document.getElementById('sidebar').classList.add('sidebar-collapsed');
+                document.getElementById('collapseIcon').textContent = 'chevron_right';
+            }
+        });
+    </script>
+</body>
+</html>

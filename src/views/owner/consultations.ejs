@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Consultas - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .progress-bar { background: linear-gradient(90deg, #f97316 0%, #ea580c 100%); }
+        .chart-container { position: relative; height: 200px; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .toast-success { border-left-color: #10B981; }
+        .toast-error { border-left-color: #EF4444; }
+        .toast-warning { border-left-color: #F59E0B; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                        <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                            <span class="material-icons-round">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Consultas</h1>
+                            <p class="text-sm text-[#5F6368]">Participa en las decisiones del condominio</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-4xl mx-auto">
+                    <!-- Tabs -->
+                    <div class="flex gap-2 mb-6">
+                        <button onclick="switchTab('active')" id="tab-active" class="flex-1 px-4 py-3 rounded-xl font-medium transition-all bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white">
+                            <span class="material-icons-round align-middle mr-2">pending_actions</span>
+                            Activas
+                        </button>
+                        <button onclick="switchTab('closed')" id="tab-closed" class="flex-1 px-4 py-3 rounded-xl font-medium transition-all bg-white text-[#5F6368] border border-[#E5E5E5] hover:bg-[#FAFAFA]">
+                            <span class="material-icons-round align-middle mr-2">history</span>
+                            Finalizadas
+                        </button>
+                    </div>
+
+                    <!-- Active Consultations -->
+                    <div id="active-section">
+                        <div id="active-list" class="space-y-4">
+                            <div class="text-center py-12 text-[#9AA0A6]">
+                                <span class="material-icons-round text-4xl animate-spin">sync</span>
+                                <p class="mt-4">Cargando consultas...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Closed Consultations -->
+                    <div id="closed-section" class="hidden">
+                        <div id="closed-list" class="space-y-4">
+                            <div class="text-center py-12 text-[#9AA0A6]">
+                                <span class="material-icons-round text-4xl animate-spin">sync</span>
+                                <p class="mt-4">Cargando consultas...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 z-[60] hidden">
+        <div class="bg-white rounded-xl shadow-lg border-l-4 p-4 flex items-center gap-3 min-w-[300px] animate-fade-in">
+            <span id="toast-icon" class="material-icons-round"></span>
+            <div>
+                <p id="toast-title" class="font-medium text-[#3C4043]"></p>
+                <p id="toast-message" class="text-sm text-[#5F6368]"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/30 hidden items-center justify-center z-[70]">
+        <div class="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-xl">
+            <div class="w-12 h-12 border-4 border-[#E5E5E5] border-t-[#f97316] rounded-full animate-spin"></div>
+            <p class="text-[#3C4043] font-medium">Procesando voto...</p>
+            <p class="text-sm text-[#5F6368]">Por favor espere</p>
+        </div>
+    </div>
+
+    <!-- Vote Modal -->
+    <div id="vote-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <h2 class="text-xl font-medium text-[#3C4043]" id="vote-modal-title">Votar</h2>
+                <button onclick="closeVoteModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6" id="vote-modal-content">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
+                <button onclick="closeVoteModal()" class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
+                    Cancelar
+                </button>
+                <button id="submit-vote-btn" onclick="submitVote()" disabled class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    Enviar Voto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-medium text-[#3C4043]" id="results-modal-title">Resultados</h2>
+                    <p class="text-sm text-[#5F6368]" id="results-modal-subtitle"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="downloadPDF()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] flex items-center gap-2">
+                        <span class="material-icons-round text-sm">download</span>
+                        PDF
+                    </button>
+                    <button onclick="closeResultsModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6" id="results-modal-content">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        let currentTab = 'active';
+        let currentConsultationId = null;
+        let currentQuestions = [];
+        let currentResults = null;
+        let currentPropertyId = null;
+        let currentPropertyName = '';
+
+        // Extract propertyId from JWT token
+        function getPropertyIdFromToken() {
+            if (!token) return null;
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return payload.propertyId || null;
+            } catch (e) {
+                console.error('Error decoding token:', e);
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            currentPropertyId = getPropertyIdFromToken();
+            loadConsultations();
+        });
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-active').className = tab === 'active' 
+                ? 'flex-1 px-4 py-3 rounded-xl font-medium transition-all bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white'
+                : 'flex-1 px-4 py-3 rounded-xl font-medium transition-all bg-white text-[#5F6368] border border-[#E5E5E5] hover:bg-[#FAFAFA]';
+            document.getElementById('tab-closed').className = tab === 'closed'
+                ? 'flex-1 px-4 py-3 rounded-xl font-medium transition-all bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white'
+                : 'flex-1 px-4 py-3 rounded-xl font-medium transition-all bg-white text-[#5F6368] border border-[#E5E5E5] hover:bg-[#FAFAFA]';
+            
+            document.getElementById('active-section').classList.toggle('hidden', tab !== 'active');
+            document.getElementById('closed-section').classList.toggle('hidden', tab !== 'closed');
+            
+            loadConsultations();
+        }
+
+        async function loadConsultations() {
+            try {
+                const [activeRes, closedRes] = await Promise.all([
+                    fetch('/api/consultations/active', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/consultations/closed', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const activeData = await activeRes.json();
+                const closedData = await closedRes.json();
+                
+                if (activeData.success) {
+                    renderActiveConsultations(activeData.data || []);
+                }
+                if (closedData.success) {
+                    renderClosedConsultations(closedData.data || []);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function renderActiveConsultations(consultations) {
+            const container = document.getElementById('active-list');
+            
+            if (consultations.length === 0) {
+                container.innerHTML = `
+                    <div class="card text-center py-12">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">how_to_vote</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-[#3C4043]">No hay consultas activas</h3>
+                        <p class="text-[#5F6368] mt-2">Actualmente no hay consultas pendientes para tu unidad</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = consultations.map(c => {
+                const votedCount = c.eligible_properties?.filter(p => p.has_voted).length || 0;
+                const totalCount = c.eligible_properties?.length || 0;
+                const pendingCount = totalCount - votedCount;
+                const allVoted = votedCount === totalCount && totalCount > 0;
+                
+                const endDate = new Date(c.end_date).toLocaleDateString('es-VE', { 
+                    timeZone: 'America/Caracas',
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+
+                return `
+                    <div class="card p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium uppercase">Activa</span>
+                                    ${c.target_building ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">${c.target_building}</span>` : ''}
+                                </div>
+                                <h3 class="text-lg font-medium text-[#3C4043]">${c.title}</h3>
+                                <p class="text-sm text-[#5F6368] mt-1">${c.description || ''}</p>
+                                
+                                <div class="flex items-center gap-4 mt-3 text-sm text-[#9AA0A6]">
+                                    <span class="flex items-center gap-1">
+                                        <span class="material-icons-round text-base">event</span>
+                                        Finaliza: ${endDate}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <span class="material-icons-round text-base">help</span>
+                                        ${c.questions?.length || 0} preguntas
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Properties Status -->
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 mb-4">
+                            <p class="text-sm font-medium text-[#3C4043] mb-3">Estado de votación por inmueble:</p>
+                            <div class="space-y-2">
+                                ${c.eligible_properties?.map(p => `
+                                    <div class="flex items-center justify-between py-2 border-b border-[#E5E5E5] last:border-0">
+                                        <div class="flex items-center gap-2">
+                                            <span class="material-icons-round text-[#9AA0A6]">home</span>
+                                            <span class="text-sm text-[#3C4043]">${p.name} ${p.building ? `(${p.building})` : ''}</span>
+                                        </div>
+                                        ${p.has_voted 
+                                            ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Ya votó</span>'
+                                            : '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium">Pendiente</span>'
+                                        }
+                                    </div>
+                                `).join('') || '<p class="text-sm text-[#9AA0A6]">No hay inmuebles elegibles</p>'}
+                            </div>
+                        </div>
+
+                        ${!allVoted ? `
+                            <button onclick="openVoteModal('${c.id}')" class="w-full bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg flex items-center justify-center gap-2">
+                                <span class="material-icons-round">how_to_vote</span>
+                                Votar Ahora (${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''})
+                            </button>
+                        ` : `
+                            <div class="w-full bg-green-50 text-green-700 px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2">
+                                <span class="material-icons-round">check_circle</span>
+                                Todos los inmuebles han votado
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderClosedConsultations(consultations) {
+            const container = document.getElementById('closed-list');
+            
+            if (consultations.length === 0) {
+                container.innerHTML = `
+                    <div class="card text-center py-12">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">history</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-[#3C4043]">No hay consultas finalizadas</h3>
+                        <p class="text-[#5F6368] mt-2">Las consultas cerradas aparecerán aquí</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = consultations.map(c => `
+                <div class="card p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium uppercase">Finalizada</span>
+                                ${c.target_building ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">${c.target_building}</span>` : ''}
+                            </div>
+                            <h3 class="text-lg font-medium text-[#3C4043]">${c.title}</h3>
+                            <p class="text-sm text-[#5F6368] mt-1">${c.description || ''}</p>
+                            
+                            <div class="flex items-center gap-4 mt-3 text-sm text-[#9AA0A6]">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-icons-round text-base">event</span>
+                                    Finalizó: ${new Date(c.end_date).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="viewResults('${c.id}')" class="w-full bg-[#f97316] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#ea580c] flex items-center justify-center gap-2">
+                        <span class="material-icons-round">pie_chart</span>
+                        Ver Resultados
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function openVoteModal(consultationId) {
+            try {
+                const response = await fetch(`/api/consultations/${consultationId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showToast('error', 'Error', 'No se pudo cargar la consulta');
+                    return;
+                }
+
+                const c = data.data;
+                currentConsultationId = consultationId;
+                currentQuestions = c.questions;
+
+                // Get the current property from eligible properties
+                const currentProperty = c.eligible_properties?.find(p => p.id === currentPropertyId);
+                
+                if (!currentProperty) {
+                    showToast('error', 'Sin permiso', 'No tienes permiso para votar en esta consulta con este inmueble');
+                    return;
+                }
+
+                if (currentProperty.has_voted) {
+                    showToast('warning', 'Ya votado', 'Este inmueble ya ha votado en esta consulta');
+                    return;
+                }
+
+                if (!c.questions || c.questions.length === 0) {
+                    showToast('warning', 'Consulta sin preguntas', 'Esta consulta no tiene preguntas configuradas aún');
+                    return;
+                }
+
+                currentPropertyName = currentProperty.name;
+                document.getElementById('vote-modal-title').textContent = c.title;
+                
+                let html = `
+                    <div class="mb-6 bg-[#FAFAFA] rounded-xl p-4">
+                        <div class="flex items-center gap-2 text-[#3C4043]">
+                            <span class="material-icons-round text-[#f97316]">home</span>
+                            <span class="font-medium">${currentProperty.name} ${currentProperty.building ? `(${currentProperty.building})` : ''}</span>
+                        </div>
+                        <p class="text-xs text-[#9AA0A6] mt-2">Votando como propietario de este inmueble. Una vez emitido el voto, no se podrá modificar.</p>
+                    </div>
+                `;
+
+                c.questions.forEach((q, idx) => {
+                    html += `
+                        <div class="mb-6 question-group" data-question-id="${q.id}">
+                            <label class="block text-sm font-medium text-[#3C4043] mb-3">${idx + 1}. ${q.text}</label>
+                            <div class="space-y-2">
+                                ${q.options.map(opt => `
+                                    <label class="flex items-center gap-3 p-3 border border-[#E5E5E5] rounded-xl cursor-pointer hover:bg-[#FAFAFA] transition-colors">
+                                        <input type="radio" name="question_${q.id}" value="${opt.id}" class="vote-option w-5 h-5 text-[#f97316] focus:ring-[#f97316]" required onchange="checkFormValidity()">
+                                        <span class="text-[#3C4043]">${opt.text}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('vote-modal-content').innerHTML = html;
+                
+                // Check initial validity (all buttons disabled)
+                checkFormValidity();
+                
+                document.getElementById('vote-modal').classList.remove('hidden');
+                document.getElementById('vote-modal').classList.add('flex');
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('error', 'Error', 'No se pudo cargar la consulta');
+            }
+        }
+
+        function closeVoteModal() {
+            document.getElementById('vote-modal').classList.add('hidden');
+            document.getElementById('vote-modal').classList.remove('flex');
+            currentConsultationId = null;
+            currentQuestions = [];
+        }
+
+        // Toast notification system
+        function showToast(type, title, message, duration = 4000) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const titleEl = document.getElementById('toast-title');
+            const messageEl = document.getElementById('toast-message');
+            
+            // Set icon and color based on type
+            const icons = {
+                success: 'check_circle',
+                error: 'error',
+                warning: 'warning'
+            };
+            const colors = {
+                success: 'text-green-500',
+                error: 'text-red-500',
+                warning: 'text-amber-500'
+            };
+            
+            icon.textContent = icons[type] || 'info';
+            icon.className = `material-icons-round ${colors[type] || 'text-blue-500'}`;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            // Remove old classes and add new one
+            toast.querySelector('div').className = `bg-white rounded-xl shadow-lg border-l-4 p-4 flex items-center gap-3 min-w-[300px] animate-fade-in toast-${type}`;
+            
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, duration);
+        }
+
+        // Loading overlay control
+        function showLoading(message = 'Procesando...') {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.querySelector('p.font-medium').textContent = message;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+
+        // Check if all questions have been answered
+        function checkFormValidity() {
+            const submitBtn = document.getElementById('submit-vote-btn');
+            if (!submitBtn || currentQuestions.length === 0) return;
+
+            const allAnswered = currentQuestions.every(q => {
+                const selected = document.querySelector(`input[name="question_${q.id}"]:checked`);
+                return selected !== null;
+            });
+
+            submitBtn.disabled = !allAnswered;
+        }
+
+        // Idempotency key generator
+        let isSubmitting = false;
+        
+        async function submitVote() {
+            // Idempotency: Prevent duplicate submissions
+            if (isSubmitting) {
+                console.log('[Idempotency] Vote already being submitted, ignoring duplicate request');
+                return;
+            }
+            
+            if (!currentConsultationId) return;
+            if (!currentPropertyId) {
+                showToast('error', 'Error', 'No se pudo identificar el inmueble');
+                return;
+            }
+
+            const votes = [];
+
+            // Collect votes for each question
+            for (const q of currentQuestions) {
+                const selected = document.querySelector(`input[name="question_${q.id}"]:checked`);
+                if (!selected) {
+                    showToast('warning', 'Voto incompleto', `Por favor selecciona una opción para: ${q.text}`);
+                    return;
+                }
+                votes.push({
+                    question_id: q.id,
+                    option_id: selected.value
+                });
+            }
+
+            // Set submission lock
+            isSubmitting = true;
+            const submitBtn = document.getElementById('submit-vote-btn');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="material-icons-round animate-spin">sync</span> Enviando...';
+            
+            showLoading('Registrando voto...');
+
+            try {
+                const response = await fetch(`/api/consultations/${currentConsultationId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ property_id: currentPropertyId, votes })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('success', '¡Voto registrado!', 'Tu voto ha sido registrado exitosamente');
+                    closeVoteModal();
+                    loadConsultations();
+                } else {
+                    showToast('error', 'Error al votar', data.error || 'No se pudo registrar el voto');
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('error', 'Error de conexión', 'No se pudo conectar con el servidor. Intenta de nuevo.');
+                submitBtn.disabled = false;
+            } finally {
+                // Reset submission lock after delay to prevent rapid retries
+                hideLoading();
+                submitBtn.innerHTML = originalBtnText;
+                setTimeout(() => {
+                    isSubmitting = false;
+                }, 2000);
+            }
+        }
+
+        async function viewResults(consultationId) {
+            try {
+                const response = await fetch(`/api/consultations/${consultationId}/results`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showToast('error', 'Error', data.error || 'No se pudieron cargar los resultados');
+                    return;
+                }
+
+                currentResults = data.data;
+                const c = data.data.consultation;
+                const results = data.data.results;
+                const participationRate = data.data.participation_rate;
+                const totalVoters = data.data.total_votes;
+                const eligibleProperties = c.eligible_properties;
+
+                document.getElementById('results-modal-title').textContent = c.title;
+                document.getElementById('results-modal-subtitle').textContent = 
+                    `${totalVoters} de ${eligibleProperties} inmuebles votaron (${participationRate}% participación)`;
+
+                let html = `
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-3 gap-4 mb-8">
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-[#f97316]">${eligibleProperties}</p>
+                            <p class="text-sm text-[#5F6368]">Inmuebles Habilitados</p>
+                        </div>
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-green-600">${totalVoters}</p>
+                            <p class="text-sm text-[#5F6368]">Inmuebles que Votaron</p>
+                        </div>
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-blue-600">${participationRate}%</p>
+                            <p class="text-sm text-[#5F6368]">Participación</p>
+                        </div>
+                    </div>
+                `;
+
+                // Results per question with charts
+                results.forEach((q, idx) => {
+                    const chartId = `chart-${idx}`;
+                    const labels = q.options.map(o => o.option_text);
+                    const values = q.options.map(o => o.votes);
+                    const colors = ['#f97316', '#ea580c', '#A67C52', '#C4A77D', '#E8DCC4'];
+
+                    html += `
+                        <div class="mb-8 border-b border-[#E5E5E5] pb-8">
+                            <h3 class="font-medium text-[#3C4043] mb-4">${idx + 1}. ${q.question_text}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <div class="chart-container">
+                                        <canvas id="${chartId}"></canvas>
+                                    </div>
+                                </div>
+                                <div class="space-y-3">
+                                    ${q.options.map((opt, optIdx) => {
+                                        const percentage = q.total > 0 ? Math.round((opt.votes / q.total) * 100) : 0;
+                                        return `
+                                            <div>
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-[#3C4043]">${opt.option_text}</span>
+                                                    <span class="text-[#5F6368]">${opt.votes} votos (${percentage}%)</span>
+                                                </div>
+                                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div class="h-full progress-bar rounded-full" style="width: ${percentage}%"></div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Voting Properties List
+                html += `
+                    <div class="mt-8">
+                        <h3 class="font-medium text-[#3C4043] mb-4">Inmuebles que votaron</h3>
+                        <div class="bg-[#FAFAFA] rounded-xl overflow-hidden">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-[#E5E5E5]">
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Inmueble</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Edificio</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Fecha de voto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.data.voting_properties.map(p => `
+                                        <tr class="border-b border-[#E5E5E5] last:border-0">
+                                            <td class="px-4 py-3 text-sm text-[#3C4043]">${p.name}</td>
+                                            <td class="px-4 py-3 text-sm text-[#5F6368]">${p.building || '-'}</td>
+                                            <td class="px-4 py-3 text-sm text-[#5F6368]">
+                                                ${p.voted_at ? new Date(p.voted_at).toLocaleString('es-VE', { 
+                                                    timeZone: 'America/Caracas',
+                                                    day: '2-digit', 
+                                                    month: '2-digit', 
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                }) : '-'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('results-modal-content').innerHTML = html;
+                document.getElementById('results-modal').classList.remove('hidden');
+                document.getElementById('results-modal').classList.add('flex');
+
+                // Initialize charts after DOM is updated
+                setTimeout(() => {
+                    results.forEach((q, idx) => {
+                        const ctx = document.getElementById(`chart-${idx}`);
+                        if (ctx) {
+                            new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: q.options.map(o => o.option_text),
+                                    datasets: [{
+                                        data: q.options.map(o => o.votes),
+                                        backgroundColor: ['#f97316', '#ea580c', '#A67C52', '#C4A77D', '#E8DCC4'],
+                                        borderWidth: 0
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }, 100);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('error', 'Error', 'No se pudieron cargar los resultados');
+            }
+        }
+
+        function closeResultsModal() {
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.remove('flex');
+            currentResults = null;
+        }
+
+        function downloadPDF() {
+            if (!currentResults) return;
+            
+            const baseUrl = window.location.origin;
+            const isotipoUrl = baseUrl + '/assets/images/isotipo-naranja.svg';
+            const intelalogoUrl = baseUrl + '/assets/images/svgMAIN-intelalogo.svg';
+            const tenantName = currentResults.tenant_name || 'Condominio';
+            
+            const printWindow = window.open('', '_blank');
+            const c = currentResults.consultation;
+            
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Resultados - ${c.title}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; }
+                        .pdf-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #ddd; }
+                        .pdf-header img { height: 36px; width: auto; }
+                        .pdf-header .brand { font-size: 18px; font-weight: 600; color: #f97316; }
+                        .pdf-header .separator { color: #999; }
+                        .pdf-header .tenant-name { font-size: 16px; color: #555; }
+                        h1 { color: #f97316; margin-top: 0; }
+                        .summary { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                        .question { margin: 30px 0; border-bottom: 1px solid #ddd; padding-bottom: 20px; }
+                        .option { margin: 10px 0; }
+                        .bar { background: #f97316; height: 20px; border-radius: 4px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+                        th { background: #f5f5f5; }
+                        .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 11px; }
+                        .pdf-footer img { height: 24px; margin-left: 8px; vertical-align: middle; }
+                    </style>
+                </head>
+                <body>
+                    <div class="pdf-header">
+                        <img src="${isotipoUrl}" alt="Condominio360" onerror="this.style.display='none'">
+                        <span class="brand">Condominio360</span>
+                        <span class="separator">|</span>
+                        <span class="tenant-name">${tenantName}</span>
+                    </div>
+                    <h1>${c.title}</h1>
+                    <p>${c.description || ''}</p>
+                    <div class="summary">
+                        <p><strong>Inmuebles habilitados:</strong> ${currentResults.consultation?.eligible_properties ?? currentResults.eligible_properties ?? 0}</p>
+                        <p><strong>Inmuebles que votaron:</strong> ${currentResults.total_votes ?? 0}</p>
+                        <p><strong>Participación:</strong> ${currentResults.participation_rate ?? 0}%</p>
+                    </div>
+                    <h2>Resultados por pregunta</h2>
+            `;
+
+            currentResults.results.forEach((q, idx) => {
+                html += `<div class="question"><h3>${idx + 1}. ${q.question_text}</h3>`;
+                q.options.forEach(opt => {
+                    const percentage = q.total > 0 ? Math.round((opt.votes / q.total) * 100) : 0;
+                    html += `
+                        <div class="option">
+                            <p>${opt.option_text}: ${opt.votes} votos (${percentage}%)</p>
+                            <div class="bar" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            });
+
+            html += `
+                    <h2>Inmuebles que votaron</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Inmueble</th>
+                                <th>Edificio</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${currentResults.voting_properties.map(p => `
+                                <tr>
+                                    <td>${p.name}</td>
+                                    <td>${p.building || '-'}</td>
+                                    <td>${p.voted_at ? new Date(p.voted_at).toLocaleString('es-VE') : '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="pdf-footer">
+                        Generado por Condominio360 | Potenciado por: <img src="${intelalogoUrl}" alt="Intelalogo">
+                    </div>
+                </body>
+                </html>
+            `;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

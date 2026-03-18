@@ -1,0 +1,397 @@
+const PropertyModel = require('../models/PropertyModel');
+const BuildingModel = require('../models/BuildingModel');
+const UserModel = require('../models/UserModel');
+const AuditService = require('../services/AuditService');
+
+/**
+ * Controller para gestión de Propiedades/Inmuebles
+ */
+class PropertyController {
+
+    // ==================== SUPERADMIN ENDPOINTS ====================
+
+    /**
+     * POST /api/admin/tenants/:tenantId/properties
+     * Crear propiedad (SuperAdmin)
+     */
+    static async create(req, res) {
+        try {
+            const { tenantId } = req.params;
+            const { name, type, building_id, floor, area_sqm, alicuota, owner_id } = req.body;
+
+            if (!name) {
+                return res.status(400).json({ success: false, error: 'El nombre es requerido' });
+            }
+
+            // Si se especifica building_id, verificar que pertenece al tenant
+            if (building_id) {
+                const building = await BuildingModel.findById(building_id);
+                if (!building || building.tenant_id !== tenantId) {
+                    return res.status(400).json({ success: false, error: 'Edificio no válido' });
+                }
+            }
+
+            const property = await PropertyModel.create({
+                tenant_id: tenantId,
+                name,
+                type: type || 'Apartment',
+                building_id,
+                floor,
+                area_sqm,
+                alicuota
+            });
+
+            // Si se especifica owner_id, asociar propietario
+            if (owner_id) {
+                await PropertyModel.addOwner(property.id, owner_id, {
+                    is_primary_owner: true,
+                    percentage_ownership: 100
+                });
+            }
+
+            await AuditService.log({
+                tenantId,
+                actorId: req.user.userId,
+                action: 'PROPERTY_CREATED',
+                entityType: 'PROPERTY',
+                entityId: property.id,
+                metadata: { name, building_id }
+            });
+
+            res.status(201).json({ success: true, property });
+        } catch (error) {
+            console.error('Error creating property:', error);
+            res.status(500).json({ success: false, error: 'Error al crear propiedad' });
+        }
+    }
+
+    /**
+     * POST /api/admin/tenants/:tenantId/properties/bulk
+     * Crear múltiples propiedades (SuperAdmin)
+     */
+    static async createBulk(req, res) {
+        try {
+            const { tenantId } = req.params;
+            const { properties, building_id } = req.body;
+
+            if (!Array.isArray(properties) || properties.length === 0) {
+                return res.status(400).json({ success: false, error: 'Se requiere un array de propiedades' });
+            }
+
+            // Verificar edificio si se especifica
+            if (building_id) {
+                const building = await BuildingModel.findById(building_id);
+                if (!building || building.tenant_id !== tenantId) {
+                    return res.status(400).json({ success: false, error: 'Edificio no válido' });
+                }
+            }
+
+            const propsToCreate = properties.map(p => ({
+                tenant_id: tenantId,
+                name: p.name,
+                type: p.type || 'Apartment',
+                building_id: p.building_id || building_id,
+                floor: p.floor,
+                area_sqm: p.area_sqm,
+                alicuota: p.alicuota
+            }));
+
+            const created = await PropertyModel.createMany(propsToCreate);
+
+            await AuditService.log({
+                tenantId,
+                actorId: req.user.userId,
+                action: 'PROPERTIES_CREATED_BULK',
+                entityType: 'PROPERTY',
+                metadata: { count: created.length }
+            });
+
+            res.status(201).json({ success: true, properties: created });
+        } catch (error) {
+            console.error('Error creating properties:', error);
+            res.status(500).json({ success: false, error: 'Error al crear propiedades' });
+        }
+    }
+
+    /**
+     * GET /api/admin/tenants/:tenantId/properties
+     * Listar propiedades (SuperAdmin)
+     */
+    static async list(req, res) {
+        try {
+            const { tenantId } = req.params;
+            const { building_id, page, limit } = req.query;
+
+            const result = await PropertyModel.findByTenant(tenantId, {
+                building_id,
+                page: parseInt(page) || 1,
+                limit: parseInt(limit) || 50
+            });
+
+            res.json({ success: true, ...result });
+        } catch (error) {
+            console.error('Error listing properties:', error);
+            res.status(500).json({ success: false, error: 'Error al listar propiedades' });
+        }
+    }
+
+    /**
+     * GET /api/admin/properties/:id
+     * Obtener propiedad con detalle (SuperAdmin)
+     */
+    static async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const property = await PropertyModel.getWithOwners(id);
+
+            if (!property) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+
+            res.json({ success: true, property });
+        } catch (error) {
+            console.error('Error getting property:', error);
+            res.status(500).json({ success: false, error: 'Error al obtener propiedad' });
+        }
+    }
+
+    /**
+     * PUT /api/admin/properties/:id
+     * Actualizar propiedad (SuperAdmin)
+     */
+    static async update(req, res) {
+        try {
+            const { id } = req.params;
+            const property = await PropertyModel.update(id, req.body);
+
+            if (!property) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+
+            await AuditService.log({
+                tenantId: property.tenant_id,
+                actorId: req.user.userId,
+                action: 'PROPERTY_UPDATED',
+                entityType: 'PROPERTY',
+                entityId: id
+            });
+
+            res.json({ success: true, property });
+        } catch (error) {
+            console.error('Error updating property:', error);
+            res.status(500).json({ success: false, error: 'Error al actualizar propiedad' });
+        }
+    }
+
+    /**
+     * DELETE /api/admin/properties/:id
+     * Eliminar propiedad (SuperAdmin)
+     */
+    static async delete(req, res) {
+        try {
+            const { id } = req.params;
+            const property = await PropertyModel.findById(id);
+
+            if (!property) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+
+            await PropertyModel.delete(id);
+
+            await AuditService.log({
+                tenantId: property.tenant_id,
+                actorId: req.user.userId,
+                action: 'PROPERTY_DELETED',
+                entityType: 'PROPERTY',
+                entityId: id
+            });
+
+            res.json({ success: true, message: 'Propiedad eliminada' });
+        } catch (error) {
+            console.error('Error deleting property:', error);
+            res.status(500).json({ success: false, error: 'Error al eliminar propiedad' });
+        }
+    }
+
+    /**
+     * POST /api/admin/properties/:id/owners
+     * Asociar propietario (SuperAdmin)
+     */
+    static async addOwner(req, res) {
+        try {
+            const { id } = req.params;
+            const { user_id, is_primary_owner, percentage_ownership, tenant_id } = req.body;
+
+            if (!user_id) {
+                return res.status(400).json({ success: false, error: 'El usuario es requerido' });
+            }
+
+            const property = await PropertyModel.findById(id);
+            if (!property) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+            if (tenant_id && property.tenant_id !== tenant_id) {
+                return res.status(403).json({ success: false, error: 'La propiedad no pertenece al tenant indicado' });
+            }
+
+            const link = await PropertyModel.addOwner(id, user_id, {
+                is_primary_owner,
+                percentage_ownership
+            });
+
+            await AuditService.log({
+                tenantId: req.body.tenant_id,
+                actorId: req.user.userId,
+                action: 'OWNER_ADDED',
+                entityType: 'PROPERTY',
+                entityId: id,
+                metadata: { user_id }
+            });
+
+            res.status(201).json({ success: true, link });
+        } catch (error) {
+            console.error('Error adding owner:', error);
+            res.status(500).json({ success: false, error: 'Error al asociar propietario' });
+        }
+    }
+
+    // ==================== TENANT ADMIN ENDPOINTS ====================
+
+    /**
+     * GET /api/tenant-admin/properties
+     * Listar propiedades (TenantAdmin - solo lectura)
+     */
+    static async listForTenantAdmin(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const { building_id, page, limit, search } = req.query;
+
+            let properties;
+            if (search) {
+                properties = await PropertyModel.search(tenantId, search);
+                res.json({ success: true, properties, pagination: { total: properties.length } });
+            } else {
+                const result = await PropertyModel.findByTenant(tenantId, {
+                    building_id,
+                    page: parseInt(page) || 1,
+                    limit: parseInt(limit) || 50
+                });
+                res.json({ success: true, ...result });
+            }
+        } catch (error) {
+            console.error('Error listing properties:', error);
+            res.status(500).json({ success: false, error: 'Error al listar propiedades' });
+        }
+    }
+
+    /**
+     * GET /api/tenant-admin/properties/:id
+     * Ver detalle de propiedad (TenantAdmin - solo lectura)
+     */
+    static async getForTenantAdmin(req, res) {
+        try {
+            const { id } = req.params;
+            const tenantId = req.user.tenantId;
+
+            const property = await PropertyModel.getWithOwners(id);
+
+            if (!property || property.tenant_id !== tenantId) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+
+            res.json({ success: true, property });
+        } catch (error) {
+            console.error('Error getting property:', error);
+            res.status(500).json({ success: false, error: 'Error al obtener propiedad' });
+        }
+    }
+
+    /**
+     * GET /api/tenant-admin/properties/:id/owners
+     * Obtener propietarios de una propiedad específica
+     */
+    static async getPropertyOwners(req, res) {
+        try {
+            const { id } = req.params;
+            const tenantId = req.user.tenantId;
+
+            // Verificar que la propiedad pertenece al tenant
+            const property = await PropertyModel.findById(id);
+            if (!property || property.tenant_id !== tenantId) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+
+            // Obtener propietarios
+            const { connectDB, sql } = require('../config/database');
+            const pool = await connectDB();
+            
+            const result = await pool.request()
+                .input('property_id', sql.UniqueIdentifier, id)
+                .query(`
+                    SELECT 
+                        u.id, u.first_name, u.last_name, u.email, u.phone, u.dni,
+                        po.percentage_ownership, po.is_primary_owner
+                    FROM Users u
+                    INNER JOIN PropertyOwners po ON u.id = po.user_id
+                    WHERE po.property_id = @property_id
+                    ORDER BY po.is_primary_owner DESC, u.last_name
+                `);
+
+            res.json({ 
+                success: true, 
+                owners: result.recordset,
+                count: result.recordset.length
+            });
+        } catch (error) {
+            console.error('Error getting property owners:', error);
+            res.status(500).json({ success: false, error: 'Error al obtener propietarios' });
+        }
+    }
+
+    // ==================== OWNER ENDPOINTS ====================
+
+    /**
+     * GET /api/properties/my-properties
+     * Obtener propiedades del propietario logueado
+     */
+    static async getMyProperties(req, res) {
+        try {
+            const userId = req.user.userId;
+            const properties = await PropertyModel.getByOwner(userId);
+            res.json({ success: true, properties });
+        } catch (error) {
+            console.error('Error getting my properties:', error);
+            res.status(500).json({ success: false, error: 'Error al obtener propiedades' });
+        }
+    }
+
+    /**
+     * GET /api/properties/:id (para propietarios)
+     * Ver detalle de propiedad
+     */
+    static async show(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+
+            const property = await PropertyModel.getWithOwners(id);
+
+            if (!property) {
+                return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
+            }
+
+            // Verificar que el usuario es propietario de esta propiedad
+            const isOwner = property.owners.some(o => o.user_id === userId);
+            if (!isOwner) {
+                return res.status(403).json({ success: false, error: 'No tienes acceso a esta propiedad' });
+            }
+
+            res.json({ success: true, property });
+        } catch (error) {
+            console.error('Error getting property:', error);
+            res.status(500).json({ success: false, error: 'Error al obtener propiedad' });
+        }
+    }
+}
+
+module.exports = PropertyController;

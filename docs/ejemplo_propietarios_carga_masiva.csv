@@ -1,0 +1,30 @@
+# Ejemplo CSV: Carga masiva de Propietarios
+# IMPORTANTE: El 'numero_documento' es el IDENTIFICADOR ÚNICO del propietario
+# Si el documento ya existe, se actualizarán los datos (nombre, email, teléfono)
+# Si el documento no existe, se creará un nuevo propietario
+#
+# El campo 'inmueble_slug' debe coincidir con el identificador único del inmueble
+# El campo 'inmueble_slug' es opcional - si no se proporciona, el propietario se crea sin inmueble asignado
+#
+# Para condominios multi-edificio, el slug del inmueble incluye el edificio: "torre-a-101"
+# Para condominios edificio único, el slug es solo: "apartamento-101"
+#
+# Campos requeridos: numero_documento, nombre, email
+# Campos opcionales: telefono, inmueble_slug, tipo_documento, direccion
+#
+numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento,direccion
+12345678,Juan Pérez García,juan.perez@email.com,555-0101,apartamento-101,DNI,Av. Principal 123
+23456789,María Elena García,maria.garcia@email.com,555-0102,apartamento-102,DNI,Calle Secundaria 456
+34567890,Carlos Alberto López,carlos.lopez@email.com,555-0103,apartamento-201,CE,Plaza Mayor 789
+45678901,Ana Isabel Martínez,ana.martinez@email.com,555-0104,apartamento-202,DNI,Avenida Central 321
+56789012,Pedro Antonio Rodríguez,pedro.rodriguez@email.com,555-0105,apartamento-301,PASAPORTE,Calle Norte 654
+67890123,Laura Beatriz Sánchez,laura.sanchez@email.com,555-0106,apartamento-302,DNI,Av. Sur 987
+12345678901,Roberto Carlos Díaz,roberto.diaz@email.com,555-0107,local-pb-01,RUC,Zona Industrial 111
+78901234,Carmen Lucía Ruiz,carmen.ruiz@email.com,555-0108,estacionamiento-01,DNI,Av. Comercial 222
+89012345,Miguel Ángel Torres,miguel.torres@email.com,555-0109,estacionamiento-02,CE,Calle Residencial 333
+90123456,Isabel Cristina Flores,isabel.flores@email.com,555-0110,apartamento-401,DNI,Edificio Norte 444
+23456789012,Fernando José Vega,fernando.vega@email.com,555-0111,apartamento-501,RUC,Torre Sur 555
+01234567,Patricia Andrea Luna,patricia.luna@email.com,555-0112,apartamento-502,DNI,Condominio Este 666
+# Propietario sin inmueble asignado (para asignar después)
+11223344,José Antonio Morales,jose.morales@email.com,555-0113,,DNI,Calle 10 #45
+22334455,Rosa María Castro,rosa.castro@email.com,555-0114,,CE,Av. 20 #78

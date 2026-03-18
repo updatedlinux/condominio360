@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Detalle de Inmueble - <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .status-badge {
+            @apply px-2 py-1 rounded-full text-xs font-medium;
+        }
+        .status-pending { @apply bg-amber-100 text-amber-800; }
+        .status-inside { @apply bg-green-100 text-green-800; }
+        .status-completed { @apply bg-gray-100 text-gray-600; }
+        .tab-active {
+            border-bottom: 2px solid #f97316;
+            color: #f97316;
+            font-weight: 500;
+        }
+        .tab-inactive {
+            color: #5F6368;
+        }
+        .tab-inactive:hover {
+            color: #3C4043;
+        }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'properties' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <a href="/tenant-admin/properties" class="text-[#5F6368] hover:text-[#3C4043]">
+                            <span class="material-icons-round">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]" id="page-title">Detalle del Inmueble</h1>
+                            <p class="text-sm text-[#5F6368]" id="header-subtitle">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Property Info Card -->
+                <div id="property-info" class="card p-6 mb-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-2xl flex items-center justify-center">
+                            <span class="material-icons-round text-3xl text-white">home</span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-medium text-[#3C4043]" id="prop-name">-</h2>
+                            <p class="text-[#5F6368]" id="prop-details">-</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-[#E5E5E5]">
+                        <div>
+                            <p class="text-sm text-[#5F6368]">Tipo</p>
+                            <p class="font-medium text-[#3C4043]" id="prop-type">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-[#5F6368]">Piso</p>
+                            <p class="font-medium text-[#3C4043]" id="prop-floor">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-[#5F6368]">Área</p>
+                            <p class="font-medium text-[#3C4043]" id="prop-area">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-[#5F6368]">Alícuota</p>
+                            <p class="font-medium text-[#3C4043]" id="prop-alicuota">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Owners Section -->
+                <div class="card p-6 mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span class="material-icons-round text-green-600">people</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-[#3C4043]">Propietarios</h3>
+                                <p class="text-sm text-[#5F6368]">Personas asociadas a este inmueble</p>
+                            </div>
+                        </div>
+                        <span id="owner-count" class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">0</span>
+                    </div>
+                    <div id="owners-list" class="space-y-3">
+                        <p class="text-center text-[#5F6368] py-4">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="bg-white rounded-t-2xl border-b border-[#E5E5E5] px-6 pt-4">
+                    <div class="flex gap-6">
+                        <button onclick="switchTab('consultations')" id="tab-consultations" class="tab-active pb-3 px-2">
+                            Consultas <span id="badge-consultations" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
+                        <button onclick="switchTab('requests')" id="tab-requests" class="tab-inactive pb-3 px-2">
+                            Solicitudes <span id="badge-requests" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
+                        <button onclick="switchTab('visits')" id="tab-visits" class="tab-inactive pb-3 px-2">
+                            Visitas <span id="badge-visits" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
+                        <button onclick="switchTab('deliveries')" id="tab-deliveries" class="tab-inactive pb-3 px-2">
+                            Deliveries <span id="badge-deliveries" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
+                        <button onclick="switchTab('communiques')" id="tab-communiques" class="tab-inactive pb-3 px-2">
+                            Comunicados <span id="badge-communiques" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
+                        <button onclick="switchTab('billing')" id="tab-billing" class="tab-inactive pb-3 px-2">
+                            Facturación <span id="badge-billing" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="card rounded-t-none p-6 min-h-[400px]">
+                    <!-- Consultas Tab -->
+                    <div id="content-consultations" class="tab-content">
+                        <div id="consultations-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando consultas...</p>
+                        </div>
+                    </div>
+
+                    <!-- Solicitudes Tab -->
+                    <div id="content-requests" class="tab-content hidden">
+                        <div id="requests-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando...</p>
+                        </div>
+                    </div>
+
+                    <!-- Visitas Tab -->
+                    <div id="content-visits" class="tab-content hidden">
+                        <div id="visits-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando visitas...</p>
+                        </div>
+                    </div>
+
+                    <!-- Deliveries Tab -->
+                    <div id="content-deliveries" class="tab-content hidden">
+                        <div id="deliveries-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando deliveries...</p>
+                        </div>
+                    </div>
+
+                    <!-- Comunicados Tab -->
+                    <div id="content-communiques" class="tab-content hidden">
+                        <div id="communiques-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando comunicados...</p>
+                        </div>
+                    </div>
+
+                    <!-- Facturación Tab -->
+                    <div id="content-billing" class="tab-content hidden">
+                        <div id="billing-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando recibos...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const propertyId = '<%= propertyId %>';
+        let currentTab = 'consultations';
+        let auditData = {};
+
+        // Formato de fecha/hora Venezuela
+        function formatDateVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('es-VE', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                timeZone: 'America/Caracas'
+            });
+        }
+
+        function formatTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleTimeString('es-VE', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'America/Caracas'
+            });
+        }
+
+        function formatDateTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleString('es-VE', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'America/Caracas'
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'PENDING': case 'ACTIVE':
+                    return '<span class="status-badge status-pending">Pendiente</span>';
+                case 'INSIDE':
+                    return '<span class="status-badge status-inside">Dentro</span>';
+                case 'COMPLETED': case 'CLOSED': case 'DELIVERED':
+                    return '<span class="status-badge status-completed">Completada</span>';
+                case 'APPROVED':
+                    return '<span class="status-badge bg-green-100 text-green-800">Aprobada</span>';
+                case 'REJECTED':
+                    return '<span class="status-badge bg-red-100 text-red-800">Rechazada</span>';
+                case 'ANNOUNCED':
+                    return '<span class="status-badge bg-blue-100 text-blue-800">Anunciado</span>';
+                case 'ARRIVED':
+                    return '<span class="status-badge bg-purple-100 text-purple-800">Llegado</span>';
+                default:
+                    return `<span class="status-badge bg-gray-100 text-gray-600">${status}</span>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPropertyAudit();
+        });
+
+        async function loadPropertyAudit() {
+            try {
+                console.log('Cargando auditoría para propiedad:', propertyId);
+                
+                const response = await fetch(`/api/tenant-admin/properties/${propertyId}/audit`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error HTTP:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('Datos recibidos:', result);
+                
+                if (!result.success) {
+                    console.error('Error en respuesta:', result.error);
+                    document.getElementById('consultations-list').innerHTML = `<p class="text-red-500 text-center py-8">Error: ${result.error}</p>`;
+                    return;
+                }
+                
+                auditData = result;
+                
+                // Renderizar info del inmueble
+                if (result.property) {
+                    renderPropertyInfo(result.property);
+                }
+                
+                // Renderizar propietarios
+                renderOwners(result.owners || []);
+                
+                // Renderizar tabs
+                renderConsultations(result.consultations || []);
+                renderRequests(result.requests || []);
+                renderVisits(result.visits || []);
+                renderDeliveries(result.deliveries || []);
+                renderCommuniques(result.communiques || [], result.communiqueReads || []);
+                
+                // Actualizar badges
+                document.getElementById('badge-consultations').textContent = (result.consultations || []).length;
+                document.getElementById('badge-requests').textContent = (result.requests || []).length;
+                document.getElementById('badge-visits').textContent = (result.visits || []).length;
+                document.getElementById('badge-deliveries').textContent = (result.deliveries || []).length;
+                document.getElementById('badge-billing').textContent = result.billing_invoices_count ?? 0;
+                
+            } catch (error) {
+                console.error('Error loading audit:', error);
+                document.getElementById('consultations-list').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <span class="material-icons-round text-4xl">error</span>
+                        <p class="mt-2">Error al cargar datos: ${error.message}</p>
+                        <button onclick="loadPropertyAudit()" class="mt-4 px-4 py-2 bg-[#f97316] text-white rounded-lg">
+                            Reintentar
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderPropertyInfo(property) {
+            // Traducir tipos de inmueble
+            const typeMap = {
+                'APARTMENTO': 'Apartamento',
+                'APARTMENT': 'Apartamento',
+                'Apartment': 'Apartamento',
+                'CASA': 'Casa',
+                'HOUSE': 'Casa',
+                'House': 'Casa',
+                'LOCAL': 'Local Comercial',
+                'OFFICE': 'Oficina',
+                'PARKING': 'Estacionamiento',
+                'STORAGE': 'Depósito'
+            };
+            
+            document.getElementById('prop-name').textContent = property.name || 'Inmueble';
+            document.getElementById('prop-details').textContent = property.building_name || 'Edificio Principal';
+            document.getElementById('prop-type').textContent = typeMap[property.type] || property.type || 'Apartamento';
+            document.getElementById('prop-floor').textContent = property.floor || '-';
+            document.getElementById('prop-area').textContent = property.area_sqm ? `${property.area_sqm} m²` : 'N/A';
+            
+            // Mostrar alícuota o Facturación Fija
+            if (property.alicuota && property.alicuota > 0) {
+                document.getElementById('prop-alicuota').textContent = property.alicuota + '%';
+                document.getElementById('prop-alicuota').className = 'font-medium text-[#3C4043]';
+            } else {
+                document.getElementById('prop-alicuota').textContent = 'Fija';
+                document.getElementById('prop-alicuota').className = 'font-medium text-gray-500';
+            }
+            
+            document.getElementById('header-subtitle').textContent = `${property.building_name || 'Edificio'} - ${property.name || 'Inmueble'}`;
+        }
+
+        function renderOwners(owners) {
+            document.getElementById('owner-count').textContent = owners.length;
+            
+            if (owners.length === 0) {
+                document.getElementById('owners-list').innerHTML = `
+                    <div class="text-center py-6">
+                        <span class="material-icons-round text-4xl text-gray-300">person_off</span>
+                        <p class="text-[#5F6368] mt-2">No hay propietarios registrados</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('owners-list').innerHTML = owners.map(o => `
+                <div class="flex items-start gap-4 p-4 bg-[#F9FAFB] rounded-xl">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="material-icons-round text-white">person</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="font-medium text-[#3C4043]">${o.first_name} ${o.last_name}</h4>
+                            <div class="flex items-center gap-2">
+                                ${o.is_primary_owner ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">Principal</span>' : ''}
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">${o.percentage_ownership || 100}%</span>
+                            </div>
+                        </div>
+                        ${o.dni ? `<p class="text-sm text-[#5F6368] mb-1">DNI: ${o.dni}</p>` : ''}
+                        <p class="text-sm text-[#5F6368]">${o.email || 'Sin email'}</p>
+                        ${o.phone ? `<p class="text-sm text-[#9AA0A6]">${o.phone}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderConsultations(consultations) {
+            if (consultations.length === 0) {
+                document.getElementById('consultations-list').innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">how_to_vote</span>
+                        <p class="text-[#5F6368] mt-2">No hay consultas registradas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('consultations-list').innerHTML = consultations.map(c => `
+                <div class="p-4 bg-[#F9FAFB] rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-medium text-[#3C4043]">${c.title}</h4>
+                        ${getStatusBadge(c.status)}
+                    </div>
+                    <p class="text-sm text-[#5F6368]">
+                        <span class="material-icons-round text-sm align-middle">event</span>
+                        Votado: ${formatDateTimeVenezuela(c.voted_at)}
+                    </p>
+                    <p class="text-sm text-[#9AA0A6] mt-1">
+                        Consulta creada: ${formatDateVenezuela(c.created_at)}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        function renderRequests(requests) {
+            console.log('Renderizando solicitudes:', requests);
+            
+            if (!requests || requests.length === 0) {
+                document.getElementById('requests-list').innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">assignment</span>
+                        <p class="text-[#5F6368] mt-2">No hay solicitudes registradas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('requests-list').innerHTML = requests.map(r => {
+                const typeName = r.request_type_name || 'Solicitud';
+                return `
+                <div class="p-4 bg-[#F9FAFB] rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h4 class="font-medium text-[#3C4043]">${typeName}</h4>
+                            ${r.is_move_type ? '<span class="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded">Mudanza</span>' : ''}
+                        </div>
+                        ${getStatusBadge(r.status)}
+                    </div>
+                    <p class="text-sm text-[#5F6368]">
+                        <span class="material-icons-round text-sm align-middle">event</span>
+                        Creada: ${formatDateTimeVenezuela(r.created_at)}
+                    </p>
+                    ${(r.status === 'APPROVED' || r.status === 'REJECTED' || r.status === 'CLOSED') ? `<p class="text-sm text-[#9AA0A6] mt-1">Actualizada: ${formatDateTimeVenezuela(r.updated_at)}</p>` : ''}
+                </div>
+            `}).join('');
+        }
+
+        function renderVisits(visits) {
+            if (visits.length === 0) {
+                document.getElementById('visits-list').innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">people</span>
+                        <p class="text-[#5F6368] mt-2">No hay visitas registradas</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('visits-list').innerHTML = visits.map(v => {
+                let status = 'PENDING';
+                if (v.exit_time) status = 'COMPLETED';
+                else if (v.entry_time) status = 'INSIDE';
+                
+                return `
+                <div class="p-4 bg-[#F9FAFB] rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h4 class="font-medium text-[#3C4043]">${v.first_name} ${v.last_name}</h4>
+                            <span class="text-xs ${v.type === 'ONE_TIME' ? 'text-blue-600 bg-blue-100' : 'text-purple-600 bg-purple-100'} px-2 py-0.5 rounded">
+                                ${v.type === 'ONE_TIME' ? 'Visita Única' : 'Frecuente'}
+                            </span>
+                        </div>
+                        ${getStatusBadge(status)}
+                    </div>
+                    <p class="text-sm text-[#5F6368] mb-1">DNI: ${v.visitor_dni}</p>
+                    ${v.entry_time ? `
+                        <p class="text-sm text-green-600">
+                            <span class="material-icons-round text-sm align-middle">login</span>
+                            Entrada: ${formatTimeVenezuela(v.entry_time)}
+                        </p>
+                    ` : ''}
+                    ${v.exit_time ? `
+                        <p class="text-sm text-gray-500">
+                            <span class="material-icons-round text-sm align-middle">logout</span>
+                            Salida: ${formatTimeVenezuela(v.exit_time)}
+                        </p>
+                    ` : ''}
+                    <p class="text-xs text-[#9AA0A6] mt-1">
+                        Programada: ${formatDateVenezuela(v.valid_from)}
+                    </p>
+                </div>
+            `}).join('');
+        }
+
+        function renderDeliveries(deliveries) {
+            if (deliveries.length === 0) {
+                document.getElementById('deliveries-list').innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">local_shipping</span>
+                        <p class="text-[#5F6368] mt-2">No hay deliveries registrados</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('deliveries-list').innerHTML = deliveries.map(d => `
+                <div class="p-4 bg-[#F9FAFB] rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h4 class="font-medium text-[#3C4043]">${d.name}</h4>
+                            <p class="text-sm text-[#5F6368]">${d.company}</p>
+                        </div>
+                        ${getStatusBadge(d.status)}
+                    </div>
+                    <p class="text-sm text-[#5F6368]">
+                        <span class="material-icons-round text-sm align-middle">event</span>
+                        Esperado: ${formatDateVenezuela(d.expected_date)}
+                    </p>
+                    ${d.arrival_time ? `<p class="text-sm text-green-600 mt-1">Llegó: ${formatDateTimeVenezuela(d.arrival_time)}</p>` : ''}
+                    ${d.delivered_at ? `<p class="text-sm text-gray-500 mt-1">Entregado: ${formatDateTimeVenezuela(d.delivered_at)}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            ['consultations', 'requests', 'visits', 'deliveries', 'communiques', 'billing'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                
+                if (t === tab) {
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                    content.classList.add('hidden');
+                }
+            });
+            if (tab === 'billing') loadBillingInvoices();
+        }
+
+        let billingData = [];
+        async function loadBillingInvoices() {
+            const listEl = document.getElementById('billing-list');
+            listEl.innerHTML = '<p class="text-center text-[#5F6368] py-8">Cargando recibos...</p>';
+            try {
+                const res = await fetch(`/api/tenant-admin/properties/${propertyId}/billing-invoices`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al cargar');
+                billingData = data.data || [];
+                renderBillingInvoices(billingData);
+                document.getElementById('badge-billing').textContent = billingData.length;
+            } catch (e) {
+                listEl.innerHTML = `<p class="text-center text-red-500 py-8">${e.message || 'Error al cargar recibos'}</p>`;
+            }
+        }
+
+        function getBillingMonthName(m) {
+            const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            return months[(m || 1) - 1] || '';
+        }
+        function formatBillingCurrency(v) {
+            return v != null ? `Bs. ${Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Bs. 0,00';
+        }
+        function getBillingStatusBadge(inv) {
+            if (inv.status === 'PAID') return '<span class="status-badge bg-green-100 text-green-800">Pagado</span>';
+            const pr = inv.payment_report;
+            if (pr?.status === 'PENDING_CONFIRMATION') return '<span class="status-badge bg-blue-100 text-blue-800">Pendiente confirmación</span>';
+            if (pr?.status === 'REJECTED') return '<span class="status-badge bg-red-100 text-red-800">Rechazado</span>';
+            return '<span class="status-badge status-pending">Pendiente</span>';
+        }
+
+        function renderBillingInvoiceCard(inv) {
+            const ri = inv.rate_info || {};
+            const rate = inv.current_exchange_rate || inv.exchange_rate_at_creation || 1;
+            const usd = parseFloat(inv.assigned_amount_ves || 0) / rate;
+            const isExtra = inv.preliminary_name && String(inv.preliminary_name).toLowerCase().includes('extraordinario');
+            let reportHtml = '';
+            const pr = inv.payment_report;
+            if (inv.status === 'PAID') {
+                reportHtml = `
+                    <div class="mt-3 p-3 bg-green-50 rounded-lg border border-green-200 text-sm">
+                        <p class="text-green-800"><strong>Pago confirmado:</strong> ${formatBillingCurrency(inv.paid_amount_ves)}</p>
+                        <p class="text-green-700">${inv.paid_at ? 'Fecha: ' + formatDateVenezuela(inv.paid_at) : ''}</p>
+                    </div>
+                `;
+            } else if (pr?.status === 'PENDING_CONFIRMATION') {
+                reportHtml = `
+                    <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm">
+                        <p class="font-medium text-blue-800">Comprobante enviado por el propietario</p>
+                        <p class="text-blue-700 mt-1">Banco: ${pr.banco_emisor || '-'} | Fecha: ${pr.fecha_transferencia || '-'}</p>
+                        <p class="text-blue-700">Ref: ${pr.ref_transferencia || '-'} | Monto: ${formatBillingCurrency(pr.monto_abonado_ves)}</p>
+                        ${pr.attachment_path ? `<a href="/uploads/${pr.attachment_path}" target="_blank" class="text-[#f97316] hover:underline text-sm">Ver comprobante</a>` : ''}
+                    </div>
+                `;
+            } else if (pr?.status === 'REJECTED') {
+                reportHtml = `
+                    <div class="mt-3 p-3 bg-red-50 rounded-lg border border-red-200 text-sm">
+                        <p class="font-medium text-red-800">Reporte rechazado</p>
+                        <p class="text-red-700 mt-1">${pr.rejection_reason || 'Sin motivo indicado'}</p>
+                        <p class="text-red-600 text-xs mt-1">El propietario puede volver a reportar el pago</p>
+                    </div>
+                `;
+            }
+            let rateHtml = '';
+            if (ri.rate_preliminary != null) {
+                rateHtml = `
+                    <div class="mt-3 pt-3 border-t border-[#E5E5E5] text-xs text-[#5F6368]">
+                        <p>Tasa preliminar (${ri.rate_preliminary_date || '-'}): Bs. ${Number(ri.rate_preliminary || 0).toLocaleString('es-VE', {maximumFractionDigits:2})}/USD</p>
+                        ${inv.status === 'PENDING' && ri.rate_today ? `<p class="mt-1">Tasa actualizada del día: Bs. ${Number(ri.rate_today).toLocaleString('es-VE', {maximumFractionDigits:2})}/USD</p>` : ''}
+                    </div>
+                `;
+            }
+            const itemsHtml = (inv.items || []).map(it => `
+                <div class="flex justify-between py-1.5 text-sm border-b border-[#E5E5E5] last:border-0">
+                    <span class="text-[#5F6368]">${it.description || '-'}</span>
+                    <span class="font-medium">${formatBillingCurrency(it.assigned_amount_ves)}</span>
+                </div>
+            `).join('');
+            return `
+            <div class="p-4 bg-[#F9FAFB] rounded-xl ${isExtra ? 'border border-amber-200' : ''}">
+                <div class="flex justify-between items-start cursor-pointer" onclick="this.parentElement.querySelector('.billing-detail').classList.toggle('hidden')">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-medium text-[#3C4043]">${inv.preliminary_name || 'Recibo'}</h4>
+                            ${isExtra ? '<span class="px-2 py-0.5 bg-amber-200 text-amber-800 rounded text-xs">Extra</span>' : ''}
+                        </div>
+                        <p class="text-sm text-[#5F6368]">${getBillingMonthName(inv.billing_month)} ${inv.billing_year}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium text-[#3C4043]">${formatBillingCurrency(inv.status === 'PAID' ? inv.paid_amount_ves : inv.assigned_amount_ves)}</p>
+                        <p class="text-sm text-[#5F6368]">$ ${usd.toFixed(2)} USD</p>
+                        ${getBillingStatusBadge(inv)}
+                        <p class="text-xs text-[#9AA0A6] mt-1"><span class="material-icons-round text-xs align-middle">expand_more</span> Ver detalle</p>
+                    </div>
+                </div>
+                <div class="billing-detail hidden mt-4 pt-4 border-t border-[#E5E5E5]">
+                    <div class="space-y-2">
+                        <p class="text-sm font-medium text-[#5F6368]">Desglose</p>
+                        ${itemsHtml || '<p class="text-[#9AA0A6] text-sm">Sin desglose</p>'}
+                    </div>
+                    ${rateHtml}
+                    ${reportHtml}
+                </div>
+            </div>
+        `;
+        }
+
+        function toggleBillingMonthGroup(collapseId) {
+            const el = document.getElementById(collapseId);
+            const icon = document.getElementById(`icon-${collapseId}`);
+            if (el) {
+                el.classList.toggle('hidden');
+                if (icon) icon.textContent = el.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+            }
+        }
+
+        function renderBillingInvoices(invoices) {
+            const listEl = document.getElementById('billing-list');
+            if (!invoices || invoices.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">receipt_long</span>
+                        <p class="text-[#5F6368] mt-2">No hay recibos registrados para este inmueble</p>
+                    </div>
+                `;
+                return;
+            }
+            const byMonth = {};
+            invoices.forEach(i => {
+                const key = `${i.billing_year}-${String(i.billing_month).padStart(2,'0')}`;
+                if (!byMonth[key]) byMonth[key] = { year: i.billing_year, month: i.billing_month, label: `${getBillingMonthName(i.billing_month)} ${i.billing_year}`, items: [] };
+                byMonth[key].items.push(i);
+            });
+            const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a));
+            listEl.innerHTML = monthKeys.map((key, idx) => {
+                const group = byMonth[key];
+                const isExpanded = idx === 0;
+                const collapseId = `billing-month-${key.replace(/[^a-z0-9]/gi,'')}`;
+                const itemsHtml = group.items.map(inv => renderBillingInvoiceCard(inv)).join('');
+                return `
+                <div class="border border-[#E5E5E5] rounded-xl overflow-hidden mb-3">
+                    <button type="button" onclick="toggleBillingMonthGroup('${collapseId}')" class="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-[#FAFAFA] text-left font-medium text-[#3C4043]">
+                        <span class="flex items-center gap-2">
+                            <span class="material-icons-round transition-transform" id="icon-${collapseId}">${isExpanded ? 'expand_less' : 'expand_more'}</span>
+                            ${group.label}
+                            <span class="text-sm font-normal text-[#5F6368]">(${group.items.length} recibo${group.items.length !== 1 ? 's' : ''})</span>
+                        </span>
+                    </button>
+                    <div id="${collapseId}" class="border-t border-[#E5E5E5] ${isExpanded ? '' : 'hidden'}">
+                        <div class="p-4 space-y-3 bg-[#FAFAFA]/50">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function renderCommuniques(communiques, reads) {
+            const badge = document.getElementById('badge-communiques');
+            badge.textContent = communiques.length;
+            
+            if (communiques.length === 0) {
+                document.getElementById('communiques-list').innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">campaign</span>
+                        <p class="text-[#5F6368] mt-2">No hay comunicados para este inmueble</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Crear un mapa de lecturas por communique_id
+            const readsMap = {};
+            if (reads && reads.length > 0) {
+                reads.forEach(r => {
+                    readsMap[r.communique_id] = r;
+                });
+            }
+            
+            document.getElementById('communiques-list').innerHTML = communiques.map(c => {
+                const readInfo = readsMap[c.id];
+                const isRead = !!readInfo;
+                const typeIcon = c.file_type === 'docx' ? 'description' : 'picture_as_pdf';
+                const typeLabel = c.file_type === 'docx' ? 'Documento Word' : 'PDF';
+                
+                return `
+                <div class="p-4 bg-[#F9FAFB] rounded-xl">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <span class="material-icons-round text-[#f97316]">${typeIcon}</span>
+                            <div>
+                                <h4 class="font-medium text-[#3C4043]">${c.title}</h4>
+                                <span class="text-xs text-[#9AA0A6]">${typeLabel}</span>
+                            </div>
+                        </div>
+                        ${isRead 
+                            ? `<span class="status-badge bg-green-100 text-green-800">
+                                <span class="material-icons-round text-xs align-middle">check_circle</span> Leído
+                               </span>`
+                            : `<span class="status-badge bg-amber-100 text-amber-800">
+                                <span class="material-icons-round text-xs align-middle">mark_email_unread</span> Pendiente
+                               </span>`
+                        }
+                    </div>
+                    <p class="text-sm text-[#5F6368] mb-2">
+                        <span class="material-icons-round text-sm align-middle">event</span>
+                        Publicado: ${formatDateTimeVenezuela(c.created_at)}
+                    </p>
+                    ${isRead ? `
+                        <div class="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-sm text-green-700">
+                                <span class="material-icons-round text-sm align-middle">visibility</span>
+                                <strong>Leído por:</strong> ${readInfo.reader_name || 'Propietario'}
+                            </p>
+                            <p class="text-xs text-green-600 mt-1">
+                                <span class="material-icons-round text-xs align-middle">schedule</span>
+                                Fecha: ${formatDateTimeVenezuela(readInfo.read_at)}
+                            </p>
+                            ${readInfo.ip_address ? `<p class="text-xs text-green-500 mt-1">IP: ${readInfo.ip_address}</p>` : ''}
+                        </div>
+                    ` : `
+                        <div class="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                            <p class="text-sm text-amber-700">
+                                <span class="material-icons-round text-sm align-middle">schedule</span>
+                                Aún no ha sido leído por el propietario
+                            </p>
+                        </div>
+                    `}
+                </div>
+            `}).join('');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

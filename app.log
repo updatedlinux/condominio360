@@ -1,0 +1,24 @@
+🚀 Server running on http://localhost:3000
+🌍 Environment: development
+🚀 Iniciando Scheduler Service...
+🕐 Hora actual Venezuela (GMT-4): 15/3/2026, 19:38:05
+✅ Scheduler Service iniciado
+📅 Tareas programadas (Zona horaria: America/Caracas | GMT-4):
+   - Actualización BCV: Todos los días a las 17:30 (5:30 PM Venezuela)
+   - Verificación BCV: Cada hora entre 06:00 y 20:00 (6 AM - 8 PM Venezuela)
+   📌 Próxima ejecución BCV: 3/16/2026
+🚀 Iniciando Communique Queue Service...
+📧 Configuración: Lotes de 30 correos cada 2 minutos
+📧 Verificando cola de comunicados...
+✅ Communique Queue Service iniciado
+📬 Servicio de notificaciones de consultas iniciado
+✅ Connected to SQL Server successfully
+✅ Connected to SQL Server successfully
+✅ Connected to SQL Server successfully
+✅ No hay comunicados pendientes en la cola
+[0mGET /health [32m200[0m 3.038 ms - 36[0m
+[Auth Middleware] Token decoded: {
+  type: 'SECURITY',
+  tenantId: 'AB1449E4-AB72-489C-974C-70E94DA215BF',
+  userId: '7244A83E-8384-4E20-9BD0-BA82957134DA'
+}

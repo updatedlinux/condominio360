@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Comunicados - Panel de Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('../partials/sidebar', { activePage: 'communiques' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Comunicados</h1>
+                            <p class="text-sm text-[#5F6368] mt-1">Gestiona los comunicados para los propietarios</p>
+                        </div>
+                        <button onclick="openUploadModal()" class="flex items-center gap-2 px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] transition">
+                            <span class="material-icons-round">add</span>
+                            <span>Nuevo Comunicado</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Total Comunicados</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-total">-</p>
+                            </div>
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <span class="material-icons-round text-blue-600">campaign</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Este Mes</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-month">-</p>
+                            </div>
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <span class="material-icons-round text-green-600">calendar_today</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Total Lecturas</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-reads">-</p>
+                            </div>
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <span class="material-icons-round text-purple-600">visibility</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Cola de Envío</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-queue">-</p>
+                            </div>
+                            <div class="p-2 bg-amber-100 rounded-lg">
+                                <span class="material-icons-round text-amber-600">email</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communiques List -->
+                <div class="card">
+                    <div class="p-6 border-b border-[#E5E5E5]">
+                        <h2 class="text-lg font-medium text-[#3C4043]">Lista de Comunicados</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-[#FAFAFA]">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-[#5F6368] uppercase">Título</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-[#5F6368] uppercase">Tipo</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-[#5F6368] uppercase">Fecha</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-[#5F6368] uppercase">Lecturas</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-[#5F6368] uppercase">Estado</th>
+                                    <th class="px-6 py-4 text-right text-xs font-medium text-[#5F6368] uppercase">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="communiques-list" class="divide-y divide-[#E5E5E5]">
+                                <!-- Cargado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="pagination" class="flex items-center justify-between px-6 py-4 border-t border-[#E5E5E5]">
+                        <!-- Paginación -->
+                    </div>
+                </div>
+            </main>
+            <%- include('../../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl w-full max-w-lg mx-4 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-medium text-[#3C4043]">Nuevo Comunicado</h3>
+                <button onclick="closeUploadModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            
+            <form id="upload-form" enctype="multipart/form-data">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-2">Título *</label>
+                        <input type="text" name="title" required
+                            class="w-full px-4 py-2 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                            placeholder="Ej: Asamblea General de Propietarios">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-2">Descripción</label>
+                        <textarea name="description" rows="3"
+                            class="w-full px-4 py-2 border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                            placeholder="Breve descripción del comunicado..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-2">Archivo * (DOCX o PDF)</label>
+                        <div class="border-2 border-dashed border-[#E5E5E5] rounded-lg p-6 text-center hover:border-[#f97316] transition cursor-pointer" onclick="document.getElementById('file-input').click()">
+                            <input type="file" id="file-input" name="file" accept=".docx,.pdf" required class="hidden" onchange="handleFileSelect(this)">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6] mb-2">cloud_upload</span>
+                            <p class="text-sm text-[#5F6368]" id="file-name">Arrastra o haz clic para subir</p>
+                            <p class="text-xs text-[#9AA0A6] mt-1">Máximo 25MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="closeUploadModal()" 
+                        class="flex-1 px-4 py-2 border border-[#E5E5E5] text-[#5F6368] rounded-lg hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                        class="flex-1 px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                        Publicar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl w-full max-w-4xl mx-4 h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-6 border-b border-[#E5E5E5]">
+                <h3 class="text-xl font-medium text-[#3C4043]" id="preview-title">Vista Previa</h3>
+                <button onclick="closePreviewModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-auto p-6 bg-[#FAFAFA]">
+                <iframe id="preview-iframe" class="w-full h-full bg-white rounded-lg shadow"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        let currentPage = 1;
+
+        // Cargar comunicados al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCommuniques();
+            loadStats();
+        });
+
+        async function loadCommuniques(page = 1) {
+            try {
+                const response = await fetch(`/api/tenant-admin/communiques?page=${page}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    renderCommuniques(data.data.communiques);
+                    renderPagination(data.data.pagination);
+                }
+            } catch (error) {
+                console.error('Error loading communiques:', error);
+            }
+        }
+
+        function renderCommuniques(communiques) {
+            const tbody = document.getElementById('communiques-list');
+            
+            if (communiques.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-[#9AA0A6]">
+                            <span class="material-icons-round text-4xl mb-2">campaign</span>
+                            <p>No hay comunicados registrados</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = communiques.map(c => {
+                const date = new Date(c.created_at).toLocaleDateString('es-VE', {
+                    day: '2-digit', month: 'short', year: 'numeric'
+                });
+                const typeIcon = c.file_type === 'docx' ? 'description' : 'picture_as_pdf';
+                const typeClass = c.file_type === 'docx' ? 'text-blue-600 bg-blue-100' : 'text-red-600 bg-red-100';
+                
+                return `
+                    <tr class="hover:bg-[#FAFAFA]">
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-[#3C4043]">${c.title}</div>
+                            <div class="text-sm text-[#9AA0A6]">${c.author_name}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${typeClass}">
+                                <span class="material-icons-round text-sm">${typeIcon}</span>
+                                ${c.file_type.toUpperCase()}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-[#5F6368]">${date}</td>
+                        <td class="px-6 py-4 text-sm text-[#5F6368]">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="material-icons-round text-sm">visibility</span>
+                                ${c.read_count || 0}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                Publicado
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="previewCommunique('${c.id}')" 
+                                    class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Ver">
+                                    <span class="material-icons-round">visibility</span>
+                                </button>
+                                <button onclick="deleteCommunique('${c.id}')" 
+                                    class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Eliminar">
+                                    <span class="material-icons-round">delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPagination(pagination) {
+            const div = document.getElementById('pagination');
+            div.innerHTML = `
+                <span class="text-sm text-[#5F6368]">
+                    Página ${pagination.page} de ${pagination.totalPages}
+                </span>
+                <div class="flex gap-2">
+                    <button onclick="loadCommuniques(${pagination.page - 1})" 
+                        ${pagination.page === 1 ? 'disabled' : ''}
+                        class="px-3 py-1 border border-[#E5E5E5] rounded text-sm hover:bg-[#FAFAFA] disabled:opacity-50">
+                        Anterior
+                    </button>
+                    <button onclick="loadCommuniques(${pagination.page + 1})" 
+                        ${pagination.page === pagination.totalPages ? 'disabled' : ''}
+                        class="px-3 py-1 border border-[#E5E5E5] rounded text-sm hover:bg-[#FAFAFA] disabled:opacity-50">
+                        Siguiente
+                    </button>
+                </div>
+            `;
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/tenant-admin/communiques/stats/overview', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('stat-total').textContent = data.data.total_communiques || 0;
+                    document.getElementById('stat-month').textContent = data.data.this_month || 0;
+                    document.getElementById('stat-reads').textContent = data.data.total_reads || 0;
+                    document.getElementById('stat-queue').textContent = data.data.queue_pending || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('stat-total').textContent = '0';
+                document.getElementById('stat-month').textContent = '0';
+                document.getElementById('stat-reads').textContent = '0';
+                document.getElementById('stat-queue').textContent = '0';
+            }
+        }
+
+        function openUploadModal() {
+            document.getElementById('upload-modal').classList.remove('hidden');
+            document.getElementById('upload-modal').classList.add('flex');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-modal').classList.remove('flex');
+            document.getElementById('upload-form').reset();
+            document.getElementById('file-name').textContent = 'Arrastra o haz clic para subir';
+        }
+
+        function handleFileSelect(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('file-name').textContent = input.files[0].name;
+            }
+        }
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/api/tenant-admin/communiques', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Comunicado publicado exitosamente', 'success');
+                    closeUploadModal();
+                    loadCommuniques();
+                } else {
+                    showToast('Error: ' + (data.error || 'No se pudo publicar'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al publicar comunicado', 'error');
+            }
+        });
+
+        async function previewCommunique(id) {
+            try {
+                const response = await fetch(`/api/tenant-admin/communiques/${id}/content`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success && data.data.type === 'html') {
+                    document.getElementById('preview-title').textContent = data.data.title;
+                    const iframe = document.getElementById('preview-iframe');
+                    iframe.srcdoc = data.data.html;
+                    document.getElementById('preview-modal').classList.remove('hidden');
+                    document.getElementById('preview-modal').classList.add('flex');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.add('hidden');
+            document.getElementById('preview-modal').classList.remove('flex');
+        }
+
+        async function deleteCommunique(id) {
+            if (!confirm('¿Estás seguro de eliminar este comunicado?')) return;
+            
+            try {
+                const response = await fetch(`/api/tenant-admin/communiques/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    loadCommuniques();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 transform transition-all duration-300 translate-y-20 opacity-0`;
+            toast.innerHTML = `
+                <span class="material-icons-round">${icon}</span>
+                <span class="font-medium">${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            });
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

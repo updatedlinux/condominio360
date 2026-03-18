@@ -1,0 +1,380 @@
+const BillingModel = require('../models/BillingModel');
+const ExchangeRateModel = require('../models/ExchangeRateModel');
+const { sql, connectDB } = require('../config/database');
+const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
+
+/**
+ * Owner Billing Controller
+ * Vista de recibos para propietarios
+ */
+class OwnerBillingController {
+
+    /** Formatea fecha efectiva de tasa (evita desfase por timezone) */
+    static _formatRateDate(val) {
+        if (!val) return null;
+        let s;
+        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+            s = val.split('T')[0].substring(0, 10);
+        } else if (val instanceof Date) {
+            s = val.toISOString().split('T')[0];
+        } else if (val && typeof val === 'object' && val.toISOString) {
+            s = val.toISOString().split('T')[0];
+        } else return null;
+        const [y, m, d] = s.split('-');
+        return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+    }
+
+    /**
+     * GET /api/owner/billing/config
+     * Obtener configuración de facturación del tenant (solo modo)
+     */
+    static async getConfig(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const pool = await connectDB();
+            
+            const result = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT billing_mode, billing_type, payment_info
+                    FROM Tenants
+                    WHERE id = @tenant_id
+                `);
+            
+            if (result.recordset.length === 0) {
+                return res.status(404).json({ error: 'Tenant no encontrado' });
+            }
+
+            const config = result.recordset[0];
+            
+            res.json({
+                success: true,
+                data: {
+                    billing_mode: config.billing_mode || 'FULL',
+                    billing_type: config.billing_type || 'ALICUOTA',
+                    // Solo mostrar datos de pago si es modo FULL
+                    payment_info: config.billing_mode === 'FULL' && config.payment_info 
+                        ? JSON.parse(config.payment_info) 
+                        : null
+                }
+            });
+        } catch (error) {
+            console.error('Get billing config error:', error);
+            res.status(500).json({ error: 'Error al obtener configuración' });
+        }
+    }
+
+    /**
+     * GET /api/owner/billing/invoices
+     * Obtener recibos del propietario
+     */
+    static async getInvoices(req, res) {
+        try {
+            const userId = req.user.userId;
+            const tenantId = req.user.tenantId;
+            const propertyId = req.propertyId || req.query.propertyId;
+
+            // Verificar modo de facturación
+            const pool = await connectDB();
+            const tenantResult = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query('SELECT billing_mode FROM Tenants WHERE id = @tenant_id');
+            
+            const billingMode = tenantResult.recordset[0]?.billing_mode || 'FULL';
+
+            // Si es modo SUPPORT, no hay recibos disponibles
+            if (billingMode === 'SUPPORT') {
+                return res.json({
+                    success: true,
+                    data: [],
+                    message: 'Consulta con tu empresa administradora la facturación de tu condominio',
+                    billing_mode: 'SUPPORT'
+                });
+            }
+
+            // Obtener propiedades del usuario
+            let propertyFilter = '';
+            if (propertyId) {
+                propertyFilter = 'AND i.property_id = @property_id';
+            } else {
+                // Obtener todas las propiedades del usuario
+                propertyFilter = `AND i.property_id IN (
+                    SELECT property_id FROM PropertyOwners WHERE user_id = @user_id
+                )`;
+            }
+
+            const result = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .input('user_id', sql.UniqueIdentifier, userId)
+                .input('property_id', sql.UniqueIdentifier, propertyId || null)
+                .query(`
+                    SELECT i.*, p.name as property_name, p.building,
+                        pr.billing_month, pr.billing_year, pr.name as preliminary_name,
+                        pr.exchange_rate_usd
+                    FROM BillingInvoices i
+                    INNER JOIN Properties p ON i.property_id = p.id
+                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    WHERE i.tenant_id = @tenant_id
+                    ${propertyFilter}
+                    AND pr.status = 'FINALIZED'
+                    AND pr.sent_to_owners = 1
+                    ORDER BY pr.billing_year DESC, pr.billing_month DESC, i.created_at DESC
+                `);
+
+            res.json({
+                success: true,
+                data: result.recordset,
+                billing_mode: 'FULL'
+            });
+        } catch (error) {
+            console.error('Get owner invoices error:', error);
+            res.status(500).json({ error: 'Error al obtener recibos' });
+        }
+    }
+
+    /**
+     * GET /api/owner/billing/invoices/:id
+     * Obtener detalle de un recibo
+     */
+    static async getInvoiceById(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            const tenantId = req.user.tenantId;
+
+            const invoice = await BillingModel.getInvoiceWithItems(id, tenantId);
+            
+            if (!invoice) {
+                return res.status(404).json({ error: 'Recibo no encontrado' });
+            }
+
+            // Verificar que el recibo pertenezca al usuario
+            const pool = await connectDB();
+            const ownerCheck = await pool.request()
+                .input('property_id', sql.UniqueIdentifier, invoice.property_id)
+                .input('user_id', sql.UniqueIdentifier, userId)
+                .query('SELECT 1 FROM PropertyOwners WHERE property_id = @property_id AND user_id = @user_id');
+
+            if (ownerCheck.recordset.length === 0) {
+                return res.status(403).json({ error: 'No tienes acceso a este recibo' });
+            }
+
+            // Verificar que el recibo haya sido enviado
+            if (!invoice.sent_to_owners) {
+                return res.status(403).json({ error: 'Este recibo aún no está disponible' });
+            }
+
+            // Tasa del día y comparativa para spread
+            const latestRate = await ExchangeRateModel.getLatest();
+            const totalUsd = parseFloat(invoice.total_amount_usd) || (parseFloat(invoice.assigned_amount_ves) / (parseFloat(invoice.current_exchange_rate) || 1));
+            const ratePrelim = parseFloat(invoice.exchange_rate_preliminary) || 0;
+            const rateCurrent = parseFloat(invoice.current_exchange_rate) || parseFloat(invoice.exchange_rate_at_creation) || ratePrelim;
+            const rateToday = latestRate ? parseFloat(latestRate.usd_rate) : rateCurrent;
+            const rateTodayDateStr = latestRate?.rate_date ? OwnerBillingController._formatRateDate(latestRate.rate_date) : null;
+
+            // Incluir si hay reporte de pago pendiente (para ocultar botón Reportar Pago)
+            const paymentReport = await BillingModel.getLatestPaymentReport(id);
+            if (paymentReport && paymentReport.status === 'PENDING_CONFIRMATION') {
+                invoice.has_pending_payment_report = true;
+            }
+
+            invoice.rate_info = {
+                rate_preliminary: ratePrelim,
+                rate_preliminary_date: OwnerBillingController._formatRateDate(invoice.preliminary_created_at) || (invoice.preliminary_created_at ? new Date(invoice.preliminary_created_at).toLocaleDateString('es-VE') : null),
+                rate_current: rateCurrent,
+                rate_today: rateToday,
+                rate_today_date: rateTodayDateStr,
+                contravalue_preliminary_ves: ratePrelim ? totalUsd * ratePrelim : null,
+                contravalue_current_ves: parseFloat(invoice.assigned_amount_ves),
+                contravalue_today_ves: rateToday ? totalUsd * rateToday : null,
+                total_usd: totalUsd,
+                spread_pct: ratePrelim ? ((rateToday - ratePrelim) / ratePrelim * 100) : null
+            };
+
+            // Recalcular montos de items con tasa actual para que coincidan con el total del recibo
+            if (invoice.items && rateCurrent) {
+                const itemsRecalc = invoice.items.map(it => {
+                    const base = parseFloat(it.base_amount) || 0;
+                    const convVes = it.currency === 'USD' ? base * rateCurrent : base;
+                    return { ...it, _convVes: convVes };
+                });
+                const sumConvVes = itemsRecalc.reduce((s, it) => s + it._convVes, 0);
+                const totalVes = parseFloat(invoice.assigned_amount_ves) || 0;
+                invoice.items = itemsRecalc.map((it, i) => {
+                    const assignedVes = sumConvVes > 0 ? Math.round(totalVes * (it._convVes / sumConvVes) * 100) / 100 : it._convVes;
+                    const { _convVes, ...rest } = it;
+                    return { ...rest, assigned_amount_ves: assignedVes, converted_amount_ves: it._convVes };
+                });
+                if (invoice.items.length === 1) invoice.items[0].assigned_amount_ves = totalVes;
+            }
+
+            res.json({
+                success: true,
+                data: invoice
+            });
+        } catch (error) {
+            console.error('Get invoice detail error:', error);
+            res.status(500).json({ error: 'Error al obtener detalle del recibo' });
+        }
+    }
+
+    /**
+     * GET /api/owner/billing/stats
+     * Estadísticas de recibos del propietario
+     */
+    static async getStats(req, res) {
+        try {
+            const userId = req.user.userId;
+            const tenantId = req.user.tenantId;
+
+            // Verificar modo de facturación
+            const pool = await connectDB();
+            const tenantResult = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query('SELECT billing_mode FROM Tenants WHERE id = @tenant_id');
+            
+            const billingMode = tenantResult.recordset[0]?.billing_mode || 'FULL';
+
+            if (billingMode === 'SUPPORT') {
+                return res.json({
+                    success: true,
+                    data: {
+                        billing_mode: 'SUPPORT',
+                        total_invoices: 0,
+                        pending_count: 0,
+                        paid_count: 0,
+                        total_pending: 0,
+                        total_paid: 0
+                    }
+                });
+            }
+
+            const result = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .input('user_id', sql.UniqueIdentifier, userId)
+                .query(`
+                    SELECT 
+                        COUNT(*) as total_invoices,
+                        SUM(CASE WHEN i.status = 'PENDING' THEN 1 ELSE 0 END) as pending_count,
+                        SUM(CASE WHEN i.status = 'PAID' THEN 1 ELSE 0 END) as paid_count,
+                        SUM(CASE WHEN i.status = 'PENDING' THEN i.assigned_amount_ves ELSE 0 END) as total_pending,
+                        SUM(CASE WHEN i.status = 'PAID' THEN i.paid_amount_ves ELSE 0 END) as total_paid
+                    FROM BillingInvoices i
+                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    WHERE i.tenant_id = @tenant_id
+                    AND i.property_id IN (
+                        SELECT property_id FROM PropertyOwners WHERE user_id = @user_id
+                    )
+                    AND pr.status = 'FINALIZED'
+                    AND pr.sent_to_owners = 1
+                `);
+
+            const stats = result.recordset[0];
+
+            res.json({
+                success: true,
+                data: {
+                    billing_mode: 'FULL',
+                    total_invoices: stats.total_invoices || 0,
+                    pending_count: stats.pending_count || 0,
+                    paid_count: stats.paid_count || 0,
+                    total_pending: stats.total_pending || 0,
+                    total_paid: stats.total_paid || 0
+                }
+            });
+        } catch (error) {
+            console.error('Get owner billing stats error:', error);
+            res.status(500).json({ error: 'Error al obtener estadísticas' });
+        }
+    }
+
+    /**
+     * GET /api/owner/billing/banks
+     * Lista de bancos de Venezuela para el formulario de reporte de pago
+     */
+    static async getBanks(req, res) {
+        try {
+            res.json({
+                success: true,
+                data: VENEZUELAN_BANKS
+            });
+        } catch (error) {
+            console.error('Get banks error:', error);
+            res.status(500).json({ error: 'Error al obtener lista de bancos' });
+        }
+    }
+
+    /**
+     * POST /api/owner/billing/invoices/:id/report-payment
+     * Reportar pago por propietario (con comprobante opcional)
+     */
+    static async reportPayment(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.userId;
+            const tenantId = req.user.tenantId;
+
+            const invoice = await BillingModel.getInvoiceWithItems(id, tenantId);
+            if (!invoice) {
+                return res.status(404).json({ error: 'Recibo no encontrado' });
+            }
+
+            // Verificar que el recibo pertenezca al usuario
+            const pool = await connectDB();
+            const ownerCheck = await pool.request()
+                .input('property_id', sql.UniqueIdentifier, invoice.property_id)
+                .input('user_id', sql.UniqueIdentifier, userId)
+                .query('SELECT 1 FROM PropertyOwners WHERE property_id = @property_id AND user_id = @user_id');
+
+            if (ownerCheck.recordset.length === 0) {
+                return res.status(403).json({ error: 'No tienes acceso a este recibo' });
+            }
+
+            if (invoice.status === 'PAID') {
+                return res.status(400).json({ error: 'Este recibo ya está pagado' });
+            }
+
+            // Verificar que no exista un reporte pendiente
+            const existingReport = await BillingModel.getLatestPaymentReport(id);
+            if (existingReport && existingReport.status === 'PENDING_CONFIRMATION') {
+                return res.status(400).json({ error: 'Ya existe un reporte de pago pendiente de confirmación' });
+            }
+
+            const {
+                banco_emisor,
+                fecha_transferencia,
+                ref_transferencia,
+                comentario
+            } = req.body;
+
+            const montoAbonado = parseFloat(invoice.assigned_amount_ves);
+            if (!banco_emisor || !fecha_transferencia || !ref_transferencia) {
+                return res.status(400).json({ error: 'Banco emisor, fecha de transferencia y referencia son requeridos' });
+            }
+
+            const attachmentPath = req.file ? `payment-receipts/${req.file.filename}` : null;
+
+            const report = await BillingModel.createPaymentReport({
+                invoice_id: id,
+                submitted_by: userId,
+                banco_emisor: String(banco_emisor).trim(),
+                fecha_transferencia: String(fecha_transferencia).trim(),
+                ref_transferencia: String(ref_transferencia).trim(),
+                monto_abonado_ves: montoAbonado,
+                comentario: comentario ? String(comentario).trim() : null,
+                attachment_path: attachmentPath
+            });
+
+            res.json({
+                success: true,
+                data: report,
+                message: 'Reporte de pago enviado. La junta verificará y confirmará la recepción.'
+            });
+        } catch (error) {
+            console.error('Report payment error:', error);
+            res.status(500).json({ error: 'Error al reportar pago' });
+        }
+    }
+}
+
+module.exports = OwnerBillingController;

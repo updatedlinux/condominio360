@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Mis Comunicados - Propietario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .communique-card { transition: all 0.2s; }
+        .communique-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .unread-indicator { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        /* Loader estilizado */
+        .communiques-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+            padding: 3rem;
+        }
+        .communiques-loader-spinner {
+            width: 56px;
+            height: 56px;
+            border: 4px solid #fff7ed;
+            border-top-color: #f97316;
+            border-radius: 50%;
+            animation: loader-spin 0.9s linear infinite;
+        }
+        .communiques-loader-dots {
+            display: flex;
+            gap: 6px;
+            margin-top: 1.5rem;
+        }
+        .communiques-loader-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f97316;
+            animation: loader-bounce 1.4s ease-in-out infinite both;
+        }
+        .communiques-loader-dots span:nth-child(1) { animation-delay: 0s; }
+        .communiques-loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .communiques-loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes loader-spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes loader-bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">campaign</span>
+                        Comunicados
+                        <span id="unread-badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Comunicados</h1>
+                            <p class="text-sm text-[#5F6368] mt-1">Mantente informado sobre las novedades del condominio</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                <!-- Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Total Comunicados</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-total">-</p>
+                            </div>
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <span class="material-icons-round text-blue-600">campaign</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">No Leídos</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-unread">-</p>
+                            </div>
+                            <div class="p-2 bg-red-100 rounded-lg">
+                                <span class="material-icons-round text-red-600">mark_email_unread</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-[#5F6368]">Leídos</p>
+                                <p class="text-2xl font-bold text-[#3C4043]" id="stat-read">-</p>
+                            </div>
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <span class="material-icons-round text-green-600">mark_email_read</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communiques List -->
+                <div id="communiques-container" class="space-y-4">
+                    <div id="communiques-loader" class="communiques-loader card">
+                        <div class="communiques-loader-spinner"></div>
+                        <p class="text-[#5F6368] mt-4 text-sm font-medium">Cargando comunicados</p>
+                        <div class="communiques-loader-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div id="pagination" class="flex items-center justify-between mt-6">
+                    <!-- Paginación -->
+                </div>
+            </main>
+            <%- include('../../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        let currentPage = 1;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCommuniques();
+            loadUnreadCount();
+        });
+
+        async function loadCommuniques(page = 1) {
+            const container = document.getElementById('communiques-container');
+            try {
+                const response = await fetch(`/api/owner/communiques?page=${page}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    renderCommuniques(data.data.communiques);
+                    renderPagination(data.data.pagination);
+                    updateStats(data.data.communiques);
+                } else {
+                    container.innerHTML = '<div class="card p-12 text-center text-red-600"><span class="material-icons-round text-4xl mb-2">error</span><p>Error al cargar</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading communiques:', error);
+                container.innerHTML = '<div class="card p-12 text-center text-red-600"><span class="material-icons-round text-4xl mb-2">error</span><p>Error al cargar comunicados. Intenta de nuevo.</p></div>';
+            }
+        }
+
+        function renderCommuniques(communiques) {
+            const container = document.getElementById('communiques-container');
+            document.getElementById('communiques-loader')?.remove();
+            
+            if (communiques.length === 0) {
+                container.innerHTML = `
+                    <div class="card p-12 text-center">
+                        <span class="material-icons-round text-6xl text-[#9AA0A6] mb-4">campaign</span>
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay comunicados</h3>
+                        <p class="text-[#5F6368]">Aún no se han publicado comunicados para tu condominio.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = communiques.map(c => {
+                const date = new Date(c.created_at).toLocaleDateString('es-VE', {
+                    day: '2-digit', month: 'long', year: 'numeric'
+                });
+                const isRead = c.is_read === 1 || c.is_read === true;
+                const cardClass = isRead ? 'bg-white' : 'bg-blue-50 border-l-4 border-blue-500';
+                const readBadge = isRead 
+                    ? '<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">Leído</span>'
+                    : '<span class="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-medium unread-indicator">Nuevo</span>';
+                const typeIcon = c.file_type === 'docx' ? 'description' : 'picture_as_pdf';
+                
+                return `
+                    <div class="communique-card card p-6 cursor-pointer ${cardClass}" onclick="viewCommunique('${c.id}')">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-[#f97316]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-[#f97316]">${typeIcon}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-lg font-medium text-[#3C4043] mb-1">${c.title}</h3>
+                                        <p class="text-sm text-[#5F6368] line-clamp-2">${c.description || 'Sin descripción'}</p>
+                                    </div>
+                                    ${readBadge}
+                                </div>
+                                <div class="flex items-center gap-4 mt-3 text-sm text-[#9AA0A6]">
+                                    <span class="flex items-center gap-1">
+                                        <span class="material-icons-round text-sm">calendar_today</span>
+                                        ${date}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <span class="material-icons-round text-sm">person</span>
+                                        ${c.author_name}
+                                    </span>
+                                    ${isRead ? `
+                                    <span class="flex items-center gap-1 text-green-600">
+                                        <span class="material-icons-round text-sm">check_circle</span>
+                                        Leído el ${new Date(c.read_at).toLocaleDateString('es-VE')}
+                                    </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPagination(pagination) {
+            const div = document.getElementById('pagination');
+            div.innerHTML = `
+                <span class="text-sm text-[#5F6368]">
+                    Página ${pagination.page} de ${pagination.totalPages}
+                </span>
+                <div class="flex gap-2">
+                    <button onclick="loadCommuniques(${pagination.page - 1})" 
+                        ${pagination.page === 1 ? 'disabled' : ''}
+                        class="px-3 py-1 border border-[#E5E5E5] rounded text-sm hover:bg-[#FAFAFA] disabled:opacity-50">
+                        Anterior
+                    </button>
+                    <button onclick="loadCommuniques(${pagination.page + 1})" 
+                        ${pagination.page === pagination.totalPages ? 'disabled' : ''}
+                        class="px-3 py-1 border border-[#E5E5E5] rounded text-sm hover:bg-[#FAFAFA] disabled:opacity-50">
+                        Siguiente
+                    </button>
+                </div>
+            `;
+        }
+
+        function updateStats(communiques) {
+            const total = communiques.length;
+            const unread = communiques.filter(c => !c.is_read).length;
+            const read = communiques.filter(c => c.is_read).length;
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-unread').textContent = unread;
+            document.getElementById('stat-read').textContent = read;
+        }
+
+        async function loadUnreadCount() {
+            try {
+                const response = await fetch('/api/owner/communiques/unread/count', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success && data.data.unreadCount > 0) {
+                    const badge = document.getElementById('unread-badge');
+                    badge.textContent = data.data.unreadCount;
+                    badge.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading unread count:', error);
+            }
+        }
+
+        async function viewCommunique(id) {
+            try {
+                // Marcar como leído
+                await fetch(`/api/owner/communiques/${id}/read`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                // Obtener contenido
+                const response = await fetch(`/api/owner/communiques/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    openCommuniqueModal(data.data);
+                    // Recargar para actualizar estado de leído
+                    loadCommuniques();
+                    loadUnreadCount();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al cargar comunicado', 'error');
+            }
+        }
+
+        function openCommuniqueModal(communique) {
+            const modal = document.createElement('div');
+            modal.id = 'communique-modal';
+            modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+            
+            const date = new Date(communique.created_at).toLocaleDateString('es-VE', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            
+            let contentHtml = '';
+            if (communique.file_type === 'pdf') {
+                contentHtml = `
+                    <div class="text-center py-12">
+                        <span class="material-icons-round text-6xl text-red-500 mb-4">picture_as_pdf</span>
+                        <h3 class="text-xl font-medium text-[#3C4043] mb-2">Documento PDF</h3>
+                        <p class="text-[#5F6368] mb-6">Este comunicado está disponible como archivo PDF</p>
+                        <a href="/uploads/communiques/${communique.filename}" target="_blank"
+                           class="inline-flex items-center gap-2 px-6 py-3 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                            <span class="material-icons-round">visibility</span>
+                            Ver PDF
+                        </a>
+                    </div>
+                `;
+            } else {
+                contentHtml = `<div class="communique-content">${communique.html_content}</div>`;
+            }
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between p-6 border-b border-[#E5E5E5]">
+                        <div>
+                            <h2 class="text-xl font-medium text-[#3C4043]">${communique.title}</h2>
+                            <p class="text-sm text-[#9AA0A6] mt-1">Publicado el ${date} por ${communique.author_name}</p>
+                        </div>
+                        <button onclick="closeCommuniqueModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
+                            <span class="material-icons-round text-2xl">close</span>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-auto p-6 bg-[#FAFAFA]">
+                        <div class="bg-white rounded-lg shadow-sm p-8">
+                            ${communique.description ? `
+                                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                                    <p class="text-[#5F6368] italic">${communique.description}</p>
+                                </div>
+                            ` : ''}
+                            ${contentHtml}
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-6 border-t border-[#E5E5E5] bg-white">
+                        <div class="flex items-center gap-2 text-green-600">
+                            <span class="material-icons-round">check_circle</span>
+                            <span class="text-sm font-medium">Marcado como leído</span>
+                        </div>
+                        <button onclick="closeCommuniqueModal()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCommuniqueModal() {
+            const modal = document.getElementById('communique-modal');
+            if (modal) {
+                modal.remove();
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 transform transition-all duration-300 translate-y-20 opacity-0`;
+            toast.innerHTML = `
+                <span class="material-icons-round">${icon}</span>
+                <span class="font-medium">${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            });
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCommuniqueModal();
+        });
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

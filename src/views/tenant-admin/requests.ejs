@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Solicitudes - <%= tenant.name %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .status-open { background: #DBEAFE; color: #1E40AF; }
+        .status-in_progress { background: #FEF3C7; color: #92400E; }
+        .status-resolved { background: #DCFCE7; color: #166534; }
+        .status-closed { background: #F3F4F6; color: #6B7280; }
+        .status-approved { background: #DCFCE7; color: #166534; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+        .priority-high { background: #FEE2E2; color: #991B1B; }
+        .priority-medium { background: #FEF3C7; color: #92400E; }
+        .priority-low { background: #E0F2FE; color: #0369A1; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'requests' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Solicitudes</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <a href="/tenant-admin/request-types" class="text-[#f97316] hover:bg-[#FDF8F3] px-4 py-2 rounded-lg font-medium transition-all">
+                        Configurar Tipos
+                    </a>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-container">
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-blue-600" id="stat-open">-</div>
+                        <div class="text-sm text-[#5F6368]">Abiertas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-amber-600" id="stat-in_progress">-</div>
+                        <div class="text-sm text-[#5F6368]">En Progreso</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-green-600" id="stat-resolved">-</div>
+                        <div class="text-sm text-[#5F6368]">Resueltas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-[#3C4043]" id="stat-total">-</div>
+                        <div class="text-sm text-[#5F6368]">Total</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-4 mb-6">
+                    <div class="bg-white rounded-lg p-1 flex gap-1 shadow-sm">
+                        <button onclick="setFilter('all')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition-all bg-[#f97316] text-white" data-filter="all">Todas</button>
+                        <button onclick="setFilter('OPEN')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="OPEN">Abiertas</button>
+                        <button onclick="setFilter('IN_PROGRESS')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="IN_PROGRESS">En Progreso</button>
+                        <button onclick="setFilter('APPROVED')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="APPROVED">Aprobadas</button>
+                        <button onclick="setFilter('REJECTED')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="REJECTED">Rechazadas</button>
+                        <button onclick="setFilter('RESOLVED')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="RESOLVED">Resueltas</button>
+                    </div>
+                    <select id="type-filter" onchange="loadRequests()" class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+
+                <!-- Requests List -->
+                <div id="requests-list" class="space-y-4">
+                    <!-- Cargar dinámicamente -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-16">
+                    <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="material-icons-round text-4xl text-[#9AA0A6]">inbox</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay solicitudes</h3>
+                    <p class="text-[#5F6368]">Las solicitudes de los propietarios aparecerán aquí</p>
+                </div>
+
+                <!-- Pagination -->
+                <div id="pagination" class="flex justify-center gap-2 mt-8">
+                    <!-- Cargar dinámicamente -->
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Modal: Request Detail -->
+    <div id="detail-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span id="detail-status" class="px-3 py-1 rounded-full text-xs font-medium uppercase"></span>
+                    <span id="detail-priority" class="px-3 py-1 rounded-full text-xs font-medium uppercase hidden"></span>
+                </div>
+                <button onclick="closeDetailModal()" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6" id="detail-content">
+                <!-- Cargar dinámicamente -->
+            </div>
+            <div class="p-6 border-t border-[#E5E5E5]" id="detail-actions">
+                <!-- Cargar dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        let currentFilter = 'all';
+        let currentPage = 1;
+        let requestTypes = [];
+        let currentApprovalAction = null;
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ${
+                type === 'success' 
+                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                    : 'bg-red-50 border border-red-200 text-red-800'
+            }`;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.innerHTML = `
+                <span class="material-icons-round ${type === 'success' ? 'text-green-600' : 'text-red-600'}">${icon}</span>
+                <span class="text-sm font-medium">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 ${type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}">
+                    <span class="material-icons-round text-sm">close</span>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+            loadStats();
+            loadRequestTypes();
+            loadRequests();
+        });
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/tenant-admin/requests?limit=1', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                // Count by status from first page or use separate endpoint
+                const statsRes = await fetch('/api/tenant-admin/requests/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).catch(() => ({ json: async () => ({ success: false }) }));
+                const statsData = await statsRes.json();
+                
+                if (statsData.success) {
+                    document.getElementById('stat-open').textContent = statsData.data.open || 0;
+                    document.getElementById('stat-in_progress').textContent = statsData.data.in_progress || 0;
+                    document.getElementById('stat-resolved').textContent = statsData.data.resolved || 0;
+                    document.getElementById('stat-total').textContent = statsData.data.total || 0;
+                } else {
+                    // Fallback - count from all requests
+                    const allRes = await fetch('/api/tenant-admin/requests?limit=1000', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const allData = await allRes.json();
+                    if (allData.success) {
+                        const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, CLOSED: 0 };
+                        allData.data.forEach(r => counts[r.status]++);
+                        document.getElementById('stat-open').textContent = counts.OPEN;
+                        document.getElementById('stat-in_progress').textContent = counts.IN_PROGRESS;
+                        document.getElementById('stat-resolved').textContent = counts.RESOLVED;
+                        document.getElementById('stat-total').textContent = allData.pagination?.total || allData.data.length;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
+        // Load request types for filter
+        async function loadRequestTypes() {
+            try {
+                const res = await fetch('/api/tenant-admin/request-types', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    requestTypes = data.data;
+                    const select = document.getElementById('type-filter');
+                    select.innerHTML = '<option value="">Todos los tipos</option>' +
+                        requestTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading types:', e);
+            }
+        }
+
+        // Load requests
+        async function loadRequests(page = 1) {
+            currentPage = page;
+            try {
+                let url = `/api/tenant-admin/requests?page=${page}&limit=20`;
+                if (currentFilter !== 'all') url += `&status=${currentFilter}`;
+                const typeId = document.getElementById('type-filter').value;
+                if (typeId) url += `&request_type_id=${typeId}`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const list = document.getElementById('requests-list');
+                const empty = document.getElementById('empty-state');
+                const pagination = document.getElementById('pagination');
+
+                if (!data.success || data.data.length === 0) {
+                    list.innerHTML = '';
+                    pagination.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                list.innerHTML = data.data.map(r => `
+                    <div class="card p-6 card-hover cursor-pointer" onclick="openDetail('${r.id}')">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background: ${r.color || '#6B7280'}20">
+                                <span class="material-icons-round" style="color: ${r.color || '#6B7280'}">${r.icon || 'description'}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="status-${r.status.toLowerCase()} px-2 py-0.5 rounded text-xs font-medium uppercase">${formatStatus(r.status)}</span>
+                                    <span class="text-xs text-[#5F6368]">${r.request_type_name}</span>
+                                    ${r.requires_approval && r.status === 'OPEN' ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">Pendiente de aprobación</span>' : ''}
+                                </div>
+                                <h3 class="font-medium text-[#3C4043] truncate">${r.request_type_name}</h3>
+                                <p class="text-sm text-[#5F6368] mt-1">${r.owner_name} • ${r.property_name || 'Propiedad no especificada'}</p>
+                                <div class="flex items-center gap-4 mt-2 text-xs text-[#9AA0A6]">
+                                    <span>${formatDate(r.created_at)}</span>
+                                    ${r.data?.priority ? `<span class="priority-${r.data.priority}">${r.data.priority}</span>` : ''}
+                                </div>
+                            </div>
+                            <span class="material-icons-round text-[#9AA0A6]">chevron_right</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Pagination
+                const totalPages = data.pagination?.totalPages || 1;
+                pagination.innerHTML = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    pagination.innerHTML += `
+                        <button onclick="loadRequests(${i})" class="w-10 h-10 rounded-lg font-medium transition-all ${i === page ? 'bg-[#f97316] text-white' : 'bg-white text-[#5F6368] hover:bg-[#F5F5F5]'}">
+                            ${i}
+                        </button>
+                    `;
+                }
+            } catch (e) {
+                console.error('Error loading requests:', e);
+            }
+        }
+
+        // Filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('bg-[#f97316]', 'text-white');
+                    btn.classList.remove('text-[#5F6368]', 'hover:bg-[#F5F5F5]');
+                } else {
+                    btn.classList.remove('bg-[#f97316]', 'text-white');
+                    btn.classList.add('text-[#5F6368]', 'hover:bg-[#F5F5F5]');
+                }
+            });
+            loadRequests(1);
+        }
+
+        // Detail modal
+        let currentRequestId = null;
+
+        async function openDetail(id) {
+            currentRequestId = id;
+            try {
+                const res = await fetch(`/api/tenant-admin/requests/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) return;
+
+                const r = data.data;
+                
+                // Status badge
+                const statusEl = document.getElementById('detail-status');
+                statusEl.textContent = formatStatus(r.status);
+                statusEl.className = `px-3 py-1 rounded-full text-xs font-medium uppercase status-${r.status.toLowerCase()}`;
+                
+                // Priority badge
+                const priorityEl = document.getElementById('detail-priority');
+                if (r.data?.priority) {
+                    priorityEl.textContent = r.data.priority;
+                    priorityEl.className = `px-3 py-1 rounded-full text-xs font-medium uppercase priority-${r.data.priority.toLowerCase()}`;
+                    priorityEl.classList.remove('hidden');
+                } else {
+                    priorityEl.classList.add('hidden');
+                }
+
+                // Content
+                document.getElementById('detail-content').innerHTML = `
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style="background: ${r.color || '#6B7280'}20">
+                            <span class="material-icons-round text-2xl" style="color: ${r.color || '#6B7280'}">${r.icon || 'description'}</span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-medium text-[#3C4043]">${r.request_type_name}</h2>
+                            <p class="text-sm text-[#5F6368] mt-1">${r.request_type_name}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-[#F5F5F5] rounded-xl">
+                        <div>
+                            <p class="text-xs text-[#5F6368] uppercase">Propietario</p>
+                            <p class="font-medium text-[#3C4043]">${r.owner_name}</p>
+                            <p class="text-sm text-[#5F6368]">${r.owner_email}</p>
+                            ${r.owner_phone ? `<p class="text-sm text-[#5F6368]">${r.owner_phone}</p>` : ''}
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#5F6368] uppercase">Propiedad</p>
+                            <p class="font-medium text-[#3C4043]">${r.property_name || 'No especificada'}</p>
+                            ${r.building ? `<p class="text-sm text-[#5F6368]">Edificio: ${r.building}</p>` : ''}
+                            ${r.floor ? `<p class="text-sm text-[#5F6368]">Piso: ${r.floor}</p>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <p class="text-xs text-[#5F6368] uppercase mb-2">Datos del formulario</p>
+                        <div class="space-y-3">
+                            ${renderFormData(r.data, r.form_schema)}
+                        </div>
+                    </div>
+
+                    ${r.resolution_notes ? `
+                        <div class="p-4 bg-green-50 border border-green-200 rounded-xl">
+                            <p class="text-xs text-green-700 uppercase mb-1">Notas de resolución</p>
+                            <p class="text-green-800">${r.resolution_notes}</p>
+                        </div>
+                    ` : ''}
+                `;
+
+                // Actions
+                const actionsEl = document.getElementById('detail-actions');
+                
+                // Verificar si requiere aprobación y está pendiente
+                const requiresApproval = r.requires_approval === true || r.requires_approval === 1;
+                const isPending = r.status === 'OPEN' || r.status === 'PENDING';
+                
+                // Notas de resolución/aprobación
+                const notesSection = `
+                    <div id="resolution-notes-section" class="mb-4 hidden">
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2" id="notes-label">
+                            Notas de resolución <span class="text-[#9AA0A6] font-normal">(opcional)</span>
+                        </label>
+                        <textarea id="resolution-notes" rows="3" 
+                            class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-green-600 resize-none"
+                            placeholder="Agrega comentarios o detalles..."></textarea>
+                        <p id="notes-error" class="text-red-600 text-sm mt-1 hidden">Este campo es obligatorio</p>
+                    </div>
+                `;
+                
+                // Flujo de Aprobación para solicitudes que lo requieren
+                if (requiresApproval && isPending) {
+                    actionsEl.innerHTML = notesSection + `
+                        <div class="flex gap-3 action-buttons">
+                            <button onclick="showApprovalSection('${r.id}', 'APPROVED')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700">
+                                <span class="material-icons-round align-middle mr-1">check_circle</span>
+                                Aprobar
+                            </button>
+                            <button onclick="showApprovalSection('${r.id}', 'REJECTED')" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700">
+                                <span class="material-icons-round align-middle mr-1">cancel</span>
+                                Rechazar
+                            </button>
+                        </div>
+                        <div id="approval-actions-${r.id}" class="hidden approval-actions-container">
+                            <div class="flex gap-3 mt-3">
+                                <button onclick="hideApprovalSection()" class="flex-1 border border-[#DADCE0] text-[#5F6368] px-6 py-3 rounded-xl font-medium hover:bg-[#F5F5F5]">
+                                    Cancelar
+                                </button>
+                                <button id="confirm-approval-btn" onclick="updateApprovalStatus('${r.id}')" class="flex-1 text-white px-6 py-3 rounded-xl font-medium">
+                                    Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else if (r.status === 'OPEN') {
+                    actionsEl.innerHTML = notesSection + `
+                        <div class="flex gap-3 action-buttons">
+                            <button onclick="updateStatus('${r.id}', 'IN_PROGRESS')" class="flex-1 bg-amber-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-amber-700">
+                                Marcar En Progreso
+                            </button>
+                            <button onclick="showResolveSection('${r.id}')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700">
+                                Resolver
+                            </button>
+                        </div>
+                        <div id="resolve-actions-${r.id}" class="hidden resolve-actions-container">
+                            <div class="flex gap-3 mt-3">
+                                <button onclick="hideResolveSection()" class="flex-1 border border-[#DADCE0] text-[#5F6368] px-6 py-3 rounded-xl font-medium hover:bg-[#F5F5F5]">
+                                    Cancelar
+                                </button>
+                                <button onclick="updateStatusWithNotes('${r.id}', 'RESOLVED')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700">
+                                    Confirmar Resolución
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else if (r.status === 'IN_PROGRESS') {
+                    actionsEl.innerHTML = notesSection + `
+                        <div class="flex gap-3 action-buttons">
+                            <button onclick="updateStatus('${r.id}', 'OPEN')" class="flex-1 border border-[#DADCE0] text-[#5F6368] px-6 py-3 rounded-xl font-medium hover:bg-[#F5F5F5]">
+                                Reabrir
+                            </button>
+                            <button onclick="showResolveSection('${r.id}')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700">
+                                Resolver
+                            </button>
+                        </div>
+                        <div id="resolve-actions-${r.id}" class="hidden resolve-actions-container">
+                            <div class="flex gap-3 mt-3">
+                                <button onclick="hideResolveSection()" class="flex-1 border border-[#DADCE0] text-[#5F6368] px-6 py-3 rounded-xl font-medium hover:bg-[#F5F5F5]">
+                                    Cancelar
+                                </button>
+                                <button onclick="updateStatusWithNotes('${r.id}', 'RESOLVED')" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700">
+                                    Confirmar Resolución
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    actionsEl.innerHTML = `
+                        <button onclick="updateStatus('${r.id}', 'CLOSED')" class="w-full border border-[#DADCE0] text-[#5F6368] px-6 py-3 rounded-xl font-medium hover:bg-[#F5F5F5]">
+                            Cerrar Solicitud
+                        </button>
+                    `;
+                }
+
+                document.getElementById('detail-modal').classList.remove('hidden');
+                document.getElementById('detail-modal').classList.add('flex');
+            } catch (e) {
+                console.error('Error loading detail:', e);
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            document.getElementById('detail-modal').classList.remove('flex');
+            currentRequestId = null;
+        }
+
+        function renderFormData(data, schema) {
+            if (!data || Object.keys(data).length === 0) {
+                return '<p class="text-[#9AA0A6] italic">No hay datos adicionales</p>';
+            }
+
+            return Object.entries(data).map(([key, value]) => {
+                // Skip internal fields
+                if (['priority', 'attachments'].includes(key)) return '';
+                
+                const label = schema?.fields?.find(f => f.name === key)?.label || key;
+                let displayValue = value;
+                
+                if (Array.isArray(value)) {
+                    displayValue = value.join(', ');
+                } else if (typeof value === 'boolean') {
+                    displayValue = value ? 'Sí' : 'No';
+                }
+                
+                return `
+                    <div class="border-b border-[#E5E5E5] pb-2">
+                        <p class="text-xs text-[#5F6368]">${label}</p>
+                        <p class="text-[#3C4043]">${displayValue || '-'}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateStatus(id, status) {
+            try {
+                const res = await fetch(`/api/tenant-admin/requests/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    closeDetailModal();
+                    loadRequests(currentPage);
+                    loadStats();
+                } else {
+                    alert(data.error || 'Error al actualizar estado');
+                }
+            } catch (e) {
+                console.error('Error updating status:', e);
+            }
+        }
+
+        function showResolveSection(id) {
+            document.getElementById('resolution-notes-section').classList.remove('hidden');
+            document.getElementById(`resolve-actions-${id}`).classList.remove('hidden');
+            // Ocultar botones originales (solo los que tienen clase action-buttons)
+            document.querySelectorAll('#detail-actions > .action-buttons').forEach(el => el.classList.add('hidden'));
+        }
+
+        function hideResolveSection() {
+            document.getElementById('resolution-notes-section').classList.add('hidden');
+            document.querySelectorAll('[id^="resolve-actions-"]').forEach(el => el.classList.add('hidden'));
+            // Mostrar botones originales
+            document.querySelectorAll('#detail-actions > .action-buttons').forEach(el => el.classList.remove('hidden'));
+        }
+
+        function showApprovalSection(id, action) {
+            currentApprovalAction = action;
+            const notesSection = document.getElementById('resolution-notes-section');
+            const notesLabel = document.getElementById('notes-label');
+            const approvalActions = document.getElementById(`approval-actions-${id}`);
+            const confirmBtn = document.getElementById('confirm-approval-btn');
+            
+            notesSection.classList.remove('hidden');
+            approvalActions.classList.remove('hidden');
+            
+            // Cambiar label según la acción
+            if (action === 'APPROVED') {
+                notesLabel.innerHTML = 'Motivo de aprobación <span class="text-red-500">*</span>';
+                confirmBtn.className = 'flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-700';
+                confirmBtn.textContent = 'Confirmar Aprobación';
+            } else {
+                notesLabel.innerHTML = 'Motivo de rechazo <span class="text-red-500">*</span>';
+                confirmBtn.className = 'flex-1 bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700';
+                confirmBtn.textContent = 'Confirmar Rechazo';
+            }
+            
+            // Ocultar botones originales
+            document.querySelectorAll('#detail-actions > .action-buttons').forEach(el => el.classList.add('hidden'));
+        }
+
+        function hideApprovalSection() {
+            document.getElementById('resolution-notes-section').classList.add('hidden');
+            document.getElementById('notes-error').classList.add('hidden');
+            document.querySelectorAll('[id^="approval-actions-"]').forEach(el => el.classList.add('hidden'));
+            // Mostrar botones originales
+            document.querySelectorAll('#detail-actions > .action-buttons').forEach(el => el.classList.remove('hidden'));
+            currentApprovalAction = null;
+        }
+
+        async function updateApprovalStatus(id) {
+            const notes = document.getElementById('resolution-notes').value.trim();
+            
+            // Validar que haya notas (obligatorio para aprobación/rechazo)
+            if (!notes) {
+                document.getElementById('notes-error').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('notes-error').classList.add('hidden');
+            
+            const status = currentApprovalAction === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+            
+            try {
+                const res = await fetch(`/api/tenant-admin/requests/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status, resolution_notes: notes })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    closeDetailModal();
+                    loadRequests(currentPage);
+                    loadStats();
+                    showToast(currentApprovalAction === 'APPROVED' ? 'Solicitud aprobada exitosamente' : 'Solicitud rechazada');
+                } else {
+                    alert(data.error || 'Error al actualizar estado');
+                }
+            } catch (e) {
+                console.error('Error updating status:', e);
+                alert('Error al actualizar estado');
+            }
+        }
+
+        async function updateStatusWithNotes(id, status) {
+            const notes = document.getElementById('resolution-notes').value;
+            
+            try {
+                const res = await fetch(`/api/tenant-admin/requests/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status, resolution_notes: notes || null })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    closeDetailModal();
+                    loadRequests(currentPage);
+                    loadStats();
+                } else {
+                    alert(data.error || 'Error al actualizar estado');
+                }
+            } catch (e) {
+                console.error('Error updating status:', e);
+            }
+        }
+
+        function formatStatus(status) {
+            const labels = {
+                'OPEN': 'Abierta',
+                'IN_PROGRESS': 'En Progreso',
+                'RESOLVED': 'Resuelta',
+                'CLOSED': 'Cerrada',
+                'APPROVED': 'Aprobada',
+                'REJECTED': 'Rechazada'
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

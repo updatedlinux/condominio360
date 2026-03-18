@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Anunciar Visita - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .tab-active { 
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+        }
+        .tab-inactive { 
+            background: white;
+            color: #5F6368;
+            border: 1px solid #E5E5E5;
+        }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Facturas
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                        <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                            <span class="material-icons-round">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Anunciar Visita</h1>
+                            <p class="text-sm text-[#5F6368]">Registra la visita para agilizar el ingreso</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-2xl mx-auto">
+                    <!-- Type Selector -->
+                    <div class="flex gap-2 mb-6">
+                        <button onclick="switchType('unique')" id="btn-type-unique" 
+                            class="tab-active flex-1 px-4 py-3 rounded-xl font-medium transition-all">
+                            <span class="material-icons-round align-middle mr-2">person</span>
+                            Visita Única
+                        </button>
+                        <button onclick="switchType('frequent')" id="btn-type-frequent"
+                            class="tab-inactive flex-1 px-4 py-3 rounded-xl font-medium transition-all">
+                            <span class="material-icons-round align-middle mr-2">people</span>
+                            Visita Frecuente
+                        </button>
+                    </div>
+
+                    <div class="card p-8">
+                        <!-- Info Banner -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                            <div class="flex items-start gap-3">
+                                <span class="material-icons-round text-blue-600">info</span>
+                                <div class="text-sm text-blue-800" id="info-text">
+                                    <p class="font-medium">Visita Única</p>
+                                    <p>Para visitantes ocasionales. El vigilante verificará los datos al ingreso.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="visitorForm" class="space-y-6">
+                            <!-- Visitante Info -->
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                    Nombre del Visitante <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="visitorName" required
+                                    class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                    placeholder="Nombre completo">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                    DNI / Cédula <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="visitorDni" required
+                                    class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                    placeholder="Número de identificación">
+                                <p class="text-xs text-[#9AA0A6] mt-1">El vigilante solicitará este documento al ingreso</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                    Teléfono del Visitante
+                                </label>
+                                <input type="tel" id="visitorPhone"
+                                    class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                    placeholder="Opcional">
+                            </div>
+
+                            <!-- Datos del Vehículo (opcional) -->
+                            <div class="border-t border-[#E5E5E5] pt-6">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <input type="checkbox" id="hasVehicle" onchange="toggleVehicleFields()"
+                                        class="w-5 h-5 text-[#f97316] rounded focus:ring-[#f97316]">
+                                    <label for="hasVehicle" class="text-sm font-medium text-[#3C4043]">
+                                        Viene en vehículo
+                                    </label>
+                                </div>
+
+                                <div id="vehicleFields" class="space-y-4 hidden">
+                                    <div>
+                                        <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                            Placa del Vehículo
+                                        </label>
+                                        <input type="text" id="vehiclePlate"
+                                            class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                            placeholder="ABC-123">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                            Marca/Modelo
+                                        </label>
+                                        <input type="text" id="vehicleModel"
+                                            class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                            placeholder="Toyota Corolla, etc.">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                            Color
+                                        </label>
+                                        <input type="text" id="vehicleColor"
+                                            class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                            placeholder="Blanco, Negro, etc.">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fecha y Hora (solo para únicas) -->
+                            <div id="dateTimeFields" class="border-t border-[#E5E5E5] pt-6">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                            Fecha de Visita <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="date" id="visitDate" required
+                                            class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                            Hora Estimada
+                                        </label>
+                                        <input type="time" id="visitTime"
+                                            class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notas -->
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                    Notas Adicionales
+                                </label>
+                                <textarea id="notes" rows="3"
+                                    class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                    placeholder="Instrucciones especiales para el vigilante..."></textarea>
+                            </div>
+
+                            <div class="pt-4 flex gap-3">
+                                <a href="/owner/dashboard" 
+                                    class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium text-center hover:bg-[#F5F5F5]">
+                                    Cancelar
+                                </a>
+                                <button type="submit" 
+                                    class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg">
+                                    Anunciar Visita
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
+        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
+            <span id="toast-icon" class="material-icons-round"></span>
+            <span id="toast-message" class="font-medium"></span>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+        let currentType = 'unique';
+
+        // Set default date to today
+        document.getElementById('visitDate').valueAsDate = new Date();
+
+        function switchType(type) {
+            currentType = type;
+            
+            // Update button styles
+            document.getElementById('btn-type-unique').className = type === 'unique' 
+                ? 'tab-active flex-1 px-4 py-3 rounded-xl font-medium transition-all'
+                : 'tab-inactive flex-1 px-4 py-3 rounded-xl font-medium transition-all';
+            
+            document.getElementById('btn-type-frequent').className = type === 'frequent'
+                ? 'tab-active flex-1 px-4 py-3 rounded-xl font-medium transition-all'
+                : 'tab-inactive flex-1 px-4 py-3 rounded-xl font-medium transition-all';
+            
+            // Update info text
+            const infoText = document.getElementById('info-text');
+            if (type === 'unique') {
+                infoText.innerHTML = `
+                    <p class="font-medium">Visita Única</p>
+                    <p>Para visitantes ocasionales. El vigilante verificará los datos al ingreso.</p>
+                `;
+                document.getElementById('dateTimeFields').classList.remove('hidden');
+            } else {
+                infoText.innerHTML = `
+                    <p class="font-medium">Visita Frecuente</p>
+                    <p>Registra a una persona que visitará regularmente. Podrá ingresar múltiples veces.</p>
+                `;
+                document.getElementById('dateTimeFields').classList.add('hidden');
+            }
+        }
+
+        function toggleVehicleFields() {
+            const hasVehicle = document.getElementById('hasVehicle').checked;
+            document.getElementById('vehicleFields').classList.toggle('hidden', !hasVehicle);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastContent = document.getElementById('toast-content');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastMessage = document.getElementById('toast-message');
+
+            toastMessage.textContent = message;
+            
+            if (type === 'success') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white';
+                toastIcon.textContent = 'check_circle';
+            } else if (type === 'error') {
+                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
+                toastIcon.textContent = 'error';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('selectedProperty');
+            localStorage.removeItem('availableProperties');
+            window.location.href = '/login';
+        }
+
+        // Form submission
+        document.getElementById('visitorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Separar nombre y apellido
+            const fullName = document.getElementById('visitorName').value.trim();
+            const nameParts = fullName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || 'N/A';
+            
+            // Preparar fechas - enviar solo YYYY-MM-DD para evitar problemas de zona horaria
+            let validFrom = null;
+            let validUntil = null;
+            
+            if (currentType === 'unique') {
+                const visitDate = document.getElementById('visitDate').value; // YYYY-MM-DD
+                if (visitDate) {
+                    // Enviar fecha como string YYYY-MM-DD, el backend manejará la conversión
+                    validFrom = visitDate;
+                    validUntil = visitDate; // Mismo día
+                }
+            }
+            
+            const formData = {
+                // Datos del visitante
+                dni: document.getElementById('visitorDni').value.trim(),
+                first_name: firstName,
+                last_name: lastName,
+                phone: document.getElementById('visitorPhone').value || null,
+                
+                // Datos del pase
+                type: currentType === 'unique' ? 'ONE_TIME' : 'FREQUENT',
+                alias: currentType === 'frequent' ? fullName : null,
+                valid_from: validFrom,
+                valid_until: validUntil,
+                property_id: selectedProperty.id
+            };
+            
+            // Debug
+            console.log('Enviando datos:', formData);
+
+            try {
+                const response = await fetch('/api/owner/visitors', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                console.log('Respuesta:', data);
+                
+                if (response.ok && data.success) {
+                    showToast('Visita registrada exitosamente');
+                    setTimeout(() => {
+                        window.location.href = '/owner/dashboard';
+                    }, 1500);
+                } else {
+                    showToast(data.error || data.details || 'Error al registrar visita', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al registrar visita', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

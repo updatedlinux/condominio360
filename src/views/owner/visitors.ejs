@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Visitas - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .tab-active { 
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+        }
+        .tab-inactive { 
+            background: white;
+            color: #5F6368;
+            border: 1px solid #E5E5E5;
+        }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                                <span class="material-icons-round">arrow_back</span>
+                            </a>
+                            <div>
+                                <h1 class="text-2xl font-medium text-[#3C4043]">Gestión de Visitas</h1>
+                                <p class="text-sm text-[#5F6368]">Administra tus visitantes y próximas visitas</p>
+                            </div>
+                        </div>
+                        <a href="/owner/visitors/new" class="bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg flex items-center gap-2">
+                            <span class="material-icons-round text-sm">add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-4xl mx-auto">
+                    <!-- Tabs -->
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <button onclick="switchTab('frequent')" id="tab-frequent" 
+                                class="tab-active flex-1 min-w-[140px] px-4 py-3 rounded-xl font-medium transition-all">
+                            <span class="material-icons-round align-middle mr-2">people</span>
+                            Frecuentes
+                        </button>
+                        <button onclick="switchTab('upcoming')" id="tab-upcoming"
+                                class="tab-inactive flex-1 min-w-[140px] px-4 py-3 rounded-xl font-medium transition-all">
+                            <span class="material-icons-round align-middle mr-2">calendar_today</span>
+                            Próximas
+                        </button>
+                        <button onclick="switchTab('history')" id="tab-history"
+                                class="tab-inactive flex-1 min-w-[140px] px-4 py-3 rounded-xl font-medium transition-all">
+                            <span class="material-icons-round align-middle mr-2">history</span>
+                            Historial
+                        </button>
+                    </div>
+
+                    <!-- Contenido -->
+                    <div id="content-frequent">
+                        <div id="frequentVisitors" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="text-center py-8 col-span-full text-[#9AA0A6]">
+                                <span class="material-icons-round text-4xl animate-spin">sync</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="content-upcoming" class="hidden">
+                        <div id="upcomingVisits" class="space-y-4">
+                            <div class="text-center py-8 text-[#9AA0A6]">
+                                <span class="material-icons-round text-4xl animate-spin">sync</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="content-history" class="hidden">
+                        <div class="card overflow-hidden">
+                            <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                                <h2 class="text-lg font-medium text-[#3C4043]">Registro de visitas (GMT-4 Venezuela)</h2>
+                                <p class="text-sm text-[#9AA0A6]">Incluye visitas anunciadas por ti y las registradas por vigilancia</p>
+                            </div>
+                            <div id="visitsHistoryList" class="divide-y divide-[#E5E5E5]">
+                                <div class="px-6 py-12 text-center text-[#9AA0A6]">
+                                    <span class="material-icons-round text-4xl animate-spin">sync</span>
+                                    <p class="mt-2">Cargando historial...</p>
+                                </div>
+                            </div>
+                            <div id="history-pagination" class="px-6 py-3 border-t border-[#E5E5E5] flex items-center justify-between hidden"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+        let currentTab = 'frequent';
+        let historyPage = 1;
+        const historyLimit = 15;
+
+        function formatTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
+        }
+        function formatDateVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Caracas' });
+        }
+        function formatDateTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' });
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ${
+                type === 'success' 
+                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                    : 'bg-red-50 border border-red-200 text-red-800'
+            }`;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.innerHTML = `
+                <span class="material-icons-round ${type === 'success' ? 'text-green-600' : 'text-red-600'}">${icon}</span>
+                <span class="text-sm font-medium">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 ${type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}">
+                    <span class="material-icons-round text-sm">close</span>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const freqBtn = document.getElementById('tab-frequent');
+            const upcBtn = document.getElementById('tab-upcoming');
+            const histBtn = document.getElementById('tab-history');
+            
+            [freqBtn, upcBtn, histBtn].forEach((b, i) => {
+                b.className = (['frequent','upcoming','history'][i] === tab ? 'tab-active' : 'tab-inactive') + ' flex-1 min-w-[140px] px-4 py-3 rounded-xl font-medium transition-all';
+            });
+            
+            document.getElementById('content-frequent').classList.toggle('hidden', tab !== 'frequent');
+            document.getElementById('content-upcoming').classList.toggle('hidden', tab !== 'upcoming');
+            document.getElementById('content-history').classList.toggle('hidden', tab !== 'history');
+            
+            if (tab === 'frequent') loadFrequentVisitors();
+            else if (tab === 'upcoming') loadUpcomingVisits();
+            else loadVisitsHistory();
+        }
+
+        async function loadFrequentVisitors() {
+            try {
+                const response = await fetch('/api/owner/visitors', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderFrequentVisitors(data.data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function renderFrequentVisitors(visitors) {
+            const container = document.getElementById('frequentVisitors');
+            
+            if (visitors.length === 0) {
+                container.innerHTML = `
+                    <div class="card text-center py-12 col-span-full">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">people</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-[#3C4043]">No tienes visitantes frecuentes</h3>
+                        <p class="text-[#5F6368] mt-2">Registra familiares, empleados o transporte escolar</p>
+                        <a href="/owner/visitors/new" class="mt-4 inline-block text-[#f97316] hover:underline font-medium">
+                            + Registrar visitante frecuente
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = visitors.map(v => `
+                <div class="card p-4 hover:shadow-lg transition-all">
+                    <div class="flex items-center mb-3">
+                        <div class="w-12 h-12 rounded-full bg-[#FDF8F3] flex items-center justify-center mr-3">
+                            <span class="material-icons-round text-[#f97316]">person</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-[#3C4043]">${v.first_name} ${v.last_name}</h4>
+                            <p class="text-sm text-[#9AA0A6]">${v.pass_alias || 'Visitante frecuente'}</p>
+                        </div>
+                    </div>
+                    <div class="text-sm text-[#5F6368] space-y-1">
+                        <p class="flex items-center gap-1">
+                            <span class="material-icons-round text-sm">badge</span>
+                            ${v.dni}
+                        </p>
+                        ${v.phone ? `
+                            <p class="flex items-center gap-1">
+                                <span class="material-icons-round text-sm">phone</span>
+                                ${v.phone}
+                            </p>
+                        ` : ''}
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="toggleVisitor('${v.id}', '${v.pass_status === 'ACTIVE' ? 'disable' : 'enable'}')" 
+                                class="flex-1 px-3 py-2 text-sm rounded-lg font-medium transition-all ${v.pass_status === 'ACTIVE' 
+                                    ? 'bg-red-50 text-red-700 hover:bg-red-100' 
+                                    : 'bg-green-50 text-green-700 hover:bg-green-100'}">
+                            ${v.pass_status === 'ACTIVE' ? 'Deshabilitar' : 'Habilitar'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadUpcomingVisits() {
+            try {
+                const response = await fetch('/api/owner/visits/upcoming?days=30', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderUpcomingVisits(data.data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function renderUpcomingVisits(visits) {
+            const container = document.getElementById('upcomingVisits');
+            
+            if (visits.length === 0) {
+                container.innerHTML = `
+                    <div class="card text-center py-12">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">calendar_today</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-[#3C4043]">No hay visitas programadas</h3>
+                        <p class="text-[#5F6368] mt-2">Anuncia una visita para verla aquí</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = visits.map(v => `
+                <div class="card p-4 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full ${v.type === 'FREQUENT' ? 'bg-[#FDF8F3]' : 'bg-blue-50'} flex items-center justify-center mr-3">
+                            <span class="material-icons-round ${v.type === 'FREQUENT' ? 'text-[#f97316]' : 'text-blue-600'}">
+                                ${v.type === 'FREQUENT' ? 'person' : 'person_outline'}
+                            </span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-[#3C4043]">${v.first_name} ${v.last_name}</h4>
+                            <p class="text-sm text-[#9AA0A6]">
+                                ${v.type === 'FREQUENT' ? 'Frecuente' : 'Única'} • ${v.dni}
+                            </p>
+                            ${v.valid_from ? `
+                                <p class="text-sm text-[#9AA0A6] flex items-center gap-1">
+                                    <span class="material-icons-round text-sm">event</span>
+                                    ${new Date(v.valid_from).toLocaleDateString('es-ES')}
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 text-sm rounded-full ${v.type === 'FREQUENT' ? 'bg-[#FDF8F3] text-[#f97316]' : 'bg-blue-50 text-blue-800'}">
+                        ${v.type_label}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function loadVisitsHistory() {
+            if (!selectedProperty?.id) {
+                document.getElementById('visitsHistoryList').innerHTML = `
+                    <div class="px-6 py-12 text-center text-[#9AA0A6]">
+                        <span class="material-icons-round text-4xl">home</span>
+                        <p class="mt-2">Selecciona una propiedad para ver el historial</p>
+                    </div>
+                `;
+                return;
+            }
+            try {
+                const res = await fetch(`/api/owner/visits/history?property_id=${selectedProperty.id}&page=${historyPage}&limit=${historyLimit}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await res.json();
+                const list = document.getElementById('visitsHistoryList');
+                const pagination = document.getElementById('history-pagination');
+                
+                if (!result.success || !result.data) {
+                    list.innerHTML = '<div class="px-6 py-12 text-center text-red-500">Error al cargar historial</div>';
+                    pagination.classList.add('hidden');
+                    return;
+                }
+                const visits = result.data;
+                const total = result.pagination?.total || 0;
+                
+                if (visits.length === 0) {
+                    list.innerHTML = `
+                        <div class="px-6 py-12 text-center text-[#9AA0A6]">
+                            <span class="material-icons-round text-4xl">history</span>
+                            <p class="mt-2">No hay visitas registradas</p>
+                            <p class="text-sm mt-1">Las visitas que anuncies o que registre vigilancia aparecerán aquí</p>
+                        </div>
+                    `;
+                    pagination.classList.add('hidden');
+                    return;
+                }
+                
+                list.innerHTML = visits.map(v => {
+                    const statusLabel = v.visit_status === 'PENDING' ? 'Pendiente' : v.visit_status === 'INSIDE' ? 'Dentro' : 'Completada';
+                    const statusClass = v.visit_status === 'PENDING' ? 'bg-amber-100 text-amber-800' : v.visit_status === 'INSIDE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
+                    const typeLabel = v.type === 'ONE_TIME' ? 'Única' : 'Frecuente';
+                    return `
+                        <div class="px-6 py-4 hover:bg-[#FAFAFA] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-[#f97316]/10 flex items-center justify-center">
+                                    <span class="material-icons-round text-[#f97316]">person</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-[#3C4043]">${v.first_name} ${v.last_name}</p>
+                                    <p class="text-sm text-[#9AA0A6]">DNI: ${v.visitor_dni || '-'} • ${typeLabel}</p>
+                                    <p class="text-xs text-[#9AA0A6] mt-1">
+                                        Entrada: ${v.entry_time ? formatDateTimeVenezuela(v.entry_time) : '-'} |
+                                        Salida: ${v.exit_time ? formatDateTimeVenezuela(v.exit_time) : '-'}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                if (total > historyLimit) {
+                    pagination.classList.remove('hidden');
+                    const totalP = result.pagination.totalPages || 1;
+                    pagination.innerHTML = `
+                        <p class="text-sm text-[#9AA0A6]">Mostrando ${(historyPage-1)*historyLimit+1}-${Math.min(historyPage*historyLimit, total)} de ${total}</p>
+                        <div class="flex gap-2">
+                            <button id="hist-prev" class="px-3 py-1 rounded border border-[#E5E5E5] text-sm disabled:opacity-50">Anterior</button>
+                            <span class="py-1 text-sm text-[#5F6368]">Pág. ${historyPage} de ${totalP}</span>
+                            <button id="hist-next" class="px-3 py-1 rounded border border-[#E5E5E5] text-sm disabled:opacity-50">Siguiente</button>
+                        </div>
+                    `;
+                    document.getElementById('hist-prev').disabled = historyPage <= 1;
+                    document.getElementById('hist-next').disabled = historyPage >= totalP;
+                    document.getElementById('hist-prev').onclick = () => { if (historyPage > 1) { historyPage--; loadVisitsHistory(); } };
+                    document.getElementById('hist-next').onclick = () => { if (historyPage < totalP) { historyPage++; loadVisitsHistory(); } };
+                } else {
+                    pagination.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('visitsHistoryList').innerHTML = '<div class="px-6 py-12 text-center text-red-500">Error de conexión</div>';
+            }
+        }
+
+        async function toggleVisitor(visitorId, action) {
+            showToast(`${action === 'enable' ? 'Habilitando' : 'Deshabilitando'} visitante...`);
+            // TODO: Implementar API call para habilitar/deshabilitar
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // Cargar al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFrequentVisitors();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Balance Financiero | <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'balance-financiero' }) %>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white border-b border-[#E5E5E5] px-6 py-4">
+                <h1 class="text-2xl font-medium text-[#3C4043]">Balance Financiero</h1>
+                <p class="text-sm text-[#5F6368] mt-1">Salud financiera del conjunto • Cobros de recibos (ordinarios y extraordinarios)</p>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-6">
+                <!-- Totales -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] p-4">
+                        <p class="text-sm text-[#5F6368]">Total Cobrado (VES)</p>
+                        <p class="text-2xl font-bold text-emerald-600" id="stat-collected-ves">Bs. 0</p>
+                        <p class="text-xs text-[#9AA0A6] mt-1" id="stat-collected-usd">$0 USD</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] p-4">
+                        <p class="text-sm text-[#5F6368]">Total Pendiente (VES)</p>
+                        <p class="text-2xl font-bold text-amber-600" id="stat-pending-ves">Bs. 0</p>
+                        <p class="text-xs text-[#9AA0A6] mt-1" id="stat-pending-usd">$0 USD</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] p-4">
+                        <p class="text-sm text-[#5F6368]">Tasa BCV actual</p>
+                        <p class="text-xl font-bold text-[#3C4043]" id="stat-rate">Bs. 0 / USD</p>
+                        <p class="text-xs text-[#9AA0A6] mt-1" id="stat-rate-date">—</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] p-4">
+                        <p class="text-sm text-[#5F6368]">Ingresos totales</p>
+                        <p class="text-xl font-bold text-[#3C4043]" id="stat-total">Bs. 0</p>
+                        <p class="text-xs text-emerald-600 mt-1">Cobrado + pendiente</p>
+                    </div>
+                </div>
+
+                <!-- Gráfico tasas BCV -->
+                <div class="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden mb-6">
+                    <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                        <h3 class="text-lg font-medium text-[#3C4043]">Tasa BCV (últimos 30 días)</h3>
+                        <p class="text-xs text-[#9AA0A6] mt-1">Referencia para conversión USD ↔ VES</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="h-64">
+                            <canvas id="chart-rates"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparativa mensual -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+                        <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                            <h3 class="text-lg font-medium text-[#3C4043]">Cobrado por mes</h3>
+                            <p class="text-xs text-[#9AA0A6]">Recibos confirmados (tasa congelada al pago)</p>
+                        </div>
+                        <div class="p-6">
+                            <div class="h-64">
+                                <canvas id="chart-collected"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+                        <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                            <h3 class="text-lg font-medium text-[#3C4043]">Pendiente por mes</h3>
+                            <p class="text-xs text-[#9AA0A6]">Recibos por cobrar (tasa actualizada diariamente)</p>
+                        </div>
+                        <div class="p-6">
+                            <div class="h-64">
+                                <canvas id="chart-pending"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla comparativa -->
+                <div class="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
+                    <div class="px-6 py-4 border-b border-[#E5E5E5]">
+                        <h3 class="text-lg font-medium text-[#3C4043]">Detalle últimos 6 meses</h3>
+                        <p class="text-xs text-[#9AA0A6]">Cobrado vs Pendiente en VES y USD</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-[#FAFAFA] border-b border-[#E5E5E5]">
+                                <tr>
+                                    <th class="text-left px-6 py-3 font-medium text-[#5F6368]">Período</th>
+                                    <th class="text-right px-6 py-3 font-medium text-[#5F6368]">Cobrado (VES)</th>
+                                    <th class="text-right px-6 py-3 font-medium text-[#5F6368]">Cobrado (USD)</th>
+                                    <th class="text-right px-6 py-3 font-medium text-[#5F6368]">Pendiente (VES)</th>
+                                    <th class="text-right px-6 py-3 font-medium text-[#5F6368]">Pendiente (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparative-table-body">
+                                <tr><td colspan="5" class="px-6 py-8 text-center text-[#9AA0A6]">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        let chartRates = null, chartCollected = null, chartPending = null;
+
+        function fmtVes(v) {
+            return v != null ? `Bs. ${Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Bs. 0,00';
+        }
+        function fmtUsd(v) {
+            return v != null ? `$ ${Number(v).toFixed(2)}` : '$ 0,00';
+        }
+
+        async function loadBalance() {
+            try {
+                const res = await fetch('/api/tenant-admin/balance/financial-summary', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const { data } = await res.json();
+                if (!res.ok || !data) {
+                    document.getElementById('stat-collected-ves').textContent = 'Error al cargar';
+                    return;
+                }
+
+                const t = data.totals || {};
+                document.getElementById('stat-collected-ves').textContent = fmtVes(t.collected_ves);
+                document.getElementById('stat-collected-usd').textContent = fmtUsd(t.collected_usd) + ' USD';
+                document.getElementById('stat-pending-ves').textContent = fmtVes(t.pending_ves);
+                document.getElementById('stat-pending-usd').textContent = fmtUsd(t.pending_usd) + ' USD';
+
+                const totalVes = (t.collected_ves || 0) + (t.pending_ves || 0);
+                document.getElementById('stat-total').textContent = fmtVes(totalVes);
+
+                const rate = data.latest_rate_ves || 0;
+                document.getElementById('stat-rate').textContent = rate ? `Bs. ${Number(rate).toLocaleString('es-VE')} / USD` : '—';
+                const rateDate = data.latest_rate_date;
+                if (rateDate) {
+                    const d = new Date(rateDate);
+                    document.getElementById('stat-rate-date').textContent = d.toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' });
+                } else {
+                    document.getElementById('stat-rate-date').textContent = '—';
+                }
+
+                // Gráfico tasas BCV
+                const rates = data.exchange_rates || [];
+                if (chartRates) chartRates.destroy();
+                const fmtDate = (r) => {
+                    const s = (r.date && r.date.split('T')[0]) || '';
+                    if (!s) return '';
+                    const [y, m, day] = s.split('-');
+                    return `${parseInt(day)}/${parseInt(m)}`;
+                };
+                chartRates = new Chart(document.getElementById('chart-rates'), {
+                    type: 'line',
+                    data: {
+                        labels: rates.map(fmtDate),
+                        datasets: [{
+                            label: 'USD/VES',
+                            data: rates.map(r => r.usd),
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249,115,22,0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: false },
+                            x: { ticks: { maxRotation: 45 } }
+                        }
+                    }
+                });
+
+                // Gráficos comparativa
+                const comp = data.comparative || [];
+                const labels = comp.map(c => c.label);
+                if (chartCollected) chartCollected.destroy();
+                chartCollected = new Chart(document.getElementById('chart-collected'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Cobrado (VES)',
+                            data: comp.map(c => c.collected_ves),
+                            backgroundColor: 'rgba(16,185,129,0.7)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+                if (chartPending) chartPending.destroy();
+                chartPending = new Chart(document.getElementById('chart-pending'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Pendiente (VES)',
+                            data: comp.map(c => c.pending_ves),
+                            backgroundColor: 'rgba(249,115,22,0.7)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+
+                // Tabla
+                const tbody = document.getElementById('comparative-table-body');
+                if (comp.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-[#9AA0A6]">No hay datos</td></tr>';
+                } else {
+                    tbody.innerHTML = comp.map(c => `
+                        <tr class="border-b border-[#E5E5E5] hover:bg-[#FAFAFA]">
+                            <td class="px-6 py-3 font-medium text-[#3C4043]">${c.label}</td>
+                            <td class="px-6 py-3 text-right text-[#5F6368]">${fmtVes(c.collected_ves)}</td>
+                            <td class="px-6 py-3 text-right text-[#5F6368]">${fmtUsd(c.collected_usd)}</td>
+                            <td class="px-6 py-3 text-right text-[#5F6368]">${fmtVes(c.pending_ves)}</td>
+                            <td class="px-6 py-3 text-right text-[#5F6368]">${fmtUsd(c.pending_usd)}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Error load balance:', e);
+                document.getElementById('stat-collected-ves').textContent = 'Error al cargar';
+                document.getElementById('comparative-table-body').innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-red-500">Error al cargar</td></tr>';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            sessionStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        loadBalance();
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Ejemplo CSV: Facturación por ALICUOTA + Múltiples Edificios
+# El campo 'edificio' ES REQUERIDO porque hay múltiples edificios
+# El campo 'alicuota' ES REQUERIDO porque la facturación es por alícuota
+# IMPORTANTE: La suma de todas las alícuotas debe ser 100.00
+# IMPORTANTE: El nombre del edificio debe coincidir exactamente con los edificios creados
+# Campos requeridos: nombre, tipo, edificio, piso, numero, alicuota
+#
+nombre,tipo,edificio,piso,numero,alicuota,observaciones
+Apartamento 1A,APARTAMENTO,Torre A,1,101,4.50,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,Torre A,1,102,4.50,Propietaria: María García
+Apartamento 2A,APARTAMENTO,Torre A,2,201,4.50,Propietario: Carlos López
+Apartamento 2B,APARTAMENTO,Torre A,2,202,4.50,Propietaria: Ana Martínez
+Apartamento 3A,APARTAMENTO,Torre A,3,301,4.50,Propietario: Pedro Rodríguez
+Apartamento 3B,APARTAMENTO,Torre A,3,302,4.50,Propietaria: Laura Sánchez
+Apartamento 1A,APARTAMENTO,Torre B,1,101,4.50,Propietario: Roberto Díaz
+Apartamento 1B,APARTAMENTO,Torre B,1,102,4.50,Propietaria: Carmen Ruiz
+Apartamento 2A,APARTAMENTO,Torre B,2,201,4.50,Propietario: Miguel Torres
+Apartamento 2B,APARTAMENTO,Torre B,2,202,4.50,Propietaria: Isabel Flores
+Apartamento 3A,APARTAMENTO,Torre B,3,301,4.50,Propietario: José Morales
+Apartamento 3B,APARTAMENTO,Torre B,3,302,4.50,Propietaria: Rosa Castro
+Local PB-A,LOCAL,Torre A,PB,L01,3.50,Comercio planta baja Torre A
+Local PB-B,LOCAL,Torre B,PB,L02,3.50,Comercio planta baja Torre B
+Estacionamiento A1,ESTACIONAMIENTO,Torre A,SS,EA01,1.25,Asignado Torre A
+Estacionamiento A2,ESTACIONAMIENTO,Torre A,SS,EA02,1.25,Asignado Torre A
+Estacionamiento B1,ESTACIONAMIENTO,Torre B,SS,EB01,1.25,Asignado Torre B
+Estacionamiento B2,ESTACIONAMIENTO,Torre B,SS,EB02,1.25,Asignado Torre B
+Bodega A1,BODEGA,Torre A,SS,BA01,1.00,Depósito Torre A
+Bodega A2,BODEGA,Torre A,SS,BA02,1.00,Depósito Torre A
+Bodega B1,BODEGA,Torre B,SS,BB01,1.00,Depósito Torre B
+Bodega B2,BODEGA,Torre B,SS,BB02,1.00,Depósito Torre B

@@ -1,0 +1,2799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Facturación - Panel de Junta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .tab-btn { transition: all 0.2s; }
+        .tab-btn:hover { color: #f97316; }
+        .modal { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'billing' }) %>
+        
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white border-b border-[#E5E5E5] px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Facturación de Condominio</h1>
+                        <p class="text-sm text-[#5F6368] mt-1">Gestión de recibos, proveedores y cobros</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="billing-mode-badge" class="px-3 py-1 rounded-full text-sm font-medium"></span>
+                        <button onclick="openConfigModal()" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA] flex items-center gap-2">
+                            <span class="material-icons-round text-sm">settings</span>
+                            Configuración
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+                        <p class="text-sm text-[#5F6368]">Recibos Pendientes</p>
+                        <p class="text-2xl font-bold text-[#f97316]" id="stat-pending">-</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+                        <p class="text-sm text-[#5F6368]">Recibos Pagados</p>
+                        <p class="text-2xl font-bold text-green-600" id="stat-paid">-</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+                        <p class="text-sm text-[#5F6368]">Por Cobrar (VES)</p>
+                        <p class="text-2xl font-bold text-amber-600" id="stat-to-collect">-</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+                        <p class="text-sm text-[#5F6368]">Recaudado (VES)</p>
+                        <p class="text-2xl font-bold text-blue-600" id="stat-collected">-</p>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="bg-white rounded-xl border border-[#E5E5E5] mb-6">
+                    <div class="flex border-b border-[#E5E5E5]">
+                        <button onclick="switchTab('preliminaries')" class="tab-btn px-6 py-4 text-sm font-medium text-[#f97316] border-b-2 border-[#f97316]" data-tab="preliminaries">
+                            Preliminares
+                        </button>
+                        <button onclick="switchTab('vendors')" class="tab-btn px-6 py-4 text-sm font-medium text-[#5F6368]" data-tab="vendors">
+                            Proveedores
+                        </button>
+                        <button onclick="switchTab('contracts')" class="tab-btn px-6 py-4 text-sm font-medium text-[#5F6368]" data-tab="contracts">
+                            Contratos
+                        </button>
+                        <button onclick="switchTab('invoices')" class="tab-btn px-6 py-4 text-sm font-medium text-[#5F6368]" data-tab="invoices">
+                            Recibos
+                        </button>
+                        <button onclick="switchTab('templates')" class="tab-btn px-6 py-4 text-sm font-medium text-[#5F6368]" data-tab="templates">
+                            Plantillas
+                        </button>
+                    </div>
+
+                    <!-- Tab Content: Preliminares -->
+                    <div id="tab-preliminaries" class="tab-content p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                            <h2 class="text-lg font-medium text-[#3C4043]">Preliminares de Facturación</h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="text-sm text-[#5F6368]">Período:</label>
+                                <select id="preliminaries-months" onchange="loadPreliminaries()" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                                    <option value="5" selected>Últimos 5 meses</option>
+                                    <option value="10">Últimos 10 meses</option>
+                                    <option value="24">Últimos 24 meses</option>
+                                    <option value="">Todos</option>
+                                </select>
+                                <!-- Recibo por Edificio (solo multiedificio) -->
+                                <button id="btn-extraordinary" onclick="createExtraordinaryInvoice()" class="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-1 text-sm hidden">
+                                    <span class="material-icons-round text-sm">apartment</span>
+                                    <span class="hidden sm:inline">Por Edificio</span>
+                                    <span class="sm:hidden">Edificio</span>
+                                </button>
+                                <!-- Recibo por Inmueble (siempre visible) -->
+                                <button onclick="openPropertyInvoiceModal()" class="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1 text-sm">
+                                    <span class="material-icons-round text-sm">home</span>
+                                    <span class="hidden sm:inline">Por Inmueble</span>
+                                    <span class="sm:hidden">Inmueble</span>
+                                </button>
+                                <!-- Nuevo Preliminar -->
+                                <button onclick="openCreatePreliminaryModal()" class="px-3 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] flex items-center gap-1 text-sm">
+                                    <span class="material-icons-round text-sm">add</span>
+                                    <span class="hidden sm:inline">Nuevo Preliminar</span>
+                                    <span class="sm:hidden">Preliminar</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="preliminaries-list" class="space-y-3">
+                            <div class="text-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f97316] mx-auto"></div>
+                                <p class="text-sm text-[#5F6368] mt-2">Cargando...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Proveedores -->
+                    <div id="tab-vendors" class="tab-content p-6 hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-medium text-[#3C4043]">Proveedores de Servicios</h2>
+                            <button onclick="openCreateVendorModal()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] flex items-center gap-2">
+                                <span class="material-icons-round text-sm">add</span>
+                                Nuevo Proveedor
+                            </button>
+                        </div>
+                        <div id="vendors-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Tab Content: Contratos -->
+                    <div id="tab-contracts" class="tab-content p-6 hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-medium text-[#3C4043]">Contratos y Costos</h2>
+                            <button onclick="openCreateContractModal()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] flex items-center gap-2">
+                                <span class="material-icons-round text-sm">add</span>
+                                Nuevo Contrato
+                            </button>
+                        </div>
+                        <div id="contracts-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Tab Content: Recibos -->
+                    <div id="tab-invoices" class="tab-content p-6 hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                            <h2 class="text-lg font-medium text-[#3C4043]">Recibos por Inmueble</h2>
+                            <div class="flex flex-wrap gap-2">
+                                <select id="invoice-filter-status" onchange="loadInvoices()" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                                    <option value="">Todos los estados</option>
+                                    <option value="PENDING">Pendientes</option>
+                                    <option value="PAID">Pagados</option>
+                                </select>
+                                <label class="text-sm text-[#5F6368] flex items-center">Período:</label>
+                                <select id="invoices-months" onchange="loadInvoices()" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                                    <option value="5" selected>Últimos 5 meses</option>
+                                    <option value="10">Últimos 10 meses</option>
+                                    <option value="24">Últimos 24 meses</option>
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="invoices-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Tab Content: Plantillas -->
+                    <div id="tab-templates" class="tab-content p-6 hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-medium text-[#3C4043]">Plantillas de Items Extraordinarios</h2>
+                            <button onclick="openCreateTemplateModal()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] flex items-center gap-2">
+                                <span class="material-icons-round text-sm">add</span>
+                                Nueva Plantilla
+                            </button>
+                        </div>
+                        <div id="templates-list" class="grid grid-cols-3 gap-4"></div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Modales -->
+    
+    <!-- Modal Registrar Pago -->
+    <div id="payment-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Registrar Pago</h3>
+                <button onclick="closeModal('payment-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="payment-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Monto pagado (VES) *</label>
+                    <input type="number" step="0.01" id="payment-amount" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: 50000">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Método de pago *</label>
+                    <select id="payment-method" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                        <option value="">Seleccionar...</option>
+                        <option value="TRANSFER">Transferencia</option>
+                        <option value="MOBILE_PAYMENT">Pago Móvil</option>
+                        <option value="CASH">Efectivo</option>
+                        <option value="ZELLE">Zelle</option>
+                        <option value="OTHER">Otro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Referencia (opcional)</label>
+                    <input type="text" id="payment-reference" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Número de referencia, fecha, etc.">
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('payment-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Registrar Pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detalle Recibo -->
+    <div id="invoice-detail-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Detalle del Recibo</h3>
+                <button onclick="closeModal('invoice-detail-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div id="invoice-detail-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal Rechazar Reporte de Pago -->
+    <div id="reject-payment-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Rechazar reporte de pago</h3>
+                <button onclick="closeModal('reject-payment-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-[#5F6368] mb-4">Indique el motivo del rechazo. Se enviará un correo al propietario.</p>
+            <form id="reject-payment-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Motivo del rechazo *</label>
+                    <textarea id="reject-reason" required placeholder="Ej: Referencia incorrecta, comprobante ilegible, monto no coincide..." class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" rows="3"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('reject-payment-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368]">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Rechazar Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Configuración -->
+    <div id="config-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Configuración de Facturación</h3>
+                <button onclick="closeModal('config-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div id="config-content" class="space-y-4">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear Preliminar -->
+    <div id="preliminary-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Nuevo Preliminar de Facturación</h3>
+                <button onclick="closeModal('preliminary-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="preliminary-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Mes</label>
+                        <select id="prel-month" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Año</label>
+                        <input type="number" id="prel-year" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" value="2026">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Nombre del Recibo</label>
+                    <input type="text" id="prel-name" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: Recibo Marzo 2026">
+                </div>
+                <div class="border-t border-[#E5E5E5] pt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-medium text-[#3C4043]">Items de Cobro</h4>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="addContractItems()" class="px-3 py-1 text-sm border border-[#E5E5E5] rounded hover:bg-[#FAFAFA]">
+                                + Contratos Activos
+                            </button>
+                            <button type="button" onclick="addExtraordinaryItem()" class="px-3 py-1 text-sm bg-[#f97316] text-white rounded hover:bg-[#ea580c]">
+                                + Item Extraordinario
+                            </button>
+                        </div>
+                    </div>
+                    <div id="prel-items-list" class="space-y-2"></div>
+                    <div id="prel-totals" class="mt-4 p-4 bg-[#FAFAFA] rounded-lg">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-[#5F6368]">Total USD:</span>
+                            <span class="font-medium" id="prel-total-usd">$ 0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-[#5F6368]">Total VES:</span>
+                            <span class="font-medium" id="prel-total-ves">Bs. 0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('preliminary-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                        Crear Preliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Recibo Extraordinario por Edificio -->
+    <div id="extraordinary-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Recibo Extraordinario por Edificio</h3>
+                <button onclick="closeModal('extraordinary-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="extraordinary-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Edificio *</label>
+                    <select id="extra-building" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                        <option value="">Seleccionar edificio...</option>
+                    </select>
+                    <p class="text-xs text-[#9AA0A6] mt-1">Los items de este recibo solo aplicarán a los inmuebles de este edificio</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Mes</label>
+                        <select id="extra-month" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Año</label>
+                        <input type="number" id="extra-year" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" value="2026">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Nombre del Recibo *</label>
+                    <input type="text" id="extra-name" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: Mantenimiento Elevador Torre A">
+                </div>
+                <div class="border-t border-[#E5E5E5] pt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-medium text-[#3C4043]">Items de Cobro</h4>
+                        <button type="button" onclick="addExtraordinaryItemToModal()" class="px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-700">
+                            + Agregar Item
+                        </button>
+                    </div>
+                    <div id="extra-items-list" class="space-y-2"></div>
+                    <div id="extra-totals" class="mt-4 p-4 bg-[#FAFAFA] rounded-lg">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-[#5F6368]">Total USD:</span>
+                            <span class="font-medium" id="extra-total-usd">$ 0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-[#5F6368]">Total VES:</span>
+                            <span class="font-medium" id="extra-total-ves">Bs. 0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('extraordinary-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+                        Crear Recibo Extraordinario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Recibo Extraordinario por Inmueble -->
+    <div id="property-invoice-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Recibo Extraordinario por Inmueble</h3>
+                <button onclick="closeModal('property-invoice-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="property-invoice-form" class="space-y-4">
+                <!-- Buscador de Inmueble -->
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Buscar Inmueble *</label>
+                    <div class="relative">
+                        <input type="text" id="prop-search" placeholder="Escriba nombre, número o edificio del inmueble..." 
+                            class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg pr-10"
+                            autocomplete="off">
+                        <span class="material-icons-round absolute right-3 top-2.5 text-[#9AA0A6]">search</span>
+                    </div>
+                    <!-- Resultados de búsqueda -->
+                    <div id="prop-search-results" class="hidden mt-1 border border-[#E5E5E5] rounded-lg max-h-48 overflow-y-auto bg-white shadow-lg"></div>
+                    <!-- Inmueble seleccionado -->
+                    <div id="prop-selected" class="hidden mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-medium text-[#3C4043]" id="prop-selected-name"></p>
+                                <p class="text-sm text-[#5F6368]" id="prop-selected-building"></p>
+                            </div>
+                            <button type="button" onclick="clearSelectedProperty()" class="text-red-500 hover:text-red-700">
+                                <span class="material-icons-round">close</span>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="prop-property-id" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Mes</label>
+                        <select id="prop-month" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Año</label>
+                        <input type="number" id="prop-year" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" value="2026">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Nombre del Recibo *</label>
+                    <input type="text" id="prop-name" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: Reparación de daños - Apto 101">
+                </div>
+                <div class="border-t border-[#E5E5E5] pt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-medium text-[#3C4043]">Items de Cobro</h4>
+                        <button type="button" onclick="addPropertyInvoiceItem()" class="px-3 py-1 text-sm bg-amber-500 text-white rounded hover:bg-amber-600">
+                            + Agregar Item
+                        </button>
+                    </div>
+                    <div id="prop-items-list" class="space-y-2"></div>
+                    <div id="prop-totals" class="mt-4 p-4 bg-[#FAFAFA] rounded-lg">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-[#5F6368]">Total USD:</span>
+                            <span class="font-medium" id="prop-total-usd">$ 0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-[#5F6368]">Total VES:</span>
+                            <span class="font-medium" id="prop-total-ves">Bs. 0.00</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-[#9AA0A6] mt-2">
+                        <span class="material-icons-round text-xs align-middle">info</span>
+                        Este recibo será asignado directamente al inmueble seleccionado. No aplica distribución por alícuota.
+                    </p>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('property-invoice-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600">
+                        Crear Recibo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Crear Proveedor -->
+    <div id="vendor-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Nuevo Proveedor</h3>
+                <button onclick="closeModal('vendor-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="vendor-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Nombre *</label>
+                    <input type="text" id="vendor-name" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Tipo de Servicio</label>
+                    <input type="text" id="vendor-service" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: Vigilancia, Limpieza">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Descripción</label>
+                    <textarea id="vendor-description" rows="2" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg"></textarea>
+                </div>
+                <div class="border-t border-[#E5E5E5] pt-4">
+                    <h4 class="font-medium text-[#3C4043] mb-2">Contacto</h4>
+                    <div class="space-y-3">
+                        <input type="text" id="vendor-contact-name" placeholder="Nombre de contacto" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                        <input type="email" id="vendor-contact-email" placeholder="Email" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                        <input type="tel" id="vendor-contact-phone" placeholder="Teléfono" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('vendor-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detalle Preliminar -->
+    <div id="preliminary-detail-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]" id="detail-title">Detalle del Preliminar</h3>
+                <button onclick="closeModal('preliminary-detail-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div id="detail-content" class="space-y-4">
+                <!-- Info general -->
+                <div class="bg-[#FAFAFA] p-4 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-[#9AA0A6]">Período</p>
+                            <p class="font-medium text-[#3C4043]" id="detail-period"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#9AA0A6]">Tasa BCV</p>
+                            <p class="font-medium text-[#3C4043]" id="detail-rate"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#9AA0A6]">Total USD</p>
+                            <p class="font-medium text-[#3C4043]" id="detail-total-usd"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-[#9AA0A6]">Total VES</p>
+                            <p class="font-medium text-[#3C4043]" id="detail-total-ves"></p>
+                        </div>
+                    </div>
+                    <div id="detail-rate-info" class="hidden"></div>
+                </div>
+                
+                <!-- Items del preliminar -->
+                <div>
+                    <h4 class="font-medium text-[#3C4043] mb-2">Items de Cobro</h4>
+                    <div id="detail-items" class="space-y-2"></div>
+                </div>
+                
+                <!-- Distribución por inmueble -->
+                <div id="detail-distribution-section">
+                    <h4 class="font-medium text-[#3C4043] mb-2">Distribución por Inmueble</h4>
+                    <p class="text-sm text-[#5F6368] mb-2" id="detail-distribution-type"></p>
+                    <div id="detail-distribution" class="space-y-2 max-h-64 overflow-y-auto"></div>
+                </div>
+                
+                <!-- Acciones -->
+                <div id="detail-actions" class="border-t border-[#E5E5E5] pt-4 flex justify-end gap-3">
+                    <!-- Botones dinámicos según estado -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Generar Recibos -->
+    <div id="generate-confirm-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-icons-round text-3xl text-amber-600">help_outline</span>
+                <h3 class="text-lg font-medium text-[#3C4043]">Generar Recibos</h3>
+            </div>
+            <p class="text-[#5F6368] mb-6">
+                ¿Está seguro de generar los recibos para todos los inmuebles? Esta acción finalizará el preliminar y creará los recibos individuales.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('generate-confirm-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                    Cancelar
+                </button>
+                <button onclick="confirmGenerateInvoices()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                    Sí, Generar Recibos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Eliminar -->
+    <div id="delete-confirm-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-icons-round text-3xl text-red-600">delete_forever</span>
+                <h3 class="text-lg font-medium text-[#3C4043]">Eliminar Preliminar</h3>
+            </div>
+            <p class="text-[#5F6368] mb-6">
+                ¿Está seguro de eliminar este preliminar? Esta acción no se puede deshacer.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('delete-confirm-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                    Cancelar
+                </button>
+                <button onclick="confirmDeletePreliminary()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Forzar Eliminación -->
+    <div id="force-delete-confirm-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-icons-round text-3xl text-amber-600">warning</span>
+                <h3 class="text-lg font-medium text-[#3C4043]">Forzar Eliminación</h3>
+            </div>
+            <p class="text-[#5F6368] mb-2">
+                No se puede eliminar normalmente porque el preliminar ya fue procesado.
+            </p>
+            <p class="text-amber-700 text-sm mb-6">
+                ¿Forzar eliminación? (Solo para casos especiales)
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('force-delete-confirm-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                    Cancelar
+                </button>
+                <button onclick="confirmForceDeletePreliminary()" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+                    Sí, Forzar Eliminación
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Enviar Recibos -->
+    <div id="send-confirm-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-icons-round text-3xl text-green-600">send</span>
+                <h3 class="text-lg font-medium text-[#3C4043]">Enviar Recibos</h3>
+            </div>
+            <p class="text-[#5F6368] mb-6">
+                ¿Enviar los recibos a los propietarios? Se notificará a cada propietario que su recibo está disponible.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('send-confirm-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                    Cancelar
+                </button>
+                <button onclick="confirmSendInvoices()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    Sí, Enviar Recibos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear Contrato -->
+    <div id="contract-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-[#3C4043]">Nuevo Contrato</h3>
+                <button onclick="closeModal('contract-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="contract-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Proveedor *</label>
+                    <select id="contract-vendor" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                        <option value="">Seleccionar proveedor</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Descripción *</label>
+                    <input type="text" id="contract-description" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: Servicio mensual de vigilancia">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Monto *</label>
+                        <input type="number" step="0.01" id="contract-amount" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Moneda *</label>
+                        <select id="contract-currency" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                            <option value="VES">VES</option>
+                            <option value="USD">USD</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Frecuencia</label>
+                    <select id="contract-frequency" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                        <option value="MONTHLY">Mensual</option>
+                        <option value="QUARTERLY">Trimestral</option>
+                        <option value="YEARLY">Anual</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Inicio *</label>
+                        <input type="date" id="contract-start" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Fin (opcional)</label>
+                        <input type="date" id="contract-end" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('contract-modal')" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        let billingConfig = null;
+        let currentTab = 'preliminaries';
+        let preliminaryItems = [];
+        let currentRate = 0;
+        let currentRateDate = null;  // Fecha efectiva de la tasa (según API), no la de extracción
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            document.getElementById('prel-month').value = now.getMonth() + 1;
+            document.getElementById('prel-year').value = now.getFullYear();
+            document.getElementById('extra-month').value = now.getMonth() + 1;
+            document.getElementById('extra-year').value = now.getFullYear();
+            
+            loadBillingConfig();
+            loadTenantInfo();
+            loadStats();
+            loadPreliminaries();
+            loadSaaSSummary();
+        });
+
+        async function loadSaaSSummary() {
+            try {
+                const res = await fetch('/api/tenant-admin/saas-invoices/summary', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const pending = data.data?.pending_count || 0;
+                const badge = document.getElementById('sidebar-saas-pending');
+                if (pending > 0 && badge) {
+                    badge.textContent = pending;
+                    badge.classList.remove('hidden');
+                }
+            } catch (_) {}
+        }
+
+        // Cargar info del tenant (para verificar si es multiedificio y tipo de facturación)
+        async function loadTenantInfo() {
+            try {
+                const res = await fetch('/api/tenant-admin/buildings', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.buildings && data.buildings.length > 1) {
+                    // Guardar edificios para usar en el modal
+                    window.tenantBuildings = data.buildings;
+                    
+                    // Solo mostrar botón de recibo por edificio si la facturación es FIJA
+                    // (no disponible para ALICUOTA para evitar confusiones)
+                    const billingType = billingConfig?.billing_type || 'FIXED';
+                    if (billingType === 'FIXED') {
+                        document.getElementById('btn-extraordinary').classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                console.log('No se pudo verificar tipo de conjunto');
+            }
+        }
+
+        // Utilidades
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById(modalId).classList.add('flex');
+        }
+
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                warning: 'bg-yellow-600',
+                info: 'bg-blue-600'
+            };
+            const icons = {
+                success: 'check_circle',
+                error: 'error',
+                warning: 'warning',
+                info: 'info'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0`;
+            toast.innerHTML = `<span class="material-icons-round">${icons[type]}</span><span>${message}</span>`;
+            
+            const container = document.getElementById('toast-container');
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function formatCurrency(amount, currency = 'VES') {
+            if (amount === null || amount === undefined) return '-';
+            const symbol = currency === 'USD' ? '$' : 'Bs.';
+            return `${symbol} ${Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function formatNumber(amount) {
+            if (amount === null || amount === undefined || isNaN(amount)) return '0,00';
+            return Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'DRAFT': 'bg-gray-100 text-gray-600',
+                'FINALIZED': 'bg-blue-100 text-blue-600',
+                'CANCELLED': 'bg-red-100 text-red-600',
+                'PENDING': 'bg-amber-100 text-amber-600',
+                'PAID': 'bg-green-100 text-green-600'
+            };
+            return classes[status] || 'bg-gray-100 text-gray-600';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+
+        // Tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tab) {
+                    btn.classList.add('text-[#f97316]', 'border-b-2', 'border-[#f97316]');
+                    btn.classList.remove('text-[#5F6368]');
+                } else {
+                    btn.classList.remove('text-[#f97316]', 'border-b-2', 'border-[#f97316]');
+                    btn.classList.add('text-[#5F6368]');
+                }
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+            if (tab === 'vendors') loadVendors();
+            if (tab === 'contracts') loadContracts();
+            if (tab === 'invoices') loadInvoices();
+            if (tab === 'templates') loadTemplates();
+        }
+
+        // Cargar configuración
+        async function loadBillingConfig() {
+            try {
+                const res = await fetch('/api/tenant-admin/billing/config', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    billingConfig = data.data;
+                    currentRate = billingConfig.usd_to_ves_rate || 0;
+                    currentRateDate = billingConfig.rate_date || null;
+                    updateConfigBadge();
+                    console.log('[Billing] Config loaded, rate:', currentRate, 'date:', currentRateDate);
+                }
+            } catch (e) {
+                console.error('Error loading config:', e);
+            }
+        }
+
+        // Asegurar que tenemos tasa de cambio
+        async function ensureExchangeRate() {
+            if (currentRate && currentRate > 0) {
+                return true;
+            }
+            
+            // Intentar recargar la configuración
+            await loadBillingConfig();
+            
+            if (currentRate && currentRate > 0) {
+                return true;
+            }
+            
+            // Si sigue sin tasa, intentar obtenerla directamente
+            try {
+                const res = await fetch('/api/tenant-admin/billing/exchange-rate', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success && data.data && data.data.rate) {
+                    currentRate = data.data.rate;
+                    currentRateDate = data.data.date || null;
+                    console.log('[Billing] Rate loaded from exchange API:', currentRate);
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error loading exchange rate:', e);
+            }
+            
+            // Si no hay tasa, intentar forzar actualización
+            try {
+                showToast('No hay tasa BCV disponible. Intentando actualizar...', 'warning');
+                const res = await fetch('/api/tenant-admin/billing/exchange-rate/update', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success && data.data && data.data.rate) {
+                    currentRate = data.data.rate;
+                    currentRateDate = data.data.date || null;
+                    console.log('[Billing] Rate updated from API:', currentRate);
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error forcing exchange rate update:', e);
+            }
+            
+            return false;
+        }
+
+        function updateConfigBadge() {
+            const badge = document.getElementById('billing-mode-badge');
+            if (!billingConfig) return;
+            const modeText = billingConfig.billing_mode === 'FULL' ? 'Modo Completo' : 'Modo Apoyo';
+            const modeColor = billingConfig.billing_mode === 'FULL' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+            badge.textContent = modeText;
+            badge.className = `px-3 py-1 rounded-full text-sm font-medium ${modeColor}`;
+        }
+
+        // Estadísticas
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/tenant-admin/billing/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const stats = data.data;
+                    document.getElementById('stat-pending').textContent = stats.pending_count || 0;
+                    document.getElementById('stat-paid').textContent = stats.paid_count || 0;
+                    document.getElementById('stat-to-collect').textContent = formatCurrency(stats.total_pending || 0);
+                    document.getElementById('stat-collected').textContent = formatCurrency(stats.total_collected || 0);
+                }
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
+        // Preliminares
+        async function loadPreliminaries() {
+            try {
+                const months = document.getElementById('preliminaries-months')?.value || '5';
+                const url = months ? `/api/tenant-admin/billing/preliminaries?months_back=${months}` : '/api/tenant-admin/billing/preliminaries';
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderPreliminaries(data.data);
+                }
+            } catch (e) {
+                console.error('Error loading preliminaries:', e);
+            }
+        }
+
+        function getInvoiceTypeBadge(type) {
+            switch(type) {
+                case 'EXTRAORDINARY_PROPERTY':
+                    return { text: 'Por Inmueble', class: 'bg-purple-100 text-purple-800 border-purple-200', icon: 'home' };
+                case 'EXTRAORDINARY_BUILDING':
+                    return { text: 'Por Edificio', class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'apartment' };
+                case 'EXTRAORDINARY':
+                    return { text: 'Extraordinario', class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'star' };
+                default:
+                    return { text: 'Ordinario', class: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'receipt' };
+            }
+        }
+
+        function renderPreliminaries(preliminaries) {
+            const container = document.getElementById('preliminaries-list');
+            if (preliminaries.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-[#9AA0A6]">
+                        <span class="material-icons-round text-4xl mb-2">receipt_long</span>
+                        <p>No hay preliminares de facturación</p>
+                        <p class="text-sm mt-1">Crea uno nuevo para empezar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const byMonth = {};
+            preliminaries.forEach(p => {
+                const key = `${p.billing_year}-${String(p.billing_month).padStart(2,'0')}`;
+                if (!byMonth[key]) byMonth[key] = { year: p.billing_year, month: p.billing_month, label: `${months[p.billing_month-1]} ${p.billing_year}`, items: [] };
+                byMonth[key].items.push(p);
+            });
+            const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a));
+
+            container.innerHTML = monthKeys.map((key, idx) => {
+                const group = byMonth[key];
+                const isExpanded = idx === 0;
+                const collapseId = `prelim-month-${key.replace(/[^a-z0-9]/gi,'')}`;
+                const itemsHtml = group.items.map(p => {
+                    const monthName = getMonthName(p.billing_month);
+                    const year = p.billing_year;
+                    const typeBadge = getInvoiceTypeBadge(p.invoice_type);
+                    const isExtraordinary = p.invoice_type && p.invoice_type.includes('EXTRAORDINARY');
+                    return `
+                <div class="border rounded-lg p-4 hover:shadow-md transition cursor-pointer ${typeBadge.class.replace('text-', 'border-').replace('100', '200')} ${isExtraordinary ? 'bg-opacity-50' : 'bg-white'}" onclick="showPreliminaryDetail('${p.id}')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="font-medium text-[#3C4043]">${p.name}</h3>
+                                <span class="px-2 py-0.5 ${typeBadge.class} rounded text-xs flex items-center gap-1">
+                                    <span class="material-icons-round text-xs">${typeBadge.icon}</span>
+                                    ${typeBadge.text}
+                                </span>
+                            </div>
+                            <p class="text-sm text-[#5F6368] mt-1">
+                                <span class="font-medium">${monthName} ${year}</span> • Tasa BCV: ${p.exchange_rate_usd} VES/USD
+                                ${billingConfig?.usd_to_ves_rate && Number(p.exchange_rate_usd) !== Number(billingConfig.usd_to_ves_rate) ? 
+                                    ` → <span class="text-amber-600">${billingConfig.usd_to_ves_rate} (actual)</span>` : ''}
+                            </p>
+                            <div class="flex gap-4 mt-2 text-sm flex-wrap">
+                                <span class="text-[#5F6368]">Total USD: <b>${formatCurrency(p.total_amount_usd, 'USD')}</b></span>
+                                <span class="text-[#5F6368]">Total VES: <b>${formatCurrency(
+                                    billingConfig?.usd_to_ves_rate ? p.total_amount_usd * billingConfig.usd_to_ves_rate : p.total_amount_ves, 
+                                    'VES'
+                                )}</b>${billingConfig?.usd_to_ves_rate && Number(p.exchange_rate_usd) !== Number(billingConfig.usd_to_ves_rate) ? ' <span class="text-xs text-amber-600">(tasa actual)</span>' : ''}</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="px-2 py-1 rounded text-xs ${getStatusClass(p.status)}">${p.status}</span>
+                            ${p.status === 'DRAFT' ? `
+                                ${billingConfig?.billing_mode === 'FULL' ? `
+                                    <button onclick="event.stopPropagation(); showGenerateConfirmModal('${p.id}')" class="px-3 py-1 bg-[#f97316] text-white rounded text-sm hover:bg-[#ea580c]">
+                                        Generar Recibos
+                                    </button>
+                                ` : `
+                                    <button onclick="event.stopPropagation(); exportPreliminary('${p.id}')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center gap-1">
+                                        <span class="material-icons-round text-sm">download</span>
+                                        Exportar
+                                    </button>
+                                `}
+                                <button onclick="event.stopPropagation(); showDeleteConfirmModal('${p.id}')" class="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 flex items-center gap-1">
+                                    <span class="material-icons-round text-sm">delete</span>
+                                    Eliminar
+                                </button>
+                            ` : ''}
+                            ${p.status === 'FINALIZED' && billingConfig?.billing_mode === 'FULL' && !p.sent_to_owners ? `
+                                <button onclick="event.stopPropagation(); showSendConfirmModal('${p.id}')" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                    Enviar a Propietarios
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+                    `;
+                }).join('');
+                return `
+                <div class="border border-[#E5E5E5] rounded-xl overflow-hidden mb-3">
+                    <button type="button" onclick="toggleMonthGroup('${collapseId}')" class="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-[#FAFAFA] text-left font-medium text-[#3C4043]">
+                        <span class="flex items-center gap-2">
+                            <span class="material-icons-round transition-transform" id="icon-${collapseId}">${isExpanded ? 'expand_less' : 'expand_more'}</span>
+                            ${group.label}
+                            <span class="text-sm font-normal text-[#5F6368]">(${group.items.length} preliminar${group.items.length !== 1 ? 'es' : ''})</span>
+                        </span>
+                    </button>
+                    <div id="${collapseId}" class="border-t border-[#E5E5E5] ${isExpanded ? '' : 'hidden'}">
+                        <div class="p-4 space-y-3 bg-[#FAFAFA]/50">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function toggleMonthGroup(collapseId) {
+            const el = document.getElementById(collapseId);
+            const icon = document.getElementById(`icon-${collapseId}`);
+            if (el) {
+                el.classList.toggle('hidden');
+                if (icon) icon.textContent = el.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+            }
+        }
+
+        function getMonthName(month) {
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            return months[month - 1];
+        }
+
+        // Proveedores
+        async function loadVendors() {
+            try {
+                const res = await fetch('/api/tenant-admin/billing/vendors', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderVendors(data.data);
+                }
+            } catch (e) {
+                console.error('Error loading vendors:', e);
+            }
+        }
+
+        function renderVendors(vendors) {
+            const container = document.getElementById('vendors-list');
+            if (vendors.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-[#9AA0A6]">
+                        <span class="material-icons-round text-4xl mb-2">business</span>
+                        <p>No hay proveedores registrados</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = vendors.map(v => `
+                <div class="border border-[#E5E5E5] rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-medium text-[#3C4043]">${v.name}</h3>
+                        <p class="text-sm text-[#5F6368]">${v.service_type || 'Sin tipo'} • ${v.active_contracts} contratos activos</p>
+                    </div>
+                    <span class="px-2 py-1 rounded text-xs ${getStatusClass(v.status)}">${v.status}</span>
+                </div>
+            `).join('');
+        }
+
+        // Contratos
+        async function loadContracts() {
+            try {
+                const res = await fetch('/api/tenant-admin/billing/contracts', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderContracts(data.data);
+                }
+            } catch (e) {
+                console.error('Error loading contracts:', e);
+            }
+        }
+
+        function renderContracts(contracts) {
+            const container = document.getElementById('contracts-list');
+            if (contracts.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-[#9AA0A6]">
+                        <span class="material-icons-round text-4xl mb-2">description</span>
+                        <p>No hay contratos registrados</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = contracts.map(c => `
+                <div class="border border-[#E5E5E5] rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium text-[#3C4043]">${c.vendor_name}</h3>
+                            <p class="text-sm text-[#5F6368]">${c.description}</p>
+                            <p class="text-sm mt-1">
+                                <b>${formatCurrency(c.amount, c.currency)}</b> • ${c.billing_frequency} • ${c.start_date}
+                            </p>
+                        </div>
+                        <span class="px-2 py-1 rounded text-xs ${getStatusClass(c.status)}">${c.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Recibos
+        async function loadInvoices() {
+            try {
+                const status = document.getElementById('invoice-filter-status')?.value;
+                const months = document.getElementById('invoices-months')?.value || '5';
+                let url = months ? `/api/tenant-admin/billing/invoices?months_back=${months}` : '/api/tenant-admin/billing/invoices';
+                if (status) url += (url.includes('?') ? '&' : '?') + `status=${encodeURIComponent(status)}`;
+                
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderInvoices(data.data);
+                }
+            } catch (e) {
+                console.error('Error loading invoices:', e);
+            }
+        }
+
+        function renderInvoices(invoices) {
+            const container = document.getElementById('invoices-list');
+            if (invoices.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-[#9AA0A6]">
+                        <span class="material-icons-round text-4xl mb-2">receipt</span>
+                        <p>No hay recibos</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const byMonth = {};
+            invoices.forEach(i => {
+                const key = `${i.billing_year}-${String(i.billing_month).padStart(2,'0')}`;
+                if (!byMonth[key]) byMonth[key] = { year: i.billing_year, month: i.billing_month, label: `${months[i.billing_month-1]} ${i.billing_year}`, items: [] };
+                byMonth[key].items.push(i);
+            });
+            const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a));
+
+            container.innerHTML = monthKeys.map((key, idx) => {
+                const group = byMonth[key];
+                const isExpanded = idx === 0;
+                const collapseId = `inv-month-${key.replace(/[^a-z0-9]/gi,'')}`;
+                const itemsHtml = group.items.map(i => `
+                <div class="border border-[#E5E5E5] rounded-lg p-4 hover:bg-[#FAFAFA] cursor-pointer transition bg-white" onclick="showInvoiceDetailModal('${i.id}')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium text-[#3C4043]">${i.invoice_number}</h3>
+                            <p class="text-sm text-[#5F6368]">${i.property_name} ${i.building ? `• ${i.building}` : ''}</p>
+                            <p class="text-sm mt-1">
+                                <b>${formatCurrency(i.assigned_amount_ves, 'VES')}</b>
+                                ${i.current_exchange_rate !== i.exchange_rate_at_creation ? 
+                                    `<span class="text-xs text-amber-600">(Tasa actualizada)</span>` : ''}
+                            </p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1" onclick="event.stopPropagation()">
+                            <span class="px-2 py-1 rounded text-xs ${getStatusClass(i.status)}">${i.status}</span>
+                            ${i.payment_report_pending ? `
+                                <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">Reporte pendiente</span>
+                            ` : ''}
+                            ${i.status === 'PENDING' && billingConfig?.billing_mode === 'FULL' && !i.payment_report_pending ? `
+                                <span class="px-2 py-1 rounded text-xs bg-[#E5E5E5] text-[#5F6368]" title="El propietario debe reportar el pago desde Mis Recibos">Esperando reporte</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+                `).join('');
+                return `
+                <div class="border border-[#E5E5E5] rounded-xl overflow-hidden mb-3">
+                    <button type="button" onclick="toggleMonthGroup('${collapseId}')" class="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-[#FAFAFA] text-left font-medium text-[#3C4043]">
+                        <span class="flex items-center gap-2">
+                            <span class="material-icons-round transition-transform" id="icon-${collapseId}">${isExpanded ? 'expand_less' : 'expand_more'}</span>
+                            ${group.label}
+                            <span class="text-sm font-normal text-[#5F6368]">(${group.items.length} recibo${group.items.length !== 1 ? 's' : ''})</span>
+                        </span>
+                    </button>
+                    <div id="${collapseId}" class="border-t border-[#E5E5E5] ${isExpanded ? '' : 'hidden'}">
+                        <div class="p-4 space-y-3 bg-[#FAFAFA]/50">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Plantillas
+        async function loadTemplates() {
+            try {
+                const res = await fetch('/api/tenant-admin/billing/templates', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderTemplates(data.data);
+                }
+            } catch (e) {
+                console.error('Error loading templates:', e);
+            }
+        }
+
+        function renderTemplates(templates) {
+            const container = document.getElementById('templates-list');
+            if (templates.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-[#9AA0A6] col-span-3">
+                        <span class="material-icons-round text-4xl mb-2">folder_copy</span>
+                        <p>No hay plantillas</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = templates.map(t => `
+                <div class="border border-[#E5E5E5] rounded-lg p-4 cursor-pointer hover:shadow-md transition" onclick="useTemplate('${t.id}')">
+                    <h3 class="font-medium text-[#3C4043]">${t.name}</h3>
+                    <p class="text-sm text-[#5F6368]">${t.category || 'Sin categoría'}</p>
+                    ${t.default_amount ? `<p class="text-sm mt-1 font-medium">${formatCurrency(t.default_amount, t.default_currency)}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Modal Handlers
+        function openConfigModal() {
+            const content = document.getElementById('config-content');
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Tipo de Facturación</label>
+                        <p class="text-lg font-medium text-[#3C4043]">${billingConfig?.billing_type === 'ALICUOTA' ? 'Por Alícuota' : 'Facturación Fija'}</p>
+                        <p class="text-xs text-[#9AA0A6]">Para cambiar contacte al administrador</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Modo de Facturación</label>
+                        <p class="text-lg font-medium text-[#3C4043]">${billingConfig?.billing_mode === 'FULL' ? 'Modo Completo (Condo360 gestiona todo)' : 'Modo Apoyo (Solo preliminares)'}</p>
+                    </div>
+                    ${billingConfig?.payment_info ? `
+                        <div class="border-t border-[#E5E5E5] pt-4">
+                            <h4 class="font-medium text-[#3C4043] mb-2">Datos de Pago</h4>
+                            <div class="text-sm text-[#5F6368] space-y-1">
+                                ${billingConfig.payment_info.bank_account ? `<p><b>Cuenta:</b> ${billingConfig.payment_info.bank_account}</p>` : ''}
+                                ${billingConfig.payment_info.mobile_payment ? `<p><b>Pago Móvil:</b> ${billingConfig.payment_info.mobile_payment}</p>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            showModal('config-modal');
+        }
+
+        async function openCreatePreliminaryModal() {
+            preliminaryItems = [];
+            
+            // Asegurar que tenemos tasa BCV
+            const hasRate = await ensureExchangeRate();
+            if (!hasRate) {
+                showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
+                return;
+            }
+            
+            renderPreliminaryItems();
+            showModal('preliminary-modal');
+        }
+
+        function addContractItems() {
+            // Cargar contratos activos y agregarlos
+            fetch('/api/tenant-admin/billing/contracts?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(c => {
+                        preliminaryItems.push({
+                            type: 'ORDINARY',
+                            description: `${c.vendor_name} - ${c.description}`,
+                            amount: c.amount,
+                            currency: c.currency,
+                            contract_id: c.id
+                        });
+                    });
+                    renderPreliminaryItems();
+                } else {
+                    showToast('No hay contratos activos', 'warning');
+                }
+            });
+        }
+
+        function addExtraordinaryItem() {
+            preliminaryItems.push({
+                type: 'EXTRAORDINARY',
+                description: '',
+                amount: 0,
+                currency: 'VES'
+            });
+            renderPreliminaryItems();
+        }
+
+        function removePreliminaryItem(index) {
+            preliminaryItems.splice(index, 1);
+            renderPreliminaryItems();
+        }
+
+        function updatePreliminaryItem(index, field, value) {
+            preliminaryItems[index][field] = value;
+            if (field === 'amount' || field === 'currency') {
+                renderPreliminaryItems(); // Recalcular totales
+            }
+        }
+
+        function renderPreliminaryItems() {
+            const container = document.getElementById('prel-items-list');
+            let totalUsd = 0;
+            let totalVes = 0;
+
+            if (preliminaryItems.length === 0) {
+                container.innerHTML = '<p class="text-center text-[#9AA0A6] py-4">Agrega items de cobro</p>';
+            } else {
+                container.innerHTML = preliminaryItems.map((item, idx) => {
+                    // Calcular conversión según la moneda del item
+                    let convertedAmount;
+                    if (item.currency === 'USD') {
+                        // USD -> VES (multiplicar por tasa)
+                        convertedAmount = item.amount * currentRate;
+                        totalUsd += item.amount;
+                        totalVes += convertedAmount;
+                    } else {
+                        // VES -> USD (dividir por tasa)
+                        convertedAmount = currentRate > 0 ? item.amount / currentRate : 0;
+                        totalVes += item.amount;
+                        totalUsd += convertedAmount;
+                    }
+
+                    const convertedText = item.currency === 'USD' 
+                        ? `= Bs. ${formatNumber(convertedAmount)}` 
+                        : `= $ ${formatNumber(convertedAmount)}`;
+
+                    return `
+                        <div class="flex gap-2 items-start p-3 bg-[#FAFAFA] rounded-lg">
+                            <div class="flex-1">
+                                <div class="grid grid-cols-12 gap-2 mb-2">
+                                    <select class="col-span-3 px-2 py-1 border border-[#E5E5E5] rounded text-sm" 
+                                        onchange="updatePreliminaryItem(${idx}, 'type', this.value)">
+                                        <option value="ORDINARY" ${item.type === 'ORDINARY' ? 'selected' : ''}>Ordinario</option>
+                                        <option value="EXTRAORDINARY" ${item.type === 'EXTRAORDINARY' ? 'selected' : ''}>Extraordinario</option>
+                                        <option value="FUND" ${item.type === 'FUND' ? 'selected' : ''}>Fondo</option>
+                                        <option value="ADJUSTMENT" ${item.type === 'ADJUSTMENT' ? 'selected' : ''}>Ajuste</option>
+                                    </select>
+                                    <input type="text" class="col-span-9 px-2 py-1 border border-[#E5E5E5] rounded text-sm" 
+                                        placeholder="Descripción" value="${item.description}" 
+                                        onchange="updatePreliminaryItem(${idx}, 'description', this.value)">
+                                </div>
+                                <div class="grid grid-cols-12 gap-2 items-center">
+                                    <input type="number" step="0.01" class="col-span-4 px-2 py-1 border border-[#E5E5E5] rounded text-sm" 
+                                        placeholder="Monto" value="${item.amount || ''}" 
+                                        onchange="updatePreliminaryItem(${idx}, 'amount', parseFloat(this.value) || 0)">
+                                    <select class="col-span-3 px-2 py-1 border border-[#E5E5E5] rounded text-sm"
+                                        onchange="updatePreliminaryItem(${idx}, 'currency', this.value)">
+                                        <option value="VES" ${item.currency === 'VES' ? 'selected' : ''}>VES</option>
+                                        <option value="USD" ${item.currency === 'USD' ? 'selected' : ''}>USD</option>
+                                    </select>
+                                    <span class="col-span-5 text-xs text-[#5F6368]">${convertedText} <span class="text-[#9AA0A6]">(tasa: ${currentRate})</span></span>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removePreliminaryItem(${idx})" class="text-red-500 hover:text-red-700 mt-1">
+                                <span class="material-icons-round text-sm">delete</span>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('prel-total-usd').textContent = formatCurrency(totalUsd, 'USD');
+            document.getElementById('prel-total-ves').textContent = formatCurrency(totalVes, 'VES');
+        }
+
+        // Formulario Preliminar
+        document.getElementById('preliminary-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const items = preliminaryItems.map(i => ({
+                item_type: i.type,
+                description: i.description,
+                amount: i.amount,
+                currency: i.currency,
+                vendor_contract_id: i.contract_id || null
+            }));
+
+            try {
+                const res = await fetch('/api/tenant-admin/billing/preliminaries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        billing_month: parseInt(document.getElementById('prel-month').value),
+                        billing_year: parseInt(document.getElementById('prel-year').value),
+                        name: document.getElementById('prel-name').value || `Recibo ${document.getElementById('prel-month').value}/${document.getElementById('prel-year').value}`,
+                        items: items
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Preliminar creado exitosamente');
+                    closeModal('preliminary-modal');
+                    loadPreliminaries();
+                } else {
+                    showToast(data.error || 'Error al crear preliminar', 'error');
+                }
+            } catch (e) {
+                showToast('Error al crear preliminar', 'error');
+            }
+        });
+
+        // Formulario Proveedor
+        document.getElementById('vendor-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const res = await fetch('/api/tenant-admin/billing/vendors', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: document.getElementById('vendor-name').value,
+                        service_type: document.getElementById('vendor-service').value,
+                        description: document.getElementById('vendor-description').value,
+                        contact_name: document.getElementById('vendor-contact-name').value,
+                        contact_email: document.getElementById('vendor-contact-email').value,
+                        contact_phone: document.getElementById('vendor-contact-phone').value
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Proveedor creado exitosamente');
+                    closeModal('vendor-modal');
+                    document.getElementById('vendor-form').reset();
+                    loadVendors();
+                } else {
+                    showToast(data.error || 'Error al crear proveedor', 'error');
+                }
+            } catch (e) {
+                showToast('Error al crear proveedor', 'error');
+            }
+        });
+
+        // Cargar proveedores para contrato
+        async function openCreateContractModal() {
+            try {
+                const res = await fetch('/api/tenant-admin/billing/vendors?status=ACTIVE', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const select = document.getElementById('contract-vendor');
+                select.innerHTML = '<option value="">Seleccionar proveedor</option>' +
+                    data.data.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+                
+                showModal('contract-modal');
+            } catch (e) {
+                showToast('Error al cargar proveedores', 'error');
+            }
+        }
+
+        // Formulario Contrato
+        document.getElementById('contract-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const res = await fetch('/api/tenant-admin/billing/contracts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        vendor_id: document.getElementById('contract-vendor').value,
+                        description: document.getElementById('contract-description').value,
+                        amount: parseFloat(document.getElementById('contract-amount').value),
+                        currency: document.getElementById('contract-currency').value,
+                        billing_frequency: document.getElementById('contract-frequency').value,
+                        start_date: document.getElementById('contract-start').value,
+                        end_date: document.getElementById('contract-end').value || null
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Contrato creado exitosamente');
+                    closeModal('contract-modal');
+                    document.getElementById('contract-form').reset();
+                    loadContracts();
+                } else {
+                    showToast(data.error || 'Error al crear contrato', 'error');
+                }
+            } catch (e) {
+                showToast('Error al crear contrato', 'error');
+            }
+        });
+
+        // Acciones
+        // Variables para el modal de confirmación de generación
+        let pendingGenerateId = null;
+
+        function showGenerateConfirmModal(preliminaryId) {
+            pendingGenerateId = preliminaryId;
+            showModal('generate-confirm-modal');
+        }
+
+        async function confirmGenerateInvoices() {
+            if (!pendingGenerateId) return;
+            closeModal('generate-confirm-modal');
+            
+            const preliminaryId = pendingGenerateId;
+            pendingGenerateId = null;
+            
+            try {
+                showToast('Generando recibos...', 'info');
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}/generate`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    
+                    // En modo FULL, enviar notificaciones automáticamente
+                    if (billingConfig?.billing_mode === 'FULL') {
+                        showToast('Enviando notificaciones a propietarios...', 'info');
+                        await sendInvoiceNotifications(preliminaryId);
+                    }
+                    
+                    loadPreliminaries();
+                    loadStats();
+                } else {
+                    showToast(data.error || 'Error al generar recibos', 'error');
+                }
+            } catch (e) {
+                showToast('Error al generar recibos', 'error');
+            }
+        }
+
+        async function sendInvoiceNotifications(preliminaryId) {
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}/send`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Notificaciones enviadas a los propietarios');
+                }
+            } catch (e) {
+                console.error('Error sending notifications:', e);
+            }
+        }
+
+        // Variables para modales de confirmación
+        let pendingDeleteId = null;
+        let pendingForceDeleteId = null;
+        let pendingSendId = null;
+
+        function showDeleteConfirmModal(preliminaryId) {
+            pendingDeleteId = preliminaryId;
+            showModal('delete-confirm-modal');
+        }
+
+        async function confirmDeletePreliminary() {
+            if (!pendingDeleteId) return;
+            closeModal('delete-confirm-modal');
+            
+            const preliminaryId = pendingDeleteId;
+            pendingDeleteId = null;
+            
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Preliminar eliminado correctamente');
+                    loadPreliminaries();
+                    loadStats();
+                } else {
+                    // Si no se puede eliminar (ej: está FINALIZED), mostrar modal de forzar
+                    pendingForceDeleteId = preliminaryId;
+                    showModal('force-delete-confirm-modal');
+                }
+            } catch (e) {
+                showToast('Error al eliminar preliminar', 'error');
+            }
+        }
+
+        async function confirmForceDeletePreliminary() {
+            if (!pendingForceDeleteId) return;
+            closeModal('force-delete-confirm-modal');
+            
+            const preliminaryId = pendingForceDeleteId;
+            pendingForceDeleteId = null;
+            
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}/force-delete`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message);
+                    loadPreliminaries();
+                    loadStats();
+                } else {
+                    showToast(data.error || 'Error al eliminar', 'error');
+                }
+            } catch (e) {
+                showToast('Error al eliminar preliminar', 'error');
+            }
+        }
+
+        async function exportPreliminary(preliminaryId) {
+            try {
+                window.open(`/api/tenant-admin/billing/export/${preliminaryId}`, '_blank');
+            } catch (e) {
+                showToast('Error al exportar preliminar', 'error');
+            }
+        }
+
+        function showSendConfirmModal(preliminaryId) {
+            pendingSendId = preliminaryId;
+            showModal('send-confirm-modal');
+        }
+
+        async function confirmSendInvoices() {
+            if (!pendingSendId) return;
+            closeModal('send-confirm-modal');
+            
+            const preliminaryId = pendingSendId;
+            pendingSendId = null;
+            
+            try {
+                showToast('Enviando recibos a propietarios...', 'info');
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}/send`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Recibos enviados exitosamente');
+                    loadPreliminaries();
+                } else {
+                    showToast(data.error || 'Error al enviar recibos', 'error');
+                }
+            } catch (e) {
+                showToast('Error al enviar recibos', 'error');
+            }
+        }
+
+        // Cargar inmuebles para calcular distribución estimada
+        async function loadPropertiesForDistribution() {
+            try {
+                const res = await fetch('/api/tenant-admin/properties?limit=1000', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.properties) {
+                    return data.properties;
+                }
+                if (data.success && data.data && data.data.properties) {
+                    return data.data.properties;
+                }
+                return [];
+            } catch (e) {
+                console.error('Error loading properties:', e);
+                return [];
+            }
+        }
+
+        async function showPreliminaryDetail(preliminaryId) {
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (!data.success) {
+                    showToast('Error al cargar detalle', 'error');
+                    return;
+                }
+                
+                const p = data.data;
+                const monthName = getMonthName(p.billing_month);
+                const typeBadge = getInvoiceTypeBadge(p.invoice_type);
+                
+                // Llenar información general
+                document.getElementById('detail-title').innerHTML = `
+                    ${p.name}
+                    <span class="ml-2 px-2 py-0.5 ${typeBadge.class} rounded text-xs flex items-center gap-1 inline-flex">
+                        <span class="material-icons-round text-xs">${typeBadge.icon}</span>
+                        ${typeBadge.text}
+                    </span>
+                `;
+                document.getElementById('detail-period').textContent = `${monthName} ${p.billing_year}`;
+                const rateToday = p.rate_info?.rate_today || billingConfig?.usd_to_ves_rate;
+                const totalVesDisplay = p.rate_info?.total_ves_from_invoices != null ? p.rate_info.total_ves_from_invoices : (p.recalculated?.total_ves ?? (rateToday ? p.total_amount_usd * rateToday : p.total_amount_ves));
+                const showCurrentRateArrow = !p.rate_info?.all_invoices_paid && rateToday && Number(p.exchange_rate_usd) !== Number(rateToday);
+                document.getElementById('detail-rate').innerHTML = `${p.exchange_rate_usd} VES/USD${showCurrentRateArrow ? ` <span class="text-amber-600">→ ${rateToday} (actual)</span>` : ''}`;
+                document.getElementById('detail-total-usd').textContent = formatCurrency(p.total_amount_usd, 'USD');
+                document.getElementById('detail-total-ves').textContent = formatCurrency(totalVesDisplay, 'VES');
+                
+                // Items (cuando todos pagaron: usar tasa preliminar; cuando hay pendientes: tasa actual)
+                const itemsContainer = document.getElementById('detail-items');
+                const useFrozenRate = p.rate_info?.all_invoices_paid;
+                const itemsRate = useFrozenRate ? p.exchange_rate_usd : (p.rate_info?.rate_today || p.exchange_rate_usd);
+                const displayItems = (p.recalculated?.items || p.items || []).map(it => {
+                    const base = parseFloat(it.base_amount) || 0;
+                    const convVes = it.currency === 'USD' ? base * itemsRate : base;
+                    return { ...it, converted_amount_ves: convVes };
+                });
+                if (displayItems.length > 0) {
+                    itemsContainer.innerHTML = displayItems.map(item => {
+                        let originalText, convertedText;
+                        if (item.currency === 'USD') {
+                            originalText = formatCurrency(item.base_amount, 'USD');
+                            convertedText = formatCurrency(item.converted_amount_ves, 'VES');
+                        } else {
+                            originalText = formatCurrency(item.base_amount, 'VES');
+                            const rate = itemsRate;
+                            const usdAmount = rate > 0 ? item.base_amount / rate : 0;
+                            convertedText = formatCurrency(usdAmount, 'USD');
+                        }
+                        return `
+                        <div class="flex justify-between p-2 bg-[#FAFAFA] rounded text-sm">
+                            <span class="text-[#3C4043]">${item.description}</span>
+                            <span class="font-medium text-[#5F6368]">
+                                ${originalText}
+                                <span class="text-xs text-[#9AA0A6]">(= ${convertedText})</span>
+                            </span>
+                        </div>
+                    `}).join('');
+                } else {
+                    itemsContainer.innerHTML = '<p class="text-sm text-[#9AA0A6]">No hay items</p>';
+                }
+                
+                // Información de tasas y spread (solo para recibos pendientes; si todos pagaron, importes congelados)
+                const rateInfoEl = document.getElementById('detail-rate-info');
+                if (rateInfoEl && p.rate_info) {
+                    const ri = p.rate_info;
+                    const fmt = (v) => v != null ? formatCurrency(v, 'VES') : '-';
+                    let rateInfoHtml;
+                    if (ri.all_invoices_paid) {
+                        rateInfoHtml = `
+                            <div class="border-t border-[#E5E5E5] pt-3 mt-3 text-sm">
+                                <div class="flex items-center gap-2 py-2 px-3 bg-green-50 rounded-lg">
+                                    <span class="material-icons-round text-green-600 text-lg">check_circle</span>
+                                    <span class="text-green-800 font-medium">Todos los cobros han sido pagados. Importes en VES congelados (sin variación por tasa).</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        rateInfoHtml = `
+                            <div class="border-t border-[#E5E5E5] pt-3 mt-3 space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-[#5F6368]">Tasa preliminar${ri.rate_preliminary_date ? ` (${ri.rate_preliminary_date})` : ''}</span><span>${Number(ri.rate_preliminary).toLocaleString('es-VE')} VES/USD · ${fmt(ri.contravalue_preliminary_ves)}</span></div>
+                                ${ri.rate_today ? `<div class="flex justify-between"><span class="text-[#5F6368]">Tasa del día${ri.rate_today_date ? ` (${ri.rate_today_date})` : ''} <span class="text-amber-600">(recibos pendientes)</span></span><span>${Number(ri.rate_today).toLocaleString('es-VE')} VES/USD · ${fmt(ri.contravalue_today_ves)}</span></div>` : ''}
+                                ${ri.spread_pct != null && ri.spread_pct !== 0 ? `
+                                <div class="flex justify-between mt-2 py-2 rounded px-2 ${ri.spread_pct > 0 ? 'bg-amber-50' : 'bg-green-50'}">
+                                    <span>Diferencial cambiario (recibos pendientes)</span>
+                                    <span class="font-semibold ${ri.spread_pct > 0 ? 'text-amber-700' : 'text-green-700'}">${ri.spread_pct > 0 ? '+' : ''}${Number(ri.spread_pct).toFixed(2)}% ${ri.spread_pct > 0 ? '(pérdida)' : '(ganancia)'}</span>
+                                </div>` : ''}
+                            </div>
+                        `;
+                    }
+                    rateInfoEl.innerHTML = rateInfoHtml;
+                    rateInfoEl.classList.remove('hidden');
+                } else if (rateInfoEl) {
+                    rateInfoEl.classList.add('hidden');
+                }
+                
+                // Distribución por inmueble
+                const distributionSection = document.getElementById('detail-distribution-section');
+                const distributionContainer = document.getElementById('detail-distribution');
+                const distributionType = document.getElementById('detail-distribution-type');
+                
+                if (p.status === 'FINALIZED') {
+                    if (p.invoices && p.invoices.length > 0) {
+                        // Mostrar recibos reales generados
+                        distributionSection.classList.remove('hidden');
+                        distributionType.textContent = `Distribución: ${p.invoices[0].proportion_type === 'ALICUOTA' ? 'Por Alícuota' : 'Partes Iguales'}`;
+                        
+                        distributionContainer.innerHTML = p.invoices.map(inv => {
+                            const isPaid = inv.status === 'PAID';
+                            const statusBadge = isPaid ? '<span class="ml-1 px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">Pagado</span>' : '<span class="ml-1 px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">Pendiente</span>';
+                            const amountNote = isPaid ? ' <span class="text-xs text-green-600">(congelado)</span>' : '';
+                            return `
+                            <div class="flex justify-between items-center p-3 bg-[#FAFAFA] rounded-lg">
+                                <div>
+                                    <p class="font-medium text-[#3C4043] text-sm">${inv.property_name} ${statusBadge}</p>
+                                    <p class="text-xs text-[#5F6368]">${inv.building || ''} • ${(inv.proportion_value * 100).toFixed(2)}%</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium text-[#3C4043] text-sm">${formatCurrency(inv.assigned_amount_ves, 'VES')}${amountNote}</p>
+                                    <p class="text-xs text-[#9AA0A6]">${formatCurrency(inv.assigned_amount_usd, 'USD')}</p>
+                                </div>
+                            </div>
+                        `;
+                        }).join('');
+                    } else {
+                        // FINALIZED pero sin recibos (caso antiguo/problemático)
+                        distributionSection.classList.remove('hidden');
+                        distributionType.textContent = 'No hay recibos generados';
+                        distributionContainer.innerHTML = `
+                            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                                <p class="text-sm text-[#5F6368]">Este preliminar está finalizado pero no tiene recibos asociados.</p>
+                                <p class="text-xs text-[#9AA0A6] mt-1">Puede deberse a un error en la generación.</p>
+                            </div>
+                        `;
+                    }
+                } else if (p.status === 'DRAFT') {
+                    // Mostrar distribución estimada calculada
+                    distributionSection.classList.remove('hidden');
+                    distributionType.textContent = `Distribución estimada (${billingConfig?.billing_type === 'ALICUOTA' ? 'Por Alícuota' : 'Partes Iguales'})`;
+                    
+                    // Calcular y mostrar distribución
+                    const totalAmountUsd = p.total_amount_usd;
+                    const totalAmountVes = p.total_amount_ves;
+                    const properties = await loadPropertiesForDistribution();
+                    
+                    if (properties && properties.length > 0) {
+                        let distributionHtml = '';
+                        
+                        if (billingConfig?.billing_type === 'ALICUOTA') {
+                            // Distribución por alícuota
+                            const totalAlicuota = properties.reduce((sum, prop) => sum + (prop.alicuota || 0), 0);
+                            
+                            distributionHtml = properties.map(prop => {
+                                const proportion = totalAlicuota > 0 ? (prop.alicuota || 0) / totalAlicuota : 0;
+                                const amountVes = totalAmountVes * proportion;
+                                const amountUsd = totalAmountUsd * proportion;
+                                
+                                return `
+                                    <div class="flex justify-between items-center p-3 bg-[#FAFAFA] rounded-lg">
+                                        <div>
+                                            <p class="font-medium text-[#3C4043] text-sm">${prop.name}</p>
+                                            <p class="text-xs text-[#5F6368]">${prop.building || ''} • Alícuota: ${(prop.alicuota || 0).toFixed(2)}%</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-[#3C4043] text-sm">${formatCurrency(amountVes, 'VES')}</p>
+                                            <p class="text-xs text-[#9AA0A6]">${formatCurrency(amountUsd, 'USD')}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        } else {
+                            // Distribución fija (partes iguales)
+                            const count = properties.length;
+                            const amountVesPerProperty = totalAmountVes / count;
+                            const amountUsdPerProperty = totalAmountUsd / count;
+                            
+                            distributionHtml = properties.map(prop => `
+                                <div class="flex justify-between items-center p-3 bg-[#FAFAFA] rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-[#3C4043] text-sm">${prop.name}</p>
+                                        <p class="text-xs text-[#5F6368]">${prop.building || ''}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-[#3C4043] text-sm">${formatCurrency(amountVesPerProperty, 'VES')}</p>
+                                        <p class="text-xs text-[#9AA0A6]">${formatCurrency(amountUsdPerProperty, 'USD')}</p>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                        
+                        distributionContainer.innerHTML = distributionHtml;
+                    } else {
+                        distributionContainer.innerHTML = `
+                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                                <p class="text-sm text-[#5F6368]">No se pudieron cargar los inmuebles para calcular la distribución</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    distributionSection.classList.add('hidden');
+                }
+                
+                // Botones de acción
+                const actionsContainer = document.getElementById('detail-actions');
+                let actionsHtml = '';
+                
+                if (p.status === 'DRAFT') {
+                    if (billingConfig?.billing_mode === 'FULL') {
+                        actionsHtml += `
+                            <button onclick="closeModal('preliminary-detail-modal'); showGenerateConfirmModal('${p.id}')" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
+                                Generar Recibos
+                            </button>
+                        `;
+                    } else {
+                        actionsHtml += `
+                            <button onclick="closeModal('preliminary-detail-modal'); exportPreliminary('${p.id}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
+                                <span class="material-icons-round text-sm">download</span>
+                                Exportar
+                            </button>
+                        `;
+                    }
+                    actionsHtml += `
+                        <button onclick="closeModal('preliminary-detail-modal'); showDeleteConfirmModal('${p.id}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            Eliminar
+                        </button>
+                    `;
+                } else if (p.status === 'FINALIZED' && billingConfig?.billing_mode === 'FULL' && !p.sent_to_owners) {
+                    actionsHtml += `
+                        <button onclick="closeModal('preliminary-detail-modal'); showSendConfirmModal('${p.id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Enviar a Propietarios
+                        </button>
+                    `;
+                }
+                
+                actionsContainer.innerHTML = actionsHtml || '<span class="text-sm text-[#9AA0A6]">No hay acciones disponibles</span>';
+                
+                showModal('preliminary-detail-modal');
+            } catch (e) {
+                console.error('Error loading preliminary detail:', e);
+                showToast('Error al cargar detalle', 'error');
+            }
+        }
+
+        let pendingPaymentInvoiceId = null;
+
+        function openPaymentModal(invoiceId) {
+            pendingPaymentInvoiceId = invoiceId;
+            document.getElementById('payment-amount').value = '';
+            document.getElementById('payment-method').value = '';
+            document.getElementById('payment-reference').value = '';
+            showModal('payment-modal');
+        }
+
+        document.getElementById('payment-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!pendingPaymentInvoiceId) return;
+            
+            const amount = parseFloat(document.getElementById('payment-amount').value);
+            const method = document.getElementById('payment-method').value;
+            const reference = document.getElementById('payment-reference').value;
+            
+            if (!amount || isNaN(amount) || amount <= 0) {
+                showToast('Monto inválido', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/invoices/${pendingPaymentInvoiceId}/payment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        paid_amount_ves: amount,
+                        payment_method: method,
+                        payment_reference: reference
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Pago registrado exitosamente');
+                    closeModal('payment-modal');
+                    loadInvoices();
+                } else {
+                    showToast(data.error || 'Error al registrar pago', 'error');
+                }
+            } catch (e) {
+                showToast('Error al registrar pago', 'error');
+            }
+            
+            pendingPaymentInvoiceId = null;
+        });
+
+        function registerPayment(invoiceId) {
+            openPaymentModal(invoiceId);
+        }
+
+        let pendingRejectInvoiceId = null;
+
+        function showRejectModal(invoiceId) {
+            pendingRejectInvoiceId = invoiceId;
+            document.getElementById('reject-reason').value = '';
+            closeModal('invoice-detail-modal');
+            showModal('reject-payment-modal');
+        }
+
+        document.getElementById('reject-payment-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!pendingRejectInvoiceId) return;
+            const reason = document.getElementById('reject-reason').value.trim();
+            if (!reason) {
+                showToast('Indique el motivo del rechazo', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/invoices/${pendingRejectInvoiceId}/reject-payment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ rejection_reason: reason })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message || 'Reporte rechazado');
+                    closeModal('reject-payment-modal');
+                    loadInvoices();
+                } else {
+                    showToast(data.error || 'Error al rechazar', 'error');
+                }
+            } catch (err) {
+                showToast('Error al rechazar reporte', 'error');
+            }
+            pendingRejectInvoiceId = null;
+        });
+
+        async function confirmPaymentReport(invoiceId) {
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/invoices/${invoiceId}/confirm-payment`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message || 'Pago confirmado');
+                    closeModal('invoice-detail-modal');
+                    loadInvoices();
+                } else {
+                    showToast(data.error || 'Error al confirmar', 'error');
+                }
+            } catch (err) {
+                showToast('Error al confirmar pago', 'error');
+            }
+        }
+
+        async function showInvoiceDetailModal(invoiceId) {
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/invoices/${invoiceId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success || !data.data) {
+                    showToast('Error al cargar detalle', 'error');
+                    return;
+                }
+                const inv = data.data;
+                const rate = inv.current_exchange_rate || inv.exchange_rate_at_creation || 1;
+                const totalUsd = inv.total_amount_usd || (inv.assigned_amount_ves / rate);
+                const ri = inv.rate_info || {};
+                const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-VE') : '-';
+                
+                let rateInfoHtml = '';
+                if (ri.rate_preliminary != null || ri.rate_today != null) {
+                    rateInfoHtml = `
+                        <div class="border-t border-[#E5E5E5] pt-4 mt-4">
+                            <h4 class="font-medium text-[#3C4043] mb-3">Información de Tasas</h4>
+                            <div class="space-y-2 text-sm">
+                                ${ri.rate_preliminary != null ? `<div class="flex justify-between py-1"><span class="text-[#5F6368]">Tasa preliminar${ri.rate_preliminary_date ? ` (${ri.rate_preliminary_date})` : ''}</span><span>${Number(ri.rate_preliminary).toLocaleString('es-VE')} VES/USD · ${formatCurrency(ri.contravalue_preliminary_ves, 'VES')}</span></div>` : ''}
+                                <div class="flex justify-between py-1"><span class="text-[#5F6368]">Tasa actual del recibo</span><span>${Number(rate).toLocaleString('es-VE')} VES/USD · ${formatCurrency(inv.assigned_amount_ves, 'VES')}</span></div>
+                                ${ri.rate_today != null ? `<div class="flex justify-between py-1"><span class="text-[#5F6368]">Tasa del día${ri.rate_today_date ? ` (${ri.rate_today_date})` : ''}</span><span>${Number(ri.rate_today).toLocaleString('es-VE')} VES/USD · ${formatCurrency(ri.contravalue_today_ves, 'VES')}</span></div>` : ''}
+                                ${ri.spread_pct != null && ri.spread_pct !== 0 ? `<div class="flex justify-between py-2 mt-2 rounded px-2 ${ri.spread_pct > 0 ? 'bg-amber-50' : 'bg-green-50'}"><span class="font-medium">Diferencial cambiario</span><span class="font-semibold ${ri.spread_pct > 0 ? 'text-amber-700' : 'text-green-700'}">${ri.spread_pct > 0 ? '+' : ''}${Number(ri.spread_pct).toFixed(2)}% ${ri.spread_pct > 0 ? '(pérdida)' : '(ganancia)'}</span></div>` : ''}
+                            </div>
+                        </div>`;
+                }
+                
+                const itemsHtml = (inv.items || []).map(item => {
+                    const itemUsd = item.assigned_amount_ves / rate;
+                    return `<div class="flex justify-between py-2 border-b border-[#E5E5E5] last:border-0"><div><p class="text-[#3C4043]">${item.description}</p></div><div class="text-right"><p class="font-medium">${formatCurrency(item.assigned_amount_ves, 'VES')}</p><p class="text-xs text-[#9AA0A6]">$ ${itemUsd.toFixed(2)} USD</p></div></div>`;
+                }).join('') || '<p class="text-[#9AA0A6]">Sin desglose</p>';
+                
+                document.getElementById('invoice-detail-content').innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-[#FAFAFA] rounded-lg p-4">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-sm text-[#5F6368]">${inv.invoice_number}</p>
+                                    <h2 class="text-2xl font-bold text-[#3C4043]">${formatCurrency(inv.assigned_amount_ves, 'VES')}</h2>
+                                    <p class="text-lg text-[#5F6368]">$ ${Number(totalUsd).toFixed(2)} USD</p>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-sm ${getStatusClass(inv.status)}">${inv.status === 'PAID' ? 'Pagado' : 'Pendiente'}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div><p class="text-[#5F6368]">Inmueble</p><p class="font-medium">${inv.property_name}</p></div>
+                                <div><p class="text-[#5F6368]">Período</p><p class="font-medium">${getMonthName(inv.billing_month)} ${inv.billing_year}</p></div>
+                            </div>
+                            ${rateInfoHtml}
+                        </div>
+                        <div><h4 class="font-medium text-[#3C4043] mb-3">Desglose de Cobros</h4><div class="space-y-2">${itemsHtml}</div></div>
+                        ${inv.payment_report && inv.payment_report.status === 'PENDING_CONFIRMATION' ? `
+                            <div class="border-t border-[#E5E5E5] pt-4 mt-4">
+                                <h4 class="font-medium text-[#3C4043] mb-3">Reporte de pago enviado por propietario</h4>
+                                <div class="bg-blue-50 rounded-lg p-4 space-y-2 text-sm">
+                                    <p><b>Banco emisor:</b> ${inv.payment_report.banco_emisor || '-'}</p>
+                                    <p><b>Fecha transferencia:</b> ${inv.payment_report.fecha_transferencia || '-'}</p>
+                                    <p><b>Ref./N Transferencia:</b> ${inv.payment_report.ref_transferencia || '-'}</p>
+                                    <p><b>Monto abonado:</b> ${formatCurrency(inv.payment_report.monto_abonado_ves, 'VES')}</p>
+                                    ${inv.payment_report.comentario ? `<p><b>Comentario:</b> ${inv.payment_report.comentario}</p>` : ''}
+                                    ${inv.payment_report.attachment_path ? `<p><a href="/uploads/${inv.payment_report.attachment_path}" target="_blank" class="text-[#f97316] hover:underline">Ver comprobante adjunto</a></p>` : ''}
+                                </div>
+                                <div class="flex gap-2 mt-3">
+                                    <button onclick="confirmPaymentReport('${inv.id}')" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Confirmar Recepción</button>
+                                    <button onclick="showRejectModal('${inv.id}')" class="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">Rechazar</button>
+                                </div>
+                            </div>
+                        ` : inv.status === 'PENDING' && billingConfig?.billing_mode === 'FULL' && !inv.payment_report ? `
+                            <div class="border-t border-[#E5E5E5] pt-4 mt-4">
+                                <p class="text-sm text-[#5F6368] flex items-center gap-2">
+                                    <span class="material-icons-round text-[#9AA0A6]">info</span>
+                                    El propietario debe reportar el pago desde su panel <strong>Mis Recibos</strong>. Una vez enviado el comprobante, podrá confirmar o rechazar el pago desde aquí.
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                showModal('invoice-detail-modal');
+            } catch (e) {
+                console.error('Error loading invoice detail:', e);
+                showToast('Error al cargar detalle', 'error');
+            }
+        }
+
+        function openCreateVendorModal() {
+            document.getElementById('vendor-form').reset();
+            showModal('vendor-modal');
+        }
+
+        function openCreateTemplateModal() {
+            showToast('Plantillas - Por implementar', 'info');
+        }
+
+        function useTemplate(templateId) {
+            showToast('Usando plantilla...', 'info');
+        }
+
+        // Recibo extraordinario por edificio - Modal
+        let extraordinaryItems = [];
+
+        async function createExtraordinaryInvoice() {
+            // Asegurar que tenemos tasa BCV
+            const hasRate = await ensureExchangeRate();
+            if (!hasRate) {
+                showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
+                return;
+            }
+            
+            // Llenar select de edificios
+            const select = document.getElementById('extra-building');
+            select.innerHTML = '<option value="">Seleccionar edificio...</option>';
+            
+            if (window.tenantBuildings) {
+                window.tenantBuildings.forEach(b => {
+                    select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                });
+            }
+            
+            // Reset form
+            extraordinaryItems = [];
+            renderExtraordinaryItems();
+            document.getElementById('extra-name').value = '';
+            document.getElementById('extra-building').value = '';
+            
+            showModal('extraordinary-modal');
+        }
+
+        function addExtraordinaryItemToModal() {
+            extraordinaryItems.push({
+                description: '',
+                amount: 0,
+                currency: 'USD'
+            });
+            renderExtraordinaryItems();
+        }
+
+        function removeExtraordinaryItem(index) {
+            extraordinaryItems.splice(index, 1);
+            renderExtraordinaryItems();
+        }
+
+        function renderExtraordinaryItems() {
+            const container = document.getElementById('extra-items-list');
+            
+            if (extraordinaryItems.length === 0) {
+                container.innerHTML = '<p class="text-sm text-[#9AA0A6] text-center py-4">No hay items agregados</p>';
+            } else {
+                container.innerHTML = extraordinaryItems.map((item, idx) => {
+                    // Calcular conversión según la moneda del item
+                    let convertedAmount;
+                    if (item.currency === 'USD') {
+                        // USD -> VES (multiplicar por tasa)
+                        convertedAmount = item.amount * currentRate;
+                    } else {
+                        // VES -> USD (dividir por tasa)
+                        convertedAmount = currentRate > 0 ? item.amount / currentRate : 0;
+                    }
+
+                    const convertedText = item.currency === 'USD' 
+                        ? `= Bs. ${formatNumber(convertedAmount)}` 
+                        : `= $ ${formatNumber(convertedAmount)}`;
+
+                    return `
+                        <div class="flex gap-2 items-start bg-[#FAFAFA] p-3 rounded-lg">
+                            <div class="flex-1">
+                                <input type="text" placeholder="Descripción" value="${item.description}" 
+                                    onchange="updateExtraordinaryItem(${idx}, 'description', this.value)"
+                                    class="w-full px-2 py-1 text-sm border border-[#E5E5E5] rounded mb-2">
+                                <div class="flex gap-2 items-center">
+                                    <input type="number" step="0.01" placeholder="Monto" value="${item.amount || ''}"
+                                        onchange="updateExtraordinaryItem(${idx}, 'amount', parseFloat(this.value) || 0)"
+                                        class="w-28 px-2 py-1 text-sm border border-[#E5E5E5] rounded">
+                                    <select onchange="updateExtraordinaryItem(${idx}, 'currency', this.value)"
+                                        class="px-2 py-1 text-sm border border-[#E5E5E5] rounded">
+                                        <option value="VES" ${item.currency === 'VES' ? 'selected' : ''}>VES</option>
+                                        <option value="USD" ${item.currency === 'USD' ? 'selected' : ''}>USD</option>
+                                    </select>
+                                    <span class="text-xs text-[#5F6368] flex-1">${convertedText} <span class="text-[#9AA0A6]">(tasa: ${currentRate})</span></span>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeExtraordinaryItem(${idx})" class="text-red-500 hover:text-red-700">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            updateExtraordinaryTotals();
+        }
+
+        function updateExtraordinaryItem(index, field, value) {
+            extraordinaryItems[index][field] = value;
+            // Recalcular todo si cambia monto o moneda
+            if (field === 'amount' || field === 'currency') {
+                renderExtraordinaryItems();
+            }
+        }
+
+        function updateExtraordinaryTotals() {
+            let totalUsd = 0;
+            let totalVes = 0;
+            
+            extraordinaryItems.forEach(item => {
+                if (item.currency === 'USD') {
+                    totalUsd += item.amount;
+                    totalVes += item.amount * currentRate;
+                } else {
+                    totalVes += item.amount;
+                    totalUsd += currentRate > 0 ? item.amount / currentRate : 0;
+                }
+            });
+            
+            document.getElementById('extra-total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
+            document.getElementById('extra-total-ves').textContent = `Bs. ${totalVes.toFixed(2)}`;
+        }
+
+        // Submit del form de extraordinario
+        document.getElementById('extraordinary-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const building = document.getElementById('extra-building').value;
+            const name = document.getElementById('extra-name').value;
+            const month = parseInt(document.getElementById('extra-month').value);
+            const year = parseInt(document.getElementById('extra-year').value);
+            
+            if (!building) {
+                showToast('Debe seleccionar un edificio', 'error');
+                return;
+            }
+            
+            if (extraordinaryItems.length === 0) {
+                showToast('Debe agregar al menos un item', 'error');
+                return;
+            }
+            
+            // Validar items
+            for (const item of extraordinaryItems) {
+                if (!item.description || !item.amount) {
+                    showToast('Todos los items deben tener descripción y monto', 'error');
+                    return;
+                }
+            }
+            
+            // Usar el billing_type del tenant (FIXED o ALICUOTA)
+            const tenantBillingType = billingConfig?.billing_type || 'FIXED';
+            
+            try {
+                const response = await fetch('/api/tenant-admin/billing/preliminaries', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        billing_month: month,
+                        billing_year: year,
+                        name: name,
+                        items: extraordinaryItems.map(i => ({
+                            item_type: 'EXTRAORDINARY',
+                            description: i.description,
+                            amount: i.amount,
+                            amount_type: tenantBillingType, // Usar el tipo del tenant, no del item
+                            currency: i.currency || 'USD'
+                        })),
+                        target_building: building,
+                        is_extraordinary: true
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Recibo extraordinario creado. Generando recibos para el edificio...');
+                    closeModal('extraordinary-modal');
+                    // Generar recibos solo para el edificio seleccionado
+                    await generateInvoicesForBuilding(result.data.id, building);
+                    loadPreliminaries();
+                } else {
+                    showToast(result.message || 'Error al crear recibo', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error al crear recibo extraordinario', 'error');
+            }
+        });
+
+        async function generateInvoicesForBuilding(preliminaryId, buildingName) {
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}/generate?building=${encodeURIComponent(buildingName)}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`${data.data.invoices_count} recibos generados para el edificio`);
+                    loadPreliminaries();
+                    loadStats();
+                } else {
+                    showToast(data.error || 'Error al generar recibos', 'error');
+                }
+            } catch (e) {
+                showToast('Error al generar recibos', 'error');
+            }
+        }
+
+        // ==================== RECIBO EXTRAORDINARIO POR INMUEBLE ====================
+        let propertyInvoiceItems = [];
+        let propertySearchTimeout = null;
+        let selectedProperty = null;
+
+        async function openPropertyInvoiceModal() {
+            // Asegurar que tenemos tasa BCV
+            const hasRate = await ensureExchangeRate();
+            if (!hasRate) {
+                showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
+                return;
+            }
+            
+            // Reset form
+            propertyInvoiceItems = [];
+            selectedProperty = null;
+            document.getElementById('prop-search').value = '';
+            document.getElementById('prop-search-results').classList.add('hidden');
+            document.getElementById('prop-selected').classList.add('hidden');
+            document.getElementById('prop-property-id').value = '';
+            document.getElementById('prop-name').value = '';
+            
+            const now = new Date();
+            document.getElementById('prop-month').value = now.getMonth() + 1;
+            document.getElementById('prop-year').value = now.getFullYear();
+            
+            renderPropertyInvoiceItems();
+            showModal('property-invoice-modal');
+            
+            // Focus en el buscador
+            setTimeout(() => document.getElementById('prop-search').focus(), 100);
+        }
+
+        // Búsqueda de inmuebles con debounce
+        document.getElementById('prop-search')?.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            clearTimeout(propertySearchTimeout);
+            
+            if (query.length < 2) {
+                document.getElementById('prop-search-results').classList.add('hidden');
+                return;
+            }
+            
+            propertySearchTimeout = setTimeout(() => searchProperties(query), 300);
+        });
+
+        async function searchProperties(query) {
+            try {
+                const res = await fetch(`/api/tenant-admin/properties?search=${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success && data.properties && data.properties.length > 0) {
+                    renderPropertySearchResults(data.properties);
+                } else {
+                    document.getElementById('prop-search-results').innerHTML = `
+                        <div class="p-3 text-sm text-[#9AA0A6] text-center">No se encontraron inmuebles</div>
+                    `;
+                    document.getElementById('prop-search-results').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error('Error searching properties:', e);
+            }
+        }
+
+        function renderPropertySearchResults(properties) {
+            const container = document.getElementById('prop-search-results');
+            container.innerHTML = properties.map(p => {
+                const buildingName = p.building_name || p.building || 'Sin edificio';
+                return `
+                <div class="p-3 hover:bg-[#FAFAFA] cursor-pointer border-b border-[#E5E5E5] last:border-0" 
+                    onclick="selectProperty('${p.id}', '${p.name}', '${buildingName}')">
+                    <p class="font-medium text-[#3C4043] text-sm">${p.name}</p>
+                    <p class="text-xs text-[#5F6368]">${buildingName}</p>
+                </div>
+            `}).join('');
+            container.classList.remove('hidden');
+        }
+
+        function selectProperty(id, name, building) {
+            selectedProperty = { id, name, building };
+            document.getElementById('prop-property-id').value = id;
+            document.getElementById('prop-selected-name').textContent = name;
+            document.getElementById('prop-selected-building').textContent = building;
+            document.getElementById('prop-selected').classList.remove('hidden');
+            document.getElementById('prop-search-results').classList.add('hidden');
+            document.getElementById('prop-search').value = '';
+        }
+
+        function clearSelectedProperty() {
+            selectedProperty = null;
+            document.getElementById('prop-property-id').value = '';
+            document.getElementById('prop-selected').classList.add('hidden');
+            document.getElementById('prop-search').focus();
+        }
+
+        // Items de cobro
+        function addPropertyInvoiceItem() {
+            propertyInvoiceItems.push({
+                description: '',
+                amount: 0,
+                currency: 'USD'
+            });
+            renderPropertyInvoiceItems();
+        }
+
+        function removePropertyInvoiceItem(index) {
+            propertyInvoiceItems.splice(index, 1);
+            renderPropertyInvoiceItems();
+        }
+
+        function renderPropertyInvoiceItems() {
+            const container = document.getElementById('prop-items-list');
+            
+            if (propertyInvoiceItems.length === 0) {
+                container.innerHTML = '<p class="text-sm text-[#9AA0A6] text-center py-4">No hay items agregados</p>';
+            } else {
+                container.innerHTML = propertyInvoiceItems.map((item, idx) => {
+                    // Calcular conversión según la moneda del item
+                    let convertedAmount;
+                    if (item.currency === 'USD') {
+                        convertedAmount = item.amount * currentRate;
+                    } else {
+                        convertedAmount = currentRate > 0 ? item.amount / currentRate : 0;
+                    }
+
+                    const convertedText = item.currency === 'USD' 
+                        ? `= Bs. ${formatNumber(convertedAmount)}` 
+                        : `= $ ${formatNumber(convertedAmount)}`;
+
+                    return `
+                        <div class="flex gap-2 items-start bg-[#FAFAFA] p-3 rounded-lg">
+                            <div class="flex-1">
+                                <input type="text" placeholder="Descripción" value="${item.description}" 
+                                    onchange="updatePropertyInvoiceItem(${idx}, 'description', this.value)"
+                                    class="w-full px-2 py-1 text-sm border border-[#E5E5E5] rounded mb-2">
+                                <div class="flex gap-2 items-center">
+                                    <input type="number" step="0.01" placeholder="Monto" value="${item.amount || ''}"
+                                        onchange="updatePropertyInvoiceItem(${idx}, 'amount', parseFloat(this.value) || 0)"
+                                        class="w-28 px-2 py-1 text-sm border border-[#E5E5E5] rounded">
+                                    <select onchange="updatePropertyInvoiceItem(${idx}, 'currency', this.value)"
+                                        class="px-2 py-1 text-sm border border-[#E5E5E5] rounded">
+                                        <option value="VES" ${item.currency === 'VES' ? 'selected' : ''}>VES</option>
+                                        <option value="USD" ${item.currency === 'USD' ? 'selected' : ''}>USD</option>
+                                    </select>
+                                    <span class="text-xs text-[#5F6368] flex-1">${convertedText} <span class="text-[#9AA0A6]">(tasa: ${currentRate})</span></span>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removePropertyInvoiceItem(${idx})" class="text-red-500 hover:text-red-700">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            updatePropertyInvoiceTotals();
+        }
+
+        function updatePropertyInvoiceItem(index, field, value) {
+            propertyInvoiceItems[index][field] = value;
+            if (field === 'amount' || field === 'currency') {
+                renderPropertyInvoiceItems();
+            }
+        }
+
+        function updatePropertyInvoiceTotals() {
+            let totalUsd = 0;
+            let totalVes = 0;
+            
+            propertyInvoiceItems.forEach(item => {
+                if (item.currency === 'USD') {
+                    totalUsd += item.amount;
+                    totalVes += item.amount * currentRate;
+                } else {
+                    totalVes += item.amount;
+                    totalUsd += currentRate > 0 ? item.amount / currentRate : 0;
+                }
+            });
+            
+            document.getElementById('prop-total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
+            document.getElementById('prop-total-ves').textContent = `Bs. ${totalVes.toFixed(2)}`;
+        }
+
+        // Submit del form
+        document.getElementById('property-invoice-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const propertyId = document.getElementById('prop-property-id').value;
+            const name = document.getElementById('prop-name').value;
+            const month = parseInt(document.getElementById('prop-month').value);
+            const year = parseInt(document.getElementById('prop-year').value);
+            
+            if (!propertyId) {
+                showToast('Debe seleccionar un inmueble', 'error');
+                return;
+            }
+            
+            if (propertyInvoiceItems.length === 0) {
+                showToast('Debe agregar al menos un item', 'error');
+                return;
+            }
+            
+            // Validar items
+            for (const item of propertyInvoiceItems) {
+                if (!item.description || !item.amount) {
+                    showToast('Todos los items deben tener descripción y monto', 'error');
+                    return;
+                }
+            }
+            
+            try {
+                // Crear preliminar especial para un inmueble
+                const response = await fetch('/api/tenant-admin/billing/preliminaries', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        billing_month: month,
+                        billing_year: year,
+                        name: name,
+                        items: propertyInvoiceItems.map(i => ({
+                            item_type: 'EXTRAORDINARY',
+                            description: i.description,
+                            amount: i.amount,
+                            amount_type: 'FIXED', // Siempre fijo para inmuebles individuales
+                            currency: i.currency || 'USD'
+                        })),
+                        target_property: propertyId, // ID del inmueble específico
+                        is_property_invoice: true // Flag para identificar este tipo
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Recibo creado. Generando para el inmueble...');
+                    closeModal('property-invoice-modal');
+                    // Generar recibo solo para el inmueble específico
+                    await generateInvoiceForProperty(result.data.id, propertyId);
+                    loadPreliminaries();
+                } else {
+                    showToast(result.message || 'Error al crear recibo', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error al crear recibo', 'error');
+            }
+        });
+
+        async function generateInvoiceForProperty(preliminaryId, propertyId) {
+            try {
+                const res = await fetch(`/api/tenant-admin/billing/preliminaries/${preliminaryId}/generate-property/${propertyId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Recibo generado exitosamente para el inmueble');
+                    loadPreliminaries();
+                    loadStats();
+                } else {
+                    showToast(data.error || 'Error al generar recibo', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error al generar recibo', 'error');
+            }
+        }
+
+        // Cerrar resultados al hacer click fuera
+        document.addEventListener('click', (e) => {
+            const searchContainer = document.getElementById('prop-search');
+            const resultsContainer = document.getElementById('prop-search-results');
+            if (searchContainer && resultsContainer && !searchContainer.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

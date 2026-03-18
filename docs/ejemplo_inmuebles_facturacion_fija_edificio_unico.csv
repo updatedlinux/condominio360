@@ -1,0 +1,15 @@
+# Ejemplo CSV: Facturación FIJA + Edificio Único
+# El campo 'edificio' NO es necesario porque es edificio único
+# El campo 'alicuota' NO es necesario porque la facturación es fija
+# Campos requeridos: nombre, tipo, piso, numero
+#
+nombre,tipo,piso,numero,observaciones
+Apartamento 1A,APARTAMENTO,1,101,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,1,102,Propietario: María García
+Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López
+Apartamento 2B,APARTAMENTO,2,202,Propietario: Ana Martínez
+Apartamento 3A,APARTAMENTO,3,301,Propietario: Pedro Rodríguez
+Apartamento 3B,APARTAMENTO,3,302,Propietario: Laura Sánchez
+Local Comercial 1,LOCAL,PB,LC01,Uso comercial
+Estacionamiento 1,ESTACIONAMIENTO,SS,E01,Asignado al 1A
+Estacionamiento 2,ESTACIONAMIENTO,SS,E02,Asignado al 1B

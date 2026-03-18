@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Accesos Vehiculares - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="/js/session-expired.js"></script>
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                        <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                            <span class="material-icons-round">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Accesos Vehiculares</h1>
+                            <p class="text-sm text-[#5F6368]">Entradas y salidas registradas con tarjetas NFC</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-4xl mx-auto">
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <span class="material-icons-round text-amber-600">nfc</span>
+                            <div class="text-sm text-amber-800">
+                                <p class="font-medium">Registro de accesos</p>
+                                <p>Cada vez que el vigilante escanea tu tarjeta NFC en el acceso vehicular, se registra aquí con el código de la tarjeta utilizado.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="access-list" class="space-y-3">
+                        <div class="card p-12 text-center">
+                            <div class="loading-spinner inline-block w-8 h-8 border-3 border-[#E5E5E5] border-t-[#f97316] rounded-full animate-spin"></div>
+                            <p class="text-[#5F6368] mt-4">Cargando accesos...</p>
+                        </div>
+                    </div>
+
+                    <div id="empty-state" class="hidden text-center py-16">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">nfc</span>
+                        </div>
+                        <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay accesos registrados</h3>
+                        <p class="text-[#5F6368]">Los accesos vehiculares con tarjeta NFC aparecerán aquí cuando el vigilante los registre.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            localStorage.removeItem('selectedProperty');
+            localStorage.removeItem('availableProperties');
+            window.location.href = '/login';
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleString('es-VE', {
+                timeZone: 'America/Caracas',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function loadAccessLogs() {
+            const propertyId = selectedProperty?.id;
+            const listEl = document.getElementById('access-list');
+            const emptyEl = document.getElementById('empty-state');
+
+            if (!propertyId || !token) {
+                listEl.innerHTML = '<div class="card p-8 text-center"><p class="text-amber-600">Seleccione una propiedad en el panel principal</p><a href="/owner/dashboard" class="text-[#f97316] underline mt-2 inline-block">Ir al panel</a></div>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/owner/vehicle-access?propertyId=${propertyId}&limit=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!data.success || !data.data || data.data.length === 0) {
+                    listEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                listEl.classList.remove('hidden');
+                emptyEl.classList.add('hidden');
+                listEl.innerHTML = data.data.map(log => {
+                    const isEntry = log.access_type === 'ENTRY';
+                    return `
+                        <div class="card p-5 flex items-center justify-between ${isEntry ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl flex items-center justify-center ${isEntry ? 'bg-green-100' : 'bg-red-100'}">
+                                    <span class="material-icons-round ${isEntry ? 'text-green-600' : 'text-red-600'}">${isEntry ? 'login' : 'logout'}</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-[#3C4043]">${isEntry ? 'Ingreso' : 'Salida'} vehicular</p>
+                                    <p class="text-sm text-[#5F6368] font-mono">Tarjeta: ${log.card_uid || '-'}</p>
+                                    ${log.card_label ? `<p class="text-xs text-[#9AA0A6]">${log.card_label}</p>` : ''}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-medium ${isEntry ? 'text-green-700' : 'text-red-700'}">${isEntry ? 'Entrada' : 'Salida'}</span>
+                                <p class="text-xs text-[#9AA0A6]">${formatDateTime(log.access_time)}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<div class="card p-8 text-center"><p class="text-red-600">Error al cargar accesos</p></div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            loadAccessLogs();
+        });
+    </script>
+</body>
+</html>

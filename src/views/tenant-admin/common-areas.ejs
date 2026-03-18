@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Áreas Comunes - <%= tenant.name %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .fab { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+        .fab:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(249,115,22,0.4); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .area-icon { background: linear-gradient(135deg, #E8D5C4 0%, #D4C4B0 100%); }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-confirmed { background: #DCFCE7; color: #166534; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+        .status-cancelled { background: #F3F4F6; color: #6B7280; }
+        .tab-active { border-bottom: 2px solid #f97316; color: #f97316; }
+        .tab-inactive { color: #5F6368; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'common-areas' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Áreas Comunes</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <button onclick="openAreaModal()" class="fab text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg transition-all">
+                        <span class="material-icons-round">add</span>
+                        <span class="font-medium">Nueva Área</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-container">
+                    <!-- Cargar dinámicamente -->
+                </div>
+
+                <!-- Tabs -->
+                <div class="border-b border-[#E5E5E5] mb-6">
+                    <nav class="flex gap-8">
+                        <button onclick="setTab('areas')" class="tab-btn tab-active pb-4 px-2 font-medium transition-all" data-tab="areas">
+                            Áreas Comunes
+                        </button>
+                        <button onclick="setTab('reservations')" class="tab-btn tab-inactive pb-4 px-2 font-medium hover:text-[#3C4043] transition-all" data-tab="reservations">
+                            Reservas
+                        </button>
+                        <button onclick="setTab('today')" class="tab-btn tab-inactive pb-4 px-2 font-medium hover:text-[#3C4043] transition-all" data-tab="today">
+                            Hoy
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Areas Tab -->
+                <div id="areas-tab" class="tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="areas-grid">
+                        <!-- Cargar dinámicamente -->
+                    </div>
+                    <div id="areas-empty" class="hidden text-center py-16">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">sports_tennis</span>
+                        </div>
+                        <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay áreas comunes</h3>
+                        <p class="text-[#5F6368]">Crea la primera área común para que los propietarios puedan reservar</p>
+                    </div>
+                </div>
+
+                <!-- Reservations Tab -->
+                <div id="reservations-tab" class="tab-content hidden">
+                    <div class="flex gap-4 mb-6">
+                        <select id="reservation-filter" onchange="loadReservations()" class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                            <option value="">Todas las reservas</option>
+                            <option value="PENDING">Pendientes</option>
+                            <option value="CONFIRMED">Confirmadas</option>
+                            <option value="REJECTED">Rechazadas</option>
+                            <option value="CANCELLED">Canceladas</option>
+                        </select>
+                        <input type="date" id="reservation-date" onchange="loadReservations()" class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                    <div id="reservations-list" class="space-y-4">
+                        <!-- Cargar dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Today Tab -->
+                <div id="today-tab" class="tab-content hidden">
+                    <div id="today-list" class="space-y-4">
+                        <!-- Cargar dinámicamente -->
+                    </div>
+                    <div id="today-empty" class="hidden text-center py-16">
+                        <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="material-icons-round text-4xl text-[#9AA0A6]">event_available</span>
+                        </div>
+                        <h3 class="text-xl font-medium text-[#3C4043] mb-2">Sin reservas hoy</h3>
+                        <p class="text-[#5F6368]">No hay reservas programadas para hoy</p>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Area -->
+    <div id="area-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between bg-gradient-to-r from-[#f97316] to-[#ea580c]">
+                <h2 class="text-xl font-medium text-white" id="area-modal-title">Nueva Área Común</h2>
+                <button onclick="closeAreaModal()" class="text-white/80 hover:text-white">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="area-form" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <input type="hidden" id="area-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Nombre *</label>
+                    <input type="text" id="area-name" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]" placeholder="Ej: Piscina Principal">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Descripción</label>
+                    <textarea id="area-description" rows="3" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none" placeholder="Descripción del área..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Tipo</label>
+                        <select id="area-type" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                            <option value="POOL">Piscina</option>
+                            <option value="BBQ">Zona BBQ</option>
+                            <option value="GYM">Gimnasio</option>
+                            <option value="ROOM">Salón de Eventos</option>
+                            <option value="TENNIS">Cancha de Tenis</option>
+                            <option value="SOCCER">Cancha de Fútbol</option>
+                            <option value="OTHER">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Capacidad</label>
+                        <input type="number" id="area-capacity" min="1" value="10" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Apertura</label>
+                        <input type="time" id="area-opening" value="08:00" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Cierre</label>
+                        <input type="time" id="area-closing" value="20:00" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Min. horas anticipo</label>
+                        <input type="number" id="area-min-hours" min="0" value="24" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Max. días anticipo</label>
+                        <input type="number" id="area-max-days" min="1" value="30" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Max. horas reserva</label>
+                        <input type="number" id="area-max-duration" min="1" value="4" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-4 bg-[#F5F5F5] rounded-xl">
+                    <input type="checkbox" id="area-requires-approval" class="w-5 h-5 text-[#f97316] rounded focus:ring-[#f97316]">
+                    <div>
+                        <label for="area-requires-approval" class="font-medium text-[#3C4043] cursor-pointer">Requiere aprobación</label>
+                        <p class="text-sm text-[#5F6368]">Las reservas deben ser aprobadas por la junta</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Reglas (opcional)</label>
+                    <textarea id="area-rules" rows="3" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none" placeholder="Reglas de uso del área..."></textarea>
+                </div>
+            </form>
+            <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
+                <button type="button" onclick="closeAreaModal()" class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveArea()" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Reservation Detail -->
+    <div id="reservation-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-medium text-[#3C4043]">Detalle de Reserva</h2>
+                <button onclick="closeReservationModal()" class="text-[#5F6368] hover:text-[#3C4043]">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div id="reservation-detail-content">
+                <!-- Cargar dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        let currentTab = 'areas';
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+            loadStats();
+            loadAreas();
+        });
+
+        // Tabs
+        function setTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tab) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('tab-inactive');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`${tab}-tab`).classList.remove('hidden');
+            
+            if (tab === 'areas') loadAreas();
+            if (tab === 'reservations') loadReservations();
+            if (tab === 'today') loadTodayReservations();
+        }
+
+        // Stats
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/tenant-admin/common-areas/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) return;
+
+                const stats = data.stats;
+                document.getElementById('stats-container').innerHTML = `
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-[#3C4043]">${stats.active_areas || 0}</div>
+                        <div class="text-sm text-[#5F6368]">Áreas Activas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-blue-600">${stats.upcoming_reservations || 0}</div>
+                        <div class="text-sm text-[#5F6368]">Reservas Próximas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-amber-600">${stats.pending_approvals || 0}</div>
+                        <div class="text-sm text-[#5F6368]">Pendientes</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-green-600">${stats.today_reservations || 0}</div>
+                        <div class="text-sm text-[#5F6368]">Hoy</div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
+        // Areas
+        async function loadAreas() {
+            try {
+                const res = await fetch('/api/tenant-admin/common-areas', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const grid = document.getElementById('areas-grid');
+                const empty = document.getElementById('areas-empty');
+
+                if (!data.success || data.areas.length === 0) {
+                    grid.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                const icons = {
+                    POOL: 'pool', BBQ: 'outdoor_grill', GYM: 'fitness_center',
+                    ROOM: 'meeting_room', TENNIS: 'sports_tennis', SOCCER: 'sports_soccer', OTHER: 'place'
+                };
+                
+                grid.innerHTML = data.areas.map(a => `
+                    <div class="card p-6 card-hover">
+                        <div class="flex items-start gap-4">
+                            <div class="area-icon w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-3xl text-[#f97316]">${icons[a.type] || 'place'}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-medium text-[#3C4043] truncate">${a.name}</h3>
+                                <p class="text-sm text-[#5F6368]">${a.type} • Cap: ${a.capacity}</p>
+                                ${a.requires_approval ? '<span class="inline-block mt-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">Requiere aprobación</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4 pt-4 border-t border-[#E5E5E5]">
+                            <span class="text-sm text-[#5F6368]">${a.upcoming_reservations} reservas próximas</span>
+                            <div class="flex-1"></div>
+                            <button onclick="editArea('${a.id}')" class="text-[#f97316] hover:bg-[#F5F5F5] p-1 rounded">
+                                <span class="material-icons-round">edit</span>
+                            </button>
+                            <button onclick="deleteArea('${a.id}')" class="text-red-600 hover:bg-red-50 p-1 rounded">
+                                <span class="material-icons-round">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading areas:', e);
+            }
+        }
+
+        // Reservations
+        async function loadReservations() {
+            try {
+                const status = document.getElementById('reservation-filter').value;
+                const date = document.getElementById('reservation-date').value;
+                let url = '/api/tenant-admin/common-areas/reservations?';
+                if (status) url += `status=${status}&`;
+                if (date) url += `date=${date}&`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const list = document.getElementById('reservations-list');
+                if (!data.success || data.reservations.length === 0) {
+                    list.innerHTML = '<div class="text-center py-12 text-[#5F6368]">No hay reservas</div>';
+                    return;
+                }
+
+                const fmtTime = (t) => {
+                    if (!t) return '';
+                    const s = String(t);
+                    const m = s.match(/T(\d{2}):(\d{2})/) || s.match(/(\d{1,2}):(\d{0,2})/);
+                    return m ? (m[1]||'').padStart(2,'0') + ':' + (m[2]||'00').padStart(2,'0') : s.substring(0,5);
+                };
+                list.innerHTML = data.reservations.map(r => `
+                    <div class="card p-4 card-hover cursor-pointer" data-reservation-id="${r.id}" onclick="showReservationDetail('${r.id}')">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="status-${r.status.toLowerCase()} px-2 py-0.5 rounded text-xs font-medium uppercase">${r.status}</span>
+                                    <span class="font-medium text-[#3C4043]">${r.area_name}</span>
+                                </div>
+                                <p class="text-sm text-[#5F6368] mb-1">
+                                    ${formatDate(r.reservation_date)} • ${fmtTime(r.start_time)} - ${fmtTime(r.end_time)}
+                                </p>
+                                <div class="text-sm space-y-0.5">
+                                    <p class="text-[#3C4043]"><span class="text-[#9AA0A6]">Reservado por:</span> ${r.user_name || '—'}</p>
+                                    <p class="text-[#3C4043]"><span class="text-[#9AA0A6]">Inmueble:</span> ${(r.building || '') + ' ' + (r.unit_number || '') || '—'}</p>
+                                </div>
+                            </div>
+                            ${r.status === 'PENDING' ? `
+                                <div class="reservation-actions flex gap-2" data-reservation-id="${r.id}">
+                                    <button type="button" onclick="event.stopPropagation(); approveReservation('${r.id}', this)" class="btn-approve p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span class="btn-icon material-icons-round">check</span>
+                                    </button>
+                                    <button type="button" onclick="event.stopPropagation(); rejectReservation('${r.id}', this)" class="btn-reject p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span class="btn-icon material-icons-round">close</span>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading reservations:', e);
+            }
+        }
+
+        // Today
+        async function loadTodayReservations() {
+            try {
+                const res = await fetch('/api/tenant-admin/common-areas/reservations/today', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const list = document.getElementById('today-list');
+                const empty = document.getElementById('today-empty');
+
+                if (!data.success || data.reservations.length === 0) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                const fmtT = (t) => {
+                    if (!t) return '';
+                    const s = String(t);
+                    const m = s.match(/T(\d{2}):(\d{2})/) || s.match(/(\d{1,2}):(\d{0,2})/);
+                    return m ? (m[1]||'').padStart(2,'0') + ':' + (m[2]||'00').padStart(2,'0') : s.substring(0,5);
+                };
+                list.innerHTML = data.reservations.map(r => `
+                    <div class="card p-4 card-hover" style="border-left: 4px solid ${r.status === 'CONFIRMED' ? '#22C55E' : '#F59E0B'}">
+                        <div class="flex items-center gap-4">
+                            <div class="text-center min-w-[60px]">
+                                <div class="text-2xl font-semibold text-[#3C4043]">${fmtT(r.start_time)}</div>
+                                <div class="text-xs text-[#5F6368]">${fmtT(r.end_time)}</div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-[#3C4043]">${r.area_name}</h3>
+                                <p class="text-sm text-[#5F6368]"><span class="text-[#9AA0A6]">Reservado por:</span> ${r.user_name || '—'}</p>
+                                <p class="text-xs text-[#9AA0A6]"><span class="text-[#9AA0A6]">Inmueble:</span> ${(r.building || '') + ' ' + (r.unit_number || '') || '—'}</p>
+                            </div>
+                            <span class="status-${r.status.toLowerCase()} px-3 py-1 rounded-full text-xs font-medium uppercase">${r.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading today:', e);
+            }
+        }
+
+        // Area Modal - skipReset=true cuando se abre para editar (no borrar formulario)
+        function openAreaModal(skipReset = false) {
+            if (!skipReset) {
+                document.getElementById('area-form').reset();
+                document.getElementById('area-id').value = '';
+                document.getElementById('area-modal-title').textContent = 'Nueva Área Común';
+            }
+            document.getElementById('area-modal').classList.remove('hidden');
+            document.getElementById('area-modal').classList.add('flex');
+        }
+
+        function closeAreaModal() {
+            document.getElementById('area-modal').classList.add('hidden');
+            document.getElementById('area-modal').classList.remove('flex');
+        }
+
+        async function saveArea() {
+            const id = document.getElementById('area-id').value;
+            const data = {
+                name: document.getElementById('area-name').value,
+                description: document.getElementById('area-description').value,
+                type: document.getElementById('area-type').value,
+                capacity: parseInt(document.getElementById('area-capacity').value),
+                openingTime: document.getElementById('area-opening').value,
+                closingTime: document.getElementById('area-closing').value,
+                minHoursAdvance: parseInt(document.getElementById('area-min-hours').value),
+                maxDaysAdvance: parseInt(document.getElementById('area-max-days').value),
+                maxDurationHours: parseInt(document.getElementById('area-max-duration').value),
+                requiresApproval: document.getElementById('area-requires-approval').checked,
+                rules: document.getElementById('area-rules').value
+            };
+
+            if (!data.name) {
+                alert('El nombre es requerido');
+                return;
+            }
+
+            try {
+                const url = id ? `/api/tenant-admin/common-areas/${id}` : '/api/tenant-admin/common-areas';
+                const method = id ? 'PUT' : 'POST';
+                
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    closeAreaModal();
+                    loadAreas();
+                    loadStats();
+                } else {
+                    alert(result.error || 'Error al guardar');
+                }
+            } catch (e) {
+                console.error('Error saving area:', e);
+                alert('Error al guardar área');
+            }
+        }
+
+        function formatTimeForInput(t) {
+            if (!t) return '08:00';
+            const s = String(t);
+            const m = s.match(/T(\d{2}):(\d{2})/) || s.match(/(\d{1,2}):(\d{0,2})/);
+            return m ? (m[1]||'08').padStart(2,'0') + ':' + (m[2]||'00').padStart(2,'0') : '08:00';
+        }
+
+        async function editArea(id) {
+            try {
+                const res = await fetch(`/api/tenant-admin/common-areas/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    console.error('Error loading area:', data.error);
+                    return;
+                }
+
+                const a = data.area;
+                if (!a) return;
+
+                document.getElementById('area-id').value = a.id || '';
+                document.getElementById('area-name').value = a.name || '';
+                document.getElementById('area-description').value = a.description || '';
+                document.getElementById('area-type').value = a.type || 'OTHER';
+                document.getElementById('area-capacity').value = a.capacity ?? 10;
+                document.getElementById('area-opening').value = formatTimeForInput(a.opening_time);
+                document.getElementById('area-closing').value = formatTimeForInput(a.closing_time);
+                document.getElementById('area-min-hours').value = a.min_hours_advance ?? 24;
+                document.getElementById('area-max-days').value = a.max_days_advance ?? 30;
+                document.getElementById('area-max-duration').value = a.max_duration_hours ?? 4;
+                document.getElementById('area-requires-approval').checked = !!a.requires_approval;
+                document.getElementById('area-rules').value = a.rules || '';
+                
+                openAreaModal(true);
+                document.getElementById('area-modal-title').textContent = 'Editar Área';
+            } catch (e) {
+                console.error('Error loading area for edit:', e);
+                alert('Error al cargar el área');
+            }
+        }
+
+        async function deleteArea(id) {
+            if (!confirm('¿Desactivar esta área común?')) return;
+            try {
+                const res = await fetch(`/api/tenant-admin/common-areas/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadAreas();
+                    loadStats();
+                }
+            } catch (e) {
+                console.error('Error deleting area:', e);
+            }
+        }
+
+        const processingReservationIds = new Set();
+
+        function setReservationLoading(id, loading) {
+            const card = document.querySelector(`[data-reservation-id="${id}"]`);
+            if (!card) return;
+            const actions = card.querySelector('.reservation-actions');
+            if (!actions) return;
+            const approveBtn = actions.querySelector('.btn-approve');
+            const rejectBtn = actions.querySelector('.btn-reject');
+            if (loading) {
+                approveBtn?.setAttribute('disabled', '');
+                rejectBtn?.setAttribute('disabled', '');
+                actions.innerHTML = `
+                    <div class="flex items-center gap-2 px-4 py-2 text-amber-700 bg-amber-50 rounded-lg text-sm">
+                        <span class="material-icons-round animate-spin text-lg">sync</span>
+                        <span>Procesando...</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function approveReservation(id, btn) {
+            if (processingReservationIds.has(id)) return;
+            processingReservationIds.add(id);
+            setReservationLoading(id, true);
+            try {
+                const res = await fetch(`/api/tenant-admin/common-areas/reservations/${id}/approve`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadReservations();
+                    loadStats();
+                } else {
+                    alert(data.error || 'Error al aprobar');
+                    loadReservations();
+                }
+            } catch (e) {
+                console.error('Error approving:', e);
+                alert('Error de conexión');
+                loadReservations();
+            } finally {
+                processingReservationIds.delete(id);
+            }
+        }
+
+        async function rejectReservation(id, btn) {
+            if (processingReservationIds.has(id)) return;
+            const reason = prompt('Motivo del rechazo (opcional):');
+            if (reason === null) return;
+            processingReservationIds.add(id);
+            setReservationLoading(id, true);
+            try {
+                const res = await fetch(`/api/tenant-admin/common-areas/reservations/${id}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ reason: reason || '' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadReservations();
+                    loadStats();
+                } else {
+                    alert(data.error || 'Error al rechazar');
+                    loadReservations();
+                }
+            } catch (e) {
+                console.error('Error rejecting:', e);
+                alert('Error de conexión');
+                loadReservations();
+            } finally {
+                processingReservationIds.delete(id);
+            }
+        }
+
+        function showReservationDetail(id) {
+            // Simple implementation - could be expanded
+            console.log('Show detail for', id);
+        }
+
+        function closeReservationModal() {
+            document.getElementById('reservation-modal').classList.add('hidden');
+            document.getElementById('reservation-modal').classList.remove('flex');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

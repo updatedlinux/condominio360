@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased">
+    
+    <!-- Navbar -->
+    <nav class="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <a href="/" class="flex items-center gap-3 group">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 sm:h-11 w-10 sm:w-11 flex-shrink-0 transition group-hover:opacity-90" style="object-fit: contain;">
+                    <span class="text-lg sm:text-xl text-slate-900 tracking-tight" style="font-weight: 800;">Condominio360</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="/" class="text-slate-600 hover:text-orange-600 font-medium transition">Inicio</a>
+                    <% if (typeof loginPage === 'undefined' || !loginPage) { %>
+                    <a href="/login" class="text-slate-700 font-semibold hover:text-orange-600 transition">Iniciar Sesión</a>
+                    <% } %>
+                    <a href="/#demo" class="px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-full hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">Solicitar Demo</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        <%- body %>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="col-span-1 md:col-span-2">
+                <a href="/" class="flex items-center gap-3 mb-4">
+                    <img src="/assets/images/CONDOMINIO360-blacklogo.svg" alt="Condominio360" class="h-10 sm:h-12 w-auto max-w-[180px] sm:max-w-[220px]" style="object-fit: contain;">
+                </a>
+                <p class="text-slate-400 text-sm max-w-xs">
+                    La plataforma integral para la gestión inteligente de condominios residenciales y comerciales.
+                </p>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Producto</h3>
+                <ul class="space-y-2">
+                    <li><a href="/#features" class="text-slate-300 hover:text-white transition">Características</a></li>
+                    <li><a href="/#pricing" class="text-slate-300 hover:text-white transition">Precios</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Legal</h3>
+                <ul class="space-y-2">
+                    <li><a href="#" class="text-slate-300 hover:text-white transition">Privacidad</a></li>
+                    <li><a href="#" class="text-slate-300 hover:text-white transition">Términos</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+            &copy; <%= new Date().getFullYear() %> Condominio360. Todos los derechos reservados.
+        </div>
+    </footer>
+
+</body>
+</html>

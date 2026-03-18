@@ -1,0 +1,20 @@
+# Ejemplo CSV: Facturación FIJA + Múltiples Edificios
+# El campo 'edificio' ES REQUERIDO porque hay múltiples edificios
+# El campo 'alicuota' NO es necesario porque la facturación es fija
+# IMPORTANTE: El nombre del edificio debe coincidir exactamente con los edificios creados
+# Campos requeridos: nombre, tipo, edificio, piso, numero
+#
+nombre,tipo,edificio,piso,numero,observaciones
+Apartamento 1A,APARTAMENTO,Torre A,1,101,Propietario: Juan Pérez
+Apartamento 1B,APARTAMENTO,Torre A,1,102,Propietario: María García
+Apartamento 2A,APARTAMENTO,Torre A,2,201,Propietario: Carlos López
+Apartamento 2B,APARTAMENTO,Torre A,2,202,Propietaria: Ana Martínez
+Apartamento 1A,APARTAMENTO,Torre B,1,101,Propietario: Roberto Díaz
+Apartamento 1B,APARTAMENTO,Torre B,1,102,Propietaria: Carmen Ruiz
+Apartamento 2A,APARTAMENTO,Torre B,2,201,Propietario: Miguel Torres
+Apartamento 2B,APARTAMENTO,Torre B,2,202,Propietaria: Isabel Flores
+Apartamento 1A,APARTAMENTO,Torre C,1,101,Propietario: Fernando Vega
+Apartamento 1B,APARTAMENTO,Torre C,1,102,Propietaria: Patricia Luna
+Estacionamiento A1,ESTACIONAMIENTO,Torre A,SS,EA01,Asignado Torre A
+Estacionamiento B1,ESTACIONAMIENTO,Torre B,SS,EB01,Asignado Torre B
+Estacionamiento C1,ESTACIONAMIENTO,Torre C,SS,EC01,Asignado Torre C

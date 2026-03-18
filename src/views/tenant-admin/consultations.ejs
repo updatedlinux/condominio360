@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Consultas - <%= tenant.name %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .fab { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+        .fab:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(249,115,22,0.4); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .status-open { background: #DCFCE7; color: #166534; }
+        .status-closed { background: #F3F4F6; color: #6B7280; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .progress-bar { background: linear-gradient(90deg, #f97316 0%, #ea580c 100%); }
+        .question-card { border-left: 4px solid #f97316; }
+        .chart-container { position: relative; height: 200px; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'consultations' }) %>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Consultas</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <button onclick="openModal()" class="fab text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg transition-all">
+                        <span class="material-icons-round">add</span>
+                        <span class="font-medium">Nueva Consulta</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-container">
+                    <!-- Cargar dinámicamente -->
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-4 mb-6">
+                    <div class="bg-white rounded-lg p-1 flex gap-1 shadow-sm">
+                        <button onclick="setFilter('all')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition-all bg-[#f97316] text-white" data-filter="all">Todas</button>
+                        <button onclick="setFilter('OPEN')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="OPEN">Activas</button>
+                        <button onclick="setFilter('CLOSED')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium text-[#5F6368] hover:bg-[#F5F5F5] transition-all" data-filter="CLOSED">Cerradas</button>
+                    </div>
+                </div>
+
+                <!-- Consultations List -->
+                <div id="consultations-list" class="space-y-4">
+                    <!-- Cargar dinámicamente -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-16">
+                    <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="material-icons-round text-4xl text-[#9AA0A6]">how_to_vote</span>
+                    </div>
+                    <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay consultas</h3>
+                    <p class="text-[#5F6368]">Crea la primera consulta para recibir votos de los propietarios</p>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Consultation -->
+    <div id="consultation-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between bg-gradient-to-r from-[#f97316] to-[#ea580c]">
+                <h2 class="text-xl font-medium text-white" id="modal-title">Nueva Consulta</h2>
+                <button onclick="closeModal()" class="text-white/80 hover:text-white">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <form id="consultation-form" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <input type="hidden" id="consultation-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Título *</label>
+                    <input type="text" id="cons-title" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]" placeholder="Ej: Aprobación del presupuesto 2024">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Descripción</label>
+                    <textarea id="cons-description" rows="3" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none" placeholder="Describe el propósito de esta consulta..."></textarea>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-round text-blue-600">info</span>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-medium">Información importante</p>
+                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                <li>La fecha de inicio debe ser al menos 1 día después de hoy</li>
+                                <li>La consulta se activará automáticamente a la medianoche (00:00) del día seleccionado, hora Venezuela (GMT-4)</li>
+                                <li>Una vez que un inmueble vota, no se puede modificar la consulta</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Fecha de inicio *</label>
+                        <input type="date" id="cons-start-date" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                        <p class="text-xs text-[#9AA0A6] mt-1">Se activará a las 00:00 GMT-4</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-2">Fecha de cierre *</label>
+                        <input type="date" id="cons-end-date" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                </div>
+
+                <div id="building-selector-container" class="hidden">
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Ámbito de la consulta</label>
+                    <select id="cons-building" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                        <option value="">Todo el conjunto</option>
+                    </select>
+                    <p class="text-xs text-[#9AA0A6] mt-1">Selecciona un edificio específico o deja en blanco para todo el conjunto</p>
+                </div>
+
+                <div class="border-t border-[#E5E5E5] pt-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-medium text-[#3C4043]">Preguntas</h3>
+                        <button type="button" onclick="addQuestion()" class="text-[#f97316] hover:bg-[#FDF8F3] px-3 py-1 rounded-lg text-sm font-medium">
+                            + Agregar pregunta
+                        </button>
+                    </div>
+                    <div id="questions-container" class="space-y-4">
+                        <!-- Preguntas dinámicas -->
+                    </div>
+                </div>
+            </form>
+            <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
+                <button type="button" onclick="closeModal()" class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveConsultation()" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg">
+                    Crear Consulta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Results -->
+    <div id="results-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-medium text-[#3C4043]">Resultados de la Consulta</h2>
+                    <p class="text-sm text-[#5F6368]" id="results-subtitle"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="downloadResultsPDF()" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] flex items-center gap-2">
+                        <span class="material-icons-round text-sm">download</span>
+                        PDF
+                    </button>
+                    <button onclick="closeResultsModal()" class="text-[#5F6368] hover:text-[#3C4043]">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6" id="results-content">
+                <!-- Cargar dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        let currentFilter = 'all';
+        let questionCount = 0;
+        let currentResults = null;
+        let consultationsData = [];
+
+        // Helper: Formatear fecha a hora de Venezuela (GMT-4)
+        function formatDateTimeVenezuela(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            // SQL Server devuelve UTC, SUMAR 4 horas para Venezuela (GMT-4)
+            const venezuelaTime = new Date(date.getTime() + (4 * 60 * 60 * 1000));
+            return venezuelaTime.toLocaleString('es-VE', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
+            loadStats();
+            loadConsultations();
+            loadBuildings();
+            setDefaultDates();
+            
+            // Refresh every 30 seconds for real-time updates
+            setInterval(loadConsultations, 30000);
+        });
+
+        // Format date as YYYY-MM-DD using Venezuela timezone (GMT-4)
+        function formatDateVenezuela(date) {
+            return date.toLocaleDateString('en-CA', { 
+                timeZone: 'America/Caracas',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+        
+        function setDefaultDates() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 8);
+            
+            // Use Venezuela timezone for dates
+            const tomorrowStr = formatDateVenezuela(tomorrow);
+            const nextWeekStr = formatDateVenezuela(nextWeek);
+            
+            document.getElementById('cons-start-date').value = tomorrowStr;
+            document.getElementById('cons-start-date').min = tomorrowStr;
+            document.getElementById('cons-end-date').value = nextWeekStr;
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/tenant-admin/consultations', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) return;
+
+                const all = data.data || [];
+                const open = all.filter(c => c.status === 'OPEN');
+                const closed = all.filter(c => c.status === 'CLOSED');
+                const totalVotes = all.reduce((sum, c) => sum + (c.total_votes || 0), 0);
+
+                document.getElementById('stats-container').innerHTML = `
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-[#3C4043]">${all.length}</div>
+                        <div class="text-sm text-[#5F6368]">Total Consultas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-green-600">${open.length}</div>
+                        <div class="text-sm text-[#5F6368]">Activas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-gray-500">${closed.length}</div>
+                        <div class="text-sm text-[#5F6368]">Cerradas</div>
+                    </div>
+                    <div class="card p-4 card-hover">
+                        <div class="text-3xl font-semibold text-blue-600">${totalVotes}</div>
+                        <div class="text-sm text-[#5F6368]">Votos Recibidos</div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
+        // Load consultations
+        async function loadConsultations() {
+            try {
+                const res = await fetch('/api/tenant-admin/consultations', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const list = document.getElementById('consultations-list');
+                const empty = document.getElementById('empty-state');
+
+                let consultations = data.data || [];
+                consultationsData = consultations;
+                
+                if (currentFilter !== 'all') {
+                    consultations = consultations.filter(c => c.status === currentFilter);
+                }
+
+                if (consultations.length === 0) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                list.innerHTML = consultations.map(c => {
+                    const isOpen = c.status === 'OPEN';
+                    const now = new Date();
+                    const startDate = new Date(c.start_date);
+                    const endDate = new Date(c.end_date);
+                    const isPending = startDate > now;
+                    const isActive = isOpen && startDate <= now && endDate >= now;
+                    
+                    const participation = c.eligible_properties > 0 
+                        ? Math.round((c.total_votes / c.eligible_properties) * 100) 
+                        : 0;
+                    
+                    const statusClass = isActive ? 'status-open' : (isPending ? 'status-pending' : 'status-closed');
+                    const statusText = isActive ? 'ACTIVA' : (isPending ? 'PENDIENTE' : 'CERRADA');
+                    
+                    // Check if can close early (only if no votes)
+                    const canCloseEarly = isOpen && c.total_votes === 0;
+                    
+                    return `
+                        <div class="card p-6 card-hover">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="${statusClass} px-2 py-0.5 rounded text-xs font-medium uppercase">${statusText}</span>
+                                        ${c.target_building ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">${c.target_building}</span>` : ''}
+                                    </div>
+                                    <h3 class="text-lg font-medium text-[#3C4043] mb-1">${c.title}</h3>
+                                    <p class="text-sm text-[#5F6368] line-clamp-2">${c.description || 'Sin descripción'}</p>
+                                    
+                                    <div class="flex items-center gap-4 mt-3 text-sm text-[#5F6368]">
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-icons-round text-base">calendar_today</span>
+                                            ${formatDate(c.start_date)} - ${formatDate(c.end_date)}
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-icons-round text-base">how_to_vote</span>
+                                            ${c.total_votes || 0} de ${c.eligible_properties || 0} inmuebles
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="material-icons-round text-base">help</span>
+                                            ${c.questions?.length || 0} preguntas
+                                        </span>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-xs text-[#5F6368] mb-1">
+                                            <span>Participación</span>
+                                            <span>${participation}%</span>
+                                        </div>
+                                        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div class="h-full progress-bar rounded-full" style="width: ${participation}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <button onclick="viewResults('${c.id}')" class="p-2 hover:bg-[#F5F5F5] rounded-lg text-[#f97316]" title="Ver resultados">
+                                        <span class="material-icons-round">pie_chart</span>
+                                    </button>
+                                    ${isOpen ? `
+                                        ${canCloseEarly ? `
+                                            <button onclick="closeConsultation('${c.id}')" class="p-2 hover:bg-red-50 rounded-lg text-red-600" title="Cerrar consulta (sin votos)">
+                                                <span class="material-icons-round">close</span>
+                                            </button>
+                                        ` : `
+                                            <button onclick="showToast('No se puede cerrar anticipadamente. La consulta ya tiene votos.', 'warning')" class="p-2 text-gray-400 cursor-not-allowed" title="No se puede cerrar - tiene votos">
+                                                <span class="material-icons-round">lock</span>
+                                            </button>
+                                        `}
+                                    ` : ''}
+                                    ${c.total_votes === 0 ? `
+                                        <button onclick="deleteConsultation('${c.id}')" class="p-2 hover:bg-red-50 rounded-lg text-red-600" title="Eliminar">
+                                            <span class="material-icons-round">delete</span>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Error loading consultations:', e);
+            }
+        }
+
+        // Load buildings
+        async function loadBuildings() {
+            try {
+                const res = await fetch('/api/tenant-admin/buildings', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('cons-building');
+                    const container = document.getElementById('building-selector-container');
+                    
+                    if (data.isMultiBuilding && data.buildings.length > 1) {
+                        container.classList.remove('hidden');
+                        select.innerHTML = '<option value="">Todo el conjunto</option>' +
+                            data.buildings.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+                    } else {
+                        container.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading buildings:', e);
+            }
+        }
+
+        // Filter
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('bg-[#f97316]', 'text-white');
+                    btn.classList.remove('text-[#5F6368]', 'hover:bg-[#F5F5F5]');
+                } else {
+                    btn.classList.remove('bg-[#f97316]', 'text-white');
+                    btn.classList.add('text-[#5F6368]', 'hover:bg-[#F5F5F5]');
+                }
+            });
+            loadConsultations();
+        }
+
+        // Modal
+        function openModal() {
+            document.getElementById('consultation-modal').classList.remove('hidden');
+            document.getElementById('consultation-modal').classList.add('flex');
+            document.getElementById('modal-title').textContent = 'Nueva Consulta';
+            document.getElementById('consultation-form').reset();
+            document.getElementById('consultation-id').value = '';
+            document.getElementById('questions-container').innerHTML = '';
+            questionCount = 0;
+            setDefaultDates();
+            addQuestion();
+        }
+
+        function closeModal() {
+            document.getElementById('consultation-modal').classList.add('hidden');
+            document.getElementById('consultation-modal').classList.remove('flex');
+        }
+
+        // Questions
+        function addQuestion() {
+            questionCount++;
+            const container = document.getElementById('questions-container');
+            const div = document.createElement('div');
+            div.className = 'question-card bg-[#F9FAFB] p-4 rounded-xl';
+            div.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-medium text-[#5F6368]">Pregunta ${questionCount}</span>
+                    <button type="button" onclick="this.closest('.question-card').remove()" class="text-red-600 hover:bg-red-50 p-1 rounded">
+                        <span class="material-icons-round text-sm">close</span>
+                    </button>
+                </div>
+                <input type="text" class="question-text w-full px-3 py-2 border border-[#E5E5E5] rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-[#f97316]" placeholder="Escribe la pregunta..." required>
+                <div class="space-y-2 options-container">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-[#5F6368]">Opciones:</span>
+                        <button type="button" onclick="addOption(this)" class="text-[#f97316] text-sm hover:underline">+ Agregar opción</button>
+                    </div>
+                    <div class="option-row flex items-center gap-2">
+                        <input type="text" class="option-text flex-1 px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm" placeholder="Opción 1" required>
+                    </div>
+                    <div class="option-row flex items-center gap-2">
+                        <input type="text" class="option-text flex-1 px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm" placeholder="Opción 2" required>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function addOption(btn) {
+            const container = btn.closest('.options-container');
+            const count = container.querySelectorAll('.option-row').length + 1;
+            const div = document.createElement('div');
+            div.className = 'option-row flex items-center gap-2';
+            div.innerHTML = `
+                <input type="text" class="option-text flex-1 px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm" placeholder="Opción ${count}" required>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:bg-red-50 p-1 rounded">
+                    <span class="material-icons-round text-sm">close</span>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        // Save
+        async function saveConsultation() {
+            const title = document.getElementById('cons-title').value;
+            const startDate = document.getElementById('cons-start-date').value;
+            const endDate = document.getElementById('cons-end-date').value;
+
+            if (!title || !startDate || !endDate) {
+                showToast('Título, fecha de inicio y fecha de cierre son requeridos', 'error');
+                return;
+            }
+
+            // Parse dates as local dates (not UTC) by manually constructing
+            const parseLocalDate = (dateStr) => {
+                const [year, month, day] = dateStr.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            };
+            
+            const start = parseLocalDate(startDate);
+            const end = parseLocalDate(endDate);
+            
+            // Get today's date at midnight local time
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Get tomorrow's date
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            // Compare timestamps
+            if (start.getTime() < tomorrow.getTime()) {
+                showToast('La fecha de inicio debe ser al menos 1 día después de hoy', 'error');
+                return;
+            }
+
+            if (end.getTime() <= start.getTime()) {
+                showToast('La fecha de cierre debe ser posterior a la fecha de inicio', 'error');
+                return;
+            }
+
+            // Collect questions
+            const questions = [];
+            document.querySelectorAll('.question-card').forEach(card => {
+                const text = card.querySelector('.question-text').value;
+                const options = [];
+                card.querySelectorAll('.option-text').forEach(opt => {
+                    if (opt.value.trim()) options.push({ text: opt.value.trim() });
+                });
+                if (text && options.length >= 2) {
+                    questions.push({ text, options });
+                }
+            });
+
+            if (questions.length === 0) {
+                showToast('Debes agregar al menos una pregunta con 2 opciones', 'error');
+                return;
+            }
+
+            const data = {
+                title,
+                description: document.getElementById('cons-description').value,
+                start_date: startDate,
+                end_date: endDate,
+                target_building: document.getElementById('cons-building').value || null,
+                questions
+            };
+
+            try {
+                const res = await fetch('/api/tenant-admin/consultations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    closeModal();
+                    loadConsultations();
+                    loadStats();
+                    showToast('Consulta creada exitosamente. Se enviarán notificaciones a los propietarios.', 'success');
+                } else {
+                    showToast(result.error || 'Error al crear consulta', 'error');
+                }
+            } catch (e) {
+                console.error('Error saving:', e);
+                showToast('Error al guardar consulta', 'error');
+            }
+        }
+
+        // View results
+        async function viewResults(id) {
+            try {
+                const res = await fetch(`/api/tenant-admin/consultations/${id}/results`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) return;
+
+                currentResults = data.data;
+                const c = data.data.consultation;
+                const results = data.data.results;
+                const votingProperties = data.data.voting_properties;
+                const totalVoters = data.data.total_votes;
+                const eligible = c.eligible_properties;
+                const participation = eligible > 0 ? Math.round((totalVoters / eligible) * 100) : 0;
+
+                document.getElementById('results-subtitle').textContent = 
+                    `${totalVoters} de ${eligible} inmuebles votaron (${participation}% participación)`;
+
+                const questionCount = results.length;
+                
+                let html = `
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-4 gap-4 mb-8">
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-[#f97316]">${eligible}</p>
+                            <p class="text-sm text-[#5F6368]">Inmuebles Habilitados</p>
+                        </div>
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-green-600">${totalVoters}</p>
+                            <p class="text-sm text-[#5F6368]">Votaron</p>
+                        </div>
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-blue-600">${participation}%</p>
+                            <p class="text-sm text-[#5F6368]">Participación</p>
+                        </div>
+                        <div class="bg-[#FAFAFA] rounded-xl p-4 text-center">
+                            <p class="text-3xl font-bold text-purple-600">${questionCount}</p>
+                            <p class="text-sm text-[#5F6368]">Preguntas</p>
+                        </div>
+                    </div>
+                `;
+
+                // Charts for each question
+                results.forEach((q, idx) => {
+                    const chartId = `admin-chart-${idx}`;
+                    html += `
+                        <div class="mb-8 border-b border-[#E5E5E5] pb-8">
+                            <h3 class="font-medium text-[#3C4043] mb-4">${idx + 1}. ${q.question_text}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="chart-container">
+                                    <canvas id="${chartId}"></canvas>
+                                </div>
+                                <div class="space-y-3">
+                                    ${q.options.map((opt, optIdx) => {
+                                        const percentage = q.total > 0 ? Math.round((opt.votes / q.total) * 100) : 0;
+                                        return `
+                                            <div>
+                                                <div class="flex justify-between text-sm mb-1">
+                                                    <span class="text-[#3C4043]">${opt.option_text}</span>
+                                                    <span class="text-[#5F6368]">${opt.votes} votos (${percentage}%)</span>
+                                                </div>
+                                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div class="h-full progress-bar rounded-full" style="width: ${percentage}%"></div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Voting Properties Table
+                html += `
+                    <div class="mt-8">
+                        <h3 class="font-medium text-[#3C4043] mb-4">Inmuebles que votaron</h3>
+                        <div class="bg-[#FAFAFA] rounded-xl overflow-hidden">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-[#E5E5E5]">
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Inmueble</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Edificio</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Propietario</th>
+                                        <th class="px-4 py-3 text-left text-sm font-medium text-[#5F6368]">Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${votingProperties.length > 0 ? votingProperties.map(p => `
+                                        <tr class="border-b border-[#E5E5E5] last:border-0">
+                                            <td class="px-4 py-3 text-sm text-[#3C4043]">${p.name}</td>
+                                            <td class="px-4 py-3 text-sm text-[#5F6368]">${p.building || '-'}</td>
+                                            <td class="px-4 py-3 text-sm text-[#5F6368]">${p.owner_name || '-'}</td>
+                                            <td class="px-4 py-3 text-sm text-[#5F6368]">
+                                                ${formatDateTimeVenezuela(p.voted_at)}
+                                            </td>
+                                        </tr>
+                                    `).join('') : `
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-8 text-center text-[#9AA0A6]">
+                                                Aún no hay votos registrados
+                                            </td>
+                                        </tr>
+                                    `}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('results-content').innerHTML = html;
+                document.getElementById('results-modal').classList.remove('hidden');
+                document.getElementById('results-modal').classList.add('flex');
+
+                // Initialize charts
+                setTimeout(() => {
+                    results.forEach((q, idx) => {
+                        const ctx = document.getElementById(`admin-chart-${idx}`);
+                        if (ctx) {
+                            new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: q.options.map(o => o.option_text),
+                                    datasets: [{
+                                        data: q.options.map(o => o.votes),
+                                        backgroundColor: ['#f97316', '#ea580c', '#A67C52', '#C4A77D', '#E8DCC4'],
+                                        borderWidth: 0
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { position: 'bottom' }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }, 100);
+
+            } catch (e) {
+                console.error('Error loading results:', e);
+            }
+        }
+
+        function closeResultsModal() {
+            document.getElementById('results-modal').classList.add('hidden');
+            document.getElementById('results-modal').classList.remove('flex');
+            currentResults = null;
+        }
+
+        function downloadResultsPDF() {
+            if (!currentResults) return;
+            
+            const baseUrl = window.location.origin;
+            const isotipoUrl = baseUrl + '/assets/images/isotipo-naranja.svg';
+            const intelalogoUrl = baseUrl + '/assets/images/svgMAIN-intelalogo.svg';
+            const tenantName = currentResults.tenant_name || 'Condominio';
+            
+            const { consultation, results, voting_properties } = currentResults;
+            const totalVotes = voting_properties.length;
+            const eligible = consultation.eligible_properties || 0;
+            const participation = eligible > 0 ? Math.round((totalVotes / eligible) * 100) : 0;
+            
+            // Format dates - ajustar a Venezuela (GMT-4) - SUMAR 4 horas
+            const formatDate = (d) => {
+                if (!d) return '-';
+                const date = new Date(d);
+                const venezuelaTime = new Date(date.getTime() + (4 * 60 * 60 * 1000));
+                return venezuelaTime.toLocaleDateString('es-VE', { 
+                    day: '2-digit', month: 'long', year: 'numeric' 
+                });
+            };
+            
+            const formatDateTime = (d) => {
+                if (!d) return '-';
+                const date = new Date(d);
+                const venezuelaTime = new Date(date.getTime() + (4 * 60 * 60 * 1000));
+                return venezuelaTime.toLocaleString('es-VE', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            };
+            
+            // Generate PDF HTML content
+            const pdfContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados - ${consultation.title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 11pt; 
+            line-height: 1.5; 
+            color: #333;
+            padding: 40px;
+        }
+        .header { 
+            text-align: center; 
+            border-bottom: 3px solid #f97316; 
+            padding-bottom: 20px; 
+            margin-bottom: 30px;
+        }
+        .header h1 { 
+            color: #f97316; 
+            font-size: 24pt; 
+            margin-bottom: 5px;
+        }
+        .header .subtitle { 
+            color: #666; 
+            font-size: 12pt;
+        }
+        .consultation-info { 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 30px;
+            border-left: 4px solid #f97316;
+        }
+        .consultation-info h2 { 
+            color: #3C4043; 
+            font-size: 16pt; 
+            margin-bottom: 10px;
+        }
+        .consultation-info .meta { 
+            color: #666; 
+            font-size: 10pt;
+            margin-top: 8px;
+        }
+        .stats-grid { 
+            display: flex; 
+            gap: 15px; 
+            margin-bottom: 30px;
+        }
+        .stat-box { 
+            flex: 1; 
+            background: #f5f5f5; 
+            padding: 15px; 
+            border-radius: 8px; 
+            text-align: center;
+        }
+        .stat-box .number { 
+            font-size: 24pt; 
+            font-weight: bold; 
+            color: #f97316;
+        }
+        .stat-box .label { 
+            font-size: 9pt; 
+            color: #666; 
+            text-transform: uppercase;
+        }
+        .question-section { 
+            margin-bottom: 35px; 
+            page-break-inside: avoid;
+        }
+        .question-title { 
+            font-size: 13pt; 
+            color: #3C4043; 
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .option-row { 
+            margin-bottom: 12px;
+        }
+        .option-label { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 5px;
+            font-size: 10pt;
+        }
+        .option-label .text { color: #333; }
+        .option-label .votes { color: #666; font-weight: 500; }
+        .bar-container { 
+            background: #e0e0e0; 
+            height: 24px; 
+            border-radius: 4px; 
+            overflow: hidden;
+        }
+        .bar-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #f97316 0%, #A67C52 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+        .voters-section { 
+            margin-top: 40px;
+            page-break-before: auto;
+        }
+        .voters-section h3 { 
+            font-size: 14pt; 
+            color: #3C4043; 
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f97316;
+            padding-bottom: 8px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 10pt;
+        }
+        th { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            text-align: left; 
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+        }
+        td { 
+            padding: 8px 10px; 
+            border-bottom: 1px solid #eee;
+        }
+        tr:nth-child(even) { background: #fafafa; }
+        .footer { 
+            margin-top: 40px; 
+            padding-top: 20px; 
+            border-top: 1px solid #ddd; 
+            text-align: center; 
+            color: #999; 
+            font-size: 9pt;
+        }
+        .pdf-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #ddd; flex-wrap: wrap; }
+        .pdf-header img.isotipo { height: 36px; width: auto; }
+        .pdf-header .brand { font-size: 18px; font-weight: 600; color: #f97316; }
+        .pdf-header .separator { color: #999; }
+        .pdf-header .tenant-name { font-size: 16px; color: #555; }
+        .footer img.intelalogo { height: 24px; margin-left: 8px; vertical-align: middle; }
+        @media print {
+            body { padding: 20px; }
+            .question-section { page-break-inside: avoid; }
+            .voters-section { page-break-before: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-header">
+        <img src="${isotipoUrl}" alt="Condominio360" class="isotipo" onerror="this.style.display='none'">
+        <span class="brand">Condominio360</span>
+        <span class="separator">|</span>
+        <span class="tenant-name">${tenantName}</span>
+    </div>
+    
+    <div class="consultation-info">
+        <h2>${consultation.title}</h2>
+        <p>${consultation.description || 'Sin descripción'}</p>
+        <div class="meta">
+            <strong>Período:</strong> ${formatDate(consultation.start_date)} - ${formatDate(consultation.end_date)}<br>
+            <strong>Alcance:</strong> ${consultation.target_building || 'Todo el conjunto residencial'}
+        </div>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="number">${eligible}</div>
+            <div class="label">Inmuebles Habilitados</div>
+        </div>
+        <div class="stat-box">
+            <div class="number">${totalVotes}</div>
+            <div class="label">Votaron</div>
+        </div>
+        <div class="stat-box">
+            <div class="number">${participation}%</div>
+            <div class="label">Participación</div>
+        </div>
+    </div>
+    
+    ${results.map((q, idx) => {
+        const total = q.options.reduce((sum, o) => sum + o.votes, 0);
+        return `
+        <div class="question-section">
+            <div class="question-title">Pregunta ${idx + 1}: ${q.question_text}</div>
+            ${q.options.map(opt => {
+                const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
+                return `
+                <div class="option-row">
+                    <div class="option-label">
+                        <span class="text">${opt.option_text}</span>
+                        <span class="votes">${opt.votes} votos (${pct}%)</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="width: ${pct}%">
+                            ${pct > 10 ? pct + '%' : ''}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('')}
+        </div>
+        `;
+    }).join('')}
+    
+    <div class="voters-section">
+        <h3>Inmuebles que votaron (${voting_properties.length})</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Inmueble</th>
+                    <th>Edificio</th>
+                    <th>Fecha de Voto</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${voting_properties.length > 0 ? voting_properties.map(p => `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td>${p.building || '-'}</td>
+                        <td>${formatDateTime(p.voted_at)}</td>
+                    </tr>
+                `).join('') : `
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #999; padding: 20px;">
+                            Aún no hay votos registrados
+                        </td>
+                    </tr>
+                `}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        Generado por Condominio360 | Potenciado por: <img src="${intelalogoUrl}" alt="Intelalogo" class="intelalogo">
+    </div>
+</body>
+</html>`;
+            
+            // Open in new window and print
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(pdfContent);
+            printWindow.document.close();
+            
+            // Wait for styles to load then print
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        }
+
+        // Close consultation
+        async function closeConsultation(id) {
+            if (!confirm('¿Cerrar esta consulta anticipadamente? Solo se permite si no tiene votos.')) return;
+            try {
+                const res = await fetch(`/api/tenant-admin/consultations/${id}/close`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadConsultations();
+                    loadStats();
+                } else {
+                    showToast(data.error || 'Error al cerrar consulta', 'error');
+                }
+            } catch (e) {
+                console.error('Error closing:', e);
+            }
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                warning: 'bg-yellow-600',
+                info: 'bg-blue-600'
+            };
+            
+            const icons = {
+                success: 'check_circle',
+                error: 'error',
+                warning: 'warning',
+                info: 'info'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0`;
+            toast.innerHTML = `
+                <span class="material-icons-round">${icons[type]}</span>
+                <span>${message}</span>
+            `;
+            
+            // Create container if doesn't exist
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
+                document.body.appendChild(container);
+            }
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+            
+            // Remove after delay
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Delete
+        async function deleteConsultation(id) {
+            if (!confirm('¿Eliminar esta consulta permanentemente?')) return;
+            try {
+                const res = await fetch(`/api/tenant-admin/consultations/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadConsultations();
+                    loadStats();
+                }
+            } catch (e) {
+                console.error('Error deleting:', e);
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('es-VE', { 
+                timeZone: 'America/Caracas',
+                day: 'numeric', 
+                month: 'short' 
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tenant');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

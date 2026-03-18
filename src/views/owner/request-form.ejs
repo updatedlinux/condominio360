@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Nueva Solicitud - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                        <a href="/owner/requests" class="text-[#5F6368] hover:text-[#3C4043]">
+                            <span class="material-icons-round">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Nueva Solicitud</h1>
+                            <p class="text-sm text-[#5F6368]">Envía una solicitud a la junta de condominio</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-2xl mx-auto">
+                    <div class="card p-8">
+                        <form id="requestForm" class="space-y-6">
+                            <!-- Tipo de Solicitud -->
+                            <div>
+                                <label class="block text-sm font-medium text-[#5F6368] mb-2">
+                                    Tipo de Solicitud <span class="text-red-500">*</span>
+                                </label>
+                                <select id="requestType" name="request_type_id" required 
+                                    class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] bg-white"
+                                    onchange="onRequestTypeChange()">
+                                    <option value="">Seleccionar tipo...</option>
+                                </select>
+                            </div>
+
+                            <!-- Info Badges para Mudanza -->
+                            <div id="moveInfoBadges" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                                <div class="flex items-center gap-2 text-amber-800 font-medium mb-2">
+                                    <span class="material-icons-round">info</span>
+                                    <span>Información importante para tu mudanza</span>
+                                </div>
+                                <div id="moveBadgesContainer" class="flex flex-wrap gap-2"></div>
+                                <div id="moveInstructions" class="text-sm text-amber-700 mt-2 hidden"></div>
+                            </div>
+
+                            <!-- Campos dinámicos del formulario (definidos por el admin) -->
+                            <div id="dynamicFields" class="space-y-4">
+                                <div class="text-center py-8 text-[#9AA0A6]">
+                                    <span class="material-icons-round text-4xl">description</span>
+                                    <p class="mt-2 text-sm">Selecciona un tipo de solicitud para ver los campos requeridos</p>
+                                </div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="flex justify-end gap-3 pt-4">
+                                <a href="/owner/requests" class="px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white rounded-xl font-medium hover:shadow-lg flex items-center gap-2">
+                                    <span class="material-icons-round text-sm">send</span>
+                                    Enviar Solicitud
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        let requestTypes = [];
+        let moveAllowedDays = [];
+        let isMoveType = false;
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ${
+                type === 'success' 
+                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                    : 'bg-red-50 border border-red-200 text-red-800'
+            }`;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            
+            toast.innerHTML = `
+                <span class="material-icons-round ${type === 'success' ? 'text-green-600' : 'text-red-600'}">${icon}</span>
+                <span class="text-sm font-medium">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 ${type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}">
+                    <span class="material-icons-round text-sm">close</span>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Cargar tipos de solicitud
+        async function loadRequestTypes() {
+            try {
+                const response = await fetch('/api/owner/requests/types', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    requestTypes = data.data;
+                    const select = document.getElementById('requestType');
+                    select.innerHTML = '<option value="">Seleccionar tipo...</option>' +
+                        data.data.map(type => `<option value="${type.id}">${type.name}</option>`).join('');
+                } else {
+                    console.log('No se encontraron tipos de solicitud');
+                }
+            } catch (error) {
+                console.error('Error loading types:', error);
+            }
+        }
+
+        // Manejar cambio de tipo de solicitud
+        function onRequestTypeChange() {
+            const selectedId = document.getElementById('requestType').value;
+            const selectedType = requestTypes.find(t => t.id === selectedId);
+            const badgesContainer = document.getElementById('moveInfoBadges');
+            const dynamicFields = document.getElementById('dynamicFields');
+
+            // Resetear variables
+            moveAllowedDays = [];
+            isMoveType = selectedType?.is_move_type || false;
+            
+            // Limpiar campos dinámicos
+            dynamicFields.innerHTML = '';
+
+            if (!selectedType) {
+                badgesContainer.classList.add('hidden');
+                return;
+            }
+
+            // Parsear días permitidos
+            if (selectedType.is_move_type && selectedType.days_allowed) {
+                try {
+                    moveAllowedDays = JSON.parse(selectedType.days_allowed);
+                } catch(e) { moveAllowedDays = []; }
+            }
+
+            // Generar campos dinámicos
+            generateDynamicFields(selectedType);
+
+            // Mostrar info de mudanza si aplica
+            if (!selectedType.is_move_type) {
+                badgesContainer.classList.add('hidden');
+                return;
+            }
+
+            badgesContainer.classList.remove('hidden');
+            renderMoveBadges(selectedType);
+        }
+
+        // Render badges de mudanza
+        function renderMoveBadges(selectedType) {
+            const badgesContent = document.getElementById('moveBadgesContainer');
+            const instructionsDiv = document.getElementById('moveInstructions');
+            const badges = [];
+            
+            // Construir config desde datos de la base
+            const config = {
+                allowed_days: moveAllowedDays,
+                start_time: selectedType.time_range ? selectedType.time_range.split('-')[0] : '08:00',
+                end_time: selectedType.time_range ? selectedType.time_range.split('-')[1] : '17:00'
+            };
+            
+            // Badge tipo de mudanza
+            const moveTypeLabels = {
+                'ENTRY': { text: 'Mudanza de Entrada', icon: 'login', color: 'bg-green-100 text-green-800' },
+                'EXIT': { text: 'Mudanza de Salida', icon: 'logout', color: 'bg-red-100 text-red-800' },
+                'BOTH': { text: 'Entrada y Salida', icon: 'swap_horiz', color: 'bg-blue-100 text-blue-800' }
+            };
+            const moveType = moveTypeLabels[selectedType.move_type] || moveTypeLabels['ENTRY'];
+            badges.push(`
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${moveType.color}">
+                    <span class="material-icons-round text-sm">${moveType.icon}</span>
+                    ${moveType.text}
+                </span>
+            `);
+            
+            // Badge días permitidos
+            if (config.allowed_days && config.allowed_days.length > 0) {
+                const dayLabels = {
+                    'monday': 'Lun', 'tuesday': 'Mar', 'wednesday': 'Mié',
+                    'thursday': 'Jue', 'friday': 'Vie', 'saturday': 'Sáb', 'sunday': 'Dom'
+                };
+                const daysText = config.allowed_days.map(d => dayLabels[d] || d).join(', ');
+                badges.push(`
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <span class="material-icons-round text-sm">calendar_today</span>
+                        ${daysText}
+                    </span>
+                `);
+            }
+            
+            // Badge horario
+            if (config.start_time && config.end_time) {
+                badges.push(`
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span class="material-icons-round text-sm">schedule</span>
+                        ${config.start_time} - ${config.end_time}
+                    </span>
+                `);
+            }
+            
+            // Badge seguro
+            if (selectedType.requires_insurance) {
+                badges.push(`
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        <span class="material-icons-round text-sm">shield</span>
+                        Requiere seguro
+                    </span>
+                `);
+            }
+            
+            // Badge empresa
+            if (selectedType.requires_moving_company) {
+                badges.push(`
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <span class="material-icons-round text-sm">local_shipping</span>
+                        Empresa autorizada
+                    </span>
+                `);
+            }
+            
+            badgesContent.innerHTML = badges.join('');
+            
+            // Instrucciones
+            if (selectedType.move_instructions) {
+                instructionsDiv.textContent = selectedType.move_instructions;
+                instructionsDiv.classList.remove('hidden');
+            } else {
+                instructionsDiv.classList.add('hidden');
+            }
+        }
+
+        // Generar campos dinámicos
+        function generateDynamicFields(requestType) {
+            const container = document.getElementById('dynamicFields');
+            container.innerHTML = '';
+            
+            if (!requestType.form_schema?.fields?.length) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-[#9AA0A6]">
+                        <p class="text-sm">Este tipo de solicitud no requiere información adicional</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            requestType.form_schema.fields.forEach(field => {
+                const fieldDiv = document.createElement('div');
+                
+                const label = document.createElement('label');
+                label.className = 'block text-sm font-medium text-[#5F6368] mb-2';
+                label.innerHTML = field.label + (field.required ? ' <span class="text-red-500">*</span>' : '');
+                fieldDiv.appendChild(label);
+                
+                let input;
+                
+                switch(field.type) {
+                    case 'textarea':
+                        input = document.createElement('textarea');
+                        input.rows = 3;
+                        input.className = 'w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none';
+                        break;
+                    case 'select':
+                        input = document.createElement('select');
+                        input.className = 'w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] bg-white';
+                        input.innerHTML = '<option value="">Seleccionar...</option>';
+                        if (field.options) {
+                            field.options.forEach(opt => {
+                                const option = document.createElement('option');
+                                option.value = opt;
+                                option.textContent = opt;
+                                input.appendChild(option);
+                            });
+                        }
+                        break;
+                    case 'checkbox':
+                        input = document.createElement('div');
+                        input.className = 'space-y-2';
+                        if (field.options) {
+                            field.options.forEach(opt => {
+                                const label = document.createElement('label');
+                                label.className = 'flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg cursor-pointer';
+                                label.innerHTML = `
+                                    <input type="checkbox" name="${field.name}[]" value="${opt}" class="rounded border-[#E5E5E5] text-[#f97316] focus:ring-[#f97316]">
+                                    <span class="text-sm text-[#3C4043]">${opt}</span>
+                                `;
+                                input.appendChild(label);
+                            });
+                        }
+                        break;
+                    case 'date':
+                        input = document.createElement('input');
+                        input.type = 'date';
+                        input.className = 'w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]';
+                        // Establecer fecha mínima como hoy
+                        const today = new Date();
+                        input.min = today.toISOString().split('T')[0];
+                        if (isMoveType && moveAllowedDays.length > 0) {
+                            input.addEventListener('change', (e) => validateMoveDate(e.target));
+                        }
+                        break;
+                    case 'number':
+                        input = document.createElement('input');
+                        input.type = 'number';
+                        input.className = 'w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]';
+                        break;
+                    case 'file':
+                        input = document.createElement('input');
+                        input.type = 'file';
+                        input.className = 'w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none';
+                        break;
+                    default: // text
+                        input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]';
+                }
+                
+                if (field.type !== 'checkbox') {
+                    input.name = field.name;
+                    if (field.required) input.required = true;
+                    if (field.placeholder) input.placeholder = field.placeholder;
+                }
+                
+                fieldDiv.appendChild(input);
+                container.appendChild(fieldDiv);
+            });
+        }
+        
+        // Validar fecha de mudanza
+        function validateMoveDate(input) {
+            if (!input.value || moveAllowedDays.length === 0) return true;
+            
+            // Parsear fecha manualmente para evitar problemas de zona horaria
+            // El formato es YYYY-MM-DD
+            const parts = input.value.split('-');
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
+            const day = parseInt(parts[2], 10);
+            
+            // Crear fecha en zona horaria local
+            const selectedDate = new Date(year, month, day);
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const selectedDay = dayNames[selectedDate.getDay()];
+            
+            // Validar que sea fecha futura (hoy o después)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                showToast('La fecha no puede ser anterior a hoy', 'error');
+                input.value = '';
+                return false;
+            }
+            
+            if (!moveAllowedDays.includes(selectedDay)) {
+                const dayLabels = {
+                    'monday': 'lunes', 'tuesday': 'martes', 'wednesday': 'miércoles',
+                    'thursday': 'jueves', 'friday': 'viernes', 'saturday': 'sábado', 'sunday': 'domingo'
+                };
+                const allowedLabels = moveAllowedDays.map(d => dayLabels[d] || d).join(', ');
+                showToast(`Solo se permiten mudanzas los días: ${allowedLabels}`, 'error');
+                input.value = '';
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Enviar formulario
+        document.getElementById('requestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const propertyId = localStorage.getItem('selectedPropertyId');
+            const selectedTypeId = document.getElementById('requestType').value;
+            const selectedType = requestTypes.find(t => t.id === selectedTypeId);
+            
+            if (!selectedType) {
+                showToast('Por favor selecciona un tipo de solicitud', 'error');
+                return;
+            }
+            
+            // Recolectar datos de campos dinámicos
+            const dynamicData = {};
+            let title = '';
+            let description = '';
+            
+            if (selectedType?.form_schema?.fields) {
+                selectedType.form_schema.fields.forEach(field => {
+                    if (field.type === 'checkbox') {
+                        const checkboxes = document.querySelectorAll(`input[name="${field.name}[]"]:checked`);
+                        dynamicData[field.name] = Array.from(checkboxes).map(cb => cb.value);
+                    } else {
+                        const input = document.querySelector(`[name="${field.name}"]`);
+                        if (input) {
+                            dynamicData[field.name] = input.value;
+                            // Usar el primer campo de texto como título
+                            if (!title && field.type === 'text') {
+                                title = input.value;
+                            }
+                            // Usar el primer textarea como descripción
+                            if (!description && field.type === 'textarea') {
+                                description = input.value;
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Si no hay campos específicos, usar valores genéricos
+            if (!title) title = selectedType.name;
+            if (!description) description = 'Solicitud enviada desde el portal del propietario';
+            
+            // Validar fecha si es mudanza
+            if (isMoveType && moveAllowedDays.length > 0) {
+                const dateField = selectedType.form_schema.fields.find(f => f.type === 'date');
+                if (dateField && dynamicData[dateField.name]) {
+                    const dateInput = document.querySelector(`[name="${dateField.name}"]`);
+                    if (!validateMoveDate(dateInput)) return;
+                }
+            }
+            
+            const formData = {
+                propertyId: propertyId,
+                request_type_id: selectedTypeId,
+                title: title,
+                description: description,
+                priority: 'MEDIUM',
+                data: dynamicData
+            };
+
+            try {
+                const response = await fetch('/api/owner/requests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Solicitud creada exitosamente');
+                    setTimeout(() => window.location.href = '/owner/requests', 1500);
+                } else {
+                    showToast(data.error || 'Error al crear solicitud', 'error');
+                }
+            } catch (error) {
+                showToast('Error al enviar solicitud', 'error');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // Cargar al iniciar
+        document.addEventListener('DOMContentLoaded', loadRequestTypes);
+    </script>
+</body>
+</html>
