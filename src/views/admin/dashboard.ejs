@@ -937,9 +937,13 @@
                 <div class="mb-6">
                     <p class="text-sm font-medium text-gray-700 mb-1">Selecciona el condominio</p>
                     <p class="text-xs text-gray-500 mb-3">Elige a qué condominio apunta esta factura. Los ítems extraordinarios aplican solo al condominio seleccionado.</p>
-                    <div id="saas-overview-tenant-selector" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
-                        <p class="text-sm text-gray-500 col-span-full">Cargando condominios...</p>
-                    </div>
+                    <button type="button" id="saas-tenant-selector-trigger" onclick="openSaaSTenantPickerModal()" class="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-gray-50 disabled:hover:border-gray-200">
+                        <span class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-rounded text-[#f97316]">apartment</span>
+                        </span>
+                        <span id="saas-tenant-selector-text" class="flex-1 text-gray-500">Haz clic para seleccionar condominio...</span>
+                        <span class="material-symbols-rounded text-gray-400 flex-shrink-0">expand_more</span>
+                    </button>
                 </div>
                 <div id="saas-overview-selected-summary" class="hidden">
                     <div id="saas-overview-tenants" class="space-y-2 mb-4"></div>
@@ -963,6 +967,21 @@
                     <span class="material-symbols-rounded text-lg">check_circle</span>
                     Generar factura
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Seleccionar Condominio (dentro del flujo de facturación) -->
+    <div id="saas-tenant-picker-modal" class="fixed inset-0 z-[55] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="if(event.target===this)closeSaaSTenantPickerModal()">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-medium text-gray-900">Seleccionar Condominio</h3>
+                <button onclick="closeSaaSTenantPickerModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-gray-600">close</span>
+                </button>
+            </div>
+            <div id="saas-tenant-picker-list" class="overflow-y-auto flex-1 divide-y divide-gray-100">
+                <p class="p-4 text-sm text-gray-500">Cargando...</p>
             </div>
         </div>
     </div>
@@ -1907,7 +1926,11 @@
             saasExtraItems = [];
             document.getElementById('saas-overview-selected-summary').classList.add('hidden');
             document.getElementById('saas-generate-btn').disabled = true;
-            document.getElementById('saas-overview-tenant-selector').innerHTML = '<p class="text-sm text-gray-500 col-span-full">Cargando...</p>';
+            const selectorText = document.getElementById('saas-tenant-selector-text');
+            selectorText.textContent = 'Haz clic para seleccionar condominio...';
+            selectorText.classList.remove('text-gray-900');
+            selectorText.classList.add('text-gray-500');
+            document.getElementById('saas-tenant-selector-trigger').disabled = true;
             document.getElementById('saas-overview-modal').classList.remove('hidden');
             document.getElementById('saas-overview-rate-info').textContent = 'Cargando tasa BCV...';
             document.getElementById('saas-overview-ves').textContent = '';
@@ -1930,33 +1953,53 @@
                 })() : '';
                 document.getElementById('saas-overview-rate-info').textContent = rateDateStr ? `Tasa BCV aplicable (${rateDateStr}): días 1-5 del mes usa tasa del 1ro; día 6+ usa tasa diaria` : 'Tasa BCV se aplicará al generar (días 1-5: tasa del 1ro; día 6+: tasa diaria)';
                 const eligibles = tenants.filter(t => t.has_invoice === 0);
+                document.getElementById('saas-tenant-selector-trigger').disabled = eligibles.length === 0;
                 if (eligibles.length === 0) {
-                    document.getElementById('saas-overview-tenant-selector').innerHTML = '<p class="text-sm text-amber-600 col-span-full">No hay condominios elegibles para este período (todos ya facturados).</p>';
-                } else {
-                    document.getElementById('saas-overview-tenant-selector').innerHTML = eligibles.map(t => `
-                        <button type="button" onclick="selectSaaSTenantInModal('${t.id}')" data-tenant-id="${t.id}" class="saas-tenant-card flex flex-col items-start p-4 rounded-xl border-2 border-gray-200 hover:border-[var(--md-sys-color-primary)] hover:bg-orange-50/50 transition text-left">
-                            <span class="font-medium text-gray-900">${t.name}</span>
-                            <span class="text-sm text-gray-500 mt-1">${t.property_count || 0} unidad(es)</span>
-                            <span class="text-xs text-[var(--md-sys-color-primary)] mt-2">Seleccionar</span>
-                        </button>
-                    `).join('');
+                    document.getElementById('saas-tenant-selector-text').textContent = 'No hay condominios elegibles (todos ya facturados)';
                 }
                 renderSaaSOverviewExtras();
                 updateSaaSOverviewTotals([]);
             } catch (e) {
-                document.getElementById('saas-overview-tenant-selector').innerHTML = '<p class="text-sm text-red-500 col-span-full">Error al cargar</p>';
+                document.getElementById('saas-tenant-selector-text').textContent = 'Error al cargar';
+                document.getElementById('saas-tenant-selector-trigger').disabled = true;
             }
+        }
+
+        function openSaaSTenantPickerModal() {
+            if (document.getElementById('saas-tenant-selector-trigger').disabled) return;
+            const eligibles = saasOverviewTenantsList.filter(t => t.has_invoice === 0);
+            const listEl = document.getElementById('saas-tenant-picker-list');
+            if (eligibles.length === 0) {
+                listEl.innerHTML = '<p class="p-4 text-sm text-amber-600">No hay condominios elegibles para este período.</p>';
+            } else {
+                listEl.innerHTML = eligibles.map(t => `
+                    <button type="button" onclick="selectSaaSTenantInModal('${t.id}'); closeSaaSTenantPickerModal();" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left border-b border-gray-100 last:border-b-0">
+                        <span class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-rounded text-[#f97316] text-xl">apartment</span>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-medium text-gray-900 block truncate">${t.name}</span>
+                            <span class="text-sm text-gray-500">${t.property_count || 0} unidad(es)</span>
+                        </div>
+                        <span class="material-symbols-rounded text-gray-400 flex-shrink-0">chevron_right</span>
+                    </button>
+                `).join('');
+            }
+            document.getElementById('saas-tenant-picker-modal').classList.remove('hidden');
+        }
+
+        function closeSaaSTenantPickerModal() {
+            document.getElementById('saas-tenant-picker-modal').classList.add('hidden');
         }
 
         function selectSaaSTenantInModal(tenantId) {
             saasOverviewSelectedTenantId = tenantId;
-            document.querySelectorAll('.saas-tenant-card').forEach(card => {
-                const isSelected = card.getAttribute('data-tenant-id') === tenantId;
-                card.classList.toggle('border-[var(--md-sys-color-primary)]', isSelected);
-                card.classList.toggle('bg-orange-50', isSelected);
-                card.classList.toggle('border-gray-200', !isSelected);
-            });
             const tenant = saasOverviewTenantsList.find(t => t.id === tenantId);
+            if (tenant) {
+                document.getElementById('saas-tenant-selector-text').textContent = `${tenant.name} — ${tenant.property_count || 0} unidad(es)`;
+                document.getElementById('saas-tenant-selector-text').classList.remove('text-gray-500');
+                document.getElementById('saas-tenant-selector-text').classList.add('text-gray-900');
+            }
             const toBill = tenant ? [tenant] : [];
             document.getElementById('saas-overview-selected-summary').classList.remove('hidden');
             document.getElementById('saas-overview-tenants').innerHTML = toBill.length ? 
