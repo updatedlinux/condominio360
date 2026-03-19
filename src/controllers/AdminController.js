@@ -563,14 +563,15 @@ class AdminController {
             }
             console.error('Onboarding error:', error);
             
-            if (error.message && error.message.includes('UNIQUE KEY')) {
-                if (error.message.includes('slug')) {
-                    return res.status(409).json({ error: 'El slug ya existe. Elige otro identificador.' });
+            const msg = (error.message || '').toLowerCase();
+            if (msg.includes('unique key') || msg.includes('duplicate key')) {
+                if (msg.includes('slug') || (msg.includes('tenants') && msg.includes('duplicate'))) {
+                    return res.status(409).json({ error: 'El identificador (slug) ya existe. Elige otro, por ejemplo: bcc-residencial, torre-bcc.' });
                 }
-                if (error.message.includes('dni')) {
+                if (msg.includes('dni')) {
                     return res.status(409).json({ error: 'La cédula ya está registrada.' });
                 }
-                if (error.message.includes('email')) {
+                if (msg.includes('email')) {
                     return res.status(409).json({ error: 'El email ya está registrado.' });
                 }
             }
