@@ -69,7 +69,7 @@ async function main() {
 
             const deleteResult = await pool.request()
                 .input('user_id', sql.UniqueIdentifier, user.id)
-                .query('DELETE FROM Users WHERE id = @user_id OUTPUT DELETED.id');
+                .query('DELETE FROM Users WHERE id = @user_id');
 
             if (deleteResult.rowsAffected[0] > 0) {
                 console.log(`  ✅ DNI ${dni}: Eliminado - ${label}`);
