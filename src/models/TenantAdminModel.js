@@ -163,11 +163,12 @@ class TenantAdminModel {
             }
         }
 
-        // Handle password update separately
+        // Handle password update separately (también limpia must_change_password)
         if (data.password) {
             const saltRounds = 10;
             const password_hash = await bcrypt.hash(data.password, saltRounds);
             updates.push('password_hash = @password_hash');
+            updates.push('must_change_password = 0');
         }
 
         if (updates.length === 0) return null;

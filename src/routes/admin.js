@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const AdminController = require('../controllers/AdminController');
+const AdminDataUpdateController = require('../controllers/AdminDataUpdateController');
 const AdminSaaSBillingController = require('../controllers/AdminSaaSBillingController');
 const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
@@ -32,6 +33,12 @@ router.delete('/superadmins/:id', AdminController.deleteSuperAdmin);
 
 // ==================== BÚSQUEDA PROPIETARIOS (SuperAdmin) ====================
 router.get('/owners/search', AdminController.searchOwners);
+
+// ==================== ACTUALIZACIÓN DE DATOS (Solicitudes de propietarios) ====================
+router.get('/data-update-requests', AdminDataUpdateController.list);
+router.get('/data-update-requests/:id', AdminDataUpdateController.getById);
+router.post('/data-update-requests/:id/approve', AdminDataUpdateController.approve);
+router.post('/data-update-requests/:id/reject', AdminDataUpdateController.reject);
 
 // ==================== TENANTS (CONDOMINIOS) ====================
 router.get('/tenants', AdminController.getAllTenants);

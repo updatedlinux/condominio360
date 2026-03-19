@@ -138,7 +138,8 @@ class AuthService {
                 firstName: admin.first_name,
                 lastName: admin.last_name,
                 role: admin.role,
-                type: 'TENANT_ADMIN'
+                type: 'TENANT_ADMIN',
+                mustChangePassword: !!(admin.must_change_password)
             },
             tenant: {
                 id: tenant.id,

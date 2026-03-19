@@ -28,6 +28,10 @@ router.use(authenticate, requireOwner);
 // ==================== DASHBOARD ====================
 router.get('/dashboard', OwnerController.getDashboard);
 router.get('/activity', OwnerController.getActivity);
+
+// ==================== PERFIL ====================
+router.get('/profile', require('../controllers/OwnerProfileController').getProfile);
+router.post('/profile/update-request', require('../controllers/OwnerProfileController').submitUpdateRequest);
 router.get('/in-app-notifications', require('../controllers/InAppNotificationController').getForOwner);
 
 // ==================== DELIVERIES ====================

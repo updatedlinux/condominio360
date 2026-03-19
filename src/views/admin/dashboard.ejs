@@ -486,6 +486,10 @@
                     <span class="icon material-symbols-rounded">group</span>
                     <span class="label">Usuarios</span>
                 </div>
+                <div class="nav-item pl-4 text-sm" onclick="showSection('data-updates', this)">
+                    <span class="icon material-symbols-rounded text-lg">edit_note</span>
+                    <span class="label">Actualización de Datos</span>
+                </div>
                 <div class="nav-item" onclick="showSection('audit', this)">
                     <span class="icon material-symbols-rounded">receipt_long</span>
                     <span class="label">Auditoría</span>
@@ -726,6 +730,50 @@
                                 <div id="owner-search-result-content"></div>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- Actualización de Datos Section -->
+                <section id="section-data-updates" class="hidden space-y-6">
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+                        <span class="material-symbols-rounded text-amber-600 text-2xl flex-shrink-0">info</span>
+                        <div>
+                            <h3 class="font-medium text-amber-900">Importante</h3>
+                            <p class="text-sm text-amber-800 mt-1">Los cambios que apruebes afectarán la información del usuario en <strong>todos los inmuebles y condominios</strong> asociados a él.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-medium text-gray-900">Solicitudes de Actualización de Datos</h3>
+                            <p class="text-gray-500 mt-1">Propietarios solicitan cambios en sus datos personales</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="dur-status-filter" onchange="loadDataUpdateRequests()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="">Todas</option>
+                                <option value="PENDING">Pendientes</option>
+                                <option value="APPROVED">Aprobadas</option>
+                                <option value="REJECTED">Rechazadas</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="md-card overflow-hidden">
+                        <div class="md-table-container">
+                            <table class="md-table">
+                                <thead>
+                                    <tr>
+                                        <th>Propietario</th>
+                                        <th>Email</th>
+                                        <th>Estado</th>
+                                        <th>Fecha</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="data-update-requests-tbody">
+                                    <tr><td colspan="5" class="text-center py-8 text-gray-500">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="dur-pagination" class="px-6 py-4 border-t border-gray-100 flex items-center justify-between"></div>
                     </div>
                 </section>
 
@@ -1292,6 +1340,62 @@
         </div>
     </div>
 
+    <!-- Modal: Solicitud Actualización de Datos -->
+    <div id="dur-modal-overlay" class="md-modal-overlay" onclick="closeDurModal()"></div>
+    <div id="dur-modal" class="md-modal max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
+            <h3 class="text-xl font-medium text-gray-900">Solicitud de Actualización de Datos</h3>
+            <button onclick="closeDurModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                <span class="material-symbols-rounded text-gray-600">close</span>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1 space-y-6">
+            <div id="dur-modal-loading" class="text-center py-8 text-gray-500">Cargando...</div>
+            <div id="dur-modal-content" class="hidden space-y-6">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                    <strong>Importante:</strong> Los cambios afectarán la información del usuario en todos los inmuebles y condominios asociados.
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Condominios</h4>
+                        <ul id="dur-tenants" class="text-sm text-gray-600 space-y-1"></ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Inmuebles</h4>
+                        <ul id="dur-properties" class="text-sm text-gray-600 space-y-1"></ul>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Datos actuales</h4>
+                        <div id="dur-old-data" class="space-y-2 text-sm bg-gray-50 p-4 rounded-lg"></div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Datos nuevos (editables)</h4>
+                        <div id="dur-new-data-form" class="space-y-4"></div>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <span id="dur-requested-at"></span> (GMT-4)
+                </div>
+            </div>
+        </div>
+        <div id="dur-modal-actions" class="px-6 py-4 border-t border-gray-100 space-y-3 bg-gray-50/50 flex-shrink-0 hidden">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Motivo del rechazo (opcional, si rechaza)</label>
+                <input type="text" id="dur-reject-reason" placeholder="Ej: Datos no verificados" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="rejectDurRequest()" class="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium">
+                    Rechazar
+                </button>
+                <button type="button" onclick="approveDurRequest()" class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 font-medium">
+                    Aprobar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Snackbar -->
     <div id="snackbar" class="md-snackbar">
         <span id="snackbar-message">Mensaje</span>
@@ -1365,6 +1469,7 @@
                 'dashboard': 'Dashboard',
                 'tenants': 'Condominios',
                 'users': 'Superadministradores',
+                'data-updates': 'Actualización de Datos',
                 'audit': 'Auditoría',
                 'saas-billing': 'Facturación Condominio360',
                 'balance-financiero': 'Balance Financiero',
@@ -1377,6 +1482,8 @@
                 loadTenants();
             } else if (sectionName === 'users') {
                 loadSuperAdmins();
+            } else if (sectionName === 'data-updates') {
+                loadDataUpdateRequests();
             } else if (sectionName === 'audit') {
                 loadAuditLogs();
             } else if (sectionName === 'saas-billing') {
@@ -1446,6 +1553,150 @@
                 renderAuditLogs(data);
             } catch (error) {
                 showSnackbar('Error cargando auditoría', 'error');
+            }
+        }
+
+        let durPage = 1;
+        let durCurrentDetail = null;
+
+        async function loadDataUpdateRequests() {
+            const status = document.getElementById('dur-status-filter')?.value || '';
+            try {
+                let url = `/api/admin/data-update-requests?page=${durPage}&limit=20`;
+                if (status) url += `&status=${status}`;
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                renderDataUpdateRequests(data.data, data.pagination);
+            } catch (error) {
+                document.getElementById('data-update-requests-tbody').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-500">Error al cargar</td></tr>';
+            }
+        }
+
+        function renderDataUpdateRequests(rows, pagination) {
+            const tbody = document.getElementById('data-update-requests-tbody');
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No hay solicitudes</td></tr>';
+            } else {
+                tbody.innerHTML = rows.map(r => {
+                    const statusClass = r.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : r.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    const statusLabel = r.status === 'PENDING' ? 'Pendiente' : r.status === 'APPROVED' ? 'Aprobada' : 'Rechazada';
+                    const dateStr = r.requested_at ? new Date(r.requested_at).toLocaleString('es-VE', { timeZone: 'America/Caracas' }) : '-';
+                    return `<tr>
+                        <td>${(r.first_name || '')} ${(r.last_name || '')}</td>
+                        <td>${r.email || '-'}</td>
+                        <td><span class="px-2 py-1 rounded text-xs font-medium ${statusClass}">${statusLabel}</span></td>
+                        <td>${dateStr}</td>
+                        <td>${r.status === 'PENDING' ? `<button onclick="openDurModal('${r.id}')" class="text-[var(--md-sys-color-primary)] hover:underline text-sm">Ver</button>` : `<button onclick="openDurModal('${r.id}')" class="text-gray-500 hover:underline text-sm">Ver</button>`}</td>
+                    </tr>`;
+                }).join('');
+            }
+            const pagEl = document.getElementById('dur-pagination');
+            if (pagination && pagination.pages > 1) {
+                pagEl.innerHTML = `<div class="text-sm text-gray-500">Página ${pagination.page} de ${pagination.pages} (${pagination.total} total)</div>
+                    <div class="flex gap-2">
+                        <button onclick="durPage=${pagination.page-1}; loadDataUpdateRequests();" ${pagination.page <= 1 ? 'disabled' : ''} class="px-3 py-1 border rounded text-sm disabled:opacity-50">Anterior</button>
+                        <button onclick="durPage=${pagination.page+1}; loadDataUpdateRequests();" ${pagination.page >= pagination.pages ? 'disabled' : ''} class="px-3 py-1 border rounded text-sm disabled:opacity-50">Siguiente</button>
+                    </div>`;
+            } else {
+                pagEl.innerHTML = pagination ? `<div class="text-sm text-gray-500">${pagination.total} solicitudes</div>` : '';
+            }
+        }
+
+        async function openDurModal(id) {
+            document.getElementById('dur-modal-overlay').classList.add('active');
+            document.getElementById('dur-modal').classList.add('active');
+            document.getElementById('dur-modal-loading').classList.remove('hidden');
+            document.getElementById('dur-modal-content').classList.add('hidden');
+            document.getElementById('dur-modal-actions').classList.add('hidden');
+            const reasonEl = document.getElementById('dur-reject-reason');
+            if (reasonEl) reasonEl.value = '';
+            try {
+                const res = await fetch(`/api/admin/data-update-requests/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+                durCurrentDetail = data;
+                const req = data.request;
+                const oldData = req.old_data || {};
+                const newData = req.new_data || {};
+                document.getElementById('dur-tenants').innerHTML = (data.tenants || []).map(t => `<li>${t.name}</li>`).join('') || '<li class="text-gray-400">-</li>';
+                document.getElementById('dur-properties').innerHTML = (data.properties || []).map(p => `<li>${p.tenant_name} - ${p.name || p.building_name}</li>`).join('') || '<li class="text-gray-400">-</li>';
+                document.getElementById('dur-old-data').innerHTML = `
+                    <div>Nombre: ${oldData.first_name || '-'}</div>
+                    <div>Apellido: ${oldData.last_name || '-'}</div>
+                    <div>Cédula: ${oldData.dni || '-'}</div>
+                    <div>Correo: ${oldData.email || '-'}</div>
+                    <div>Teléfono: ${oldData.phone || '-'}</div>
+                `;
+                document.getElementById('dur-new-data-form').innerHTML = `
+                    <div><label class="block text-xs text-gray-500 mb-1">Nombre</label><input type="text" id="dur-edit-first_name" value="${(newData.first_name || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Apellido</label><input type="text" id="dur-edit-last_name" value="${(newData.last_name || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Cédula</label><input type="text" id="dur-edit-dni" value="${(newData.dni || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Correo</label><input type="email" id="dur-edit-email" value="${(newData.email || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Teléfono</label><input type="text" id="dur-edit-phone" value="${(newData.phone || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+                `;
+                const d = new Date(req.requested_at);
+                document.getElementById('dur-requested-at').textContent = d.toLocaleString('es-VE', { timeZone: 'America/Caracas', dateStyle: 'medium', timeStyle: 'medium' });
+                document.getElementById('dur-modal-loading').classList.add('hidden');
+                document.getElementById('dur-modal-content').classList.remove('hidden');
+                if (req.status === 'PENDING') {
+                    document.getElementById('dur-modal-actions').classList.remove('hidden');
+                }
+            } catch (e) {
+                document.getElementById('dur-modal-loading').textContent = 'Error al cargar';
+            }
+        }
+
+        function closeDurModal() {
+            document.getElementById('dur-modal-overlay').classList.remove('active');
+            document.getElementById('dur-modal').classList.remove('active');
+        }
+
+        async function approveDurRequest() {
+            if (!durCurrentDetail) return;
+            const id = durCurrentDetail.request.id;
+            const newData = {
+                first_name: document.getElementById('dur-edit-first_name').value.trim(),
+                last_name: document.getElementById('dur-edit-last_name').value.trim(),
+                dni: document.getElementById('dur-edit-dni').value.trim(),
+                email: document.getElementById('dur-edit-email').value.trim(),
+                phone: document.getElementById('dur-edit-phone').value.trim() || null
+            };
+            try {
+                const res = await fetch(`/api/admin/data-update-requests/${id}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ new_data: newData })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error');
+                showSnackbar('Solicitud aprobada. Datos actualizados.', 'success');
+                closeDurModal();
+                loadDataUpdateRequests();
+                loadActivity();
+            } catch (e) {
+                showSnackbar(e.message || 'Error al aprobar', 'error');
+            }
+        }
+
+        async function rejectDurRequest() {
+            if (!durCurrentDetail) return;
+            const reason = document.getElementById('dur-reject-reason')?.value?.trim() || null;
+            const id = durCurrentDetail.request.id;
+            try {
+                const res = await fetch(`/api/admin/data-update-requests/${id}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error');
+                showSnackbar('Solicitud rechazada', 'success');
+                closeDurModal();
+                loadDataUpdateRequests();
+                loadActivity();
+            } catch (e) {
+                showSnackbar(e.message || 'Error al rechazar', 'error');
             }
         }
 
@@ -2306,13 +2557,20 @@
             const adminEmail = document.getElementById('admin-email')?.value.trim();
             const adminPassword = document.getElementById('admin-password')?.value.trim();
             
-            // Verificar que todos estén completos
-            const isValid = tenantName && tenantSlug && adminDisplayName && adminEmail && adminPassword;
+            // Paso 3: si MULTIPLE, al menos un edificio con nombre
+            const buildingType = document.getElementById('building-type')?.value;
+            let buildingsValid = true;
+            if (buildingType === 'MULTIPLE') {
+                buildingsValid = buildings.some(b => (b.name || '').trim());
+            }
             
-            // Actualizar estado del botón submit
+            // Verificar que todos estén completos
+            const isValid = tenantName && tenantSlug && adminDisplayName && adminEmail && adminPassword && buildingsValid;
+            
+            // Actualizar estado del botón submit (también respetar idempotencia)
             const submitBtn = document.getElementById('btn-submit');
             if (submitBtn) {
-                submitBtn.disabled = !isValid;
+                submitBtn.disabled = !isValid || !!window.submitTenantInProgress;
             }
             
             return isValid;
@@ -2358,17 +2616,20 @@
                     addBuilding();
                 }
             }
+            validateAllFields();
         }
         
         function addBuilding() {
             const id = Date.now();
             buildings.push({ id, name: '', code: '' });
             renderBuildings();
+            validateAllFields();
         }
         
         function removeBuilding(id) {
             buildings = buildings.filter(b => b.id !== id);
             renderBuildings();
+            validateAllFields();
         }
         
         function updateBuilding(id, field, value) {
@@ -2376,6 +2637,7 @@
             if (building) {
                 building[field] = value;
             }
+            validateAllFields();
         }
         
         function renderBuildings() {
@@ -2548,6 +2810,16 @@
         }
 
         async function submitTenant() {
+            if (window.submitTenantInProgress) return;
+            window.submitTenantInProgress = true;
+
+            const submitBtn = document.getElementById('btn-submit');
+            const originalHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent inline-block mr-2"></span> Creando...';
+            }
+
             const buildingType = document.getElementById('building-type').value;
             const billingType = document.querySelector('input[name="billing_type"]:checked')?.value || 'FIXED';
             
@@ -2598,6 +2870,12 @@
                 loadStats();
             } catch (error) {
                 showSnackbar(error.message, 'error');
+            } finally {
+                window.submitTenantInProgress = false;
+                if (submitBtn) {
+                    submitBtn.disabled = !validateAllFields();
+                    submitBtn.innerHTML = originalHtml || '<span class="material-symbols-rounded">check</span> Crear Condominio';
+                }
             }
         }
 

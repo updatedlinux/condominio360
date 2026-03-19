@@ -526,9 +526,9 @@ class AdminController {
                 .input('created_by', sql.UniqueIdentifier, req.user.userId)
                 .query(`
                     INSERT INTO TenantAdmins 
-                        (tenant_id, user_id, email, password_hash, first_name, last_name, phone, role, is_active, created_by)
+                        (tenant_id, user_id, email, password_hash, first_name, last_name, phone, role, is_active, created_by, must_change_password)
                     VALUES 
-                        (@tenant_id, @user_id, @email, @password_hash, @first_name, @last_name, @phone, @role, 1, @created_by)
+                        (@tenant_id, @user_id, @email, @password_hash, @first_name, @last_name, @phone, @role, 1, @created_by, 1)
                 `);
 
             await transaction.commit();
@@ -887,7 +887,7 @@ class AdminController {
             SUSPEND: 'Suspendió condominio',
             UPDATE_BILLING_MODE: 'Cambió modo de facturación'
         };
-            desc = map[log.action] || `Acción: ${log.action}`;
+            desc = map[log.action] || log.description || `Acción: ${log.action}`;
         }
         if (log.user_name && String(log.user_name).trim()) {
             desc = `${desc} — ${String(log.user_name).trim()}`;

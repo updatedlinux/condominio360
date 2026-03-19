@@ -188,6 +188,29 @@ class OwnerController {
                 // Columna last_login no existe, ignorar
             }
 
+            // 1b. Solicitudes de actualización de datos (user-level)
+            try {
+                const durResult = await pool.request()
+                    .input('userId', sql.UniqueIdentifier, userId)
+                    .query(`
+                        SELECT TOP 5 id, status, requested_at FROM DataUpdateRequests 
+                        WHERE user_id = @userId ORDER BY requested_at DESC
+                    `);
+                durResult.recordset.forEach(r => {
+                    const statusLabel = r.status === 'PENDING' ? 'Pendiente' : r.status === 'APPROVED' ? 'Aprobada' : 'Rechazada';
+                    activities.push({
+                        type: 'data_update_request',
+                        icon: 'edit_note',
+                        title: `Solicitud de actualización de datos: ${statusLabel}`,
+                        description: 'Actualización de datos personales',
+                        date: r.requested_at,
+                        color: r.status === 'PENDING' ? 'amber' : r.status === 'APPROVED' ? 'green' : 'red'
+                    });
+                });
+            } catch (e) {
+                // Tabla puede no existir
+            }
+
             // 2. Visitas registradas (últimas 20)
             const visitsResult = await pool.request()
                 .input('propertyId', sql.UniqueIdentifier, propertyId)

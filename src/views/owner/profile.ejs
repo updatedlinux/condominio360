@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Mi Perfil - Condominio360</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; }
+        .toast.success { background: #16a34a; color: white; }
+        .toast.error { background: #dc2626; color: white; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            </div>
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-3">
+                    <a href="/owner/dashboard" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">dashboard</span>
+                        Panel Principal
+                    </a>
+                    <a href="/owner/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">assignment</span>
+                        Mis Solicitudes
+                    </a>
+                    <a href="/owner/consultations" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">how_to_vote</span>
+                        Consultas
+                    </a>
+                    <a href="/owner/visitors" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">people</span>
+                        Visitas
+                    </a>
+                    <a href="/owner/communiques" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">campaign</span>
+                        Comunicados
+                    </a>
+                    <a href="/owner/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">sports_tennis</span>
+                        Áreas Comunes
+                    </a>
+                    <a href="/owner/delivery/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">local_shipping</span>
+                        Anunciar Delivery
+                    </a>
+                    <a href="/owner/invoices" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">receipt_long</span>
+                        Mis Recibos
+                    </a>
+                    <a href="/owner/vehicle-access" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                        <span class="material-icons-round mr-3 text-[#5F6368]">nfc</span>
+                        Accesos Vehiculares
+                    </a>
+                    <a href="/owner/profile" class="sidebar-item active flex items-center px-3 py-3 text-sm font-medium text-[#3C4043] rounded-lg">
+                        <span class="material-icons-round mr-3 text-[#f97316]">person</span>
+                        Mi Perfil
+                    </a>
+                    <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                        <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Acciones Rápidas</p>
+                        <a href="/owner/requests/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">add_circle</span>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/owner/visitors/new" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium text-[#5F6368] rounded-lg hover:text-[#3C4043]">
+                            <span class="material-icons-round mr-3 text-[#5F6368]">person_add</span>
+                            Anunciar Visita
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-[#E5E5E5]">
+                <button onclick="logout()" class="flex items-center w-full px-3 py-2 text-sm font-medium text-[#5F6368] hover:text-red-600 rounded-lg hover:bg-red-50">
+                    <span class="material-icons-round mr-3">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                        <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                            <span class="material-icons-round">arrow_back</span>
+                        </a>
+                        <div>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Mi Perfil</h1>
+                            <p class="text-sm text-[#5F6368]">Ver y solicitar actualización de tus datos personales</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <!-- Aviso importante -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+                        <span class="material-icons-round text-amber-600 text-2xl flex-shrink-0">info</span>
+                        <div>
+                            <h3 class="font-medium text-amber-900">Importante</h3>
+                            <p class="text-sm text-amber-800 mt-1">Los cambios que solicites tendrán efecto (en caso de ser aprobados) en <strong>todos los condominios e inmuebles</strong> donde tengas propiedad en Condominio360, no solo en el inmueble donde estás autenticado.</p>
+                        </div>
+                    </div>
+
+                    <!-- Solicitud pendiente -->
+                    <div id="pending-alert" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+                        <span class="material-icons-round text-blue-600 text-2xl flex-shrink-0">schedule</span>
+                        <div>
+                            <h3 class="font-medium text-blue-900">Solicitud en proceso</h3>
+                            <p class="text-sm text-blue-800 mt-1">Ya tienes una solicitud de actualización pendiente. Serás contactado para ratificar los datos. No puedes enviar otra solicitud hasta que esta sea procesada.</p>
+                        </div>
+                    </div>
+
+                    <!-- Datos actuales -->
+                    <div class="card p-6">
+                        <h2 class="text-lg font-medium text-[#3C4043] mb-4">Datos actuales</h2>
+                        <div id="current-data" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div><span class="text-[#5F6368]">Nombre:</span> <span id="cur-first_name">-</span></div>
+                            <div><span class="text-[#5F6368]">Apellido:</span> <span id="cur-last_name">-</span></div>
+                            <div><span class="text-[#5F6368]">Cédula:</span> <span id="cur-dni">-</span></div>
+                            <div><span class="text-[#5F6368]">Correo:</span> <span id="cur-email">-</span></div>
+                            <div><span class="text-[#5F6368]">Teléfono:</span> <span id="cur-phone">-</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de actualización -->
+                    <div class="card p-6">
+                        <h2 class="text-lg font-medium text-[#3C4043] mb-4">Solicitar actualización de datos</h2>
+                        <p class="text-sm text-[#5F6368] mb-6">Completa el formulario con los datos que deseas actualizar. Tu solicitud será revisada por el Super Admin y la Junta de Condominio.</p>
+                        <form id="update-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-[#3C4043] mb-1">Nombre *</label>
+                                    <input type="text" id="first_name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-[#3C4043] mb-1">Apellido *</label>
+                                    <input type="text" id="last_name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[#3C4043] mb-1">Cédula *</label>
+                                <input type="text" id="dni" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[#3C4043] mb-1">Correo electrónico *</label>
+                                <input type="email" id="email" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[#3C4043] mb-1">Teléfono</label>
+                                <input type="tel" id="phone" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none" placeholder="Opcional">
+                            </div>
+                            <button type="submit" id="submit-btn" class="w-full py-3 bg-[#f97316] hover:bg-[#ea580c] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-60">
+                                <span id="submit-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
+                                <span id="submit-text">Enviar solicitud de actualización</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const propertyId = sessionStorage.getItem('selectedPropertyId') || new URLSearchParams(location.search).get('propertyId') || JSON.parse(localStorage.getItem('selectedProperty') || '{}').id;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.textContent = message;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('tenant'); localStorage.removeItem('selectedProperty');
+            sessionStorage.clear();
+            location.href = '/login';
+        }
+
+        async function loadProfile() {
+            if (!token) { location.href = '/login'; return; }
+            try {
+                const url = propertyId ? `/api/owner/profile?propertyId=${propertyId}` : '/api/owner/profile';
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.status === 401) { location.href = '/login'; return; }
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Error');
+
+                const p = data.profile;
+                document.getElementById('cur-first_name').textContent = p.first_name || '-';
+                document.getElementById('cur-last_name').textContent = p.last_name || '-';
+                document.getElementById('cur-dni').textContent = p.dni || '-';
+                document.getElementById('cur-email').textContent = p.email || '-';
+                document.getElementById('cur-phone').textContent = p.phone || '-';
+
+                document.getElementById('first_name').value = p.first_name || '';
+                document.getElementById('last_name').value = p.last_name || '';
+                document.getElementById('dni').value = p.dni || '';
+                document.getElementById('email').value = p.email || '';
+                document.getElementById('phone').value = p.phone || '';
+
+                if (data.pendingRequest) {
+                    document.getElementById('pending-alert').classList.remove('hidden');
+                    document.getElementById('update-form').querySelector('button[type="submit"]').disabled = true;
+                }
+            } catch (e) {
+                showToast(e.message || 'Error al cargar perfil', 'error');
+            }
+        }
+
+        document.getElementById('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const spinner = document.getElementById('submit-spinner');
+            const text = document.getElementById('submit-text');
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = 'Enviando...';
+
+            try {
+                const res = await fetch('/api/owner/profile/update-request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        first_name: document.getElementById('first_name').value.trim(),
+                        last_name: document.getElementById('last_name').value.trim(),
+                        dni: document.getElementById('dni').value.trim(),
+                        email: document.getElementById('email').value.trim(),
+                        phone: document.getElementById('phone').value.trim() || null
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error');
+                showToast('Solicitud enviada. Serás contactado para ratificar los datos.', 'success');
+                document.getElementById('pending-alert').classList.remove('hidden');
+                btn.disabled = true;
+            } catch (err) {
+                showToast(err.message || 'Error al enviar solicitud', 'error');
+                btn.disabled = false;
+            } finally {
+                spinner.classList.add('hidden');
+                text.textContent = 'Enviar solicitud de actualización';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

@@ -423,6 +423,7 @@ class AuthController {
                     lastName: admin.last_name,
                     role: admin.role,
                     type: 'TENANT_ADMIN',
+                    mustChangePassword: !!(admin.must_change_password),
                     tenant: {
                         id: admin.tenant_id,
                         name: admin.tenant_name,

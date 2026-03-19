@@ -933,6 +933,71 @@ class EmailService {
     }
 
     /**
+     * Notificar al propietario que su solicitud de actualización de datos fue recibida
+     */
+    async sendDataUpdateRequestToOwner(email, firstName) {
+        const subject = 'Solicitud de actualización de datos recibida - Condominio360';
+        const content = `
+            <h2>Hola ${firstName},</h2>
+            <p>Hemos recibido tu solicitud de actualización de datos personales.</p>
+            <p><strong>Serás contactado para ratificar los datos que indicaste.</strong> Además, esta solicitud será verificada con la Junta de Condominio y la empresa administradora en caso de tenerla.</p>
+            <p>Te notificaremos por correo cuando tu solicitud sea procesada (aprobada o rechazada).</p>
+            <p>Si no realizaste esta solicitud, por favor contacta a la administración de tu condominio.</p>
+        `;
+        const html = this._generateEmailTemplate(content, { title: 'Solicitud Recibida', subtitle: 'Actualización de datos', color: '#f97316' });
+        await this.send(email, subject, html);
+    }
+
+    /**
+     * Notificar al Super Admin de nueva solicitud de actualización de datos
+     */
+    async sendDataUpdateRequestToSuperAdmin(email, firstName, lastName, ownerEmail, adminUrl) {
+        const subject = `Nueva solicitud de actualización de datos - ${firstName} ${lastName}`;
+        const content = `
+            <h2>Nueva solicitud de actualización de datos</h2>
+            <p>El propietario <strong>${firstName} ${lastName}</strong> (${ownerEmail}) ha enviado una solicitud para actualizar sus datos personales.</p>
+            <p>Revisa y procesa la solicitud en el panel de administración.</p>
+            <div style="text-align: center;">
+                <a href="${adminUrl}" class="cta-button">Ir al panel</a>
+            </div>
+        `;
+        const html = this._generateEmailTemplate(content, { title: 'Solicitud Pendiente', subtitle: 'Actualización de datos', color: '#f97316' });
+        await this.send(email, subject, html);
+    }
+
+    /**
+     * Notificar al propietario que su solicitud fue aprobada
+     */
+    async sendDataUpdateApproved(email, firstName, changesList = []) {
+        const subject = 'Tus datos han sido actualizados - Condominio360';
+        const changesHtml = changesList.length > 0
+            ? `<ul style="margin: 16px 0; padding-left: 24px;">${changesList.map(c => `<li>${c}</li>`).join('')}</ul>`
+            : '<p>Los datos de tu perfil han sido actualizados.</p>';
+        const content = `
+            <h2>Hola ${firstName},</h2>
+            <p>Tu solicitud de actualización de datos ha sido <strong>aprobada</strong>.</p>
+            ${changesHtml}
+            <p>Estos cambios aplican a todos los condominios e inmuebles donde tienes propiedad en Condominio360.</p>
+        `;
+        const html = this._generateEmailTemplate(content, { title: 'Datos Actualizados', subtitle: 'Solicitud aprobada', color: '#16a34a' });
+        await this.send(email, subject, html);
+    }
+
+    /**
+     * Notificar al propietario que su solicitud fue rechazada
+     */
+    async sendDataUpdateRejected(email, firstName) {
+        const subject = 'Solicitud de actualización de datos - Condominio360';
+        const content = `
+            <h2>Hola ${firstName},</h2>
+            <p>Lamentamos informarte que tu solicitud de actualización de datos personales ha sido <strong>rechazada</strong>.</p>
+            <p>Tus datos permanecen sin cambios. Si necesitas actualizar tu información, por favor contacta directamente a la administración de tu condominio o a la Junta de Condominio.</p>
+        `;
+        const html = this._generateEmailTemplate(content, { title: 'Solicitud Rechazada', subtitle: 'Actualización de datos', color: '#dc2626' });
+        await this.send(email, subject, html);
+    }
+
+    /**
      * Convertir HTML a texto plano básico
      */
     _htmlToText(html) {

@@ -125,6 +125,13 @@ router.get('/owner/vehicle-access', (req, res) => {
     });
 });
 
+router.get('/owner/profile', (req, res) => {
+    res.render('owner/profile', {
+        title: 'Mi Perfil',
+        layout: false
+    });
+});
+
 // Legacy route (redirect)
 router.get('/dashboard', (req, res) => {
     res.redirect('/owner/dashboard');
