@@ -1034,11 +1034,7 @@
             if (cancelBtn) cancelBtn.disabled = true;
             if (overlay) overlay.classList.remove('hidden');
             try {
-                const results = { success: 0, errors: 0, errorDetails: [] };
-
-                for (const row of csvData) {
-                try {
-                    // Find property by slug
+                const owners = csvData.map(row => {
                     let propertyId = null;
                     if (row.inmueble_slug) {
                         const property = properties.find(p => {
@@ -1049,42 +1045,50 @@
                         });
                         propertyId = property ? property.id : null;
                     }
-
-                    const data = {
+                    return {
+                        nombre: row.nombre,
                         display_name: row.nombre,
                         email: row.email,
+                        telefono: row.telefono || '',
                         phone: row.telefono || '',
-                        document_type: row.tipo_documento || 'DNI',
+                        numero_documento: row.numero_documento || '',
                         document_number: row.numero_documento || '',
-                        address: row.direccion || '',
-                        property_id: propertyId
+                        tipo_documento: row.tipo_documento || 'DNI',
+                        direccion: row.direccion || '',
+                        property_id: propertyId,
+                        inmueble_slug: (row.inmueble_slug || '').trim() || null
                     };
+                });
 
-                    const res = await fetch(`/api/admin/tenants/${tenantId}/owners`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(data)
-                    });
+                const res = await fetch(`/api/admin/tenants/${tenantId}/owners/bulk`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ owners })
+                });
 
-                    if (res.ok) {
-                        results.success++;
-                    } else {
-                        const err = await res.json();
-                        results.errors++;
-                        const idLabel = row.numero_documento || row.nombre || 'Desconocido';
-                        results.errorDetails.push(`${idLabel}: ${err.error || 'Error desconocido'}`);
-                    }
-                } catch (error) {
-                    results.errors++;
-                    const idLabel = row.numero_documento || row.nombre || 'Desconocido';
-                    results.errorDetails.push(`${idLabel}: ${error.message}`);
+                const data = await res.json();
+                const results = { success: 0, errors: 0, errorDetails: [], total: csvData.length };
+
+                if (res.ok) {
+                    results.success = data.successCount || 0;
+                    results.errors = data.errorCount || 0;
+                    results.errorDetails = data.errorDetails || [];
+                } else {
+                    results.success = data.successCount || 0;
+                    results.errors = data.errorCount ?? 1;
+                    results.errorDetails = data.errorDetails || [data.error || 'Error desconocido'];
                 }
-            }
 
                 showResults(results);
+            } catch (error) {
+                showResults({
+                    success: 0,
+                    errors: csvData.length,
+                    errorDetails: [error.message || 'Error de conexión']
+                });
             } finally {
                 window.processCSVInProgress = false;
                 btn.disabled = false;
@@ -1100,7 +1104,7 @@
             
             document.getElementById('result-success').textContent = results.success;
             document.getElementById('result-errors').textContent = results.errors;
-            document.getElementById('result-total').textContent = results.success + results.errors;
+            document.getElementById('result-total').textContent = results.total ?? (results.success + results.errors);
 
             const iconEl = document.getElementById('results-icon');
             if (results.errors === 0) {

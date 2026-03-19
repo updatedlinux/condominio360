@@ -1445,11 +1445,11 @@ class AdminController {
             console.log(`[DEBUG] getOwners: tenantId=${id}`);
             const pool = await connectDB();
 
-            // Get users with property info - users are linked to tenants through PropertyOwners/Properties
+            // Propietarios: TenantUsers (OWNER) + PropertyOwners si tienen inmueble asignado
             const result = await pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, id)
                 .query(`
-                    SELECT 
+                    SELECT DISTINCT
                         u.id,
                         u.first_name + ' ' + u.last_name as display_name,
                         u.email,
@@ -1460,11 +1460,11 @@ class AdminController {
                         p.name as property_name,
                         b.name as building_name
                     FROM Users u
-                    INNER JOIN PropertyOwners po ON u.id = po.user_id
-                    INNER JOIN Properties p ON po.property_id = p.id
+                    INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = 'OWNER' AND tu.status = 'ACTIVE'
+                    LEFT JOIN PropertyOwners po ON u.id = po.user_id
+                    LEFT JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
                     LEFT JOIN Buildings b ON p.building_id = b.id
-                    WHERE p.tenant_id = @tenant_id
-                    
+                    WHERE tu.tenant_id = @tenant_id
                     ORDER BY display_name
                 `);
 
@@ -1556,7 +1556,8 @@ class AdminController {
                 const nameMatch = !display_name?.trim() ||
                     (incomingFirst === dbFirst && incomingLast === dbLast) ||
                     (display_name.trim() === `${dbFirst} ${dbLast}`.trim());
-                const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail || dbEmails.includes(incomingEmail);
+                // Email debe coincidir con el correo primario del usuario (no secundarios)
+                const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail;
                 const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
                 const dniMatch = !incomingDni || incomingDni === dbDni;
 
@@ -1753,6 +1754,335 @@ class AdminController {
             }
             console.error('Create owner error:', error);
             res.status(500).json({ error: error.message || 'Error al crear propietario' });
+        }
+    }
+
+    /**
+     * POST /api/admin/tenants/:id/owners/bulk
+     * Carga masiva de propietarios. Procesa todos en una transacción.
+     * Solo envía correos cuando TODO el proceso termina exitosamente.
+     */
+    static async createOwnersBulk(req, res) {
+        const pool = await connectDB();
+        const transaction = pool.transaction();
+        let transactionStarted = false;
+
+        try {
+            const { id } = req.params;
+            const { owners } = req.body;
+
+            if (!Array.isArray(owners) || owners.length === 0) {
+                return res.status(400).json({ error: 'Se requiere un array de propietarios' });
+            }
+
+            await transaction.begin();
+            transactionStarted = true;
+
+            const tenantResult = await transaction.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .query('SELECT building_type FROM Tenants WHERE id = @tenant_id');
+            const buildingType = tenantResult.recordset[0]?.building_type || 'SINGLE';
+
+            const propsResult = await transaction.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .query(`
+                    SELECT p.id, p.name, p.slug, b.name as building_name
+                    FROM Properties p
+                    LEFT JOIN Buildings b ON p.building_id = b.id
+                    WHERE p.tenant_id = @tenant_id
+                `);
+            const tenantProperties = propsResult.recordset || [];
+
+            const toSlug = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+            const results = { success: [], errors: [] };
+            const pendingEmails = [];
+
+            for (let i = 0; i < owners.length; i++) {
+                const row = owners[i];
+                const rowLabel = row.numero_documento || row.document_number || row.nombre || row.display_name || `Fila ${i + 1}`;
+
+                try {
+                    const display_name = row.nombre || row.display_name;
+                    const email = row.email;
+                    const phone = row.telefono || row.phone || '';
+                    const document_number = (row.numero_documento || row.document_number || '').trim();
+                    let property_id = row.property_id || null;
+                    const inmueble_slug = (row.inmueble_slug || '').trim();
+
+                    if (!display_name || !email) {
+                        throw new Error('Nombre y email son requeridos');
+                    }
+
+                    if (inmueble_slug) {
+                        const matched = tenantProperties.find(p => {
+                            const pSlug = p.slug || toSlug(p.name);
+                            const buildingSlug = p.building_name ? toSlug(p.building_name) : null;
+                            const fullSlug = buildingType === 'MULTIPLE' && buildingSlug
+                                ? `${buildingSlug}-${pSlug}` : pSlug;
+                            return fullSlug === inmueble_slug || pSlug === inmueble_slug;
+                        });
+                        if (!matched) {
+                            throw new Error(`El slug del inmueble "${inmueble_slug}" no existe en este condominio. Verifique que coincida con la plantilla.`);
+                        }
+                        property_id = matched.id;
+                    }
+
+                    let user = null;
+                    let isNewUser = false;
+
+                    if (document_number) {
+                        const userByDniResult = await transaction.request()
+                            .input('dni', sql.NVarChar, document_number)
+                            .query('SELECT * FROM Users WHERE dni = @dni');
+                        if (userByDniResult.recordset.length > 0) {
+                            user = userByDniResult.recordset[0];
+                        }
+                    }
+
+                    if (!user && email) {
+                        const userByEmailResult = await transaction.request()
+                            .input('email', sql.NVarChar, email)
+                            .query(`
+                                SELECT u.* FROM Users u
+                                WHERE u.email = @email
+                                OR EXISTS (SELECT 1 FROM UserEmails ue WHERE ue.user_id = u.id AND ue.email = @email)
+                            `);
+                        if (userByEmailResult.recordset.length > 0) {
+                            user = userByEmailResult.recordset[0];
+                        }
+                    }
+
+                    if (user) {
+                        const nameParts = display_name ? display_name.trim().split(/\s+/).filter(Boolean) : [];
+                        const incomingFirst = (nameParts[0] || '').trim();
+                        const incomingLast = (nameParts.slice(1).join(' ') || '').trim();
+                        const incomingEmail = (email || '').trim().toLowerCase();
+                        const incomingPhone = (phone || '').trim();
+                        const incomingDni = (document_number || '').trim();
+
+                        const dbFirst = (user.first_name || '').trim();
+                        const dbLast = (user.last_name || '').trim();
+                        const dbPhone = (user.phone || '').trim();
+                        const dbDni = (user.dni || '').trim();
+                        const dbEmail = (user.email || '').trim().toLowerCase();
+                        const dbEmailsResult = await transaction.request()
+                            .input('user_id', sql.UniqueIdentifier, user.id)
+                            .query('SELECT email FROM UserEmails WHERE user_id = @user_id');
+                        const dbEmails = (dbEmailsResult.recordset || []).map(r => (r.email || '').trim().toLowerCase()).filter(Boolean);
+                        const dbPrimaryEmail = dbEmail || (dbEmails[0] || '');
+
+                        const nameMatch = !display_name?.trim() ||
+                            (incomingFirst === dbFirst && incomingLast === dbLast) ||
+                            (display_name.trim() === `${dbFirst} ${dbLast}`.trim());
+                        const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail;
+                        const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
+                        const dniMatch = !incomingDni || incomingDni === dbDni;
+
+                        if (!nameMatch || !emailMatch || !phoneMatch || !dniMatch) {
+                            throw new Error(`El documento ${document_number || 'N/A'} ya pertenece a otro propietario (${dbFirst} ${dbLast}, ${dbPrimaryEmail || 'sin email'}). Los datos cargados no coinciden. No se puede sobrescribir.`);
+                        }
+
+                        if (email) {
+                            const emailTakenResult = await transaction.request()
+                                .input('email', sql.NVarChar, email)
+                                .input('excludeId', sql.UniqueIdentifier, user.id)
+                                .query(`
+                                    SELECT 1 as found WHERE EXISTS (
+                                        SELECT 1 FROM Users WHERE email = @email AND id != @excludeId AND is_active = 1
+                                    ) OR EXISTS (
+                                        SELECT 1 FROM UserEmails WHERE email = @email AND user_id != @excludeId
+                                    )
+                                `);
+                            if (emailTakenResult.recordset.length > 0) {
+                                throw new Error('Este correo ya pertenece a otro propietario.');
+                            }
+                            const hasEmailResult = await transaction.request()
+                                .input('user_id', sql.UniqueIdentifier, user.id)
+                                .input('email', sql.NVarChar, email)
+                                .query(`
+                                    SELECT 1 as found WHERE EXISTS (
+                                        SELECT 1 FROM Users WHERE id = @user_id AND email = @email
+                                    ) OR EXISTS (
+                                        SELECT 1 FROM UserEmails WHERE user_id = @user_id AND email = @email
+                                    )
+                                `);
+                            if (hasEmailResult.recordset.length === 0) {
+                                await transaction.request()
+                                    .input('user_id', sql.UniqueIdentifier, user.id)
+                                    .input('email', sql.NVarChar, email)
+                                    .query(`
+                                        INSERT INTO UserEmails (user_id, email, is_primary)
+                                        SELECT @user_id, @email, 0
+                                        WHERE NOT EXISTS (SELECT 1 FROM UserEmails WHERE email = @email)
+                                    `);
+                            }
+                        }
+
+                        await transaction.request()
+                            .input('user_id', sql.UniqueIdentifier, user.id)
+                            .input('first_name', sql.NVarChar, incomingFirst || user.first_name)
+                            .input('last_name', sql.NVarChar, incomingLast || user.last_name)
+                            .input('phone', sql.NVarChar, phone || user.phone)
+                            .input('dni', sql.NVarChar, document_number || user.dni)
+                            .query(`
+                                UPDATE Users SET first_name = @first_name, last_name = @last_name, phone = @phone, dni = @dni, updated_at = SYSDATETIME()
+                                WHERE id = @user_id
+                            `);
+
+                        const refreshed = await transaction.request()
+                            .input('user_id', sql.UniqueIdentifier, user.id)
+                            .query('SELECT * FROM Users WHERE id = @user_id');
+                        user = refreshed.recordset[0];
+                    } else {
+                        if (email) {
+                            const emailTakenResult = await transaction.request()
+                                .input('email', sql.NVarChar, email)
+                                .query(`
+                                    SELECT 1 as found WHERE EXISTS (SELECT 1 FROM Users WHERE email = @email AND is_active = 1)
+                                    OR EXISTS (SELECT 1 FROM UserEmails WHERE email = @email)
+                                `);
+                            if (emailTakenResult.recordset.length > 0) {
+                                throw new Error('Este correo ya pertenece a otro propietario.');
+                            }
+                        }
+                        isNewUser = true;
+                        const userDni = document_number || `OWN-${Date.now()}-${i}`;
+                        const invitationToken = require('crypto').randomBytes(32).toString('hex');
+                        const dummyPassword = await require('bcrypt').hash(require('crypto').randomBytes(32).toString('hex'), 10);
+                        const nameParts = display_name.split(' ');
+                        const firstName = nameParts[0] || display_name;
+                        const lastName = nameParts.slice(1).join(' ') || '';
+
+                        const userResult = await transaction.request()
+                            .input('first_name', sql.NVarChar, firstName)
+                            .input('last_name', sql.NVarChar, lastName)
+                            .input('email', sql.NVarChar, email || null)
+                            .input('dni', sql.NVarChar, userDni)
+                            .input('phone', sql.NVarChar, phone || null)
+                            .input('password_hash', sql.NVarChar, dummyPassword)
+                            .input('invitation_token', sql.NVarChar, invitationToken)
+                            .query(`
+                                INSERT INTO Users (first_name, last_name, email, dni, phone, password_hash, invitation_token, invited_at, is_active, registration_status)
+                                OUTPUT INSERTED.*
+                                VALUES (@first_name, @last_name, @email, @dni, @phone, @password_hash, @invitation_token, SYSDATETIME(), 1, 'INVITED')
+                            `);
+                        user = userResult.recordset[0];
+                        user.invitation_token = invitationToken;
+
+                        if (email) {
+                            await transaction.request()
+                                .input('user_id', sql.UniqueIdentifier, user.id)
+                                .input('email', sql.NVarChar, email)
+                                .query(`
+                                    INSERT INTO UserEmails (user_id, email, is_primary)
+                                    VALUES (@user_id, @email, 1)
+                                `).catch(() => {});
+                        }
+                    }
+
+                    await transaction.request()
+                        .input('tenant_id', sql.UniqueIdentifier, id)
+                        .input('user_id', sql.UniqueIdentifier, user.id)
+                        .query(`
+                            INSERT INTO TenantUsers (user_id, tenant_id, role, status)
+                            SELECT @user_id, @tenant_id, 'OWNER', 'ACTIVE'
+                            WHERE NOT EXISTS (SELECT 1 FROM TenantUsers WHERE user_id = @user_id AND tenant_id = @tenant_id)
+                        `);
+
+                    if (property_id) {
+                        const propertyCheck = await transaction.request()
+                            .input('property_id', sql.UniqueIdentifier, property_id)
+                            .input('tenant_id', sql.UniqueIdentifier, id)
+                            .query('SELECT id FROM Properties WHERE id = @property_id AND tenant_id = @tenant_id');
+                        if (propertyCheck.recordset.length === 0) {
+                            throw new Error('La propiedad no existe o no pertenece a este condominio');
+                        }
+                        const existingAssignment = await transaction.request()
+                            .input('property_id', sql.UniqueIdentifier, property_id)
+                            .input('user_id', sql.UniqueIdentifier, user.id)
+                            .query('SELECT * FROM PropertyOwners WHERE property_id = @property_id AND user_id = @user_id');
+                        if (existingAssignment.recordset.length === 0) {
+                            await transaction.request()
+                                .input('property_id', sql.UniqueIdentifier, property_id)
+                                .input('user_id', sql.UniqueIdentifier, user.id)
+                                .input('percentage_ownership', sql.Decimal(5, 2), 100)
+                                .query(`
+                                    INSERT INTO PropertyOwners (property_id, user_id, percentage_ownership, is_primary_owner)
+                                    VALUES (@property_id, @user_id, @percentage_ownership, 1)
+                                `);
+                        }
+                    }
+
+                    results.success.push({ row: i + 1, label: rowLabel });
+                    const ownerEmail = user.email || email;
+                    if (ownerEmail) {
+                        pendingEmails.push({
+                            email: ownerEmail,
+                            firstName: user.first_name,
+                            isNewUser,
+                            invitationToken: user.invitation_token,
+                            property_id
+                        });
+                    }
+                } catch (rowError) {
+                    results.errors.push({ row: i + 1, label: rowLabel, error: rowError.message });
+                    await transaction.rollback();
+                    transactionStarted = false;
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Error en la carga masiva. No se creó ningún propietario.',
+                        successCount: 0,
+                        errorCount: results.errors.length,
+                        total: owners.length,
+                        errorDetails: results.errors.map(e => `${e.label}: ${e.error}`)
+                    });
+                }
+            }
+
+            await transaction.commit();
+            transactionStarted = false;
+
+            const tenant = await TenantModel.findById(id);
+            const tenantName = tenant?.name || 'Condominio';
+            const baseUrl = process.env.APP_URL || (req.protocol + '://' + (req.get('host') || 'localhost:3000'));
+
+            for (const p of pendingEmails) {
+                try {
+                    let propertyLabel = null;
+                    if (p.property_id) {
+                        const prop = await PropertyModel.findById(p.property_id);
+                        if (prop) propertyLabel = prop.building_name ? `${prop.building_name}, ${prop.name}` : prop.name;
+                    }
+                    if (p.isNewUser && p.invitationToken) {
+                        const invitationLink = `${baseUrl}/auth/complete-registration?token=${p.invitationToken}`;
+                        await EmailService.sendOwnerInvitation(p.email, p.firstName, tenantName, invitationLink, propertyLabel);
+                    } else {
+                        const loginUrl = `${baseUrl}/login`;
+                        await EmailService.sendOwnerAddedToCondominio(p.email, p.firstName, tenantName, propertyLabel, loginUrl);
+                    }
+                } catch (mailErr) {
+                    console.error('Error enviando email a', p.email, mailErr);
+                }
+            }
+
+            for (const s of results.success) {
+                await AdminController.logAudit(req, 'CREATE', 'OWNER', null, `Carga masiva: ${s.label}`, id);
+            }
+
+            res.status(201).json({
+                success: true,
+                message: 'Carga masiva completada. Se enviaron los correos a los propietarios.',
+                successCount: results.success.length,
+                errorCount: 0,
+                total: owners.length
+            });
+        } catch (error) {
+            if (transactionStarted) {
+                try { await transaction.rollback(); } catch (e) {}
+            }
+            console.error('Create owners bulk error:', error);
+            res.status(500).json({ error: error.message || 'Error en la carga masiva' });
         }
     }
 

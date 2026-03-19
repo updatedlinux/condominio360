@@ -14,6 +14,7 @@
         "reset-db": "node scripts/reset_db.js",
         "verify": "node scripts/verify-system.js",
         "cleanup-db": "node scripts/cleanup-database.js",
+        "delete-orphan-owners": "node scripts/delete-orphan-owners.js",
         "build:css": "tailwindcss -i ./src/public/css/styles.css -o ./src/public/css/output.css --watch"
     },
     "keywords": [
