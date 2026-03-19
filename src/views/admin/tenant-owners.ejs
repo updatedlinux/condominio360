@@ -365,7 +365,7 @@
 
     <!-- Modal: Bulk Upload -->
     <div id="bulk-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto relative">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-medium text-slate-900">Carga Masiva de Propietarios</h2>
                 <button onclick="closeBulkModal()" class="text-slate-600 hover:text-slate-900">
@@ -397,9 +397,7 @@
                             </p>
                         </div>
                         <p class="text-xs text-slate-400 mt-2">
-                            <%= tenant?.building_type === 'MULTIPLE' 
-                                ? 'Para multi-edificio use: edificio-nombre-inmueble (ej: torre-a-101)' 
-                                : 'Use el nombre del inmueble como slug (ej: apartamento-101)' %>
+                            La plantilla CSV incluye los inmuebles del condominio con su slug ya formateado. Solo completa nombre, email, teléfono y número de documento.
                         </p>
                     </div>
                 </div>
@@ -426,12 +424,17 @@
             </div>
             
             <div class="flex gap-3 mt-6">
-                <button type="button" onclick="closeBulkModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
+                <button type="button" id="btn-bulk-cancel" onclick="closeBulkModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
                     Cancelar
                 </button>
-                <button type="button" id="btn-process-csv" onclick="processCSV()" class="hidden flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                <button type="button" id="btn-process-csv" onclick="processCSV()" class="hidden flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-orange-500">
                     Procesar <span id="btn-process-count"></span> Registros
                 </button>
+            </div>
+            <!-- Loader durante procesamiento -->
+            <div id="bulk-loader-overlay" class="hidden absolute inset-0 bg-white/80 rounded-2xl flex flex-col items-center justify-center z-10">
+                <div class="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mb-4"></div>
+                <p class="text-sm font-medium text-slate-700">Procesando registros...</p>
             </div>
         </div>
     </div>
@@ -586,7 +589,10 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    properties = data.properties || [];
+                    properties = (data.properties || []).map(p => ({
+                        ...p,
+                        building_slug: p.building_name ? generateSlug(p.building_name) : null
+                    }));
                     // Properties without owner
                     availableProperties = properties.filter(p => !p.owner_id);
                     populatePropertySelect();
@@ -880,6 +886,7 @@
         }
 
         function closeBulkModal() {
+            if (window.processCSVInProgress) return;
             document.getElementById('bulk-modal').classList.add('hidden');
             document.getElementById('bulk-modal').classList.remove('flex');
         }
@@ -893,17 +900,38 @@
             csvData = [];
         }
 
+        function getPropertySlugForCSV(p) {
+            const propSlug = p.slug || generateSlug(p.name);
+            if (buildingType === 'MULTIPLE' && p.building_name) {
+                const buildingSlug = generateSlug(p.building_name);
+                return buildingSlug ? `${buildingSlug}-${propSlug}` : propSlug;
+            }
+            return propSlug;
+        }
+
         function downloadCSVTemplate() {
-            const headers = 'nombre,email,telefono,inmueble_slug,tipo_documento,numero_documento,direccion\n';
-            const example = buildingType === 'MULTIPLE'
-                ? 'Juan Pérez,juan@email.com,555-0001,torre-a-101,DNI,12345678,Av. Principal 123\n'
-                : 'Juan Pérez,juan@email.com,555-0001,apartamento-101,DNI,12345678,Av. Principal 123\n';
-            
-            const blob = new Blob([headers + example], { type: 'text/csv' });
+            const headers = 'numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento,direccion\n';
+            const propsToInclude = availableProperties.length > 0 ? availableProperties : properties;
+            let rows = '';
+            if (propsToInclude.length > 0) {
+                rows = propsToInclude.map(p => {
+                    const slug = getPropertySlugForCSV(p);
+                    return `,,,${slug},DNI,`;
+                }).join('\n');
+            } else {
+                if (properties.length === 0) {
+                    alert('Primero carga los inmuebles del condominio. La plantilla se generará con los inmuebles existentes.');
+                    return;
+                }
+                rows = buildingType === 'MULTIPLE'
+                    ? '12345678,Juan Pérez,juan@email.com,555-0001,edificio-1-apartamento-1a,DNI,Av. Principal 123'
+                    : '12345678,Juan Pérez,juan@email.com,555-0001,apartamento-101,DNI,Av. Principal 123';
+            }
+            const blob = new Blob(['\ufeff' + headers + rows], { type: 'text/csv;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `plantilla_propietarios_${buildingType === 'MULTIPLE' ? 'multi' : 'single'}.csv`;
+            a.download = `plantilla_propietarios_${(tenant?.name || 'condominio').replace(/[^a-z0-9]/gi, '_')}_${buildingType === 'MULTIPLE' ? 'multi' : 'single'}.csv`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -991,9 +1019,18 @@
         }
 
         async function processCSV() {
-            const results = { success: 0, errors: 0, errorDetails: [] };
+            if (window.processCSVInProgress) return;
+            window.processCSVInProgress = true;
+            const btn = document.getElementById('btn-process-csv');
+            const overlay = document.getElementById('bulk-loader-overlay');
+            const cancelBtn = document.getElementById('btn-bulk-cancel');
+            btn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+            if (overlay) overlay.classList.remove('hidden');
+            try {
+                const results = { success: 0, errors: 0, errorDetails: [] };
 
-            for (const row of csvData) {
+                for (const row of csvData) {
                 try {
                     // Find property by slug
                     let propertyId = null;
@@ -1041,7 +1078,13 @@
                 }
             }
 
-            showResults(results);
+                showResults(results);
+            } finally {
+                window.processCSVInProgress = false;
+                btn.disabled = false;
+                if (cancelBtn) cancelBtn.disabled = false;
+                if (overlay) overlay.classList.add('hidden');
+            }
         }
 
         function showResults(results) {
