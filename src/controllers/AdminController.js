@@ -393,6 +393,7 @@ class AdminController {
         const pool = await connectDB();
         const transaction = pool.transaction();
         let transactionStarted = false;
+        let transactionCommitted = false;
 
         try {
             const { name, slug, address, billing_type, building_type, buildings, admin } = req.body;
@@ -516,6 +517,7 @@ class AdminController {
                 `);
 
             await transaction.commit();
+            transactionCommitted = true;
 
             // Enviar email de bienvenida con credenciales (no invitación)
             const EmailService = require('../services/EmailService');
@@ -552,7 +554,7 @@ class AdminController {
             });
 
         } catch (error) {
-            if (transactionStarted) {
+            if (transactionStarted && !transactionCommitted) {
                 try {
                     await transaction.rollback();
                 } catch (rollbackError) {

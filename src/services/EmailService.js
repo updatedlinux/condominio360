@@ -200,6 +200,22 @@ class EmailService {
     }
 
     /**
+     * Enviar bienvenida y credenciales a Admin de Junta (onboarding SuperAdmin)
+     * @param {string} email
+     * @param {Object} opts - { displayName, tenantName, email, password, loginUrl }
+     */
+    async sendWelcomeAdmin(email, opts = {}) {
+        const { displayName, tenantName, password, loginUrl } = opts;
+        return this.sendAdminCredentials(
+            email,
+            displayName || opts.display_name || 'Admin',
+            tenantName || opts.tenantName || 'Condominio',
+            loginUrl || `${process.env.APP_URL || 'http://localhost:3000'}/login`,
+            password || opts.password
+        );
+    }
+
+    /**
      * Enviar credenciales a Admin de Junta
      */
     async sendAdminCredentials(email, firstName, tenantName, loginLink, tempPassword) {
