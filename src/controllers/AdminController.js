@@ -422,6 +422,21 @@ class AdminController {
                 return res.status(400).json({ error: 'Debe especificar al menos un edificio para conjuntos multi-edificio' });
             }
 
+            // Pre-validación: verificar slug y email ANTES de abrir transacción (evita crear datos parciales)
+            const slugCheck = await pool.request()
+                .input('slug', sql.NVarChar, (slug || '').toLowerCase())
+                .query('SELECT 1 FROM Tenants WHERE slug = @slug');
+            if (slugCheck.recordset.length > 0) {
+                return res.status(409).json({ error: 'El identificador (slug) ya existe. Elige otro, por ejemplo: bcc-residencial, torre-bcc.' });
+            }
+
+            const emailCheck = await pool.request()
+                .input('email', sql.NVarChar, admin.email)
+                .query('SELECT 1 FROM Users WHERE email = @email');
+            if (emailCheck.recordset.length > 0) {
+                return res.status(409).json({ error: 'El email del administrador ya está registrado en el sistema. Usa otro correo o elimínalo del condominio anterior.' });
+            }
+
             await transaction.begin();
             transactionStarted = true;
 
@@ -519,15 +534,22 @@ class AdminController {
             await transaction.commit();
             transactionCommitted = true;
 
-            // Enviar email de bienvenida con credenciales (no invitación)
-            const EmailService = require('../services/EmailService');
-            EmailService.sendWelcomeAdmin(admin.email, {
-                displayName: admin.display_name,
-                tenantName: tenant.name,
-                email: admin.email,
-                password: admin.password, // Contraseña temporal asignada por SuperAdmin
-                loginUrl: `${process.env.APP_URL || 'http://localhost:3000'}/login`
-            }).catch(err => console.error('Error sending welcome email:', err));
+            // Enviar email de bienvenida con credenciales al admin de junta
+            let welcomeSent = false;
+            try {
+                const EmailService = require('../services/EmailService');
+                const loginUrl = `${process.env.APP_URL || 'http://localhost:3000'}/login`;
+                await EmailService.sendWelcomeAdmin(admin.email, {
+                    displayName: admin.display_name,
+                    tenantName: tenant.name,
+                    email: admin.email,
+                    password: admin.password,
+                    loginUrl
+                });
+                welcomeSent = true;
+            } catch (emailErr) {
+                console.error('Error enviando email de bienvenida:', emailErr);
+            }
 
             // Registrar en auditoría
             await AdminController.logAudit(req, 'CREATE', 'TENANT', tenant.id, `Onboarding completo: ${name}`, tenant.id);
@@ -548,7 +570,7 @@ class AdminController {
                         id: user.id,
                         displayName: admin.display_name,
                         email: admin.email,
-                        welcome_sent: true
+                        welcome_sent: welcomeSent
                     }
                 }
             });
@@ -568,11 +590,11 @@ class AdminController {
                 if (msg.includes('slug') || (msg.includes('tenants') && msg.includes('duplicate'))) {
                     return res.status(409).json({ error: 'El identificador (slug) ya existe. Elige otro, por ejemplo: bcc-residencial, torre-bcc.' });
                 }
+                if ((msg.includes('users') && msg.includes('duplicate')) || msg.includes('email')) {
+                    return res.status(409).json({ error: 'El email del administrador ya está registrado. Usa otro correo.' });
+                }
                 if (msg.includes('dni')) {
                     return res.status(409).json({ error: 'La cédula ya está registrada.' });
-                }
-                if (msg.includes('email')) {
-                    return res.status(409).json({ error: 'El email ya está registrado.' });
                 }
             }
             

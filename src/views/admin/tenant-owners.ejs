@@ -350,8 +350,14 @@
                 <button type="button" onclick="closeOwnerModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
                     Cancelar
                 </button>
-                <button type="button" onclick="saveOwner()" class="flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
-                    Guardar Propietario
+                <button type="button" id="btn-save-owner" onclick="saveOwner()" class="flex-1 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]">
+                    <span id="btn-save-owner-text">Guardar Propietario</span>
+                    <span id="btn-save-owner-spinner" class="hidden">
+                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
                 </button>
             </div>
         </div>
@@ -737,6 +743,7 @@
             document.getElementById('owner-form').reset();
             document.getElementById('owner-id').value = '';
             document.getElementById('edit-replication-alert').classList.add('hidden');
+            setSaveOwnerButtonLoading(false);
             document.getElementById('owner-modal').classList.remove('hidden');
             document.getElementById('owner-modal').classList.add('flex');
         }
@@ -744,12 +751,14 @@
         function closeOwnerModal() {
             document.getElementById('owner-modal').classList.add('hidden');
             document.getElementById('owner-modal').classList.remove('flex');
+            setSaveOwnerButtonLoading(false);
         }
 
         function editOwner(id) {
             const owner = owners.find(o => o.id === id);
             if (!owner) return;
 
+            setSaveOwnerButtonLoading(false);
             document.getElementById('modal-title').textContent = 'Editar Propietario';
             document.getElementById('owner-id').value = owner.id;
             document.getElementById('owner-name').value = owner.display_name || owner.name || '';
@@ -766,7 +775,23 @@
             document.getElementById('owner-modal').classList.add('flex');
         }
 
+        let saveOwnerInProgress = false;
+
+        function setSaveOwnerButtonLoading(loading) {
+            const btn = document.getElementById('btn-save-owner');
+            const text = document.getElementById('btn-save-owner-text');
+            const spinner = document.getElementById('btn-save-owner-spinner');
+            if (!btn) return;
+            saveOwnerInProgress = loading;
+            btn.disabled = loading;
+            if (text) text.textContent = loading ? 'Guardando...' : 'Guardar Propietario';
+            if (spinner) spinner.classList.toggle('hidden', !loading);
+        }
+
         async function saveOwner() {
+            if (saveOwnerInProgress) return;
+            setSaveOwnerButtonLoading(true);
+
             const id = document.getElementById('owner-id').value;
             const data = {
                 display_name: document.getElementById('owner-name').value,
@@ -803,6 +828,8 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error de conexión');
+            } finally {
+                setSaveOwnerButtonLoading(false);
             }
         }
 

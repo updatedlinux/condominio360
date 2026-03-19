@@ -216,62 +216,41 @@ class EmailService {
     }
 
     /**
-     * Enviar credenciales a Admin de Junta
+     * Enviar credenciales a Admin de Junta (bienvenida onboarding)
      */
     async sendAdminCredentials(email, firstName, tenantName, loginLink, tempPassword) {
-        const subject = `Credenciales de Acceso - Panel de Junta ${tenantName}`;
-        
-        const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Credenciales de Acceso</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #059669; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .credentials { background: #ecfdf5; border: 2px solid #059669; padding: 20px; 
-                       border-radius: 8px; margin: 20px 0; }
-        .button { display: inline-block; background: #059669; color: white; padding: 12px 30px; 
-                  text-decoration: none; border-radius: 6px; margin: 20px 0; }
-        .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🏢 Condominio360</h1>
-            <p>Panel de Administración de Junta</p>
-        </div>
-        <div class="content">
+        const subject = `Bienvenido a Condominio360 - Credenciales para ${tenantName}`;
+
+        const content = `
             <h2>Hola ${firstName},</h2>
-            <p>Se ha creado tu cuenta de administrador para <strong>${tenantName}</strong>.</p>
+            <p>Te damos la bienvenida a <strong>Condominio360</strong>. Se ha creado tu cuenta como administrador de junta para <strong>${tenantName}</strong>.</p>
             
-            <div class="credentials">
-                <h3>🔐 Tus Credenciales</h3>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Contraseña temporal:</strong> ${tempPassword}</p>
+            <div class="details-box" style="border-left-color: #059669">
+                <h3>🔐 Tus credenciales de acceso</h3>
+                <p><strong>Correo:</strong> ${email}</p>
+                <p><strong>Contraseña:</strong> <code style="background:#fff7ed; padding:4px 8px; border-radius:4px; font-size:15px;">${tempPassword}</code></p>
             </div>
 
-            <div class="warning">
-                <strong>⚠️ Importante:</strong> Por seguridad, debes cambiar tu contraseña 
-                en tu primer inicio de sesión.
+            <div class="admin-response" style="background:#fffbeb; border-color:#fbbf24; margin:20px 0;">
+                <h4 style="color:#92400e;">⚠️ Importante</h4>
+                <p style="margin:0; color:#1a1a1a;">Por seguridad, te recomendamos cambiar tu contraseña en tu primer inicio de sesión.</p>
+            </div>
+            
+            <p>Haz clic en el botón siguiente para acceder al panel de administración:</p>
+            
+            <div style="text-align: center; margin: 28px 0;">
+                <a href="${loginLink}" class="cta-button">Acceder al Panel de Junta</a>
             </div>
 
-            <center>
-                <a href="${loginLink}" class="button">Acceder al Panel</a>
-            </center>
+            <p class="date-info">O copia y pega este enlace en tu navegador:<br>
+            <span style="word-break: break-all; background:#f1f5f9; padding:12px; border-radius:6px; display:inline-block; margin-top:8px; font-size:13px;">${loginLink}</span></p>
+        `;
 
-            <p>O copia este enlace:</p>
-            <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px;">
-                ${loginLink}
-            </p>
-        </div>
-    </div>
-</body>
-</html>`;
+        const html = this._generateEmailTemplate(content, {
+            title: 'Bienvenida - Credenciales de Acceso',
+            subtitle: `Panel de Junta - ${tenantName}`,
+            color: '#ea580c'
+        });
 
         return await this.send(email, subject, html);
     }

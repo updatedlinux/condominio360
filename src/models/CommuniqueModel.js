@@ -137,8 +137,8 @@ class CommuniqueModel {
                 .input('userAgent', sql.NVarChar(500), userAgent)
                 .query(`
                     IF NOT EXISTS (SELECT 1 FROM CommuniqueReads WHERE communique_id = @communiqueId AND user_id = @userId)
-                    INSERT INTO CommuniqueReads (communique_id, user_id, ip_address, user_agent)
-                    VALUES (@communiqueId, @userId, @ipAddress, @userAgent)
+                    INSERT INTO CommuniqueReads (communique_id, user_id, ip_address, user_agent, read_at)
+                    VALUES (@communiqueId, @userId, @ipAddress, @userAgent, SYSUTCDATETIME())
                 `);
             return true;
         } catch (error) {
