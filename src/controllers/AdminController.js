@@ -1445,27 +1445,31 @@ class AdminController {
             console.log(`[DEBUG] getOwners: tenantId=${id}`);
             const pool = await connectDB();
 
-            // Propietarios: TenantUsers (OWNER) + PropertyOwners si tienen inmueble asignado
+            // Propietarios: TenantUsers (OWNER) + solo PropertyOwners de propiedades de ESTE tenant
+            // PropsInTenant evita filas fantasma (propietario con inmueble en otro condominio)
             const result = await pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, id)
                 .query(`
-                    SELECT DISTINCT
+                    WITH PropsInTenant AS (
+                        SELECT po.user_id, po.property_id, p.name as property_name, p.building_id
+                        FROM PropertyOwners po
+                        INNER JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
+                    )
+                    SELECT
                         u.id,
                         u.first_name + ' ' + u.last_name as display_name,
                         u.email,
                         u.phone,
                         u.dni as document_number,
                         'DNI' as document_type,
-                        p.id as property_id,
-                        p.name as property_name,
+                        pit.property_id,
+                        pit.property_name,
                         b.name as building_name
                     FROM Users u
                     INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = 'OWNER' AND tu.status = 'ACTIVE'
-                    LEFT JOIN PropertyOwners po ON u.id = po.user_id
-                    LEFT JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
-                    LEFT JOIN Buildings b ON p.building_id = b.id
-                    WHERE tu.tenant_id = @tenant_id
-                    ORDER BY display_name
+                    LEFT JOIN PropsInTenant pit ON u.id = pit.user_id
+                    LEFT JOIN Buildings b ON pit.building_id = b.id
+                    ORDER BY display_name, pit.property_name
                 `);
 
             console.log(`[DEBUG] getOwners: found ${result.recordset.length} owners`);
