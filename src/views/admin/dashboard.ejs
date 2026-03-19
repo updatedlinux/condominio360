@@ -828,12 +828,6 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">Condominios</label>
-                                <select id="saas-tenant-select" class="border border-gray-200 rounded-lg px-3 py-2 text-sm min-w-[200px]">
-                                    <option value="">Todos los activos</option>
-                                </select>
-                            </div>
-                            <div>
                                 <label class="block text-xs text-gray-500 mb-1">Método de pago</label>
                                 <input type="text" id="saas-payment-method" placeholder="Ej: Transferencia, Pago Móvil" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
                             </div>
@@ -940,16 +934,23 @@
                 </button>
             </div>
             <div class="p-6 overflow-y-auto flex-1">
-                <div id="saas-overview-tenants" class="space-y-2 mb-4">
-                    <p class="text-sm text-gray-500">Cargando...</p>
+                <div class="mb-6">
+                    <p class="text-sm font-medium text-gray-700 mb-1">Selecciona el condominio</p>
+                    <p class="text-xs text-gray-500 mb-3">Elige a qué condominio apunta esta factura. Los ítems extraordinarios aplican solo al condominio seleccionado.</p>
+                    <div id="saas-overview-tenant-selector" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
+                        <p class="text-sm text-gray-500 col-span-full">Cargando condominios...</p>
+                    </div>
                 </div>
-                <div class="border-t border-gray-100 pt-4 mb-4">
-                    <p class="text-sm font-medium text-gray-700 mb-1">Ítems extraordinarios (opcional)</p>
-                    <p class="text-xs text-gray-500 mb-2">Los montos deben expresarse en USD</p>
-                    <div id="saas-overview-extra-list" class="space-y-2 mb-2"></div>
-                    <button type="button" onclick="addSaaSExtraItemInModal()" class="text-sm text-[var(--md-sys-color-primary)] hover:underline">+ Añadir ítem extraordinario</button>
+                <div id="saas-overview-selected-summary" class="hidden">
+                    <div id="saas-overview-tenants" class="space-y-2 mb-4"></div>
+                    <div class="border-t border-gray-100 pt-4 mb-4">
+                        <p class="text-sm font-medium text-gray-700 mb-1">Ítems extraordinarios (opcional)</p>
+                        <p class="text-xs text-gray-500 mb-2">Los montos deben expresarse en USD</p>
+                        <div id="saas-overview-extra-list" class="space-y-2 mb-2"></div>
+                        <button type="button" onclick="addSaaSExtraItemInModal()" class="text-sm text-[var(--md-sys-color-primary)] hover:underline">+ Añadir ítem extraordinario</button>
+                    </div>
                 </div>
-                <div id="saas-overview-totals" class="bg-gray-50 rounded-xl p-4 text-sm">
+                <div id="saas-overview-totals" class="bg-gray-50 rounded-xl p-4 text-sm mt-4">
                     <p class="text-gray-600">Total base estimado: <span id="saas-overview-base">$0</span> USD</p>
                     <p class="text-gray-600 mt-1">Total extraordinarios: <span id="saas-overview-extra">$0</span> USD</p>
                     <p class="font-medium text-gray-900 mt-2">Total: <span id="saas-overview-total">$0</span> USD <span id="saas-overview-ves" class="text-gray-600 font-normal"></span></p>
@@ -958,9 +959,9 @@
             </div>
             <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
                 <button type="button" onclick="closeSaaSOverviewModal()" class="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
-                <button type="button" onclick="confirmGenerateSaaSInvoices()" class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 flex items-center gap-2">
+                <button type="button" id="saas-generate-btn" onclick="confirmGenerateSaaSInvoices()" disabled class="px-4 py-2 bg-[var(--md-sys-color-primary)] text-white rounded-lg hover:opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span class="material-symbols-rounded text-lg">check_circle</span>
-                    Generar facturas
+                    Generar factura
                 </button>
             </div>
         </div>
@@ -1717,10 +1718,6 @@
                 document.getElementById('saas-payment-bank').value = configData.bank_account || '';
                 document.getElementById('saas-payment-mobile').value = configData.mobile_payment || '';
 
-                const sel = document.getElementById('saas-tenant-select');
-                sel.innerHTML = '<option value="">Todos los activos</option>' + tenantsData.map(t =>
-                    `<option value="${t.id}" ${t.has_invoice > 0 ? 'disabled' : ''}>${t.name} (${t.property_count} und.) ${t.has_invoice > 0 ? '- Ya facturado' : ''}</option>`
-                ).join('');
                 renderSaaSInvoices(invoicesData);
             } catch (e) {
                 document.getElementById('saas-invoices-list').innerHTML = '<p class="text-red-500 text-sm">Error al cargar</p>';
@@ -1751,7 +1748,11 @@
             `).join('');
         }
         async function generateSaaSInvoices() {
-            const tenantId = document.getElementById('saas-tenant-select').value || null;
+            const tenantId = saasOverviewSelectedTenantId;
+            if (!tenantId) {
+                showSnackbar('Selecciona un condominio', 'error');
+                return;
+            }
             const month = parseInt(document.getElementById('saas-period-month').value);
             const year = parseInt(document.getElementById('saas-period-year').value);
             const paymentMethod = document.getElementById('saas-payment-method').value?.trim() || null;
@@ -1759,9 +1760,9 @@
                 period_month: month,
                 period_year: year,
                 payment_method: paymentMethod,
-                extra_items: saasExtraItems
+                extra_items: saasExtraItems,
+                tenant_id: tenantId
             };
-            if (tenantId) body.tenant_id = tenantId;
             try {
                 const res = await fetch('/api/admin/saas-billing/invoices', {
                     method: 'POST',
@@ -1898,14 +1899,20 @@
             }
         }
 
+        let saasOverviewSelectedTenantId = null;
+        let saasOverviewTenantsList = [];
+
         async function openSaaSOverviewModal() {
-            const month = parseInt(document.getElementById('saas-period-month').value);
-            const year = parseInt(document.getElementById('saas-period-year').value);
-            const tenantId = document.getElementById('saas-tenant-select').value || null;
-            document.getElementById('saas-overview-tenants').innerHTML = '<p class="text-sm text-gray-500">Cargando...</p>';
+            saasOverviewSelectedTenantId = null;
+            saasExtraItems = [];
+            document.getElementById('saas-overview-selected-summary').classList.add('hidden');
+            document.getElementById('saas-generate-btn').disabled = true;
+            document.getElementById('saas-overview-tenant-selector').innerHTML = '<p class="text-sm text-gray-500 col-span-full">Cargando...</p>';
             document.getElementById('saas-overview-modal').classList.remove('hidden');
             document.getElementById('saas-overview-rate-info').textContent = 'Cargando tasa BCV...';
             document.getElementById('saas-overview-ves').textContent = '';
+            const month = parseInt(document.getElementById('saas-period-month').value);
+            const year = parseInt(document.getElementById('saas-period-year').value);
             try {
                 const [tenantsRes, rateRes] = await Promise.all([
                     fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -1915,42 +1922,58 @@
                 const rateData = (await rateRes.json()).data || {};
                 saasOverviewRate = parseFloat(rateData.usd_to_ves) || 0;
                 saasOverviewRateDate = rateData.rate_date;
-                // Evitar timezone: "2026-03-17" en UTC medianoche = 16/03 en Venezuela. Usar noon local.
+                saasOverviewTenantsList = tenants || [];
                 const rateDateStr = rateData.rate_date ? (() => {
                     const d = rateData.rate_date;
                     const [y, m, d2] = (d.split?.('T')[0] || d).split('-');
                     return new Date(parseInt(y), parseInt(m) - 1, parseInt(d2)).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' });
                 })() : '';
                 document.getElementById('saas-overview-rate-info').textContent = rateDateStr ? `Tasa BCV aplicable (${rateDateStr}): días 1-5 del mes usa tasa del 1ro; día 6+ usa tasa diaria` : 'Tasa BCV se aplicará al generar (días 1-5: tasa del 1ro; día 6+: tasa diaria)';
-                const toBill = tenantId ? tenants.filter(t => t.id === tenantId && t.has_invoice === 0) : tenants.filter(t => t.has_invoice === 0);
-                if (toBill.length === 0) {
-                    document.getElementById('saas-overview-tenants').innerHTML = '<p class="text-sm text-amber-600">No hay condominios elegibles (todos ya facturados o ninguno seleccionado).</p>';
+                const eligibles = tenants.filter(t => t.has_invoice === 0);
+                if (eligibles.length === 0) {
+                    document.getElementById('saas-overview-tenant-selector').innerHTML = '<p class="text-sm text-amber-600 col-span-full">No hay condominios elegibles para este período (todos ya facturados).</p>';
                 } else {
-                    const totalUnits = toBill.reduce((s,t) => s + (t.property_count||0), 0);
-                    document.getElementById('saas-overview-tenants').innerHTML = toBill.map(t => 
-                        `<p class="text-sm text-gray-700"><span class="font-medium">${t.name}</span> — ${t.property_count || 0} unidad(es)</p>`
-                    ).join('') + `<p class="text-sm font-medium text-gray-900 mt-2 pt-2 border-t border-gray-100">Total: ${totalUnits} inmuebles</p>`;
+                    document.getElementById('saas-overview-tenant-selector').innerHTML = eligibles.map(t => `
+                        <button type="button" onclick="selectSaaSTenantInModal('${t.id}')" data-tenant-id="${t.id}" class="saas-tenant-card flex flex-col items-start p-4 rounded-xl border-2 border-gray-200 hover:border-[var(--md-sys-color-primary)] hover:bg-orange-50/50 transition text-left">
+                            <span class="font-medium text-gray-900">${t.name}</span>
+                            <span class="text-sm text-gray-500 mt-1">${t.property_count || 0} unidad(es)</span>
+                            <span class="text-xs text-[var(--md-sys-color-primary)] mt-2">Seleccionar</span>
+                        </button>
+                    `).join('');
                 }
                 renderSaaSOverviewExtras();
-                updateSaaSOverviewTotals(toBill);
+                updateSaaSOverviewTotals([]);
             } catch (e) {
-                document.getElementById('saas-overview-tenants').innerHTML = '<p class="text-sm text-red-500">Error al cargar</p>';
+                document.getElementById('saas-overview-tenant-selector').innerHTML = '<p class="text-sm text-red-500 col-span-full">Error al cargar</p>';
             }
+        }
+
+        function selectSaaSTenantInModal(tenantId) {
+            saasOverviewSelectedTenantId = tenantId;
+            document.querySelectorAll('.saas-tenant-card').forEach(card => {
+                const isSelected = card.getAttribute('data-tenant-id') === tenantId;
+                card.classList.toggle('border-[var(--md-sys-color-primary)]', isSelected);
+                card.classList.toggle('bg-orange-50', isSelected);
+                card.classList.toggle('border-gray-200', !isSelected);
+            });
+            const tenant = saasOverviewTenantsList.find(t => t.id === tenantId);
+            const toBill = tenant ? [tenant] : [];
+            document.getElementById('saas-overview-selected-summary').classList.remove('hidden');
+            document.getElementById('saas-overview-tenants').innerHTML = toBill.length ? 
+                `<p class="text-sm text-gray-700"><span class="font-medium">${tenant.name}</span> — ${tenant.property_count || 0} unidad(es)</p><p class="text-sm font-medium text-gray-900 mt-2 pt-2 border-t border-gray-100">Total: ${tenant.property_count || 0} inmuebles</p>` : '';
+            document.getElementById('saas-generate-btn').disabled = !tenantId;
+            updateSaaSOverviewTotals(toBill);
         }
         function closeSaaSOverviewModal() {
             document.getElementById('saas-overview-modal').classList.add('hidden');
+            saasOverviewSelectedTenantId = null;
         }
         function addSaaSExtraItemInModal() {
             saasExtraItems.push({ description: '', amount_usd: 0, quantity: 1 });
             renderSaaSOverviewExtras();
-            const month = parseInt(document.getElementById('saas-period-month').value);
-            const year = parseInt(document.getElementById('saas-period-year').value);
-            const tenantId = document.getElementById('saas-tenant-select').value || null;
-            fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(r => r.json()).then(({ data: tenants }) => {
-                    const toBill = tenantId ? tenants.filter(t => t.id === tenantId && t.has_invoice === 0) : tenants.filter(t => t.has_invoice === 0);
-                    updateSaaSOverviewTotals(toBill);
-                });
+            const tenantId = saasOverviewSelectedTenantId;
+            const toBill = tenantId ? saasOverviewTenantsList.filter(t => t.id === tenantId && t.has_invoice === 0) : [];
+            updateSaaSOverviewTotals(toBill);
         }
         function renderSaaSOverviewExtras() {
             const el = document.getElementById('saas-overview-extra-list');
@@ -1988,14 +2011,9 @@
             }
         }
         function updateSaaSOverviewTotalsFromData() {
-            const month = parseInt(document.getElementById('saas-period-month').value);
-            const year = parseInt(document.getElementById('saas-period-year').value);
-            const tenantId = document.getElementById('saas-tenant-select').value || null;
-            fetch(`/api/admin/saas-billing/tenants-available?period_month=${month}&period_year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(r => r.json()).then(({ data: tenants }) => {
-                    const toBill = tenantId ? tenants.filter(t => t.id === tenantId && t.has_invoice === 0) : tenants.filter(t => t.has_invoice === 0);
-                    updateSaaSOverviewTotals(toBill);
-                });
+            const tenantId = saasOverviewSelectedTenantId;
+            const toBill = tenantId ? saasOverviewTenantsList.filter(t => t.id === tenantId && t.has_invoice === 0) : [];
+            updateSaaSOverviewTotals(toBill);
         }
         function confirmGenerateSaaSInvoices() {
             closeSaaSOverviewModal();
