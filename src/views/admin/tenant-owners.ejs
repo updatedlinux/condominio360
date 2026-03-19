@@ -532,6 +532,7 @@
         const token = localStorage.getItem('token');
         const tenantId = '<%= tenant?.id %>';
         const buildingType = '<%= tenant?.building_type %>';
+        const tenantNameForFile = '<%= (tenant && tenant.name ? tenant.name : "condominio").replace(/[^a-z0-9\u00C0-\u024F]/gi, "_") %>';
         
         let buildings = [];
         let properties = [];
@@ -910,30 +911,35 @@
         }
 
         function downloadCSVTemplate() {
-            const headers = 'numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento,direccion\n';
-            const propsToInclude = availableProperties.length > 0 ? availableProperties : properties;
-            let rows = '';
-            if (propsToInclude.length > 0) {
-                rows = propsToInclude.map(p => {
-                    const slug = getPropertySlugForCSV(p);
-                    return `,,,${slug},DNI,`;
-                }).join('\n');
-            } else {
-                if (properties.length === 0) {
-                    alert('Primero carga los inmuebles del condominio. La plantilla se generará con los inmuebles existentes.');
-                    return;
+            try {
+                const headers = 'numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento,direccion\n';
+                const propsToInclude = (availableProperties && availableProperties.length > 0) ? availableProperties : (properties || []);
+                let rows = '';
+                if (propsToInclude.length > 0) {
+                    rows = propsToInclude.map(p => {
+                        const slug = getPropertySlugForCSV(p);
+                        return `,,,,${slug},DNI,`;
+                    }).join('\n');
+                } else {
+                    if (!properties || properties.length === 0) {
+                        alert('Primero carga los inmuebles del condominio. La plantilla incluirá los inmuebles existentes cuando estén disponibles.');
+                        return;
+                    }
+                    rows = buildingType === 'MULTIPLE'
+                        ? '12345678,Juan Pérez,juan@email.com,555-0001,edificio-1-apartamento-1a,DNI,Av. Principal 123'
+                        : '12345678,Juan Pérez,juan@email.com,555-0001,apartamento-101,DNI,Av. Principal 123';
                 }
-                rows = buildingType === 'MULTIPLE'
-                    ? '12345678,Juan Pérez,juan@email.com,555-0001,edificio-1-apartamento-1a,DNI,Av. Principal 123'
-                    : '12345678,Juan Pérez,juan@email.com,555-0001,apartamento-101,DNI,Av. Principal 123';
+                const blob = new Blob(['\ufeff' + headers + rows], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `plantilla_propietarios_${tenantNameForFile}_${buildingType === 'MULTIPLE' ? 'multi' : 'single'}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Error descargando plantilla:', e);
+                alert('Error al generar la plantilla. Verifica que los inmuebles estén cargados.');
             }
-            const blob = new Blob(['\ufeff' + headers + rows], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `plantilla_propietarios_${(tenant?.name || 'condominio').replace(/[^a-z0-9]/gi, '_')}_${buildingType === 'MULTIPLE' ? 'multi' : 'single'}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
         }
 
         function handleCSVSelect(event) {
