@@ -42,8 +42,8 @@ BEGIN TRY
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'InAppNotifications') DELETE FROM InAppNotifications;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'DeliveryAnnouncements') DELETE FROM DeliveryAnnouncements;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'VisitorDeliveries') DELETE FROM VisitorDeliveries;
+    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'VisitorLogs') DELETE FROM VisitorLogs;    -- Antes de VisitorPasses (FK pass_id)
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'VisitorPasses') DELETE FROM VisitorPasses;
-    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'VisitorLogs') DELETE FROM VisitorLogs;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Visitors') DELETE FROM Visitors;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'PropertyOwners') DELETE FROM PropertyOwners;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'TenantUsers') DELETE FROM TenantUsers;

@@ -46,8 +46,8 @@ const TABLES_ORDER = [
     'InAppNotifications',
     'DeliveryAnnouncements',
     'VisitorDeliveries',
+    'VisitorLogs',      // Antes de VisitorPasses (FK pass_id -> VisitorPasses)
     'VisitorPasses',
-    'VisitorLogs',
     'Visitors',
     'PropertyOwners',
     'TenantUsers',
