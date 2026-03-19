@@ -14,9 +14,8 @@ async function verifyRecaptcha(token, expectedAction = 'login') {
 
     try {
         const params = new URLSearchParams({
-            secret,
-            response: token,
-            remoteip: null
+            secret: secret.trim(),
+            response: token.trim()
         });
 
         const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {

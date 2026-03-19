@@ -51,15 +51,25 @@ function waitForGrecaptcha(timeoutMs = 5000) {
 // Obtener token reCAPTCHA v3 (si está configurado)
 async function getRecaptchaToken() {
     const siteKey = (window.RECAPTCHA_SITE_KEY || '').trim();
-    if (!siteKey) return null;
+    if (!siteKey) {
+        console.warn('[reCAPTCHA] No RECAPTCHA_SITE_KEY. Revisa que esté en .env del servidor.');
+        return null;
+    }
     try {
         const grecaptcha = await waitForGrecaptcha();
-        if (!grecaptcha) return null;
+        if (!grecaptcha) {
+            console.warn('[reCAPTCHA] Script no cargó a tiempo. ¿Dominio en recaptcha.google.com?');
+            return null;
+        }
         await grecaptcha.ready();
         const token = await grecaptcha.execute(siteKey, { action: 'login' });
-        return token || null;
+        if (!token) {
+            console.warn('[reCAPTCHA] execute() no devolvió token.');
+            return null;
+        }
+        return token;
     } catch (err) {
-        console.warn('reCAPTCHA error:', err);
+        console.warn('[reCAPTCHA] Error:', err.message || err);
         return null;
     }
 }
@@ -146,11 +156,7 @@ if (loginForm) {
                 errorMessage.textContent = 'No tienes propiedades asignadas';
                 errorMessage.classList.remove('hidden');
             } else {
-                let msg = data.error || 'Error al iniciar sesión';
-                if (msg.includes('reCAPTCHA') || msg.includes('Token')) {
-                    msg = 'No se pudo verificar la seguridad. Recarga la página, verifica tu conexión y que el dominio esté registrado en la consola de reCAPTCHA.';
-                }
-                errorMessage.textContent = msg;
+                errorMessage.textContent = data.error || 'Error al iniciar sesión';
                 errorMessage.classList.remove('hidden');
             }
         } catch (error) {

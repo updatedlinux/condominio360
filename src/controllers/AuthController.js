@@ -18,10 +18,17 @@ class AuthController {
             const { email, identifier, password, type, recaptchaToken } = req.body;
 
             if (process.env.RECAPTCHA_SECRET_KEY) {
+                if (!recaptchaToken) {
+                    console.warn('[reCAPTCHA] Login sin token. ¿RECAPTCHA_SITE_KEY está en .env y el script carga en el cliente?');
+                }
                 const recap = await verifyRecaptcha(recaptchaToken, 'login');
                 if (!recap.ok) {
+                    if (!recap.skipped) {
+                        console.warn('[reCAPTCHA] Login falló:', recap.error, recap.details ? { details: recap.details } : '');
+                    }
                     return res.status(400).json({
-                        error: recap.skipped ? 'Error de verificación' : (recap.error || 'Verificación de seguridad fallida. Intenta de nuevo.')
+                        error: recap.skipped ? 'Error de verificación' : (recap.error || 'Verificación de seguridad fallida. Intenta de nuevo.'),
+                        ...(recap.details && { recaptchaDetails: recap.details })
                     });
                 }
             }
