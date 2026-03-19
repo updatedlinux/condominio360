@@ -1583,9 +1583,8 @@ class AdminController {
                 }
 
                 // Actualizar datos básicos (solo si coinciden; ya validamos arriba)
-                const nameParts = display_name ? display_name.split(' ') : [user.first_name, user.last_name];
-                const newFirstName = nameParts[0] || user.first_name;
-                const newLastName = nameParts.slice(1).join(' ') || user.last_name;
+                const newFirstName = incomingFirst || user.first_name;
+                const newLastName = incomingLast || user.last_name;
                 const newPhone = phone || user.phone;
                 const newDni = document_number || user.dni;
 
