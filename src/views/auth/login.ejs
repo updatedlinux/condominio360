@@ -1,5 +1,5 @@
 <% if (typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) { %>
-<script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>" async defer onload="(function(){ var b=document.getElementById('loginSubmitBtn'); if(b) b.disabled=false; })();"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>"></script>
 <% } %>
 <div class="min-h-[80vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full">
@@ -41,7 +41,7 @@
                 </div>
 
                 <div>
-                    <button type="submit" id="loginSubmitBtn" <%= (typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) ? 'disabled' : '' %>
+                    <button type="submit" id="loginSubmitBtn"
                         class="group relative w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-xl text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition shadow-lg shadow-orange-500/25 disabled:opacity-70 disabled:cursor-not-allowed">
                         <span class="absolute left-0 inset-y-0 flex items-center pl-4">
                             <svg class="h-5 w-5 text-orange-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">

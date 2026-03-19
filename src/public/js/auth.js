@@ -24,54 +24,35 @@ function setLoginType(type) {
     document.getElementById(activeBtn).classList.add('bg-orange-500', 'text-white');
 }
 
-// Esperar a que grecaptcha esté disponible (script carga async)
-function waitForGrecaptcha(timeoutMs = 5000) {
-    return new Promise((resolve) => {
-        if (typeof grecaptcha !== 'undefined') {
-            resolve(grecaptcha);
-            return;
-        }
-        const deadline = Date.now() + timeoutMs;
-        const check = () => {
-            if (typeof grecaptcha !== 'undefined') {
-                resolve(grecaptcha);
-                return;
-            }
-            if (Date.now() > deadline) {
-                console.warn('reCAPTCHA: timeout esperando script');
-                resolve(null);
-                return;
-            }
-            setTimeout(check, 100);
-        };
-        check();
-    });
-}
-
-// Obtener token reCAPTCHA v3 (si está configurado)
-async function getRecaptchaToken() {
+// Obtener token reCAPTCHA v3 (script debe cargarse sin async para evitar "Invalid listener argument")
+function getRecaptchaToken() {
     const siteKey = (window.RECAPTCHA_SITE_KEY || '').trim();
-    if (!siteKey) {
-        console.warn('[reCAPTCHA] No RECAPTCHA_SITE_KEY. Revisa que esté en .env del servidor.');
+    if (!siteKey) return null;
+    if (typeof grecaptcha === 'undefined') {
+        console.warn('[reCAPTCHA] grecaptcha no definido. Verifica que el script cargue.');
         return null;
     }
-    try {
-        const grecaptcha = await waitForGrecaptcha();
-        if (!grecaptcha) {
-            console.warn('[reCAPTCHA] Script no cargó a tiempo. ¿Dominio en recaptcha.google.com?');
-            return null;
+    return new Promise((resolve) => {
+        try {
+            // Usar callback en vez de Promise para evitar conflictos de inicialización
+            grecaptcha.ready(function() {
+                try {
+                    grecaptcha.execute(siteKey, { action: 'login' }).then(function(token) {
+                        resolve(token || null);
+                    }).catch(function(err) {
+                        console.warn('[reCAPTCHA] execute error:', err);
+                        resolve(null);
+                    });
+                } catch (e) {
+                    console.warn('[reCAPTCHA] Error:', e.message);
+                    resolve(null);
+                }
+            });
+        } catch (err) {
+            console.warn('[reCAPTCHA] Error:', err.message || err);
+            resolve(null);
         }
-        await grecaptcha.ready();
-        const token = await grecaptcha.execute(siteKey, { action: 'login' });
-        if (!token) {
-            console.warn('[reCAPTCHA] execute() no devolvió token.');
-            return null;
-        }
-        return token;
-    } catch (err) {
-        console.warn('[reCAPTCHA] Error:', err.message || err);
-        return null;
-    }
+    });
 }
 
 // Login Handler
