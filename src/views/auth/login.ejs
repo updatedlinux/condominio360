@@ -1,5 +1,5 @@
 <% if (typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) { %>
-<script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>" async defer onload="var b=document.getElementById('loginSubmitBtn');if(b)b.disabled=false;"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>" async defer onload="(function(){ var b=document.getElementById('loginSubmitBtn'); if(b) b.disabled=false; })();"></script>
 <% } %>
 <div class="min-h-[80vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full">

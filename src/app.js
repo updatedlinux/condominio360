@@ -100,6 +100,9 @@ const BillingRateUpdateService = require('./services/BillingRateUpdateService');
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    if (process.env.RECAPTCHA_SECRET_KEY && !(process.env.RECAPTCHA_SITE_KEY || '').trim()) {
+        console.warn('⚠️  RECAPTCHA_SECRET_KEY está configurado pero RECAPTCHA_SITE_KEY no. El login requerirá token que el frontend no puede obtener.');
+    }
     
     // Iniciar tareas programadas
     SchedulerService.start();

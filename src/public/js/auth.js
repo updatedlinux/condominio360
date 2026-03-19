@@ -24,13 +24,40 @@ function setLoginType(type) {
     document.getElementById(activeBtn).classList.add('bg-orange-500', 'text-white');
 }
 
+// Esperar a que grecaptcha esté disponible (script carga async)
+function waitForGrecaptcha(timeoutMs = 5000) {
+    return new Promise((resolve) => {
+        if (typeof grecaptcha !== 'undefined') {
+            resolve(grecaptcha);
+            return;
+        }
+        const deadline = Date.now() + timeoutMs;
+        const check = () => {
+            if (typeof grecaptcha !== 'undefined') {
+                resolve(grecaptcha);
+                return;
+            }
+            if (Date.now() > deadline) {
+                console.warn('reCAPTCHA: timeout esperando script');
+                resolve(null);
+                return;
+            }
+            setTimeout(check, 100);
+        };
+        check();
+    });
+}
+
 // Obtener token reCAPTCHA v3 (si está configurado)
 async function getRecaptchaToken() {
-    const siteKey = window.RECAPTCHA_SITE_KEY;
-    if (!siteKey || typeof grecaptcha === 'undefined') return null;
+    const siteKey = (window.RECAPTCHA_SITE_KEY || '').trim();
+    if (!siteKey) return null;
     try {
+        const grecaptcha = await waitForGrecaptcha();
+        if (!grecaptcha) return null;
         await grecaptcha.ready();
-        return await grecaptcha.execute(siteKey, { action: 'login' });
+        const token = await grecaptcha.execute(siteKey, { action: 'login' });
+        return token || null;
     } catch (err) {
         console.warn('reCAPTCHA error:', err);
         return null;
@@ -119,7 +146,11 @@ if (loginForm) {
                 errorMessage.textContent = 'No tienes propiedades asignadas';
                 errorMessage.classList.remove('hidden');
             } else {
-                errorMessage.textContent = data.error || 'Error al iniciar sesión';
+                let msg = data.error || 'Error al iniciar sesión';
+                if (msg.includes('reCAPTCHA') || msg.includes('Token')) {
+                    msg = 'No se pudo verificar la seguridad. Recarga la página, verifica tu conexión y que el dominio esté registrado en la consola de reCAPTCHA.';
+                }
+                errorMessage.textContent = msg;
                 errorMessage.classList.remove('hidden');
             }
         } catch (error) {
