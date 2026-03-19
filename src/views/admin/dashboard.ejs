@@ -284,6 +284,9 @@
             box-shadow: none;
             opacity: 0.9;
         }
+
+        #wizard-steps-container::-webkit-scrollbar { display: none; }
+        #wizard-steps-container { -ms-overflow-style: none; scrollbar-width: none; }
         
         .md-button-tonal {
             background: var(--md-sys-color-secondary-container);
@@ -1042,31 +1045,33 @@
         </div>
 
         <!-- Progress Steps -->
-        <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
-            <div class="flex items-center gap-2 sm:gap-4 overflow-x-auto">
+        <div class="px-6 py-4 bg-gray-50/50 border-b border-gray-100 overflow-hidden">
+            <div id="wizard-steps-container" class="flex items-center overflow-x-auto overflow-y-hidden pb-1 scroll-smooth" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+                <div id="wizard-steps-track" class="flex items-center flex-nowrap gap-2 sm:gap-3 min-w-max pr-4">
                 <div id="step-indicator-1" class="flex items-center gap-2 flex-shrink-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--md-sys-color-primary)] text-white flex items-center justify-center text-sm font-medium">1</div>
-                    <span class="text-sm font-medium text-gray-900 hidden sm:inline">Condominio</span>
+                    <span class="text-sm font-medium text-gray-900 whitespace-nowrap hidden sm:inline">Condominio</span>
                 </div>
-                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div class="w-4 sm:w-6 h-0.5 bg-gray-200 flex-shrink-0"></div>
                 <div id="step-indicator-2" class="flex items-center gap-2 flex-shrink-0">
                     <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">2</div>
-                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Facturación</span>
+                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap hidden sm:inline">Facturación</span>
                 </div>
-                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div class="w-4 sm:w-6 h-0.5 bg-gray-200 flex-shrink-0"></div>
                 <div id="step-indicator-3" class="flex items-center gap-2 flex-shrink-0">
                     <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">3</div>
-                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Edificios</span>
+                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap hidden sm:inline">Edificios</span>
                 </div>
-                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div class="w-4 sm:w-6 h-0.5 bg-gray-200 flex-shrink-0"></div>
                 <div id="step-indicator-4" class="flex items-center gap-2 flex-shrink-0">
                     <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">4</div>
-                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Administrador</span>
+                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap hidden sm:inline">Administrador</span>
                 </div>
-                <div class="flex-1 h-0.5 bg-gray-200 min-w-[20px] max-w-[40px]"></div>
+                <div class="w-4 sm:w-6 h-0.5 bg-gray-200 flex-shrink-0"></div>
                 <div id="step-indicator-5" class="flex items-center gap-2 flex-shrink-0">
                     <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">5</div>
-                    <span class="text-sm font-medium text-gray-500 hidden sm:inline">Revisar</span>
+                    <span class="text-sm font-medium text-gray-500 whitespace-nowrap hidden sm:inline">Revisar</span>
+                </div>
                 </div>
             </div>
             <div class="mt-3 md-linear-progress">
@@ -2767,6 +2772,18 @@
                         label.classList.add('text-gray-500');
                     }
                 }
+            }
+
+            // Scroll dinámico: centrar el paso actual para que no quede recortado
+            const activeIndicator = document.getElementById(`step-indicator-${currentStep}`);
+            const container = document.getElementById('wizard-steps-container');
+            if (activeIndicator && container) {
+                requestAnimationFrame(() => {
+                    const rect = activeIndicator.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    const scrollTarget = container.scrollLeft + (rect.left - containerRect.left) - (containerRect.width / 2) + (rect.width / 2);
+                    container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' });
+                });
             }
 
             // Update buttons
