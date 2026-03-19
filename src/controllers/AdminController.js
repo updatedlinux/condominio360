@@ -1534,6 +1534,36 @@ class AdminController {
             }
 
             if (user) {
+                // Usuario existe: si DNI/email coincide pero los datos (nombre, email, teléfono) son DIFERENTES, error
+                const nameParts = display_name ? display_name.trim().split(/\s+/).filter(Boolean) : [];
+                const incomingFirst = (nameParts[0] || '').trim();
+                const incomingLast = (nameParts.slice(1).join(' ') || '').trim();
+                const incomingEmail = (email || '').trim().toLowerCase();
+                const incomingPhone = (phone || '').trim();
+                const incomingDni = (document_number || '').trim();
+
+                const dbFirst = (user.first_name || '').trim();
+                const dbLast = (user.last_name || '').trim();
+                const dbPhone = (user.phone || '').trim();
+                const dbDni = (user.dni || '').trim();
+                const dbEmail = (user.email || '').trim().toLowerCase();
+                const dbEmailsResult = await transaction.request()
+                    .input('user_id', sql.UniqueIdentifier, user.id)
+                    .query('SELECT email FROM UserEmails WHERE user_id = @user_id');
+                const dbEmails = (dbEmailsResult.recordset || []).map(r => (r.email || '').trim().toLowerCase()).filter(Boolean);
+                const dbPrimaryEmail = dbEmail || (dbEmails[0] || '');
+
+                const nameMatch = !display_name?.trim() ||
+                    (incomingFirst === dbFirst && incomingLast === dbLast) ||
+                    (display_name.trim() === `${dbFirst} ${dbLast}`.trim());
+                const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail || dbEmails.includes(incomingEmail);
+                const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
+                const dniMatch = !incomingDni || incomingDni === dbDni;
+
+                if (!nameMatch || !emailMatch || !phoneMatch || !dniMatch) {
+                    throw new Error(`El documento ${document_number || 'N/A'} ya pertenece a otro propietario (${dbFirst} ${dbLast}, ${dbPrimaryEmail || 'sin email'}). Los datos cargados no coinciden. No se puede sobrescribir.`);
+                }
+
                 // User exists - verificar conflicto de email: ningún otro propietario puede tener este correo
                 if (email) {
                     const emailTaken = await UserModel.emailExistsForOtherUser(email, user.id);
@@ -1552,7 +1582,7 @@ class AdminController {
                     }
                 }
 
-                // Actualizar datos básicos (no sobrescribir email primario)
+                // Actualizar datos básicos (solo si coinciden; ya validamos arriba)
                 const nameParts = display_name ? display_name.split(' ') : [user.first_name, user.last_name];
                 const newFirstName = nameParts[0] || user.first_name;
                 const newLastName = nameParts.slice(1).join(' ') || user.last_name;
@@ -1623,9 +1653,18 @@ class AdminController {
                 }
             }
 
-            // Assign to property if provided
+            // Siempre asociar al condominio (TenantUsers) para evitar propietarios huérfanos
+            await transaction.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .input('user_id', sql.UniqueIdentifier, user.id)
+                .query(`
+                    INSERT INTO TenantUsers (user_id, tenant_id, role, status)
+                    SELECT @user_id, @tenant_id, 'OWNER', 'ACTIVE'
+                    WHERE NOT EXISTS (SELECT 1 FROM TenantUsers WHERE user_id = @user_id AND tenant_id = @tenant_id)
+                `);
+
+            // Asignar a inmueble si se proporcionó property_id
             if (property_id) {
-                // Verify property belongs to this tenant
                 const propertyCheck = await transaction.request()
                     .input('property_id', sql.UniqueIdentifier, property_id)
                     .input('tenant_id', sql.UniqueIdentifier, id)
@@ -1635,7 +1674,6 @@ class AdminController {
                     throw new Error('La propiedad no existe o no pertenece a este condominio');
                 }
 
-                // Check if user is already assigned to this property
                 const existingAssignment = await transaction.request()
                     .input('property_id', sql.UniqueIdentifier, property_id)
                     .input('user_id', sql.UniqueIdentifier, user.id)
@@ -1649,15 +1687,6 @@ class AdminController {
                         .query(`
                             INSERT INTO PropertyOwners (property_id, user_id, percentage_ownership, is_primary_owner)
                             VALUES (@property_id, @user_id, @percentage_ownership, 1)
-                        `);
-                    // Asegurar TenantUsers para este tenant (propietario puede estar en varios condominios)
-                    await transaction.request()
-                        .input('tenant_id', sql.UniqueIdentifier, id)
-                        .input('user_id', sql.UniqueIdentifier, user.id)
-                        .query(`
-                            INSERT INTO TenantUsers (user_id, tenant_id, role, status)
-                            SELECT @user_id, @tenant_id, 'OWNER', 'ACTIVE'
-                            WHERE NOT EXISTS (SELECT 1 FROM TenantUsers WHERE user_id = @user_id AND tenant_id = @tenant_id)
                         `);
                 }
             }
