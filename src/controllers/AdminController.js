@@ -1355,10 +1355,10 @@ class AdminController {
             const req2 = pool.request().input('id', sql.UniqueIdentifier, id);
             if (name) { updates.push('name = @name'); req2.input('name', sql.NVarChar, name); }
             if (slug) { updates.push('slug = @slug'); req2.input('slug', sql.NVarChar, slug); }
-            if (building_id !== undefined) { updates.push('building_id = @building_id'); req2.input('building_id', sql.UniqueIdentifier, building_id); }
-            if (floor !== undefined) { updates.push('floor = @floor'); req2.input('floor', sql.NVarChar, floor); }
-            if (alicuota !== undefined) { updates.push('alicuota = @alicuota'); req2.input('alicuota', sql.Decimal(10, 4), alicuota); }
-            if (area_sqm !== undefined) { updates.push('area_sqm = @area_sqm'); req2.input('area_sqm', sql.Decimal(10, 2), area_sqm); }
+            if (building_id !== undefined) { updates.push('building_id = @building_id'); req2.input('building_id', sql.UniqueIdentifier, building_id || null); }
+            if (floor !== undefined) { updates.push('floor = @floor'); req2.input('floor', sql.NVarChar, floor || null); }
+            if (alicuota !== undefined) { updates.push('alicuota = @alicuota'); req2.input('alicuota', sql.Decimal(10, 4), alicuota === '' || alicuota === null ? null : alicuota); }
+            if (area_sqm !== undefined) { updates.push('area_sqm = @area_sqm'); req2.input('area_sqm', sql.Decimal(10, 2), area_sqm === '' || area_sqm === null ? null : area_sqm); }
             if (type) { updates.push('type = @type'); req2.input('type', sql.NVarChar, type); }
             if (nicknameNorm !== undefined) { updates.push('nickname = @nickname'); req2.input('nickname', sql.NVarChar, nicknameNorm); }
             if (nicknameHash !== undefined) { updates.push('nickname_password_hash = @nickname_password_hash'); req2.input('nickname_password_hash', sql.NVarChar, nicknameHash); }
