@@ -9,6 +9,8 @@
     #tenant-sidebar { position: fixed !important; inset: 0 auto 0 0 !important; z-index: 9999 !important; transform: translateX(-100%); transition: transform 0.3s ease; }
     #tenant-sidebar.tenant-mobile-open { transform: translateX(0); }
     .tenant-sidebar-close { display: flex !important; }
+    /* Espacio para el hamburger: evita que choque con "Panel" */
+    #tenant-sidebar + div > header { padding-left: 4rem; }
 }
 @media (min-width: 768px) {
     .tenant-hamburger-btn { display: none !important; }
@@ -21,12 +23,12 @@
     <span class="material-icons-round text-[#5F6368]">menu</span>
 </button>
 <aside id="tenant-sidebar" class="w-64 bg-white border-r border-[#E5E5E5] flex flex-col shrink-0">
-    <div class="h-16 flex items-center justify-between px-4 border-b border-[#E5E5E5]">
-        <div class="flex items-center gap-3 flex-1 min-w-0">
+    <div class="h-16 flex items-center gap-3 px-4 border-b border-[#E5E5E5]">
+        <div class="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
             <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
-            <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+            <span class="font-bold text-xl text-[#f97316] truncate">Condominio360</span>
         </div>
-        <button type="button" class="tenant-sidebar-close hidden w-8 h-8 items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]" onclick="typeof toggleTenantMobileSidebar==='function'&&toggleTenantMobileSidebar()" aria-label="Cerrar menú">
+        <button type="button" class="tenant-sidebar-close hidden flex-shrink-0 w-8 h-8 items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368] ml-2" onclick="typeof toggleTenantMobileSidebar==='function'&&toggleTenantMobileSidebar()" aria-label="Cerrar menú">
             <span class="material-icons-round">close</span>
         </button>
     </div>
