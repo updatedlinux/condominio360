@@ -255,7 +255,11 @@
 
         async function loadFrequentVisitors() {
             try {
-                const response = await fetch('/api/owner/visitors', {
+                const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+                const url = selectedProperty?.id 
+                    ? `/api/owner/visitors?propertyId=${selectedProperty.id}` 
+                    : '/api/owner/visitors';
+                const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -312,7 +316,7 @@
                         ` : ''}
                     </div>
                     <div class="mt-4 flex gap-2">
-                        <button onclick="toggleVisitor('${v.id}', '${v.pass_status === 'ACTIVE' ? 'disable' : 'enable'}')" 
+                        <button onclick="toggleVisitor('${v.pass_id}', '${v.pass_status === 'ACTIVE' ? 'disable' : 'enable'}')" 
                                 class="flex-1 px-3 py-2 text-sm rounded-lg font-medium transition-all ${v.pass_status === 'ACTIVE' 
                                     ? 'bg-red-50 text-red-700 hover:bg-red-100' 
                                     : 'bg-green-50 text-green-700 hover:bg-green-100'}">
@@ -469,9 +473,33 @@
             }
         }
 
-        async function toggleVisitor(visitorId, action) {
+        async function toggleVisitor(passId, action) {
+            const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
+            if (!selectedProperty?.id) {
+                showToast('Selecciona una propiedad primero', 'error');
+                return;
+            }
             showToast(`${action === 'enable' ? 'Habilitando' : 'Deshabilitando'} visitante...`);
-            // TODO: Implementar API call para habilitar/deshabilitar
+            try {
+                const response = await fetch(`/api/owner/visitors/${passId}/toggle?propertyId=${selectedProperty.id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(data.message);
+                    loadFrequentVisitors();
+                } else {
+                    showToast(data.error || 'Error al actualizar visitante', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error al actualizar visitante', 'error');
+            }
         }
 
         function logout() {

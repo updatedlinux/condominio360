@@ -64,6 +64,7 @@ router.get('/common-areas/:id', OwnerCommonAreaController.getAreaDetail);
 
 // ==================== VISITAS ====================
 router.get('/visitors', OwnerController.getVisitors);
+router.patch('/visitors/:passId/toggle', OwnerController.toggleFrequentVisitor);
 router.post('/visitors', OwnerController.createVisitor);
 router.get('/visits/upcoming', OwnerController.getUpcomingVisits);
 router.get('/visits/history', OwnerController.getVisitsHistory);

@@ -994,7 +994,7 @@ class OwnerController {
      */
     static async getVisitors(req, res) {
         try {
-            const propertyId = req.propertyId;
+            const propertyId = req.propertyId || req.query.propertyId;
             const tenantId = req.user.tenantId;
 
             if (!propertyId || !tenantId) {
@@ -1006,13 +1006,15 @@ class OwnerController {
                 .input('propertyId', sql.UniqueIdentifier, propertyId)
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
                 .query(`
-                    SELECT v.*, vp.type as pass_type, vp.alias as pass_alias, 
+                    SELECT v.*, vp.id as pass_id, vp.type as pass_type, vp.alias as pass_alias, 
                            vp.status as pass_status, vp.valid_from, vp.valid_until
                     FROM Visitors v
                     INNER JOIN VisitorPasses vp ON v.id = vp.visitor_id
                     WHERE vp.property_id = @propertyId 
                     AND vp.tenant_id = @tenantId
                     AND vp.type = 'FREQUENT'
+                    AND vp.status = 'ACTIVE'
+                    AND v.is_active = 1
                     ORDER BY vp.created_at DESC
                 `);
 
@@ -1024,6 +1026,78 @@ class OwnerController {
         } catch (error) {
             console.error('Get visitors error:', error);
             res.status(500).json({ error: 'Error al obtener visitantes' });
+        }
+    }
+
+    /**
+     * PATCH /api/owner/visitors/:passId/toggle
+     * Deshabilitar o habilitar visitante frecuente (actualiza pass y visitor)
+     */
+    static async toggleFrequentVisitor(req, res) {
+        try {
+            const { passId } = req.params;
+            const propertyId = req.propertyId || req.query.propertyId;
+            const tenantId = req.user.tenantId;
+            const { action } = req.body; // 'enable' | 'disable'
+
+            if (!propertyId || !tenantId || !passId) {
+                return res.status(400).json({ error: 'Se requiere propertyId, tenantId y passId' });
+            }
+
+            const pool = await connectDB();
+
+            const passResult = await pool.request()
+                .input('passId', sql.UniqueIdentifier, passId)
+                .input('propertyId', sql.UniqueIdentifier, propertyId)
+                .input('tenantId', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT vp.id, vp.visitor_id, vp.status, v.first_name, v.last_name
+                    FROM VisitorPasses vp
+                    INNER JOIN Visitors v ON vp.visitor_id = v.id
+                    WHERE vp.id = @passId 
+                    AND vp.property_id = @propertyId 
+                    AND vp.tenant_id = @tenantId
+                    AND vp.type = 'FREQUENT'
+                `);
+
+            if (passResult.recordset.length === 0) {
+                return res.status(404).json({ error: 'Visitante frecuente no encontrado o no pertenece a esta propiedad' });
+            }
+
+            const pass = passResult.recordset[0];
+            const newStatus = action === 'enable' ? 'ACTIVE' : 'INACTIVE';
+            const isActive = action === 'enable' ? 1 : 0;
+
+            await pool.request()
+                .input('passId', sql.UniqueIdentifier, passId)
+                .input('tenantId', sql.UniqueIdentifier, tenantId)
+                .input('newStatus', sql.NVarChar, newStatus)
+                .query(`
+                    UPDATE VisitorPasses 
+                    SET status = @newStatus, updated_at = SYSDATETIME()
+                    WHERE id = @passId AND tenant_id = @tenantId
+                `);
+
+            await pool.request()
+                .input('visitorId', sql.UniqueIdentifier, pass.visitor_id)
+                .input('tenantId', sql.UniqueIdentifier, tenantId)
+                .input('isActive', sql.Bit, isActive)
+                .query(`
+                    UPDATE Visitors 
+                    SET is_active = @isActive
+                    WHERE id = @visitorId AND tenant_id = @tenantId
+                `);
+
+            res.json({
+                success: true,
+                message: action === 'enable' 
+                    ? 'Visitante frecuente habilitado' 
+                    : 'Visitante frecuente deshabilitado y eliminado de la lista'
+            });
+
+        } catch (error) {
+            console.error('Toggle frequent visitor error:', error);
+            res.status(500).json({ error: 'Error al actualizar visitante frecuente' });
         }
     }
 
