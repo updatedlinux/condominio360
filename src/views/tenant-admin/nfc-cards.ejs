@@ -568,9 +568,12 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast(data.message || 'Tarjeta registrada exitosamente');
-                    closeCreateModal();
-                    loadCards();
+                    const isAlreadyRegistered = data.message === 'Tarjeta ya registrada';
+                    showToast(data.message || 'Tarjeta registrada exitosamente', isAlreadyRegistered ? 'error' : 'success');
+                    if (!isAlreadyRegistered) {
+                        closeCreateModal();
+                        loadCards();
+                    }
                 } else {
                     showToast(data.error || 'Error al registrar', 'error');
                 }
