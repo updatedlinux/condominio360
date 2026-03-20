@@ -1,6 +1,18 @@
 const nodemailer = require('nodemailer');
 
 /**
+ * Formatea fecha para correos: la DB guarda hora Venezuela pero el driver la interpreta como UTC.
+ * Añadimos -04:00 para que se muestre correctamente.
+ */
+function formatDateVenezuela(dateVal, options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) {
+    if (!dateVal) return '-';
+    const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
+    const iso = d.toISOString();
+    const isoVenezuela = iso.slice(0, 19) + '-04:00';
+    return new Date(isoVenezuela).toLocaleDateString('es-ES', { timeZone: 'America/Caracas', ...options });
+}
+
+/**
  * Servicio de Email para envío de notificaciones e invitaciones
  */
 class EmailService {
@@ -576,9 +588,7 @@ class EmailService {
             <div class="details-box">
                 <h3>${requestType.name}</h3>
                 <p><strong>Estado:</strong> <span class="status-badge status-${statusClass}">${statusLabels[request.status]}</span></p>
-                <p><strong>Fecha:</strong> ${new Date(request.created_at).toLocaleDateString('es-ES', { 
-                    timeZone: 'America/Caracas', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                })}</p>
+                <p><strong>Fecha:</strong> ${formatDateVenezuela(request.created_at)}</p>
             </div>
             
             <p>La Junta de Condominio revisará tu solicitud y te notificará cuando haya actualizaciones.</p>
@@ -628,9 +638,7 @@ class EmailService {
                 <h3>${requestType.name}</h3>
                 <p><strong>Propietario:</strong> ${ownerName}</p>
                 <p><strong>Prioridad:</strong> ${priorityLabels[request.priority] || request.priority}</p>
-                <p><strong>Fecha:</strong> ${new Date(request.created_at).toLocaleDateString('es-ES', { 
-                    timeZone: 'America/Caracas', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                })}</p>
+                <p><strong>Fecha:</strong> ${formatDateVenezuela(request.created_at)}</p>
             </div>
             
             <p><strong>Descripción:</strong></p>
@@ -704,9 +712,7 @@ class EmailService {
             <div class="details-box" style="border-left-color: ${statusColor}">
                 <h3>${requestType.name}</h3>
                 <p><strong>Nuevo Estado:</strong> <span class="status-badge status-${statusClass}">${statusLabels[request.status]}</span></p>
-                <p><strong>Fecha de actualización:</strong> ${new Date(request.updated_at || request.created_at).toLocaleDateString('es-ES', { 
-                    timeZone: 'America/Caracas', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                })}</p>
+                <p><strong>Fecha de actualización:</strong> ${formatDateVenezuela(request.updated_at || request.created_at)}</p>
             </div>
             
             <p>${statusMessages[request.status]}</p>
