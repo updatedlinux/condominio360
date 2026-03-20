@@ -170,6 +170,8 @@ class ConsultationNotificationService {
 
     /**
      * Obtener destinatarios elegibles
+     * - targetBuilding null: todos los propietarios del tenant
+     * - targetBuilding "Lourdes": solo propietarios con inmuebles en ese edificio (building o building_id->Buildings.name)
      */
     async getRecipients(tenantId, targetBuilding = null) {
         try {
@@ -180,13 +182,14 @@ class ConsultationNotificationService {
                 FROM Users u
                 INNER JOIN PropertyOwners po ON u.id = po.user_id
                 INNER JOIN Properties p ON po.property_id = p.id
+                LEFT JOIN Buildings b ON p.building_id = b.id
                 WHERE p.tenant_id = @tenantId
                 AND u.email IS NOT NULL
                 AND u.email != ''
             `;
 
             if (targetBuilding) {
-                query += ` AND p.building = @targetBuilding`;
+                query += ` AND (p.building = @targetBuilding OR b.name = @targetBuilding)`;
             }
 
             const result = await pool.request()
