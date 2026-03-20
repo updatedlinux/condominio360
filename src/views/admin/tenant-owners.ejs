@@ -536,6 +536,7 @@
         let buildings = [];
         let properties = [];
         let owners = [];
+        let uniqueOwners = [];
         let filteredOwners = [];
         let availableProperties = [];
         let csvData = [];
@@ -565,6 +566,8 @@
 
         async function loadData() {
             await Promise.all([loadBuildings(), loadProperties(), loadOwners()]);
+            uniqueOwners = groupOwnersByUser(owners);
+            filteredOwners = [...uniqueOwners];
             updateStats();
             renderOwners();
             populateFilters();
@@ -594,7 +597,7 @@
                         building_slug: p.building_name ? generateSlug(p.building_name) : null
                     }));
                     // Properties without owner
-                    availableProperties = properties.filter(p => !p.owner_id);
+                    availableProperties = properties.filter(p => !(p.owner_count > 0));
                     populatePropertySelect();
                 }
             } catch (error) {
@@ -608,13 +611,37 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
-                if (data.success) {
-                    owners = data.owners || [];
-                    filteredOwners = [...owners];
-                }
+                if (data.success) owners = data.owners || [];
             } catch (error) {
                 console.error('Error loading owners:', error);
             }
+        }
+
+        function groupOwnersByUser(rows) {
+            const byId = {};
+            for (const row of rows) {
+                if (!byId[row.id]) {
+                    byId[row.id] = {
+                        id: row.id,
+                        display_name: row.display_name,
+                        name: row.name,
+                        email: row.email,
+                        phone: row.phone,
+                        document_number: row.document_number,
+                        document_type: row.document_type,
+                        user_name: row.user_name,
+                        properties: []
+                    };
+                }
+                if (row.property_id) {
+                    const p = properties.find(pr => pr.id === row.property_id);
+                    const display = p
+                        ? (buildingType === 'MULTIPLE' && p.building_name ? `${p.building_name} - ${p.name}` : p.name)
+                        : (row.building_name ? `${row.building_name} - ${row.property_name || ''}` : (row.property_name || '')).trim();
+                    byId[row.id].properties.push({ property_id: row.property_id, display, building_id: p?.building_id });
+                }
+            }
+            return Object.values(byId);
         }
 
         function populatePropertySelect() {
@@ -642,10 +669,10 @@
         }
 
         function updateStats() {
-            const withProperty = owners.filter(o => o.property_id).length;
-            document.getElementById('stat-total-owners').textContent = owners.length;
+            const withProperty = uniqueOwners.filter(o => o.properties.length > 0).length;
+            document.getElementById('stat-total-owners').textContent = uniqueOwners.length;
             document.getElementById('stat-with-property').textContent = withProperty;
-            document.getElementById('stat-without-property').textContent = owners.length - withProperty;
+            document.getElementById('stat-without-property').textContent = uniqueOwners.length - withProperty;
             document.getElementById('stat-available-properties').textContent = availableProperties.length;
         }
 
@@ -662,13 +689,10 @@
             }
 
             tbody.innerHTML = filteredOwners.map(o => {
-                const property = properties.find(p => p.id === o.property_id);
-                const propertyDisplay = property 
-                    ? (buildingType === 'MULTIPLE' && property.building_name 
-                        ? `${property.building_name} - ${property.name}` 
-                        : property.name)
-                    : null;
-                
+                const propertyBadges = o.properties.length > 0
+                    ? o.properties.map(p => `<span class="px-3 py-1 rounded-full text-xs property-tag">${p.display}</span>`).join(' ')
+                    : `<span class="px-3 py-1 rounded-full text-xs owner-unassigned">Sin asignar</span>`;
+
                 return `
                     <tr class="hover:bg-slate-50">
                         <td class="px-6 py-4">
@@ -689,10 +713,7 @@
                             ${o.phone ? `<p class="text-xs">${o.phone}</p>` : ''}
                         </td>
                         <td class="px-6 py-4">
-                            ${propertyDisplay 
-                                ? `<span class="px-3 py-1 rounded-full text-xs property-tag">${propertyDisplay}</span>`
-                                : `<span class="px-3 py-1 rounded-full text-xs owner-unassigned">Sin asignar</span>`
-                            }
+                            <div class="flex flex-wrap gap-1">${propertyBadges}</div>
                         </td>
                         <td class="px-6 py-4">
                             <button onclick="openPasswordModal('${o.id}', '${(o.display_name || o.name || '').replace(/'/g, "\\'")}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg" title="Establecer Contraseña">
@@ -715,26 +736,22 @@
             const propertyStatus = document.getElementById('property-filter').value;
             const buildingId = document.getElementById('building-filter').value;
 
-            filteredOwners = owners.filter(o => {
-                // Search by document number (priority), name, or email
+            filteredOwners = uniqueOwners.filter(o => {
                 const docNum = (o.document_number || '').toLowerCase();
                 const name = (o.display_name || o.name || '').toLowerCase();
                 const email = (o.email || '').toLowerCase();
-                
-                const matchesSearch = !search || 
+
+                const matchesSearch = !search ||
                     docNum.includes(search) ||
                     name.includes(search) ||
                     email.includes(search);
-                
-                const matchesStatus = !propertyStatus || 
-                    (propertyStatus === 'with-property' && o.property_id) ||
-                    (propertyStatus === 'without-property' && !o.property_id);
-                
-                let matchesBuilding = true;
-                if (buildingId) {
-                    const property = properties.find(p => p.id === o.property_id);
-                    matchesBuilding = property && property.building_id === buildingId;
-                }
+
+                const matchesStatus = !propertyStatus ||
+                    (propertyStatus === 'with-property' && o.properties.length > 0) ||
+                    (propertyStatus === 'without-property' && o.properties.length === 0);
+
+                const matchesBuilding = !buildingId ||
+                    o.properties.some(p => p.building_id === buildingId);
 
                 return matchesSearch && matchesStatus && matchesBuilding;
             });
