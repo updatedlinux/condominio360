@@ -384,27 +384,30 @@ class CommonAreaModel {
             `);
         
         const reservations = reservationsResult.recordset;
-        const parseHour = (t) => {
+        // Convertir tiempo a minutos desde medianoche (maneja Date, TIME, string "09:00", "09:00:00", etc.)
+        const timeToMinutes = (t) => {
             if (!t) return 0;
             const s = String(t);
-            const m = s.match(/(?:^|T)(\d{1,2}):/);
-            return m ? parseInt(m[1], 10) : 0;
+            const m = s.match(/(\d{1,2}):(\d{0,2})/);
+            if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2] || '0', 10);
+            return 0;
         };
         
-        // Generar slots de 1 hora
         const slots = [];
-        const openHour = parseHour(area.opening_time) || 8;
-        const closeHour = parseHour(area.closing_time) || 20;
+        const openHour = Math.floor(timeToMinutes(area.opening_time) / 60) || 8;
+        const closeHour = Math.floor(timeToMinutes(area.closing_time) / 60) || 20;
         
         for (let hour = openHour; hour + durationHours <= closeHour; hour++) {
             const startTime = `${hour.toString().padStart(2, '0')}:00`;
             const endTime = `${(hour + durationHours).toString().padStart(2, '0')}:00`;
+            const slotStartMin = hour * 60;
+            const slotEndMin = (hour + durationHours) * 60;
             
-            // Verificar si hay conflicto
+            // Verificar overlap: (slotStart < resEnd) AND (slotEnd > resStart)
             const hasConflict = reservations.some(r => {
-                const rStart = parseHour(r.start_time);
-                const rEnd = parseHour(r.end_time);
-                return (hour < rEnd && (hour + durationHours) > rStart);
+                const rStart = timeToMinutes(r.start_time);
+                const rEnd = timeToMinutes(r.end_time);
+                return slotStartMin < rEnd && slotEndMin > rStart;
             });
             
             if (!hasConflict) {

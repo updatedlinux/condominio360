@@ -213,7 +213,7 @@
             </div>
             <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
                 <button type="button" onclick="closeReserveModal()" class="flex-1 px-6 py-3 border border-[#E5E5E5] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">Cancelar</button>
-                <button type="button" onclick="submitReservation()" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg" id="reserve-submit-btn">Reservar</button>
+                <button type="button" onclick="submitReservation()" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none" id="reserve-submit-btn" disabled>Reservar</button>
             </div>
         </div>
     </div>
@@ -382,6 +382,25 @@
             return s.length >= 5 ? s.substring(0, 5) : s;
         }
 
+        let existingReservationsForDate = [];
+
+        function timeToMinutes(t) {
+            if (!t) return 0;
+            const s = String(t);
+            const m = s.match(/(\d{1,2}):(\d{0,2})/);
+            return m ? parseInt(m[1], 10) * 60 + parseInt(m[2] || '0', 10) : 0;
+        }
+
+        function slotConflictsWithExisting(start, end, existing) {
+            const slotStart = timeToMinutes(start);
+            const slotEnd = timeToMinutes(end);
+            return existing.some(r => {
+                const rStart = timeToMinutes(r.start_time);
+                const rEnd = timeToMinutes(r.end_time);
+                return slotStart < rEnd && slotEnd > rStart;
+            });
+        }
+
         async function loadSlots() {
             const date = document.getElementById('reserve-date').value;
             const areaId = document.getElementById('reserve-area-id').value;
@@ -404,6 +423,8 @@
                 document.getElementById('slots-loading').classList.add('hidden');
 
                 const existing = data.existingReservations || [];
+                existingReservationsForDate = existing;
+
                 const takenList = document.getElementById('reservations-taken-list');
                 if (existing.length > 0) {
                     takenList.innerHTML = existing.map(r => 
@@ -418,7 +439,14 @@
                     return;
                 }
 
-                document.getElementById('slots-grid').innerHTML = data.slots.map(s => `
+                const availableSlots = (data.slots || []).filter(s => !slotConflictsWithExisting(s.start_time, s.end_time, existing));
+                if (availableSlots.length === 0) {
+                    document.getElementById('slots-empty').classList.remove('hidden');
+                    document.getElementById('slots-empty').textContent = 'No hay horarios disponibles para este día (todos están ocupados)';
+                    return;
+                }
+
+                document.getElementById('slots-grid').innerHTML = availableSlots.map(s => `
                     <button type="button" onclick="selectSlot('${s.start_time}', '${s.end_time}')" class="slot-btn px-3 py-2 rounded-lg border border-[#E5E5E5] text-sm font-medium text-[#3C4043] transition-all">
                         ${formatTime(s.start_time)} - ${formatTime(s.end_time)}
                     </button>
@@ -435,9 +463,29 @@
             event.target.classList.add('bg-[#f97316]', 'text-white');
             document.getElementById('reserve-start-time').value = start;
             document.getElementById('reserve-end-time').value = end;
-            document.getElementById('slot-selected-text').textContent = `${formatTime(start)} - ${formatTime(end)} está disponible. Sin conflictos con otras reservas.`;
-            document.getElementById('slot-selected-msg').classList.remove('hidden');
-            document.getElementById('reserve-submit-btn').disabled = false;
+
+            const conflict = slotConflictsWithExisting(start, end, existingReservationsForDate);
+            const msgEl = document.getElementById('slot-selected-msg');
+            const textEl = document.getElementById('slot-selected-text');
+            const btn = document.getElementById('reserve-submit-btn');
+
+            if (conflict) {
+                msgEl.className = 'mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-center gap-2';
+                const iconEl = msgEl.querySelector('.material-icons-round');
+                if (iconEl) { iconEl.textContent = 'error'; iconEl.className = 'material-icons-round text-red-600'; }
+                textEl.textContent = 'Este horario tiene conflicto con otra reserva. Elige otro.';
+                msgEl.classList.remove('hidden');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                msgEl.className = 'mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center gap-2';
+                const iconEl = msgEl.querySelector('.material-icons-round');
+                if (iconEl) { iconEl.textContent = 'check_circle'; iconEl.className = 'material-icons-round text-green-600'; }
+                textEl.textContent = `${formatTime(start)} - ${formatTime(end)} está disponible. Sin conflictos con otras reservas.`;
+                msgEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
 
         async function submitReservation() {
