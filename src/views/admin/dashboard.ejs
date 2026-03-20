@@ -68,7 +68,7 @@
         .nav-rail {
             background: var(--md-sys-color-surface);
             border-right: 1px solid var(--md-sys-color-surface-variant);
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
         }
         
         .nav-rail.collapsed {
@@ -77,6 +77,26 @@
         
         .nav-rail.expanded {
             width: 300px;
+        }
+        
+        /* Mobile: sidebar oculto por defecto, se desliza al abrir */
+        @media (max-width: 1023px) {
+            .nav-rail {
+                transform: translateX(-100%);
+                width: 280px !important;
+            }
+            .nav-rail.mobile-open {
+                transform: translateX(0);
+            }
+            #main-content {
+                margin-left: 0 !important;
+            }
+            .admin-mobile-overlay {
+                display: none;
+            }
+            .admin-mobile-overlay.active {
+                display: block;
+            }
         }
         
         /* Navigation Items */
@@ -468,13 +488,20 @@
     </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Overlay móvil (ocultar al hacer clic fuera del sidebar) -->
+    <div id="admin-mobile-overlay" class="admin-mobile-overlay fixed inset-0 bg-black/50 z-30 lg:hidden" onclick="toggleAdminMobileSidebar()"></div>
+    
     <div class="h-screen flex overflow-hidden">
         <!-- Navigation Rail / Sidebar -->
         <aside id="sidebar" class="nav-rail expanded fixed h-full z-40 flex flex-col">
             <!-- Logo Section -->
             <div class="px-5 pl-6 py-4 flex items-center gap-4 h-16">
-                <button id="menu-toggle" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                <!-- Hamburger/Close: desktop=collapse, mobile=close -->
+                <button id="menu-toggle" class="hidden lg:flex w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
                     <span class="material-symbols-rounded text-gray-700">menu</span>
+                </button>
+                <button onclick="toggleAdminMobileSidebar()" class="lg:hidden flex w-12 h-12 items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-gray-700">close</span>
                 </button>
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10 flex-shrink-0" style="object-fit: contain;">
@@ -537,6 +564,10 @@
         <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
             <!-- Top App Bar -->
             <header class="app-top-bar sticky top-0 z-30 flex-shrink-0">
+                <!-- Hamburger móvil -->
+                <button onclick="toggleAdminMobileSidebar()" class="lg:hidden flex w-10 h-10 items-center justify-center rounded-lg hover:bg-gray-100 mr-2">
+                    <span class="material-symbols-rounded text-gray-700">menu</span>
+                </button>
                 <h2 id="page-title" class="text-xl font-medium text-gray-900 flex-1">Dashboard</h2>
                 <div class="flex items-center gap-4">
                     <span id="admin-name" class="text-sm text-gray-600 hidden sm:block">Admin</span>
@@ -1470,12 +1501,12 @@
             setupValidationListeners();
         });
 
-        // Sidebar Toggle
+        // Sidebar Toggle (desktop: expand/collapse)
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const icon = document.querySelector('#menu-toggle .material-symbols-rounded');
-            
+            if (!icon) return;
             if (sidebar.classList.contains('expanded')) {
                 sidebar.classList.remove('expanded');
                 sidebar.classList.add('collapsed');
@@ -1489,8 +1520,25 @@
             }
         }
 
+        // Mobile Sidebar Toggle (abrir/cerrar menú en móvil)
+        function toggleAdminMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('admin-mobile-overlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+
         // Section Navigation
         function showSection(sectionName, navEl) {
+            // En móvil, cerrar sidebar al seleccionar
+            if (window.innerWidth < 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('admin-mobile-overlay');
+                if (sidebar && overlay && sidebar.classList.contains('mobile-open')) {
+                    sidebar.classList.remove('mobile-open');
+                    overlay.classList.remove('active');
+                }
+            }
             // Hide all sections (selector: sections dentro de main)
             document.querySelectorAll('#main-content section[id^="section-"]').forEach(s => s.classList.add('hidden'));
             

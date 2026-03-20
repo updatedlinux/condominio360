@@ -42,6 +42,14 @@
         }
         .nav-rail.collapsed { width: 80px; }
         .nav-rail.expanded { width: 300px; }
+        .nav-rail { transition: width 0.3s ease, transform 0.3s ease; }
+        @media (max-width: 1023px) {
+            .nav-rail { transform: translateX(-100%); width: 280px !important; }
+            .nav-rail.mobile-open { transform: translateX(0); }
+            #main-content { margin-left: 0 !important; }
+            .admin-mobile-overlay { display: none; }
+            .admin-mobile-overlay.active { display: block; }
+        }
 
         .nav-item {
             display: flex;
@@ -86,13 +94,17 @@
     </style>
 </head>
 <body class="bg-slate-50">
+    <div id="admin-mobile-overlay" class="admin-mobile-overlay fixed inset-0 bg-black/50 z-30 lg:hidden" onclick="toggleAdminMobileSidebar()"></div>
     <div class="h-screen flex overflow-hidden">
         <!-- Navigation Rail / Sidebar -->
         <aside id="sidebar" class="nav-rail expanded fixed h-full z-40 flex flex-col">
             <!-- Logo Section -->
             <div class="px-5 pl-6 py-4 flex items-center gap-4 h-16">
-                <button id="menu-toggle" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                <button id="menu-toggle" class="hidden lg:flex w-12 h-12 items-center justify-center rounded-full hover:bg-gray-100 transition">
                     <span class="material-symbols-rounded text-gray-700">menu</span>
+                </button>
+                <button onclick="toggleAdminMobileSidebar()" class="lg:hidden flex w-12 h-12 items-center justify-center rounded-full hover:bg-gray-100 transition">
+                    <span class="material-symbols-rounded text-gray-700">close</span>
                 </button>
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10 flex-shrink-0" style="object-fit: contain;">
@@ -153,6 +165,9 @@
             <header class="bg-white shadow-sm sticky top-0 z-30 flex-shrink-0">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-4">
+                <button onclick="toggleAdminMobileSidebar()" class="lg:hidden w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+                    <span class="material-symbols-rounded text-slate-600">menu</span>
+                </button>
                 <button onclick="goBack()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
                     <span class="material-symbols-rounded text-slate-600">arrow_back</span>
                 </button>
@@ -557,6 +572,11 @@
                 mainContent.style.marginLeft = '300px';
                 if (icon) icon.textContent = 'menu';
             }
+        }
+        function toggleAdminMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('admin-mobile-overlay');
+            if (sidebar && overlay) { sidebar.classList.toggle('mobile-open'); overlay.classList.toggle('active'); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
