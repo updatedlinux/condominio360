@@ -37,7 +37,7 @@ class SecurityController {
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
                 .input('queryDate', sql.Date, queryDate)
                 .query(`
-                    SELECT COUNT(*) as count, MAX(updated_at) as last_update
+                    SELECT COUNT(*) as count, MAX(COALESCE(updated_at, created_at)) as last_update
                     FROM VisitorPasses 
                     WHERE tenant_id = @tenantId
                     AND type = 'ONE_TIME'

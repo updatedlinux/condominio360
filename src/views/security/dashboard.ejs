@@ -579,7 +579,8 @@
 
         async function checkForUpdates() {
             try {
-                const response = await fetchWithAuth('/api/security/dashboard/status');
+                const today = getTodayVenezuela();
+                const response = await fetchWithAuth(`/api/security/dashboard/status?date=${today}`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -719,7 +720,7 @@
         // API Calls
         async function fetchVisits() {
             const today = getTodayVenezuela();
-            const response = await fetchWithAuth(`/api/security/visits?type=unique&date=${today}`);
+            const response = await fetchWithAuth(`/api/security/visits?type=unique&date=${today}&_t=${Date.now()}`);
             const data = await response.json();
             return data.success ? data.data : [];
         }
@@ -1200,6 +1201,7 @@
             selectedOwnerVisit = null;
             document.getElementById('mv-property-wrap').classList.add('hidden');
             document.getElementById('manualVisitModal').classList.remove('hidden');
+            document.getElementById('mv-visit-date').value = getTodayVenezuela();
             document.getElementById('mv-owner-dni').focus();
         }
 
@@ -1517,6 +1519,7 @@
                 if (data.success) {
                     showToast('Visita registrada exitosamente');
                     closeManualVisitModal();
+                    currentDataHash = null;
                     loadTabData('visits');
                 } else {
                     showToast(data.error || 'Error al registrar visita', 'error');
