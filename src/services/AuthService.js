@@ -348,6 +348,14 @@ class AuthService {
 
         return {
             token,
+            user: user ? {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                dni: user.dni,
+                type: 'OWNER'
+            } : null,
             property: {
                 id: selected.id,
                 name: selected.name,
