@@ -360,6 +360,21 @@ class TenantAdminController {
                 results.billing_invoices_count = 0;
             }
 
+            // 9. Conteo de tarjetas NFC (para badge)
+            try {
+                const nfcCountResult = await pool.request()
+                    .input('propertyId', sql.UniqueIdentifier, propertyId)
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
+                    .query(`
+                        SELECT COUNT(*) as count FROM NFC_Cards 
+                        WHERE property_id = @propertyId AND tenant_id = @tenantId
+                    `);
+                results.nfc_cards_count = nfcCountResult.recordset[0]?.count ?? 0;
+            } catch (e) {
+                console.error('Error loading NFC count:', e);
+                results.nfc_cards_count = 0;
+            }
+
             res.json({
                 success: true,
                 ...results

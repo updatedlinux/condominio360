@@ -60,14 +60,16 @@ class NFCAdminController {
                 FROM NFC_Cards 
                 WHERE tenant_id = @tenant_id
             `;
-            if (property_id) countQuery += ` AND property_id = @property_id`;
-            if (is_active !== undefined) countQuery += ` AND is_active = @is_active`;
-
-            const countResult = await pool.request()
-                .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                .input('property_id', sql.UniqueIdentifier, property_id)
-                .input('is_active', sql.Bit, is_active === 'true' ? 1 : 0)
-                .query(countQuery);
+            const countRequest = pool.request().input('tenant_id', sql.UniqueIdentifier, tenantId);
+            if (property_id) {
+                countQuery += ` AND property_id = @property_id`;
+                countRequest.input('property_id', sql.UniqueIdentifier, property_id);
+            }
+            if (is_active !== undefined && is_active !== '') {
+                countQuery += ` AND is_active = @is_active`;
+                countRequest.input('is_active', sql.Bit, is_active === 'true' ? 1 : 0);
+            }
+            const countResult = await countRequest.query(countQuery);
 
             res.json({
                 success: true,
@@ -155,24 +157,46 @@ class NFCAdminController {
                 return res.status(404).json({ error: 'Unidad no encontrada' });
             }
 
-            // Verificar que no existe otra tarjeta con el mismo UID en este tenant
+            // Idempotencia: si ya existe la tarjeta con este UID, retornar la existente (evita duplicados por doble envío)
             const existing = await NFCModel.findByUid(card_uid, tenantId);
             if (existing) {
-                return res.status(409).json({ 
-                    error: 'Ya existe una tarjeta con este UID en el conjunto residencial' 
+                return res.status(200).json({
+                    success: true,
+                    message: 'Tarjeta ya registrada',
+                    data: existing
                 });
             }
 
-            const card = await NFCModel.create({
-                tenant_id: tenantId,
-                property_id,
-                card_uid: card_uid.toUpperCase().trim(),
-                card_name,
-                description,
-                expires_at,
-                created_by: userId,
-                created_by_type: 'ADMIN'
-            });
+            let card;
+            try {
+                card = await NFCModel.create({
+                    tenant_id: tenantId,
+                    property_id,
+                    card_uid: card_uid.toUpperCase().trim(),
+                    card_name,
+                    description,
+                    expires_at,
+                    created_by: userId,
+                    created_by_type: 'ADMIN'
+                });
+            } catch (createError) {
+                const errNum = createError.number ?? createError.original?.number;
+                const isDuplicate = errNum === 2627
+                    || createError.message?.includes('UNIQUE')
+                    || createError.message?.includes('duplicate')
+                    || createError.message?.includes('UID already exists');
+                if (isDuplicate) {
+                    const existingCard = await NFCModel.findByUid(card_uid, tenantId);
+                    if (existingCard) {
+                        return res.status(200).json({
+                            success: true,
+                            message: 'Tarjeta ya registrada',
+                            data: existingCard
+                        });
+                    }
+                }
+                throw createError;
+            }
 
             res.status(201).json({
                 success: true,
@@ -181,7 +205,11 @@ class NFCAdminController {
             });
         } catch (error) {
             console.error('Create card error:', error);
-            if (error.message.includes('UID already exists')) {
+            if (error.message?.includes('UID already exists')) {
+                const existingCard = await NFCModel.findByUid(req.body.card_uid?.toUpperCase?.()?.trim(), req.user.tenantId);
+                if (existingCard) {
+                    return res.status(200).json({ success: true, message: 'Tarjeta ya registrada', data: existingCard });
+                }
                 return res.status(409).json({ error: 'UID ya existe' });
             }
             res.status(500).json({ error: 'Error al crear tarjeta' });

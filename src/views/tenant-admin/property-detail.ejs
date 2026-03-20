@@ -127,6 +127,9 @@
                         <button onclick="switchTab('billing')" id="tab-billing" class="tab-inactive pb-3 px-2">
                             Facturación <span id="badge-billing" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
                         </button>
+                        <button onclick="switchTab('nfc')" id="tab-nfc" class="tab-inactive pb-3 px-2">
+                            Tarjetas NFC <span id="badge-nfc" class="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+                        </button>
                     </div>
                 </div>
 
@@ -171,6 +174,13 @@
                     <div id="content-billing" class="tab-content hidden">
                         <div id="billing-list" class="space-y-3">
                             <p class="text-center text-[#5F6368] py-8">Cargando recibos...</p>
+                        </div>
+                    </div>
+
+                    <!-- Tarjetas NFC Tab -->
+                    <div id="content-nfc" class="tab-content hidden">
+                        <div id="nfc-list" class="space-y-3">
+                            <p class="text-center text-[#5F6368] py-8">Cargando tarjetas NFC...</p>
                         </div>
                     </div>
                 </div>
@@ -295,6 +305,8 @@
                 document.getElementById('badge-visits').textContent = (result.visits || []).length;
                 document.getElementById('badge-deliveries').textContent = (result.deliveries || []).length;
                 document.getElementById('badge-billing').textContent = result.billing_invoices_count ?? 0;
+                const nfcCount = result.nfc_cards_count ?? 0;
+                document.getElementById('badge-nfc').textContent = nfcCount;
                 
             } catch (error) {
                 console.error('Error loading audit:', error);
@@ -519,7 +531,7 @@
             currentTab = tab;
             
             // Update tab buttons
-            ['consultations', 'requests', 'visits', 'deliveries', 'communiques', 'billing'].forEach(t => {
+            ['consultations', 'requests', 'visits', 'deliveries', 'communiques', 'billing', 'nfc'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 const content = document.getElementById(`content-${t}`);
                 
@@ -534,6 +546,7 @@
                 }
             });
             if (tab === 'billing') loadBillingInvoices();
+            if (tab === 'nfc') loadNfcCards();
         }
 
         let billingData = [];
@@ -694,6 +707,58 @@
                 </div>
                 `;
             }).join('');
+        }
+
+        let nfcCardsData = [];
+        async function loadNfcCards() {
+            const listEl = document.getElementById('nfc-list');
+            listEl.innerHTML = '<p class="text-center text-[#5F6368] py-8">Cargando tarjetas NFC...</p>';
+            try {
+                const res = await fetch(`/api/tenant-admin/nfc/cards?property_id=${propertyId}&limit=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al cargar');
+                nfcCardsData = data.data || [];
+                document.getElementById('badge-nfc').textContent = nfcCardsData.length;
+                renderNfcCards(nfcCardsData);
+            } catch (e) {
+                listEl.innerHTML = `<p class="text-center text-red-500 py-8">${e.message || 'Error al cargar tarjetas NFC'}</p>`;
+            }
+        }
+
+        function renderNfcCards(cards) {
+            const listEl = document.getElementById('nfc-list');
+            if (!cards || cards.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-icons-round text-4xl text-gray-300">nfc</span>
+                        <p class="text-[#5F6368] mt-2">Este inmueble no tiene tarjetas NFC registradas</p>
+                        <p class="text-sm text-[#9AA0A6] mt-1">Registre tarjetas desde la sección Tarjetas NFC del menú</p>
+                    </div>
+                `;
+                return;
+            }
+            listEl.innerHTML = cards.map(c => `
+                <div class="p-4 bg-[#F9FAFB] rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <span class="material-icons-round text-amber-600">nfc</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-[#3C4043]">${c.card_name || 'Sin nombre'}</h4>
+                            <p class="text-sm text-[#5F6368] font-mono">UID: ${c.card_uid}</p>
+                            <div class="flex gap-2 mt-1">
+                                ${c.is_active ? '<span class="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">Activa</span>' : '<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">Inactiva</span>'}
+                                ${c.is_blocked ? '<span class="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded">Bloqueada</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/tenant-admin/nfc-cards" class="text-sm text-[#f97316] hover:underline">
+                        Ver en Tarjetas NFC
+                    </a>
+                </div>
+            `).join('');
         }
 
         function renderCommuniques(communiques, reads) {
