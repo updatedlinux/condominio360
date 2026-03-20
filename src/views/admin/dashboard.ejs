@@ -1673,8 +1673,10 @@
                     <div><label class="block text-xs text-gray-500 mb-1">Correo</label><input type="email" id="dur-edit-email" value="${(newData.email || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
                     <div><label class="block text-xs text-gray-500 mb-1">Teléfono</label><input type="text" id="dur-edit-phone" value="${(newData.phone || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
                 `;
+                // SQL Server devuelve hora que el driver interpreta como UTC; sumar 4h para Venezuela (GMT-4)
                 const d = new Date(req.requested_at);
-                document.getElementById('dur-requested-at').textContent = d.toLocaleString('es-VE', { timeZone: 'America/Caracas', dateStyle: 'medium', timeStyle: 'medium' });
+                const venezuelaDate = new Date(d.getTime() + (4 * 60 * 60 * 1000));
+                document.getElementById('dur-requested-at').textContent = venezuelaDate.toLocaleString('es-VE', { timeZone: 'America/Caracas', dateStyle: 'medium', timeStyle: 'medium' });
                 document.getElementById('dur-modal-loading').classList.add('hidden');
                 document.getElementById('dur-modal-content').classList.remove('hidden');
                 if (req.status === 'PENDING') {
