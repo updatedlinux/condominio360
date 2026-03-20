@@ -561,11 +561,46 @@
             });
         });
 
-        function handleDemoRequest(e) {
+        async function handleDemoRequest(e) {
             e.preventDefault();
-            const email = e.target.querySelector('input[name="email"]').value;
-            alert('¡Gracias! Te contactaremos en ' + email + ' para coordinar una demo.');
-            e.target.reset();
+            const form = e.target;
+            const emailInput = form.querySelector('input[name="email"]');
+            const email = (emailInput?.value || '').trim();
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            if (!email) {
+                alert('Por favor ingresa tu correo electrónico.');
+                return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Enviando...';
+            }
+
+            try {
+                const res = await fetch('/api/demo-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    alert('¡Gracias! Te hemos enviado un correo de confirmación. Serás contactado en breve por Arsys Intela para coordinar tu demo.');
+                    form.reset();
+                } else {
+                    alert(data.error || 'Error al enviar. Intenta nuevamente.');
+                }
+            } catch (err) {
+                console.error('Demo request error:', err);
+                alert('Error de conexión. Intenta nuevamente más tarde.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Solicitar Demo';
+                }
+            }
         }
 
         document.querySelectorAll('a[href="#demo"]').forEach(el => {

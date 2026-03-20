@@ -78,6 +78,10 @@ app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/security', securityRoutes);
 app.use('/api/tenant-admin/nfc', nfcAdminRoutes);
 
+// Demo request desde landing (público)
+const DemoController = require('./controllers/DemoController');
+app.post('/api/demo-request', DemoController.requestDemo);
+
 // Configurar layouts para el resto de rutas
 app.use(expressLayouts);
 app.set('layout', 'layouts/main');

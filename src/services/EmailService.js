@@ -1049,6 +1049,95 @@ class EmailService {
     }
 
     /**
+     * Template HTML para emails Arsys Intela (azul, logo)
+     */
+    _arsysIntelaTemplate(content, options = {}) {
+        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+        const logoUrl = `${baseUrl}/assets/images/svgMAIN-intelalogo.svg`;
+        const { title, subtitle } = options;
+
+        return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title || 'Arsys Intela'}</title>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.7; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+        .email-container { background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); padding: 28px 24px; text-align: center; }
+        .header-logo img { height: 48px; width: auto; display: block; margin: 0 auto; }
+        .header p { margin: 12px 0 0; color: rgba(255,255,255,0.95); font-size: 14px; }
+        .content { padding: 32px 28px; }
+        .content h2 { color: #1a1a1a; font-size: 18px; margin-bottom: 16px; font-weight: 600; }
+        .content p { margin-bottom: 16px; color: #374151; font-size: 15px; }
+        .details-box { background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 18px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .details-box p { margin: 8px 0; }
+        .footer { background-color: #1e3a5f; color: #e2e8f0; padding: 24px; text-align: center; font-size: 14px; }
+        .footer strong { display: block; margin-bottom: 6px; color: #fff; font-weight: 600; }
+        .footer p { margin: 0; color: #cbd5e1; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="header-logo">
+                <img src="${logoUrl}" alt="Arsys Intela" />
+            </div>
+            ${subtitle ? `<p>${subtitle}</p>` : '<p>Condominio360 - Gestión Inteligente de Condominios</p>'}
+        </div>
+        <div class="content">${content}</div>
+        <div class="footer">
+            <strong>Arsys Intela - Casa Matriz de Condominio360</strong>
+            <p>Gestión inteligente de condominios. Moderniza tu comunidad con tecnología de punta.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+    }
+
+    /**
+     * Acuse de recibo al solicitante de demo - Arsys Intela branding
+     */
+    async sendDemoAcknowledgement(to) {
+        const subject = 'Solicitud de Demo Recibida - Condominio360';
+        const content = `
+            <h2>¡Gracias por tu interés!</h2>
+            <p>Hemos recibido tu solicitud de demostración de <strong>Condominio360</strong>.</p>
+            <div class="details-box">
+                <p><strong>Serás contactado en breve</strong> por el equipo de <strong>Arsys Intela</strong> (casa matriz de Condominio360) para otorgarte un demo personalizado y atender todas tus consultas.</p>
+                <p>Te contactaremos en menos de 24 horas al correo que nos proporcionaste.</p>
+            </div>
+            <p>Mientras tanto, puedes explorar nuestras funciones en <a href="${process.env.APP_URL || 'http://localhost:3000'}">condominio360.com</a>.</p>
+        `;
+        const html = this._arsysIntelaTemplate(content, {
+            title: 'Solicitud Recibida',
+            subtitle: 'Condominio360 - Arsys Intela'
+        });
+        return await this.send(to, subject, html);
+    }
+
+    /**
+     * Notificación a superadmins - nueva solicitud de demo
+     */
+    async sendDemoRequestToSuperAdmins(to, requesterEmail) {
+        const subject = `🔔 Nueva solicitud de Demo - ${requesterEmail}`;
+        const content = `
+            <h2>Nueva solicitud de demostración</h2>
+            <p>Alguien ha solicitado una demo de Condominio360 desde el landing.</p>
+            <div class="details-box">
+                <p><strong>Correo del solicitante:</strong> <a href="mailto:${requesterEmail}">${requesterEmail}</a></p>
+                <p>Por favor, contacta al solicitante en menos de 24 horas para otorgarle el demo y atender su interés.</p>
+            </div>
+        `;
+        const html = this._arsysIntelaTemplate(content, {
+            title: 'Solicitud de Demo',
+            subtitle: 'Requiere atención'
+        });
+        return await this.send(to, subject, html);
+    }
+
+    /**
      * Convertir HTML a texto plano básico
      */
     _htmlToText(html) {
