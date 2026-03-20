@@ -1060,6 +1060,12 @@ class OwnerController {
                     error: 'El DNI/Cédula debe contener solo números y máximo 15 dígitos' 
                 });
             }
+            const phoneTrimmed = phone ? String(phone).trim().replace(/\D/g, '') : null;
+            if (phoneTrimmed && !/^\d{1,15}$/.test(phoneTrimmed)) {
+                return res.status(400).json({ 
+                    error: 'El teléfono del visitante debe contener solo números (máx. 15 dígitos)' 
+                });
+            }
 
             // Crear o encontrar visitante
             const visitor = await VisitorModel.findOrCreate({
@@ -1067,7 +1073,7 @@ class OwnerController {
                 first_name,
                 last_name,
                 dni: dniTrimmed,
-                phone
+                phone: phoneTrimmed || null
             });
 
             // Crear pase
@@ -1076,10 +1082,13 @@ class OwnerController {
             let passValidUntil = valid_until;
             
             if (type === 'ONE_TIME' && valid_from) {
-                // valid_from viene como YYYY-MM-DD
+                // valid_from viene como YYYY-MM-DD - usar horario Venezuela (GMT-4)
+                // Inicio: 00:00 Venezuela = 04:00 UTC | Fin: 23:59:59 Venezuela = 03:59:59 UTC del día siguiente
                 const visitDate = valid_from; // YYYY-MM-DD
-                passValidFrom = new Date(visitDate + 'T00:00:00');
-                passValidUntil = new Date(visitDate + 'T23:59:59');
+                passValidFrom = new Date(visitDate + 'T04:00:00.000Z');
+                const [y, m, d] = visitDate.split('-').map(Number);
+                const endOfDayVE = new Date(Date.UTC(y, m - 1, d + 1, 3, 59, 59, 999));
+                passValidUntil = endOfDayVE;
             }
             
             const pass = await VisitorModel.createPass({

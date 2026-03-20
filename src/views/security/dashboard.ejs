@@ -264,6 +264,13 @@
                             placeholder="Solo números, máx. 15 dígitos"
                             oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Teléfono Visitante (opcional)</label>
+                        <input type="tel" id="mv-visitor-phone" maxlength="15" inputmode="numeric" pattern="[0-9]*"
+                            class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Solo números, máx. 15 dígitos"
+                            oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-[#3C4043] mb-1">Fecha Visita *</label>
@@ -1426,11 +1433,19 @@
             const visitorDni = validateDni(visitorDniRaw, 'DNI del visitante');
             if (ownerDni === null || visitorDni === null) return;
 
+            const phoneRaw = document.getElementById('mv-visitor-phone').value.trim();
+            const visitorPhone = phoneRaw ? phoneRaw.replace(/\D/g, '') : null;
+            if (visitorPhone && visitorPhone.length > 15) {
+                showToast('El teléfono debe contener solo números (máx. 15 dígitos)', 'error');
+                return;
+            }
+
             const formData = {
                 owner_dni: ownerDni,
                 visitor_first_name: document.getElementById('mv-visitor-firstname').value.trim(),
                 visitor_last_name: document.getElementById('mv-visitor-lastname').value.trim(),
                 visitor_dni: visitorDni,
+                visitor_phone: visitorPhone || null,
                 visit_date: document.getElementById('mv-visit-date').value,
                 visit_time: document.getElementById('mv-visit-time').value,
                 vehicle_plate: document.getElementById('mv-vehicle-plate').value.trim(),

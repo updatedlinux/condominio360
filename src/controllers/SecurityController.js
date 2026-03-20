@@ -711,6 +711,7 @@ class SecurityController {
                 visitor_first_name, 
                 visitor_last_name, 
                 visitor_dni, 
+                visitor_phone,
                 visit_date,
                 visit_time,
                 vehicle_plate,
@@ -728,6 +729,12 @@ class SecurityController {
             if (!/^\d{1,15}$/.test(ownerDniTrimmed) || !/^\d{1,15}$/.test(visitorDniTrimmed)) {
                 return res.status(400).json({ 
                     error: 'El DNI del propietario y del visitante deben contener solo números (máx. 15 dígitos)' 
+                });
+            }
+            const visitorPhoneTrimmed = visitor_phone ? String(visitor_phone).trim().replace(/\D/g, '') : null;
+            if (visitorPhoneTrimmed && !/^\d{1,15}$/.test(visitorPhoneTrimmed)) {
+                return res.status(400).json({ 
+                    error: 'El teléfono del visitante debe contener solo números (máx. 15 dígitos)' 
                 });
             }
 
@@ -785,22 +792,28 @@ class SecurityController {
                     .input('first_name', sql.NVarChar, visitor_first_name)
                     .input('last_name', sql.NVarChar, visitor_last_name)
                     .input('dni', sql.NVarChar, visitorDniTrimmed)
+                    .input('phone', sql.NVarChar, visitorPhoneTrimmed || null)
                     .query(`
-                        INSERT INTO Visitors (tenant_id, first_name, last_name, dni)
+                        INSERT INTO Visitors (tenant_id, first_name, last_name, dni, phone)
                         OUTPUT INSERTED.*
-                        VALUES (@tenant_id, @first_name, @last_name, @dni)
+                        VALUES (@tenant_id, @first_name, @last_name, @dni, @phone)
                     `);
                 visitorId = newVisitor.recordset[0].id;
             } else {
                 visitorId = visitorResult.recordset[0].id;
             }
 
-            // Crear pase de visita
-            const validFrom = new Date(visit_date);
+            // Crear pase de visita - usar horario Venezuela (GMT-4)
+            // visit_date viene como YYYY-MM-DD
+            const validFrom = new Date(visit_date + 'T04:00:00.000Z'); // 00:00 Venezuela
             if (visit_time) {
                 const [hours, minutes] = visit_time.split(':');
-                validFrom.setHours(parseInt(hours), parseInt(minutes));
+                validFrom.setUTCHours(validFrom.getUTCHours() + parseInt(hours || 0), parseInt(minutes || 0), 0, 0);
             }
+            const [y, m, d] = visit_date.split('-').map(Number);
+            const validUntil = visit_time
+                ? new Date(validFrom.getTime() + 24 * 60 * 60 * 1000) // 24h desde hora estimada
+                : new Date(Date.UTC(y, m - 1, d + 1, 3, 59, 59, 999)); // 23:59:59 Venezuela (fin del día)
 
             const passResult = await pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
@@ -809,7 +822,7 @@ class SecurityController {
                 .input('property_id', sql.UniqueIdentifier, owner.property_id)
                 .input('type', sql.NVarChar, 'ONE_TIME')
                 .input('valid_from', sql.DateTime2, validFrom)
-                .input('valid_until', sql.DateTime2, new Date(validFrom.getTime() + 24 * 60 * 60 * 1000)) // 24 horas
+                .input('valid_until', sql.DateTime2, validUntil)
                 .query(`
                     INSERT INTO VisitorPasses 
                         (tenant_id, visitor_id, user_id, property_id, type, valid_from, valid_until, status)

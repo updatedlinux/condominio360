@@ -167,9 +167,11 @@
                                 <label class="block text-sm font-medium text-[#5F6368] mb-2">
                                     Teléfono del Visitante
                                 </label>
-                                <input type="tel" id="visitorPhone"
+                                <input type="tel" id="visitorPhone" maxlength="15" inputmode="numeric" pattern="[0-9]*"
                                     class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                                    placeholder="Opcional">
+                                    placeholder="Solo números, máx. 15 dígitos (opcional)"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
+                                <p class="text-xs text-[#9AA0A6] mt-1">Opcional. Solo números.</p>
                             </div>
 
                             <!-- Datos del Vehículo (opcional) -->
@@ -271,8 +273,9 @@
         const selectedProperty = JSON.parse(localStorage.getItem('selectedProperty') || '{}');
         let currentType = 'unique';
 
-        // Set default date to today
-        document.getElementById('visitDate').valueAsDate = new Date();
+        // Set default date to today (Venezuela GMT-4)
+        const todayVE = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
+        document.getElementById('visitDate').value = todayVE;
 
         function switchType(type) {
             currentType = type;
@@ -373,12 +376,20 @@
                 }
             }
             
+            const phoneRaw = document.getElementById('visitorPhone').value.trim();
+            const phoneValue = phoneRaw ? phoneRaw.replace(/\D/g, '') : null;
+            if (phoneValue && phoneValue.length > 15) {
+                showToast('El teléfono debe contener solo números (máx. 15 dígitos)', 'error');
+                document.getElementById('visitorPhone').focus();
+                return;
+            }
+            
             const formData = {
                 // Datos del visitante
                 dni: dniValue,
                 first_name: firstName,
                 last_name: lastName,
-                phone: document.getElementById('visitorPhone').value || null,
+                phone: phoneValue || null,
                 
                 // Datos del pase
                 type: currentType === 'unique' ? 'ONE_TIME' : 'FREQUENT',
