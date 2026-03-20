@@ -1,8 +1,34 @@
 <%- include('must-change-password-modal') %>
-<aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col shrink-0">
-    <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
-        <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
-        <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+<style>
+.tenant-mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998; }
+.tenant-mobile-overlay.active { display: block; }
+.tenant-hamburger-btn { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 9999; width: 2.5rem; height: 2.5rem; align-items: center; justify-content: center; background: white; border: 1px solid #E5E5E5; border-radius: 0.5rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.tenant-hamburger-btn:hover { background: #F5F5F5; }
+@media (max-width: 767px) {
+    .tenant-hamburger-btn { display: flex !important; }
+    #tenant-sidebar { position: fixed !important; inset: 0 auto 0 0 !important; z-index: 9999 !important; transform: translateX(-100%); transition: transform 0.3s ease; }
+    #tenant-sidebar.tenant-mobile-open { transform: translateX(0); }
+    .tenant-sidebar-close { display: flex !important; }
+}
+@media (min-width: 768px) {
+    .tenant-hamburger-btn { display: none !important; }
+    #tenant-sidebar { position: static !important; transform: none !important; }
+    .tenant-sidebar-close { display: none !important; }
+}
+</style>
+<div id="tenant-mobile-overlay" class="tenant-mobile-overlay" onclick="typeof toggleTenantMobileSidebar==='function'&&toggleTenantMobileSidebar()"></div>
+<button type="button" id="tenant-hamburger" class="tenant-hamburger-btn" onclick="typeof toggleTenantMobileSidebar==='function'&&toggleTenantMobileSidebar()" aria-label="Abrir menú">
+    <span class="material-icons-round text-[#5F6368]">menu</span>
+</button>
+<aside id="tenant-sidebar" class="w-64 bg-white border-r border-[#E5E5E5] flex flex-col shrink-0">
+    <div class="h-16 flex items-center justify-between px-4 border-b border-[#E5E5E5]">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+            <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+        </div>
+        <button type="button" class="tenant-sidebar-close hidden w-8 h-8 items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]" onclick="typeof toggleTenantMobileSidebar==='function'&&toggleTenantMobileSidebar()" aria-label="Cerrar menú">
+            <span class="material-icons-round">close</span>
+        </button>
     </div>
     <div class="flex-1 overflow-y-auto py-4">
         <nav class="space-y-1 px-3">
@@ -90,5 +116,7 @@
     </div>
     <script>
     (function(){ try { var u = JSON.parse(localStorage.getItem('user')||'{}'); if (u.isSuperAdmin) document.getElementById('superadmin-return-link').classList.remove('hidden'); } catch(e){} })();
+    function toggleTenantMobileSidebar(){var s=document.getElementById('tenant-sidebar');var o=document.getElementById('tenant-mobile-overlay');if(s&&o){s.classList.toggle('tenant-mobile-open');o.classList.toggle('active');}}
+    document.querySelectorAll('#tenant-sidebar a[href]').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<768){toggleTenantMobileSidebar();}});});
     </script>
 </aside>
