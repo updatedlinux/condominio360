@@ -156,10 +156,11 @@
                                 <label class="block text-sm font-medium text-[#5F6368] mb-2">
                                     DNI / Cédula <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" id="visitorDni" required
+                                <input type="text" id="visitorDni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
                                     class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]"
-                                    placeholder="Número de identificación">
-                                <p class="text-xs text-[#9AA0A6] mt-1">El vigilante solicitará este documento al ingreso</p>
+                                    placeholder="Solo números, máx. 15 dígitos"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
+                                <p class="text-xs text-[#9AA0A6] mt-1">El vigilante solicitará este documento al ingreso. Solo números.</p>
                             </div>
 
                             <div>
@@ -343,7 +344,16 @@
         // Form submission
         document.getElementById('visitorForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
+            const dniInput = document.getElementById('visitorDni');
+            const dniValue = dniInput.value.trim().replace(/\D/g, '');
+            if (!dniValue || dniValue.length > 15) {
+                showToast('El DNI/Cédula debe contener solo números (máx. 15 dígitos)', 'error');
+                dniInput.focus();
+                return;
+            }
+            dniInput.value = dniValue;
+
             // Separar nombre y apellido
             const fullName = document.getElementById('visitorName').value.trim();
             const nameParts = fullName.split(' ');
@@ -365,7 +375,7 @@
             
             const formData = {
                 // Datos del visitante
-                dni: document.getElementById('visitorDni').value.trim(),
+                dni: dniValue,
                 first_name: firstName,
                 last_name: lastName,
                 phone: document.getElementById('visitorPhone').value || null,

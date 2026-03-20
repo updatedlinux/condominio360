@@ -186,6 +186,13 @@
         let auditData = {};
 
         // Formato de fecha/hora Venezuela
+        function formatDateOnlyVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            const s = String(dateStr);
+            const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+            return new Date(dateStr).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Caracas' });
+        }
         function formatDateVenezuela(dateStr) {
             if (!dateStr) return '-';
             return new Date(dateStr).toLocaleDateString('es-VE', { 
@@ -500,7 +507,7 @@
                     </div>
                     <p class="text-sm text-[#5F6368]">
                         <span class="material-icons-round text-sm align-middle">event</span>
-                        Esperado: ${formatDateVenezuela(d.expected_date)}
+                        Esperado: ${formatDateOnlyVenezuela(d.expected_date)}
                     </p>
                     ${d.arrival_time ? `<p class="text-sm text-green-600 mt-1">Llegó: ${formatDateTimeVenezuela(d.arrival_time)}</p>` : ''}
                     ${d.delivered_at ? `<p class="text-sm text-gray-500 mt-1">Entregado: ${formatDateTimeVenezuela(d.delivered_at)}</p>` : ''}

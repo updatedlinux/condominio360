@@ -1,5 +1,6 @@
 const { sql, connectDB } = require('../config/database');
 const AuditService = require('../services/AuditService');
+const { getTodayVenezuela } = require('../utils/dateUtils');
 const crypto = require('crypto');
 
 /**
@@ -27,9 +28,7 @@ class SecurityController {
             if (date) {
                 queryDate = date;
             } else {
-                const now = new Date();
-                const venezuelaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
-                queryDate = venezuelaTime.toISOString().split('T')[0];
+                queryDate = getTodayVenezuela();
             }
 
             // Contar visitas únicas pendientes de hoy
@@ -149,10 +148,7 @@ class SecurityController {
             if (date) {
                 queryDate = date;
             } else {
-                const now = new Date();
-                // Convertir a hora de Venezuela (GMT-4)
-                const venezuelaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Caracas' }));
-                queryDate = venezuelaTime.toISOString().split('T')[0];
+                queryDate = getTodayVenezuela();
             }
 
             if (!tenantId) {
@@ -257,9 +253,15 @@ class SecurityController {
                     error: 'Ingrese al menos 5 caracteres (ej: DNI completo)' 
                 });
             }
+            const dniClean = q.trim().replace(/\D/g, '');
+            if (!dniClean || dniClean.length > 15) {
+                return res.status(400).json({ 
+                    error: 'El DNI debe contener solo números (máx. 15 dígitos)' 
+                });
+            }
 
             const pool = await connectDB();
-            const dni = q.trim();
+            const dni = dniClean;
 
             const result = await pool.request()
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
@@ -324,9 +326,14 @@ class SecurityController {
                                u.dni as owner_dni,
                                (SELECT TOP 1 vl.entry_time 
                                 FROM VisitorLogs vl 
-                                WHERE vl.visitor_id = v.id 
+                                WHERE vl.pass_id = vp.id 
                                 AND vl.exit_time IS NULL
-                                ORDER BY vl.entry_time DESC) as current_entry
+                                ORDER BY vl.entry_time DESC) as current_entry,
+                               (SELECT TOP 1 vl.id 
+                                FROM VisitorLogs vl 
+                                WHERE vl.pass_id = vp.id 
+                                AND vl.exit_time IS NULL
+                                ORDER BY vl.entry_time DESC) as active_log_id
                         FROM VisitorPasses vp
                         INNER JOIN Visitors v ON vp.visitor_id = v.id
                         INNER JOIN Properties p ON vp.property_id = p.id
@@ -716,13 +723,20 @@ class SecurityController {
                     error: 'Faltan campos requeridos: owner_dni, visitor_first_name, visitor_last_name, visitor_dni, visit_date' 
                 });
             }
+            const ownerDniTrimmed = String(owner_dni).trim().replace(/\D/g, '');
+            const visitorDniTrimmed = String(visitor_dni).trim().replace(/\D/g, '');
+            if (!/^\d{1,15}$/.test(ownerDniTrimmed) || !/^\d{1,15}$/.test(visitorDniTrimmed)) {
+                return res.status(400).json({ 
+                    error: 'El DNI del propietario y del visitante deben contener solo números (máx. 15 dígitos)' 
+                });
+            }
 
             const pool = await connectDB();
 
             // Buscar propietario por DNI (schema: PropertyOwners + Properties)
             const ownerResult = await pool.request()
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, owner_dni)
+                .input('dni', sql.NVarChar, ownerDniTrimmed)
                 .query(`
                     SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
                            p.id as property_id, p.name as property_name
@@ -757,7 +771,7 @@ class SecurityController {
             // Crear o buscar visitante
             let visitorResult = await pool.request()
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, visitor_dni)
+                .input('dni', sql.NVarChar, visitorDniTrimmed)
                 .query(`
                     SELECT * FROM Visitors 
                     WHERE tenant_id = @tenantId AND dni = @dni
@@ -770,7 +784,7 @@ class SecurityController {
                     .input('tenant_id', sql.UniqueIdentifier, tenantId)
                     .input('first_name', sql.NVarChar, visitor_first_name)
                     .input('last_name', sql.NVarChar, visitor_last_name)
-                    .input('dni', sql.NVarChar, visitor_dni)
+                    .input('dni', sql.NVarChar, visitorDniTrimmed)
                     .query(`
                         INSERT INTO Visitors (tenant_id, first_name, last_name, dni)
                         OUTPUT INSERTED.*

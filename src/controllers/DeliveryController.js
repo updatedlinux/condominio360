@@ -272,13 +272,19 @@ class DeliveryController {
                     error: 'Faltan campos requeridos: owner_dni, company, expected_date' 
                 });
             }
+            const ownerDniTrimmed = String(owner_dni).trim().replace(/\D/g, '');
+            if (!/^\d{1,15}$/.test(ownerDniTrimmed)) {
+                return res.status(400).json({ 
+                    error: 'El DNI del propietario debe contener solo números (máx. 15 dígitos)' 
+                });
+            }
 
             const pool = await connectDB();
 
             // Buscar propietario por DNI (schema: PropertyOwners + Properties)
             const ownerResult = await pool.request()
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, owner_dni)
+                .input('dni', sql.NVarChar, ownerDniTrimmed)
                 .query(`
                     SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
                            p.id as property_id, p.name as property_name

@@ -226,9 +226,10 @@
                     <div>
                         <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI del Propietario *</label>
                         <div class="flex gap-2">
-                            <input type="text" id="mv-owner-dni" required
+                            <input type="text" id="mv-owner-dni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
                                 class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Ej: 12345678">
+                                placeholder="Solo números, máx. 15 dígitos"
+                                oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
                             <button type="button" onclick="searchOwnerByDNI()"
                                 class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                                 <span class="material-icons-round">search</span>
@@ -258,9 +259,10 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI Visitante *</label>
-                        <input type="text" id="mv-visitor-dni" required
+                        <input type="text" id="mv-visitor-dni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
                             class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Ej: 87654321">
+                            placeholder="Solo números, máx. 15 dígitos"
+                            oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -323,9 +325,10 @@
                     <div>
                         <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI del Propietario *</label>
                         <div class="flex gap-2">
-                            <input type="text" id="md-owner-dni" required
+                            <input type="text" id="md-owner-dni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
                                 class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="Ej: 12345678">
+                                placeholder="Solo números, máx. 15 dígitos"
+                                oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
                             <button type="button" onclick="searchOwnerByDNIDelivery()"
                                 class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                                 <span class="material-icons-round">search</span>
@@ -549,12 +552,13 @@
             const footerTenant = document.getElementById('footer-tenant');
             if (footerTenant) footerTenant.textContent = tenantName;
             document.getElementById('security-name').textContent = user?.firstName || user?.first_name || 'Vigilante';
-            document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', { 
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-VE', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Caracas'
             });
             
-            document.getElementById('mv-visit-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('md-expected-date').value = new Date().toISOString().split('T')[0];
+            const todayVE = getTodayVenezuela();
+            document.getElementById('mv-visit-date').value = todayVE;
+            document.getElementById('md-expected-date').value = todayVE;
             
             loadTabData('visits');
             startPolling();
@@ -707,14 +711,14 @@
 
         // API Calls
         async function fetchVisits() {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayVenezuela();
             const response = await fetchWithAuth(`/api/security/visits?type=unique&date=${today}`);
             const data = await response.json();
             return data.success ? data.data : [];
         }
 
         async function fetchDeliveries() {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayVenezuela();
             const response = await fetchWithAuth(`/api/security/deliveries?status=ANNOUNCED&date=${today}`);
             const data = await response.json();
             return data.success ? data.data : [];
@@ -800,7 +804,7 @@
                                     Pendiente
                                 </span>
                             `}
-                            <p class="text-xs text-[#9AA0A6] mt-2">${formatDate(v.valid_from)}</p>
+                            <p class="text-xs text-[#9AA0A6] mt-2">${formatDateOnly(v.valid_from)}</p>
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-[#E5E5E5] flex flex-col sm:flex-row gap-2">
@@ -865,7 +869,7 @@
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
                                 Anunciado
                             </span>
-                            <p class="text-xs text-[#9AA0A6] mt-2">${formatDate(d.expected_date)}</p>
+                            <p class="text-xs text-[#9AA0A6] mt-2">${formatDateOnly(d.expected_date)}</p>
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
@@ -1165,7 +1169,7 @@
             document.getElementById('manualVisitForm').reset();
             document.getElementById('mv-owner-info').classList.add('hidden');
             document.getElementById('mv-property-wrap').classList.add('hidden');
-            document.getElementById('mv-visit-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('mv-visit-date').value = getTodayVenezuela();
         }
 
         function openManualDeliveryModal() {
@@ -1181,7 +1185,7 @@
             document.getElementById('manualDeliveryForm').reset();
             document.getElementById('md-owner-info').classList.add('hidden');
             document.getElementById('md-property-wrap').classList.add('hidden');
-            document.getElementById('md-expected-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('md-expected-date').value = getTodayVenezuela();
         }
 
         function openEntryModal(id, type, visitorName, isFrequent = false) {
@@ -1312,12 +1316,19 @@
         }
 
         // Form submissions
-        async function searchOwnerByDNI() {
-            const dni = document.getElementById('mv-owner-dni').value.trim();
-            if (!dni) {
-                showToast('Ingrese un DNI', 'error');
-                return;
+        function validateDni(value, fieldName) {
+            const cleaned = (value || '').trim().replace(/\D/g, '');
+            if (!cleaned || cleaned.length > 15) {
+                showToast(`El ${fieldName} debe contener solo números (máx. 15 dígitos)`, 'error');
+                return null;
             }
+            return cleaned;
+        }
+
+        async function searchOwnerByDNI() {
+            const raw = document.getElementById('mv-owner-dni').value.trim();
+            const dni = validateDni(raw, 'DNI del propietario');
+            if (dni === null) return;
             
             const infoEl = document.getElementById('mv-owner-info');
             infoEl.textContent = 'Buscando...';
@@ -1363,8 +1374,9 @@
         }
 
         async function searchOwnerByDNIDelivery() {
-            const dni = document.getElementById('md-owner-dni').value.trim();
-            if (!dni) return;
+            const raw = document.getElementById('md-owner-dni').value.trim();
+            const dni = validateDni(raw, 'DNI del propietario');
+            if (dni === null) return;
             
             const infoEl = document.getElementById('md-owner-info');
             infoEl.textContent = 'Buscando...';
@@ -1408,11 +1420,17 @@
         }
 
         async function submitManualVisit() {
+            const ownerDniRaw = document.getElementById('mv-owner-dni').value.trim();
+            const visitorDniRaw = document.getElementById('mv-visitor-dni').value.trim();
+            const ownerDni = validateDni(ownerDniRaw, 'DNI del propietario');
+            const visitorDni = validateDni(visitorDniRaw, 'DNI del visitante');
+            if (ownerDni === null || visitorDni === null) return;
+
             const formData = {
-                owner_dni: document.getElementById('mv-owner-dni').value.trim(),
+                owner_dni: ownerDni,
                 visitor_first_name: document.getElementById('mv-visitor-firstname').value.trim(),
                 visitor_last_name: document.getElementById('mv-visitor-lastname').value.trim(),
-                visitor_dni: document.getElementById('mv-visitor-dni').value.trim(),
+                visitor_dni: visitorDni,
                 visit_date: document.getElementById('mv-visit-date').value,
                 visit_time: document.getElementById('mv-visit-time').value,
                 vehicle_plate: document.getElementById('mv-vehicle-plate').value.trim(),
@@ -1458,8 +1476,12 @@
         }
 
         async function submitManualDelivery() {
+            const ownerDniRaw = document.getElementById('md-owner-dni').value.trim();
+            const ownerDni = validateDni(ownerDniRaw, 'DNI del propietario');
+            if (ownerDni === null) return;
+
             const formData = {
-                owner_dni: document.getElementById('md-owner-dni').value.trim(),
+                owner_dni: ownerDni,
                 name: document.getElementById('md-name').value.trim(),
                 company: document.getElementById('md-company').value.trim(),
                 expected_date: document.getElementById('md-expected-date').value,
@@ -1512,6 +1534,9 @@
                 if (data.success) {
                     showToast('Salida registrada exitosamente');
                     loadTabData(currentTab);
+                    if (document.getElementById('searchResults') && !document.getElementById('searchResults').classList.contains('hidden')) {
+                        performSearch();
+                    }
                 } else {
                     showToast(data.error || 'Error al registrar salida', 'error');
                 }
@@ -1528,11 +1553,33 @@
                 if (data.success) {
                     showToast('Llegada registrada exitosamente');
                     loadTabData('deliveries');
+                    if (document.getElementById('searchResults') && !document.getElementById('searchResults').classList.contains('hidden')) {
+                        performSearch();
+                    }
                 } else {
                     showToast(data.error || 'Error al registrar llegada', 'error');
                 }
             } catch (error) {
                 showToast('Error al registrar llegada', 'error');
+            }
+        }
+
+        async function registerDeliveryDelivered(id) {
+            try {
+                const response = await fetchWithAuth(`/api/security/deliveries/${id}/deliver`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Entrega registrada exitosamente');
+                    loadTabData('deliveries');
+                    if (document.getElementById('searchResults') && !document.getElementById('searchResults').classList.contains('hidden')) {
+                        performSearch();
+                    }
+                } else {
+                    showToast(data.error || 'Error al registrar entrega', 'error');
+                }
+            } catch (error) {
+                showToast('Error al registrar entrega', 'error');
             }
         }
 
@@ -1603,7 +1650,9 @@
                 const data = r.data || {};
                 const moveDate = data.move_date || data.fecha_mudanza;
                 const timeSlot = data.time_slot || data.hora;
-                const isInside = r.entry_time && !r.exit_time;
+                const isInside = isVisit 
+                    ? ((r.entry_time && !r.exit_time) || !!r.current_entry) 
+                    : (isDelivery && r.status === 'ARRIVED');
                 
                 return `
                     <div class="card p-4 border-l-4 ${isVisit ? isInside ? 'border-green-500' : isFrequent ? 'border-amber-500' : 'border-blue-500' : isDelivery ? 'border-purple-500' : r.status === 'APPROVED' ? 'border-green-500' : 'border-red-500'}">
@@ -1643,9 +1692,21 @@
                                     </button>
                                 ` : ''}
                                 ${isVisit && isInside ? `
-                                    <button onclick="registerExit('${r.log_id || r.id}')" 
+                                    <button onclick="registerExit('${r.active_log_id || r.log_id || r.id}')" 
                                         class="touch-target block mt-2 text-sm text-red-700 hover:underline font-medium py-2">
                                         Registrar Salida
+                                    </button>
+                                ` : ''}
+                                ${isDelivery && !isInside ? `
+                                    <button onclick="registerDeliveryArrival('${r.id}')" 
+                                        class="touch-target block mt-2 text-sm text-purple-700 hover:underline font-medium py-2">
+                                        Registrar Llegada
+                                    </button>
+                                ` : ''}
+                                ${isDelivery && isInside ? `
+                                    <button onclick="registerDeliveryDelivered('${r.id}')" 
+                                        class="touch-target block mt-2 text-sm text-red-700 hover:underline font-medium py-2">
+                                        Registrar Entrega
                                     </button>
                                 ` : ''}
                                 ${isMove ? `
@@ -1791,14 +1852,34 @@
             return 'label';
         }
 
+        function getTodayVenezuela() {
+            return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
+        }
+
         function formatDate(dateStr) {
             if (!dateStr) return '-';
+            const str = String(dateStr);
+            const match = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                const [, y, m, d] = match;
+                const months = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
+                return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+            }
             return new Date(dateStr).toLocaleDateString('es-VE', { 
-                day: '2-digit', 
-                month: 'short', 
-                year: 'numeric',
-                timeZone: 'America/Caracas'
+                day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Caracas'
             });
+        }
+
+        function formatDateOnly(dateStr) {
+            if (!dateStr) return '-';
+            const str = String(dateStr);
+            const match = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                const [, y, m, d] = match;
+                const months = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
+                return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+            }
+            return '-';
         }
 
         function formatTime(dateStr) {

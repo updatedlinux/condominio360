@@ -7,6 +7,7 @@ const VisitorModel = require('../models/VisitorModel');
 const EmailService = require('../services/EmailService');
 const BCVService = require('../services/BCVService');
 const { sql, connectDB } = require('../config/database');
+const { getTodayVenezuela } = require('../utils/dateUtils');
 
 /**
  * Owner Controller
@@ -114,8 +115,7 @@ class OwnerController {
             `);
 
         // Visitas anunciadas para hoy (usando fecha de Venezuela) - SOLO ÚNICAS, NO FRECUENTES
-        const venezuelaToday = new Date().toLocaleString('en-US', { timeZone: 'America/Caracas' });
-        const today = new Date(venezuelaToday).toISOString().split('T')[0];
+        const today = getTodayVenezuela();
         
         const todayVisits = await pool.request()
             .input('propertyId', sql.UniqueIdentifier, propertyId)
@@ -1054,12 +1054,19 @@ class OwnerController {
                 });
             }
 
+            const dniTrimmed = String(dni).trim();
+            if (!/^\d{1,15}$/.test(dniTrimmed)) {
+                return res.status(400).json({ 
+                    error: 'El DNI/Cédula debe contener solo números y máximo 15 dígitos' 
+                });
+            }
+
             // Crear o encontrar visitante
             const visitor = await VisitorModel.findOrCreate({
                 tenant_id: tenantId,
                 first_name,
                 last_name,
-                dni,
+                dni: dniTrimmed,
                 phone
             });
 
