@@ -219,9 +219,12 @@ class SecurityController {
                         INNER JOIN Properties p ON vp.property_id = p.id
                         INNER JOIN Users u ON vp.user_id = u.id
                         LEFT JOIN Buildings b ON p.building_id = b.id
-                        LEFT JOIN VisitorLogs vl ON vp.visitor_id = vl.visitor_id 
-                            AND vl.pass_id = vp.id
-                            AND CAST(vl.entry_time AS DATE) = @queryDate
+                        OUTER APPLY (
+                            SELECT TOP 1 vl2.id, vl2.entry_time, vl2.exit_time, vl2.access_method, vl2.vehicle_plate
+                            FROM VisitorLogs vl2
+                            WHERE vl2.pass_id = vp.id
+                            ORDER BY vl2.entry_time DESC
+                        ) vl
                         WHERE vp.tenant_id = @tenantId
                         AND vp.type = 'ONE_TIME'
                         AND vp.status IN ('ACTIVE', 'PENDING', 'USED')

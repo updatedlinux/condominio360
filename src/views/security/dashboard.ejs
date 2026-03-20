@@ -744,26 +744,10 @@
         }
 
         // Render functions
-        function renderVisits(visits) {
-            const contentArea = document.getElementById('contentArea');
-            
-            if (visits.length === 0) {
-                contentArea.innerHTML = `
-                    <div class="card p-12 text-center">
-                        <span class="material-icons-round text-6xl text-[#E5E5E5] mb-4">people_outline</span>
-                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay visitas anunciadas para hoy</h3>
-                        <p class="text-[#5F6368]">Las visitas anunciadas aparecerán aquí</p>
-                        <p class="text-sm text-[#9AA0A6] mt-2">Para visitas frecuentes, use el buscador arriba</p>
-                    </div>
-                `;
-                return;
-            }
-
-            contentArea.innerHTML = visits.map(v => {
-                const isInside = v.entry_time && !v.exit_time;
-                const hasExited = v.exit_time !== null;
-                
-                return `
+        function renderVisitCard(v) {
+            const isInside = v.entry_time && !v.exit_time;
+            const hasExited = v.exit_time !== null;
+            return `
                 <div class="card p-4 sm:p-5 ${isInside ? 'border-l-4 border-green-500' : ''}">
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div class="flex items-start gap-3 sm:gap-4">
@@ -831,8 +815,57 @@
                         ` : ''}
                     </div>
                 </div>
+            `;
+        }
+
+        function renderVisits(visits) {
+            const contentArea = document.getElementById('contentArea');
+            
+            if (visits.length === 0) {
+                contentArea.innerHTML = `
+                    <div class="card p-12 text-center">
+                        <span class="material-icons-round text-6xl text-[#E5E5E5] mb-4">people_outline</span>
+                        <h3 class="text-lg font-medium text-[#3C4043] mb-2">No hay visitas anunciadas para hoy</h3>
+                        <p class="text-[#5F6368]">Las visitas anunciadas aparecerán aquí</p>
+                        <p class="text-sm text-[#9AA0A6] mt-2">Para visitas frecuentes, use el buscador arriba</p>
+                    </div>
                 `;
-            }).join('');
+                return;
+            }
+
+            const active = visits.filter(v => !v.exit_time);
+            const exited = visits.filter(v => v.exit_time !== null);
+
+            let html = active.map(v => renderVisitCard(v)).join('');
+
+            if (exited.length > 0) {
+                html += `
+                <div class="mt-6">
+                    <button type="button" onclick="toggleExitedVisits()" 
+                        class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-colors">
+                        <span class="flex items-center gap-2 text-[#5F6368] font-medium">
+                            <span class="material-icons-round text-[#9AA0A6]">history</span>
+                            Visitas que ya salieron (${exited.length})
+                        </span>
+                        <span id="exitedVisitsChevron" class="material-icons-round text-[#9AA0A6]">expand_more</span>
+                    </button>
+                    <div id="exitedVisitsContainer" class="hidden mt-4 space-y-4">
+                        ${exited.map(v => renderVisitCard(v)).join('')}
+                    </div>
+                </div>
+                `;
+            }
+
+            contentArea.innerHTML = html;
+        }
+
+        function toggleExitedVisits() {
+            const container = document.getElementById('exitedVisitsContainer');
+            const chevron = document.getElementById('exitedVisitsChevron');
+            if (container && chevron) {
+                container.classList.toggle('hidden');
+                chevron.textContent = container.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+            }
         }
 
         function renderDeliveries(deliveries) {
@@ -1262,6 +1295,9 @@
                     showToast(isFrequent ? 'Entrada de visita frecuente registrada' : 'Entrada registrada exitosamente');
                     closeEntryModal();
                     loadTabData(currentTab);
+                    if (document.getElementById('searchResults') && !document.getElementById('searchResults').classList.contains('hidden')) {
+                        performSearch();
+                    }
                 } else {
                     showToast(data.error || 'Error al registrar entrada', 'error');
                 }
