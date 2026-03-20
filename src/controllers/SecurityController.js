@@ -33,17 +33,21 @@ class SecurityController {
             }
 
             // Contar visitas únicas pendientes de hoy
-            // Usar CAST a DATE para comparar solo la parte de fecha sin hora
+            // valid_from en UTC; día Venezuela: 00:00 VE = 04:00 UTC, fin = 04:00 UTC día sig.
+            const [y, m, d] = queryDate.split('-').map(Number);
+            const dayStartUtc = new Date(Date.UTC(y, m - 1, d, 4, 0, 0, 0));
+            const dayEndUtc = new Date(Date.UTC(y, m - 1, d + 1, 4, 0, 0, 0));
             const uniqueVisitsResult = await pool.request()
                 .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('queryDate', sql.Date, queryDate)
+                .input('dayStartUtc', sql.DateTime2, dayStartUtc)
+                .input('dayEndUtc', sql.DateTime2, dayEndUtc)
                 .query(`
                     SELECT COUNT(*) as count, MAX(COALESCE(updated_at, created_at)) as last_update
                     FROM VisitorPasses 
                     WHERE tenant_id = @tenantId
                     AND type = 'ONE_TIME'
                     AND status IN ('ACTIVE', 'PENDING')
-                    AND CAST(valid_from AS DATE) = @queryDate
+                    AND valid_from >= @dayStartUtc AND valid_from < @dayEndUtc
                 `);
 
             // Contar visitas frecuentes activas (buscamos en VisitorPasses tipo FREQUENT)
@@ -198,9 +202,14 @@ class SecurityController {
                 return res.json({ success: true, data: result.recordset });
             } else {
                 // Visitas únicas del día especificado
+                // valid_from se guarda en UTC; Venezuela GMT-4: 00:00 VE = 04:00 UTC, 23:59:59 VE = 03:59:59 UTC día sig.
+                const [y, m, d] = queryDate.split('-').map(Number);
+                const dayStartUtc = new Date(Date.UTC(y, m - 1, d, 4, 0, 0, 0));
+                const dayEndUtc = new Date(Date.UTC(y, m - 1, d + 1, 4, 0, 0, 0));
                 const result = await pool.request()
                     .input('tenantId', sql.UniqueIdentifier, tenantId)
-                    .input('queryDate', sql.Date, queryDate)
+                    .input('dayStartUtc', sql.DateTime2, dayStartUtc)
+                    .input('dayEndUtc', sql.DateTime2, dayEndUtc)
                     .query(`
                         SELECT vp.*, 
                                v.first_name, v.last_name, v.dni as visitor_dni,
@@ -229,7 +238,7 @@ class SecurityController {
                         WHERE vp.tenant_id = @tenantId
                         AND vp.type = 'ONE_TIME'
                         AND vp.status IN ('ACTIVE', 'PENDING', 'USED')
-                        AND CAST(vp.valid_from AS DATE) = @queryDate
+                        AND vp.valid_from >= @dayStartUtc AND vp.valid_from < @dayEndUtc
                         ORDER BY vp.valid_from
                     `);
                 
