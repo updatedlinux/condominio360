@@ -9,6 +9,18 @@ const BCVService = require('../services/BCVService');
 const { sql, connectDB } = require('../config/database');
 const { getTodayVenezuela } = require('../utils/dateUtils');
 
+function formatRequestForApi(req) {
+    if (!req) return req;
+    const r = { ...req };
+    ['created_at', 'updated_at'].forEach(field => {
+        if (r[field] instanceof Date) {
+            const iso = r[field].toISOString();
+            r[field] = iso.slice(0, 19) + '-04:00';
+        }
+    });
+    return r;
+}
+
 /**
  * Owner Controller
  * Panel de control para propietarios
@@ -641,7 +653,7 @@ class OwnerController {
 
             res.json({
                 success: true,
-                data: result.recordset.map(r => ({
+                data: result.recordset.map(r => formatRequestForApi({
                     ...r,
                     data: r.data ? JSON.parse(r.data) : null
                 })),
@@ -797,7 +809,7 @@ class OwnerController {
 
             res.json({
                 success: true,
-                data: request
+                data: formatRequestForApi(request)
             });
 
         } catch (error) {

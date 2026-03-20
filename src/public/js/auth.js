@@ -115,6 +115,9 @@ if (loginForm) {
 
                 // 4. Owner - Necesita seleccionar propiedad/tenant
                 if (data.properties && data.properties.length > 0) {
+                    const redirect = new URLSearchParams(window.location.search).get('redirect');
+                    const redirectUrl = (redirect && redirect.startsWith('/')) ? redirect : null;
+
                     // Guardar propiedades disponibles (para el selector)
                     localStorage.setItem('availableProperties', JSON.stringify(data.properties));
                     
@@ -123,13 +126,13 @@ if (loginForm) {
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
                         localStorage.setItem('selectedProperty', JSON.stringify(data.properties[0]));
-                        window.location.href = '/dashboard';
+                        window.location.href = redirectUrl || '/dashboard';
                         return;
                     }
                     
-                    // Si tiene múltiples propiedades, mostrar selección
+                    // Si tiene múltiples propiedades, mostrar selección (pasar redirect)
                     localStorage.setItem('tempToken', data.token);
-                    window.location.href = '/select-property';
+                    window.location.href = '/select-property' + (redirectUrl ? '?redirect=' + encodeURIComponent(redirectUrl) : '');
                     return;
                 }
 
@@ -207,6 +210,9 @@ function escapeHtml(str) {
 // Select Property (para propietarios)
 async function selectProperty(propertyId) {
     const tempToken = localStorage.getItem('tempToken');
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    const redirectUrl = (redirect && redirect.startsWith('/')) ? redirect : null;
+
     try {
         const response = await fetch(`${API_URL}/select-property`, {
             method: 'POST',
@@ -232,7 +238,7 @@ async function selectProperty(propertyId) {
             localStorage.removeItem('tempToken');
             localStorage.removeItem('availableProperties');
 
-            window.location.href = '/dashboard';
+            window.location.href = redirectUrl || '/dashboard';
         } else {
             alert('Error al seleccionar propiedad: ' + (data.error || 'Unknown'));
         }

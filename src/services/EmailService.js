@@ -577,7 +577,7 @@ class EmailService {
                 <h3>${requestType.name}</h3>
                 <p><strong>Estado:</strong> <span class="status-badge status-${statusClass}">${statusLabels[request.status]}</span></p>
                 <p><strong>Fecha:</strong> ${new Date(request.created_at).toLocaleDateString('es-ES', { 
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                    timeZone: 'America/Caracas', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 })}</p>
             </div>
             
@@ -629,7 +629,7 @@ class EmailService {
                 <p><strong>Propietario:</strong> ${ownerName}</p>
                 <p><strong>Prioridad:</strong> ${priorityLabels[request.priority] || request.priority}</p>
                 <p><strong>Fecha:</strong> ${new Date(request.created_at).toLocaleDateString('es-ES', { 
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    timeZone: 'America/Caracas', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 })}</p>
             </div>
             
@@ -704,8 +704,8 @@ class EmailService {
             <div class="details-box" style="border-left-color: ${statusColor}">
                 <h3>${requestType.name}</h3>
                 <p><strong>Nuevo Estado:</strong> <span class="status-badge status-${statusClass}">${statusLabels[request.status]}</span></p>
-                <p><strong>Fecha de actualización:</strong> ${new Date().toLocaleDateString('es-ES', { 
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                <p><strong>Fecha de actualización:</strong> ${new Date(request.updated_at || request.created_at).toLocaleDateString('es-ES', { 
+                    timeZone: 'America/Caracas', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 })}</p>
             </div>
             

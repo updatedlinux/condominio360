@@ -62,6 +62,12 @@ router.get('/owner/requests/new', (req, res) => {
     });
 });
 
+// Ruta para enlaces de correo "Ver Solicitud" - redirige al login (sin sesión en nueva pestaña)
+router.get('/owner/requests/:id', (req, res) => {
+    const { id } = req.params;
+    res.redirect(`/login?redirect=${encodeURIComponent(`/owner/requests?id=${id}`)}`);
+});
+
 router.get('/owner/consultations', (req, res) => {
     res.render('owner/consultations', {
         title: 'Consultas',

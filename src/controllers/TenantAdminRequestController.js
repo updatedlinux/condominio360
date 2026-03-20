@@ -3,6 +3,18 @@ const TenantMoveConfigModel = require('../models/TenantMoveConfigModel');
 const EmailService = require('../services/EmailService');
 const { sql, connectDB } = require('../config/database');
 
+function formatRequestForApi(req) {
+    if (!req) return req;
+    const r = { ...req };
+    ['created_at', 'updated_at'].forEach(field => {
+        if (r[field] instanceof Date) {
+            const iso = r[field].toISOString();
+            r[field] = iso.slice(0, 19) + '-04:00';
+        }
+    });
+    return r;
+}
+
 /**
  * Tenant Admin Request Controller
  * Gestión de tipos de solicitud y configuración de mudanzas
@@ -425,7 +437,7 @@ class TenantAdminRequestController {
 
             res.json({
                 success: true,
-                data: result.recordset.map(r => ({
+                data: result.recordset.map(r => formatRequestForApi({
                     ...r,
                     data: r.data ? JSON.parse(r.data) : null
                 })),
@@ -477,7 +489,7 @@ class TenantAdminRequestController {
 
             res.json({
                 success: true,
-                data: request
+                data: formatRequestForApi(request)
             });
         } catch (error) {
             console.error('Get request error:', error);
@@ -544,7 +556,7 @@ class TenantAdminRequestController {
             res.json({
                 success: true,
                 message: 'Estado actualizado',
-                data: result.recordset[0]
+                data: formatRequestForApi(result.recordset[0])
             });
         } catch (error) {
             console.error('Update request status error:', error);
