@@ -649,14 +649,15 @@ class AuthController {
             const superadmins = await UserModel.findAllSuperAdmins();
             const adminUrl = `${process.env.APP_URL || 'http://localhost:3000'}/admin`;
             try {
-                await EmailService.sendDataUpdateRequestToOwner(owner.email || newData.email, owner.first_name);
+                // Enviar al correo NUEVO indicado en la solicitud (donde recibirán las notificaciones)
+                await EmailService.sendDataUpdateRequestToOwner(newData.email, newData.first_name);
                 for (const sa of superadmins) {
                     if (sa.email) {
                         await EmailService.sendDataUpdateRequestToSuperAdmin(
                             sa.email,
-                            owner.first_name,
-                            owner.last_name,
-                            owner.email || newData.email,
+                            newData.first_name,
+                            newData.last_name,
+                            newData.email,
                             adminUrl
                         ).catch(e => console.error('Email to superadmin:', e));
                     }

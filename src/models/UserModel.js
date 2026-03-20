@@ -182,6 +182,35 @@ class UserModel {
     }
 
     /**
+     * Generar token de invitación para usuario existente (tras aprobación de actualización de datos)
+     * Permite que el propietario defina su contraseña
+     * @param {string} userId 
+     * @returns {Promise<string|null>} - Token generado o null
+     */
+    static async setInvitationTokenForPasswordSetup(userId) {
+        try {
+            const invitation_token = crypto.randomBytes(32).toString('hex');
+            const pool = await connectDB();
+            await pool.request()
+                .input('id', sql.UniqueIdentifier, userId)
+                .input('invitation_token', sql.NVarChar, invitation_token)
+                .input('invited_at', sql.DateTime2, new Date())
+                .query(`
+                    UPDATE Users 
+                    SET invitation_token = @invitation_token, 
+                        invited_at = @invited_at, 
+                        registration_status = 'INVITED',
+                        updated_at = SYSDATETIME()
+                    WHERE id = @id
+                `);
+            return invitation_token;
+        } catch (error) {
+            console.error('Error setting invitation token:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Find user by invitation token
      * @param {string} token 
      * @returns {Promise<Object|null>}

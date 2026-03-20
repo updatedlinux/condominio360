@@ -91,14 +91,15 @@ class OwnerProfileController {
             const adminUrl = `${process.env.APP_URL || 'http://localhost:3000'}/admin`;
 
             try {
-                await EmailService.sendDataUpdateRequestToOwner(user.email, user.first_name);
+                // Enviar al correo NUEVO indicado en la solicitud
+                await EmailService.sendDataUpdateRequestToOwner(newData.email, newData.first_name);
                 for (const sa of superadmins) {
                     if (sa.email) {
                         await EmailService.sendDataUpdateRequestToSuperAdmin(
                             sa.email,
-                            user.first_name,
-                            user.last_name,
-                            user.email,
+                            newData.first_name,
+                            newData.last_name,
+                            newData.email,
                             adminUrl
                         ).catch(e => console.error('Email to superadmin:', e));
                     }

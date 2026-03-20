@@ -145,16 +145,39 @@ class AdminDataUpdateController {
 
             const user = await UserModel.findById(request.user_id);
             const notifyEmail = finalData.email || user.email;
-            const changes = [];
-            const oldData = typeof request.old_data === 'string' ? JSON.parse(request.old_data) : request.old_data;
-            if (oldData.first_name !== finalData.first_name) changes.push(`Nombre: ${finalData.first_name}`);
-            if (oldData.last_name !== finalData.last_name) changes.push(`Apellido: ${finalData.last_name}`);
-            if (oldData.dni !== finalData.dni) changes.push(`Cédula: ${finalData.dni}`);
-            if (oldData.email !== finalData.email) changes.push(`Correo: ${finalData.email}`);
-            if ((oldData.phone || '') !== (finalData.phone || '')) changes.push(`Teléfono: ${finalData.phone || '-'}`);
+
+            // Generar token de invitación para que el propietario defina su contraseña
+            const invitationToken = await UserModel.setInvitationTokenForPasswordSetup(request.user_id);
+            const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+            const invitationLink = `${baseUrl}/auth/complete-registration?token=${invitationToken}`;
+
+            // Obtener tenant y propiedad para el email
+            let tenantName = 'Condominio';
+            let propertyLabel = null;
+            const propsResult = await pool.request()
+                .input('user_id', sql.UniqueIdentifier, request.user_id)
+                .query(`
+                    SELECT TOP 1 p.name as prop_name, b.name as building_name, t.name as tenant_name
+                    FROM PropertyOwners po
+                    INNER JOIN Properties p ON po.property_id = p.id
+                    INNER JOIN Tenants t ON p.tenant_id = t.id
+                    LEFT JOIN Buildings b ON p.building_id = b.id
+                    WHERE po.user_id = @user_id
+                `);
+            if (propsResult.recordset.length > 0) {
+                const r = propsResult.recordset[0];
+                tenantName = r.tenant_name || tenantName;
+                propertyLabel = r.building_name ? `${r.building_name}, ${r.prop_name}` : r.prop_name;
+            }
 
             try {
-                await EmailService.sendDataUpdateApproved(notifyEmail, user.first_name, changes);
+                await EmailService.sendDataUpdateApprovedWithPasswordSetup(
+                    notifyEmail,
+                    finalData.first_name,
+                    tenantName,
+                    invitationLink,
+                    propertyLabel
+                );
             } catch (e) {
                 console.error('Email approved:', e);
             }

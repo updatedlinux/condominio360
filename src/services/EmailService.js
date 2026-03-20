@@ -940,17 +940,31 @@ class EmailService {
 
     /**
      * Notificar al propietario que su solicitud de actualización de datos fue recibida
+     * Se envía a la nueva dirección de correo indicada en la solicitud
      */
     async sendDataUpdateRequestToOwner(email, firstName) {
         const subject = 'Solicitud de actualización de datos recibida - Condominio360';
         const content = `
             <h2>Hola ${firstName},</h2>
-            <p>Hemos recibido tu solicitud de actualización de datos personales.</p>
-            <p><strong>Serás contactado para ratificar los datos que indicaste.</strong> Además, esta solicitud será verificada con la Junta de Condominio y la empresa administradora en caso de tenerla.</p>
-            <p>Te notificaremos por correo cuando tu solicitud sea procesada (aprobada o rechazada).</p>
+            <p>Hemos recibido tu solicitud de actualización de datos personales. <strong>Tu solicitud está en proceso.</strong></p>
+            
+            <div class="details-box">
+                <h3>¿Qué sigue?</h3>
+                <p>Serás contactado por el equipo de Condominio360, la junta de condominio y la empresa administradora en caso de existir, para confirmar y conciliar tus datos.</p>
+                <p><strong>Es probable que se te solicite:</strong></p>
+                <ul style="margin: 12px 0; padding-left: 24px;">
+                    <li>Título de propiedad</li>
+                    <li>Contratos de arrendamiento (si aplica)</li>
+                    <li>Poderes notariados (si aplica)</li>
+                </ul>
+                <p>Te sugerimos tener estos documentos a la mano para agilizar el proceso.</p>
+            </div>
+            
+            <p>Una vez confirmada la titularidad o tenencia del inmueble, se actualizarán tus datos en el sistema y podrás ingresar usando tu cédula o correo electrónico.</p>
+            <p>Te notificaremos por correo cuando tu solicitud sea procesada.</p>
             <p>Si no realizaste esta solicitud, por favor contacta a la administración de tu condominio.</p>
         `;
-        const html = this._generateEmailTemplate(content, { title: 'Solicitud Recibida', subtitle: 'Actualización de datos', color: '#f97316' });
+        const html = this._generateEmailTemplate(content, { title: 'Solicitud en Proceso', subtitle: 'Actualización de datos', color: '#f97316' });
         await this.send(email, subject, html);
     }
 
@@ -962,7 +976,10 @@ class EmailService {
         const content = `
             <h2>Nueva solicitud de actualización de datos</h2>
             <p>El propietario <strong>${firstName} ${lastName}</strong> (${ownerEmail}) ha enviado una solicitud para actualizar sus datos personales.</p>
-            <p>Revisa y procesa la solicitud en el panel de administración.</p>
+            <div class="details-box">
+                <p>La solicitud será revisada por el equipo de Condominio360, la junta de condominio y la empresa administradora en caso de existir.</p>
+                <p>Revisa y procesa la solicitud en el panel de administración.</p>
+            </div>
             <div style="text-align: center;">
                 <a href="${adminUrl}" class="cta-button">Ir al panel</a>
             </div>
@@ -972,7 +989,7 @@ class EmailService {
     }
 
     /**
-     * Notificar al propietario que su solicitud fue aprobada
+     * Notificar al propietario que su solicitud fue aprobada (versión simple, sin token)
      */
     async sendDataUpdateApproved(email, firstName, changesList = []) {
         const subject = 'Tus datos han sido actualizados - Condominio360';
@@ -986,6 +1003,34 @@ class EmailService {
             <p>Estos cambios aplican a todos los condominios e inmuebles donde tienes propiedad en Condominio360.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Datos Actualizados', subtitle: 'Solicitud aprobada', color: '#16a34a' });
+        await this.send(email, subject, html);
+    }
+
+    /**
+     * Enviar invitación para definir contraseña tras aprobación de actualización de datos
+     * Similar a sendOwnerInvitation: el propietario debe confirmar y establecer su contraseña
+     */
+    async sendDataUpdateApprovedWithPasswordSetup(email, firstName, tenantName, invitationLink, propertyLabel = null) {
+        const subject = `Confirma tu cuenta y define tu contraseña - Condominio360`;
+        const propertyBlock = propertyLabel
+            ? `<div class="details-box"><p><strong>Inmueble:</strong> ${propertyLabel}</p></div>`
+            : '';
+        const content = `
+            <h2>Hola ${firstName},</h2>
+            <p>Tu solicitud de actualización de datos ha sido <strong>aprobada</strong>. Tus datos personales han sido actualizados en el sistema.</p>
+            ${propertyBlock}
+            <p>Para acceder al panel de Condominio360, debes confirmar tu cuenta y definir tu contraseña de acceso. Haz clic en el siguiente botón:</p>
+            <div style="text-align: center; margin: 24px 0;">
+                <a href="${invitationLink}" class="cta-button">Confirmar y definir contraseña</a>
+            </div>
+            <p>O copia y pega este enlace en tu navegador:</p>
+            <p style="word-break: break-all; background: #f3f4f6; padding: 12px; border-radius: 6px; font-size: 13px;">
+                ${invitationLink}
+            </p>
+            <p><strong>Nota:</strong> Este enlace expirará en 7 días por seguridad.</p>
+            <p>Una vez completado, podrás ingresar con tu cédula o correo electrónico y la contraseña que definas.</p>
+        `;
+        const html = this._generateEmailTemplate(content, { title: 'Datos Aprobados', subtitle: 'Define tu contraseña', color: '#16a34a' });
         await this.send(email, subject, html);
     }
 
