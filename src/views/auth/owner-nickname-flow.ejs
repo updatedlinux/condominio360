@@ -31,13 +31,21 @@
         <!-- Paso 1: Selección de propietario (si hay varios) -->
         <div id="owner-selection-step" class="hidden">
             <p class="text-slate-600 mb-4">¿Qué propietario eres?</p>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex gap-3">
+                <span class="material-icons-round text-blue-600 text-2xl flex-shrink-0">info</span>
+                <div class="text-sm text-blue-900">
+                    <p class="font-medium mb-1">¿No te encuentras en la lista?</p>
+                    <p>Si no eres ninguno, no te preocupes. Es probable que tu Junta de Condominio o Empresa Administradora no tenga los datos actualizados, vamos por ello: selecciona cualquier propietario y pon tus datos reales.</p>
+                    <p class="mt-2">Si tu inmueble no tiene más de un propietario, coméntalo cuando se te contacte para confirmar los datos. Esto con el fin de tener tus datos conciliados.</p>
+                </div>
+            </div>
             <div id="owner-list" class="space-y-3"></div>
         </div>
 
         <!-- Paso 2: Formulario de actualización -->
         <div id="form-step" class="hidden">
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                <p class="text-sm text-amber-800">Completa tus datos personales. Tu solicitud será revisada por el administrador. Una vez aprobada, podrás acceder al panel con tu correo y contraseña.</p>
+                <p class="text-sm text-amber-800">Completa tus datos personales. Tu solicitud será revisada por el equipo de Condominio360, la junta de condominio y empresa administradora en caso de existir. Una vez aprobada, podrás acceder al panel con tu correo y contraseña.</p>
             </div>
             <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
                 <form id="update-form" class="space-y-4">
