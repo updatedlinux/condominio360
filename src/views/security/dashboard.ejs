@@ -1926,14 +1926,11 @@
 
         function formatDateOnly(dateStr) {
             if (!dateStr) return '-';
-            const str = String(dateStr);
-            const match = str.match(/(\d{4})-(\d{2})-(\d{2})/);
-            if (match) {
-                const [, y, m, d] = match;
-                const months = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
-                return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
-            }
-            return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleDateString('es-VE', { 
+                day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Caracas'
+            });
         }
 
         function formatTime(dateStr) {
