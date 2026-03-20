@@ -1494,7 +1494,8 @@ class AdminController {
 
         try {
             const { id } = req.params;
-            const { display_name, email, phone, document_type, document_number, address, property_id } = req.body;
+            const { display_name, email, phone, document_type, document_number, address, property_id, property_ids } = req.body;
+            const propertyIds = Array.isArray(property_ids) ? property_ids.filter(Boolean) : (property_id ? [property_id] : []);
 
             if (!display_name || !email) {
                 return res.status(400).json({ error: 'Nombre y email son requeridos' });
@@ -1667,25 +1668,25 @@ class AdminController {
                     WHERE NOT EXISTS (SELECT 1 FROM TenantUsers WHERE user_id = @user_id AND tenant_id = @tenant_id)
                 `);
 
-            // Asignar a inmueble si se proporcionó property_id
-            if (property_id) {
+            // Asignar a inmuebles si se proporcionaron
+            for (const pid of propertyIds) {
                 const propertyCheck = await transaction.request()
-                    .input('property_id', sql.UniqueIdentifier, property_id)
+                    .input('property_id', sql.UniqueIdentifier, pid)
                     .input('tenant_id', sql.UniqueIdentifier, id)
                     .query('SELECT id FROM Properties WHERE id = @property_id AND tenant_id = @tenant_id');
-                
+
                 if (propertyCheck.recordset.length === 0) {
                     throw new Error('La propiedad no existe o no pertenece a este condominio');
                 }
 
                 const existingAssignment = await transaction.request()
-                    .input('property_id', sql.UniqueIdentifier, property_id)
+                    .input('property_id', sql.UniqueIdentifier, pid)
                     .input('user_id', sql.UniqueIdentifier, user.id)
                     .query('SELECT * FROM PropertyOwners WHERE property_id = @property_id AND user_id = @user_id');
-                
+
                 if (existingAssignment.recordset.length === 0) {
                     await transaction.request()
-                        .input('property_id', sql.UniqueIdentifier, property_id)
+                        .input('property_id', sql.UniqueIdentifier, pid)
                         .input('user_id', sql.UniqueIdentifier, user.id)
                         .input('percentage_ownership', sql.Decimal(5, 2), 100)
                         .query(`
@@ -1708,8 +1709,8 @@ class AdminController {
                 const tenant = await TenantModel.findById(id);
                 const tenantName = tenant?.name || 'Condominio';
                 let propertyLabel = null;
-                if (property_id) {
-                    const prop = await PropertyModel.findById(property_id);
+                if (propertyIds.length > 0) {
+                    const prop = await PropertyModel.findById(propertyIds[0]);
                     if (prop) {
                         propertyLabel = prop.building_name ? `${prop.building_name}, ${prop.name}` : prop.name;
                     }
@@ -1749,7 +1750,7 @@ class AdminController {
                 message: message,
                 owner: {
                     ...user,
-                    property_id: property_id || null
+                    property_id: propertyIds[0] || null
                 }
             });
         } catch (error) {
@@ -2097,7 +2098,8 @@ class AdminController {
     static async updateOwner(req, res) {
         try {
             const { id } = req.params;
-            const { display_name, email, phone, document_type, document_number, address, property_id, tenant_id } = req.body;
+            const { display_name, email, phone, document_type, document_number, address, property_id, property_ids, tenant_id } = req.body;
+            const propertyIds = Array.isArray(property_ids) ? property_ids.filter(Boolean) : (property_id !== undefined ? (property_id ? [property_id] : []) : undefined);
 
             const pool = await connectDB();
 
@@ -2144,11 +2146,11 @@ class AdminController {
                 `Actualizó propietario: ${updated.first_name} ${updated.last_name} (${updated.email})`, 
                 tenant_id || null);
 
-            // Update property assignment if provided (solo afecta a ESTE tenant; dejar "huérfano" en este condominio)
-            if (property_id !== undefined) {
+            // Update property assignment if provided (solo afecta a ESTE tenant)
+            if (propertyIds !== undefined) {
                 let scopeTenantId = tenant_id;
-                if (!scopeTenantId && property_id) {
-                    const propCheck = await pool.request().input('pid', sql.UniqueIdentifier, property_id)
+                if (!scopeTenantId && propertyIds.length > 0) {
+                    const propCheck = await pool.request().input('pid', sql.UniqueIdentifier, propertyIds[0])
                         .query('SELECT tenant_id FROM Properties WHERE id = @pid');
                     scopeTenantId = propCheck.recordset[0]?.tenant_id;
                 }
@@ -2164,17 +2166,16 @@ class AdminController {
                         AND property_id IN (SELECT id FROM Properties WHERE tenant_id = @tenant_id)
                     `);
 
-                // Add new assignment if property_id is not null
-                if (property_id) {
+                for (const pid of propertyIds) {
                     const propCheck = await pool.request()
-                        .input('property_id', sql.UniqueIdentifier, property_id)
+                        .input('property_id', sql.UniqueIdentifier, pid)
                         .input('tenant_id', sql.UniqueIdentifier, scopeTenantId)
                         .query('SELECT id FROM Properties WHERE id = @property_id AND tenant_id = @tenant_id');
                     if (propCheck.recordset.length === 0) {
                         return res.status(400).json({ error: 'La propiedad no pertenece a este condominio' });
                     }
                     await pool.request()
-                        .input('property_id', sql.UniqueIdentifier, property_id)
+                        .input('property_id', sql.UniqueIdentifier, pid)
                         .input('user_id', sql.UniqueIdentifier, id)
                         .input('percentage_ownership', sql.Decimal(5, 2), 100)
                         .query(`

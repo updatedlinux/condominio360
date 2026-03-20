@@ -338,12 +338,11 @@
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-2">Asignar Inmueble</label>
-                    <select id="owner-property" 
-                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                        <option value="">-- Sin asignar --</option>
-                    </select>
-                    <p class="text-xs text-slate-400 mt-1">Puede asignar un inmueble ahora o más tarde</p>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Asignar Inmuebles</label>
+                    <div id="owner-properties-container" class="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50">
+                        <!-- Se llena con checkboxes por populatePropertySelect -->
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Puede asignar uno o varios inmuebles del mismo conjunto</p>
                 </div>
             </form>
             <div class="flex gap-3 mt-6">
@@ -619,14 +618,17 @@
         }
 
         function populatePropertySelect() {
-            const select = document.getElementById('owner-property');
-            select.innerHTML = '<option value="">-- Sin asignar --</option>' +
-                properties.map(p => {
-                    const displayName = buildingType === 'MULTIPLE' && p.building_name 
-                        ? `${p.building_name} - ${p.name}` 
-                        : p.name;
-                    return `<option value="${p.id}" data-slug="${p.slug || generateSlug(p.name)}">${displayName}</option>`;
-                }).join('');
+            const container = document.getElementById('owner-properties-container');
+            if (!container) return;
+            container.innerHTML = properties.map(p => {
+                const displayName = buildingType === 'MULTIPLE' && p.building_name 
+                    ? `${p.building_name} - ${p.name}` 
+                    : p.name;
+                return `<label class="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 cursor-pointer">
+                    <input type="checkbox" name="owner-property" value="${p.id}" class="rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                    <span class="text-sm text-slate-700">${displayName}</span>
+                </label>`;
+            }).join('') || '<p class="text-sm text-slate-400 py-2">No hay inmuebles en este conjunto</p>';
         }
 
         function populateFilters() {
@@ -749,6 +751,7 @@
             document.getElementById('modal-title').textContent = 'Agregar Propietario';
             document.getElementById('owner-form').reset();
             document.getElementById('owner-id').value = '';
+            document.querySelectorAll('input[name="owner-property"]').forEach(cb => { cb.checked = false; });
             document.getElementById('edit-replication-alert').classList.add('hidden');
             setSaveOwnerButtonLoading(false);
             document.getElementById('owner-modal').classList.remove('hidden');
@@ -762,8 +765,10 @@
         }
 
         function editOwner(id) {
-            const owner = owners.find(o => o.id === id);
-            if (!owner) return;
+            const ownerRows = owners.filter(o => o.id === id);
+            if (ownerRows.length === 0) return;
+            const owner = ownerRows[0];
+            const propertyIds = [...new Set(ownerRows.map(o => o.property_id).filter(Boolean))];
 
             setSaveOwnerButtonLoading(false);
             document.getElementById('modal-title').textContent = 'Editar Propietario';
@@ -774,10 +779,13 @@
             document.getElementById('owner-doc-type').value = owner.document_type || 'DNI';
             document.getElementById('owner-doc-number').value = owner.document_number || '';
             document.getElementById('owner-address').value = owner.address || '';
-            document.getElementById('owner-property').value = owner.property_id || '';
-            
+
+            document.querySelectorAll('input[name="owner-property"]').forEach(cb => {
+                cb.checked = propertyIds.includes(cb.value);
+            });
+
             document.getElementById('edit-replication-alert').classList.remove('hidden');
-            
+
             document.getElementById('owner-modal').classList.remove('hidden');
             document.getElementById('owner-modal').classList.add('flex');
         }
@@ -800,6 +808,7 @@
             setSaveOwnerButtonLoading(true);
 
             const id = document.getElementById('owner-id').value;
+            const propertyIds = Array.from(document.querySelectorAll('input[name="owner-property"]:checked')).map(cb => cb.value);
             const data = {
                 display_name: document.getElementById('owner-name').value,
                 email: document.getElementById('owner-email').value,
@@ -807,7 +816,7 @@
                 document_type: document.getElementById('owner-doc-type').value,
                 document_number: document.getElementById('owner-doc-number').value,
                 address: document.getElementById('owner-address').value,
-                property_id: document.getElementById('owner-property').value || null,
+                property_ids: propertyIds,
                 tenant_id: tenantId
             };
 
