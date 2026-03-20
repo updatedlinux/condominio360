@@ -45,12 +45,14 @@
         .nav-rail.collapsed { width: 80px; }
         .nav-rail.expanded { width: 300px; }
         .nav-rail { transition: width 0.3s ease, transform 0.3s ease; }
+        .mobile-hamburger-btn { display: none; }
         @media (max-width: 1023px) {
             .nav-rail { transform: translateX(-100%); width: 280px !important; }
             .nav-rail.mobile-open { transform: translateX(0); }
             #main-content { margin-left: 0 !important; }
             .admin-mobile-overlay { display: none; }
             .admin-mobile-overlay.active { display: block; }
+            .mobile-hamburger-btn { display: flex !important; }
         }
         
         .nav-item {
@@ -225,7 +227,7 @@
             <header class="bg-white shadow-sm sticky top-0 z-10 flex-shrink-0">
                 <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <button onclick="toggleAdminMobileSidebar()" class="lg:hidden w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+                        <button onclick="toggleAdminMobileSidebar()" class="mobile-hamburger-btn w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition" aria-label="Abrir menú">
                             <span class="material-symbols-rounded text-slate-600">menu</span>
                         </button>
                         <a href="/admin" class="p-2 hover:bg-gray-100 rounded-full inline-flex">

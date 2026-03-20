@@ -41,9 +41,16 @@
             display: none;
         }
         
+        /* Hamburger: visible solo en móvil (independiente de Tailwind) */
+        .mobile-hamburger-btn {
+            display: none;
+        }
         @media (max-width: 1023px) {
             .mobile-overlay.active {
                 display: block;
+            }
+            .mobile-hamburger-btn {
+                display: flex !important;
             }
         }
         
@@ -184,7 +191,7 @@
             <header class="h-16 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 lg:px-6">
                 <div class="flex items-center gap-4">
                     <!-- Mobile menu button -->
-                    <button onclick="toggleMobileSidebar()" class="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5]">
+                    <button onclick="toggleMobileSidebar()" class="mobile-hamburger-btn w-10 h-10 items-center justify-center rounded-lg hover:bg-[#F5F5F5]" aria-label="Abrir menú">
                         <span class="material-icons-round text-[#5F6368]">menu</span>
                     </button>
                     <h1 class="text-lg font-medium text-[#3C4043] truncate"><%= title || 'Panel de Administración' %></h1>

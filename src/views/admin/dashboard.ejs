@@ -79,6 +79,7 @@
             width: 300px;
         }
         
+        .mobile-hamburger-btn { display: none; }
         /* Mobile: sidebar oculto por defecto, se desliza al abrir */
         @media (max-width: 1023px) {
             .nav-rail {
@@ -96,6 +97,9 @@
             }
             .admin-mobile-overlay.active {
                 display: block;
+            }
+            .mobile-hamburger-btn {
+                display: flex !important;
             }
         }
         
@@ -565,7 +569,7 @@
             <!-- Top App Bar -->
             <header class="app-top-bar sticky top-0 z-30 flex-shrink-0">
                 <!-- Hamburger móvil -->
-                <button onclick="toggleAdminMobileSidebar()" class="lg:hidden flex w-10 h-10 items-center justify-center rounded-lg hover:bg-gray-100 mr-2">
+                <button onclick="toggleAdminMobileSidebar()" class="mobile-hamburger-btn w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 mr-2" aria-label="Abrir menú">
                     <span class="material-symbols-rounded text-gray-700">menu</span>
                 </button>
                 <h2 id="page-title" class="text-xl font-medium text-gray-900 flex-1">Dashboard</h2>
