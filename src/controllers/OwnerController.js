@@ -115,15 +115,26 @@ class OwnerController {
                 AND status IN ('OPEN', 'IN_PROGRESS')
             `);
 
-        // Consultas activas donde puede votar
+        // Consultas activas donde puede votar (solo las que aplican a sus edificios)
         const activeConsultations = await pool.request()
             .input('tenantId', sql.UniqueIdentifier, tenantId)
+            .input('userId', sql.UniqueIdentifier, userId)
             .query(`
-                SELECT COUNT(*) as count FROM Consultations 
-                WHERE tenant_id = @tenantId 
-                AND status = 'OPEN' 
-                AND start_date <= GETUTCDATE()
-                AND end_date >= GETUTCDATE()
+                SELECT COUNT(*) as count FROM Consultations c
+                WHERE c.tenant_id = @tenantId 
+                AND c.status = 'OPEN' 
+                AND c.start_date <= GETUTCDATE()
+                AND c.end_date >= GETUTCDATE()
+                AND (
+                    c.target_building IS NULL
+                    OR EXISTS (
+                        SELECT 1 FROM Properties p
+                        INNER JOIN PropertyOwners po ON p.id = po.property_id
+                        LEFT JOIN Buildings b ON p.building_id = b.id
+                        WHERE p.tenant_id = @tenantId AND po.user_id = @userId
+                        AND (p.building = c.target_building OR b.name = c.target_building)
+                    )
+                )
             `);
 
         // Visitas anunciadas para hoy (usando fecha de Venezuela) - SOLO ÚNICAS, NO FRECUENTES
