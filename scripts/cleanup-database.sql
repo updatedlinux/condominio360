@@ -52,9 +52,12 @@ BEGIN TRY
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'TenantMoveConfig') DELETE FROM TenantMoveConfig;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'RequestTypes') DELETE FROM RequestTypes;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AuditLogs') DELETE FROM AuditLogs;
+    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'DataUpdateRequests') DELETE FROM DataUpdateRequests;
+    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ExchangeRates') DELETE FROM ExchangeRates;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'PasswordResets') DELETE FROM PasswordResets;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Properties') DELETE FROM Properties;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Buildings') DELETE FROM Buildings;
+    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'WhatsAppConfig') DELETE FROM WhatsAppConfig;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Tenants') DELETE FROM Tenants;
     IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'UserEmails') DELETE FROM UserEmails;
 

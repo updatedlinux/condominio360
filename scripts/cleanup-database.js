@@ -56,9 +56,12 @@ const TABLES_ORDER = [
     'TenantMoveConfig',
     'RequestTypes',
     'AuditLogs',
+    'DataUpdateRequests',   // Solicitudes de actualización (nickname/datos propietarios)
+    'ExchangeRates',        // Tasas BCV (opcional limpiar para entorno fresco)
     'PasswordResets',
     'Properties',
     'Buildings',
+    'WhatsAppConfig',      // Config por tenant (antes de Tenants)
     'Tenants',
     'UserEmails',
 ];
