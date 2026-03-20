@@ -168,14 +168,19 @@ class NFCSecurityController {
     /**
      * GET /api/security/nfc/today-logs
      * Logs de acceso vehicular del día (para portal de seguridad)
+     * Query: page=1, limit=10
      */
     static async getTodayLogs(req, res) {
         try {
             const tenantId = req.user.tenantId;
             const today = new Date().toISOString().split('T')[0];
+            const page = Math.max(1, parseInt(req.query.page) || 1);
+            const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+            const offset = (page - 1) * limit;
 
-            const logs = await NFCModel.getAccessLogs(tenantId, {
-                limit: 50,
+            const [logs, total] = await NFCModel.getAccessLogsWithCount(tenantId, {
+                limit,
+                offset,
                 startDate: today + 'T00:00:00',
                 endDate: today + 'T23:59:59.999',
                 status: 'GRANTED'
@@ -183,7 +188,13 @@ class NFCSecurityController {
 
             res.json({
                 success: true,
-                data: logs
+                data: logs,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
             });
         } catch (error) {
             console.error('NFC getTodayLogs error:', error);

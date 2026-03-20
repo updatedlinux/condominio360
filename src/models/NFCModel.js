@@ -402,6 +402,42 @@ class NFCModel {
     }
 
     /**
+     * Obtener logs con conteo total (para paginación)
+     * @returns {Promise<[Array, number]>} [logs, total]
+     */
+    static async getAccessLogsWithCount(tenantId, options = {}) {
+        const { limit = 10, offset = 0, startDate = null, endDate = null, status = null } = options;
+
+        try {
+            const pool = await connectDB();
+            let whereClause = 'WHERE l.tenant_id = @tenant_id';
+            const countRequest = pool.request().input('tenant_id', sql.UniqueIdentifier, tenantId);
+            if (startDate) {
+                whereClause += ' AND l.access_time >= @startDate';
+                countRequest.input('startDate', sql.DateTime2, startDate);
+            }
+            if (endDate) {
+                whereClause += ' AND l.access_time <= @endDate';
+                countRequest.input('endDate', sql.DateTime2, endDate);
+            }
+            if (status) {
+                whereClause += ' AND l.status = @status';
+                countRequest.input('status', sql.NVarChar, status);
+            }
+            const countResult = await countRequest.query(`
+                SELECT COUNT(*) as total FROM NFC_AccessLogs l ${whereClause}
+            `);
+            const total = countResult.recordset[0]?.total ?? 0;
+
+            const logs = await this.getAccessLogs(tenantId, { limit, offset, startDate, endDate, status });
+            return [logs, total];
+        } catch (error) {
+            console.error('Error getting access logs with count:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Obtener logs de acceso por propiedad (para panel de propietario)
      * @param {string} propertyId 
      * @param {string} tenantId 
