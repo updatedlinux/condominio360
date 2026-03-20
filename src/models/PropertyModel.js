@@ -10,7 +10,7 @@ class PropertyModel {
      */
     static async create(data) {
         const pool = await connectDB();
-        const { tenant_id, name, type, building_id, floor, area_sqm, alicuota } = data;
+        const { tenant_id, name, type, building_id, floor, area_sqm, alicuota, nickname, nickname_password_hash } = data;
         
         const result = await pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenant_id)
@@ -20,10 +20,12 @@ class PropertyModel {
             .input('floor', sql.NVarChar, floor)
             .input('area_sqm', sql.Decimal(10, 2), area_sqm)
             .input('alicuota', sql.Decimal(10, 4), alicuota || 0)
+            .input('nickname', sql.NVarChar, nickname || null)
+            .input('nickname_password_hash', sql.NVarChar, nickname_password_hash || null)
             .query(`
-                INSERT INTO Properties (tenant_id, name, type, building_id, floor, area_sqm, alicuota)
+                INSERT INTO Properties (tenant_id, name, type, building_id, floor, area_sqm, alicuota, nickname, nickname_password_hash)
                 OUTPUT INSERTED.*
-                VALUES (@tenant_id, @name, @type, @building_id, @floor, @area_sqm, @alicuota)
+                VALUES (@tenant_id, @name, @type, @building_id, @floor, @area_sqm, @alicuota, @nickname, @nickname_password_hash)
             `);
         
         return result.recordset[0];
@@ -49,7 +51,7 @@ class PropertyModel {
      */
     static async update(id, data) {
         const pool = await connectDB();
-        const { name, type, building_id, floor, area_sqm, alicuota } = data;
+        const { name, type, building_id, floor, area_sqm, alicuota, nickname, nickname_password_hash, nickname_active } = data;
         
         const updates = [];
         const inputs = [{ name: 'id', type: sql.UniqueIdentifier, value: id }];
@@ -77,6 +79,18 @@ class PropertyModel {
         if (alicuota !== undefined) {
             updates.push('alicuota = @alicuota');
             inputs.push({ name: 'alicuota', type: sql.Decimal(10, 4), value: alicuota });
+        }
+        if (nickname !== undefined) {
+            updates.push('nickname = @nickname');
+            inputs.push({ name: 'nickname', type: sql.NVarChar, value: nickname });
+        }
+        if (nickname_password_hash !== undefined) {
+            updates.push('nickname_password_hash = @nickname_password_hash');
+            inputs.push({ name: 'nickname_password_hash', type: sql.NVarChar, value: nickname_password_hash });
+        }
+        if (nickname_active !== undefined) {
+            updates.push('nickname_active = @nickname_active');
+            inputs.push({ name: 'nickname_active', type: sql.Bit, value: nickname_active });
         }
         
         if (updates.length === 0) return null;
@@ -345,6 +359,69 @@ class PropertyModel {
                 ORDER BY b.name, p.name
             `);
         return result.recordset;
+    }
+
+    /**
+     * Buscar propiedad por nickname (activo)
+     */
+    static async findByNickname(nickname) {
+        const pool = await connectDB();
+        const normalized = (nickname || '').trim().toLowerCase();
+        if (!normalized) return null;
+        const result = await pool.request()
+            .input('nickname', sql.NVarChar, normalized)
+            .query(`
+                SELECT p.*, b.name as building_name, t.name as tenant_name, t.slug as tenant_slug, t.id as tenant_id
+                FROM Properties p
+                LEFT JOIN Buildings b ON p.building_id = b.id
+                INNER JOIN Tenants t ON p.tenant_id = t.id
+                WHERE p.nickname = @nickname 
+                AND (p.nickname_active = 1 OR p.nickname_active IS NULL)
+            `);
+        return result.recordset[0] || null;
+    }
+
+    /**
+     * Desactivar nickname de una propiedad
+     */
+    static async setNicknameInactive(propertyId) {
+        const pool = await connectDB();
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, propertyId)
+            .query(`UPDATE Properties SET nickname_active = 0 WHERE id = @id`);
+        return true;
+    }
+
+    /**
+     * Verificar si todos los propietarios del inmueble tienen al menos una solicitud aprobada
+     */
+    static async checkAllOwnersHaveApprovedRequest(propertyId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('property_id', sql.UniqueIdentifier, propertyId)
+            .query(`
+                SELECT po.user_id
+                FROM PropertyOwners po
+                WHERE po.property_id = @property_id
+                AND NOT EXISTS (
+                    SELECT 1 FROM DataUpdateRequests dur 
+                    WHERE dur.user_id = po.user_id AND dur.status = 'APPROVED'
+                )
+            `);
+        return result.recordset.length === 0;
+    }
+
+    /**
+     * Obtener propiedades por usuario (para verificar nickname deactivate)
+     */
+    static async getPropertyIdsByOwner(userId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('user_id', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT property_id FROM PropertyOwners WHERE user_id = @user_id
+            `);
+        return result.recordset.map(r => r.property_id);
     }
 
     /**

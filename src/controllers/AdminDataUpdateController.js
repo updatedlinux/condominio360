@@ -131,6 +131,18 @@ class AdminDataUpdateController {
 
             await DataUpdateRequestModel.approve(id, reviewerId, finalData);
 
+            // Desactivar nickname si todos los propietarios del inmueble tienen solicitud aprobada
+            const propertyIds = await PropertyModel.getPropertyIdsByOwner(request.user_id);
+            for (const propId of propertyIds) {
+                const prop = await PropertyModel.findById(propId);
+                if (prop && prop.nickname && (prop.nickname_active === 1 || prop.nickname_active === true)) {
+                    const allApproved = await PropertyModel.checkAllOwnersHaveApprovedRequest(propId);
+                    if (allApproved) {
+                        await PropertyModel.setNicknameInactive(propId);
+                    }
+                }
+            }
+
             const user = await UserModel.findById(request.user_id);
             const notifyEmail = finalData.email || user.email;
             const changes = [];

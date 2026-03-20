@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const TenantModel = require('../models/TenantModel');
 const UserModel = require('../models/UserModel');
 const PropertyModel = require('../models/PropertyModel');
@@ -1242,10 +1243,20 @@ class AdminController {
     static async createProperty(req, res) {
         try {
             const { id } = req.params;
-            const { name, type, building_id, floor, alicuota, area_sqm } = req.body;
+            const { name, type, building_id, floor, alicuota, area_sqm, nickname } = req.body;
 
             if (!name) {
                 return res.status(400).json({ error: 'El nombre del inmueble es requerido' });
+            }
+
+            let nicknameNorm = null;
+            let nicknameHash = null;
+            if (nickname && typeof nickname === 'string' && nickname.trim()) {
+                nicknameNorm = nickname.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                if (nicknameNorm.length < 3) {
+                    return res.status(400).json({ error: 'El nickname debe tener al menos 3 caracteres (letras, números, guión bajo)' });
+                }
+                nicknameHash = await bcrypt.hash(nicknameNorm, 10);
             }
 
             // Get tenant billing type
@@ -1278,7 +1289,7 @@ class AdminController {
                 }
             }
 
-            const result = await pool.request()
+            const req2 = pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, id)
                 .input('building_id', sql.UniqueIdentifier, finalBuildingId)
                 .input('name', sql.NVarChar, name)
@@ -1287,11 +1298,13 @@ class AdminController {
                 .input('floor', sql.NVarChar, floor || null)
                 .input('alicuota', sql.Decimal(10, 4), alicuota || null)
                 .input('area_sqm', sql.Decimal(10, 2), area_sqm || null)
-                .query(`
-                    INSERT INTO Properties (tenant_id, building_id, name, slug, type, floor, alicuota, area_sqm)
-                    OUTPUT INSERTED.*
-                    VALUES (@tenant_id, @building_id, @name, @slug, @type, @floor, @alicuota, @area_sqm)
-                `);
+                .input('nickname', sql.NVarChar, nicknameNorm)
+                .input('nickname_password_hash', sql.NVarChar, nicknameHash);
+            const result = await req2.query(`
+                INSERT INTO Properties (tenant_id, building_id, name, slug, type, floor, alicuota, area_sqm, nickname, nickname_password_hash)
+                OUTPUT INSERTED.*
+                VALUES (@tenant_id, @building_id, @name, @slug, @type, @floor, @alicuota, @area_sqm, @nickname, @nickname_password_hash)
+            `);
 
             const property = result.recordset[0];
             await AdminController.logAudit(req, 'CREATE', 'PROPERTY', property.id, `Creó inmueble: ${name}`, id);
@@ -1313,7 +1326,7 @@ class AdminController {
     static async updateProperty(req, res) {
         try {
             const { id } = req.params;
-            const { name, building_id, floor, alicuota, area_sqm, type } = req.body;
+            const { name, building_id, floor, alicuota, area_sqm, type, nickname } = req.body;
 
             const pool = await connectDB();
             
@@ -1323,29 +1336,40 @@ class AdminController {
                 slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
             }
 
-            const result = await pool.request()
-                .input('id', sql.UniqueIdentifier, id)
-                .input('name', sql.NVarChar, name || null)
-                .input('slug', sql.NVarChar, slug)
-                .input('building_id', sql.UniqueIdentifier, building_id || null)
-                .input('floor', sql.NVarChar, floor || null)
-                .input('alicuota', sql.Decimal(10, 4), alicuota !== undefined ? alicuota : null)
-                .input('area_sqm', sql.Decimal(10, 2), area_sqm !== undefined ? area_sqm : null)
-                .input('type', sql.NVarChar, type || null)
-                .query(`
-                    UPDATE Properties
-                    SET 
-                        name = COALESCE(@name, name),
-                        slug = COALESCE(@slug, slug),
-                        building_id = COALESCE(@building_id, building_id),
-                        floor = COALESCE(@floor, floor),
-                        alicuota = COALESCE(@alicuota, alicuota),
-                        area_sqm = COALESCE(@area_sqm, area_sqm),
-                        type = COALESCE(@type, type),
-                        updated_at = SYSDATETIME()
-                    OUTPUT INSERTED.*
-                    WHERE id = @id
-                `);
+            let nicknameNorm = undefined;
+            let nicknameHash = undefined;
+            if (nickname !== undefined) {
+                if (nickname && typeof nickname === 'string' && nickname.trim()) {
+                    nicknameNorm = nickname.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                    if (nicknameNorm.length < 3) {
+                        return res.status(400).json({ error: 'El nickname debe tener al menos 3 caracteres (letras, números, guión bajo)' });
+                    }
+                    nicknameHash = await bcrypt.hash(nicknameNorm, 10);
+                } else {
+                    nicknameNorm = null;
+                    nicknameHash = null;
+                }
+            }
+
+            const updates = [];
+            const req2 = pool.request().input('id', sql.UniqueIdentifier, id);
+            if (name) { updates.push('name = @name'); req2.input('name', sql.NVarChar, name); }
+            if (slug) { updates.push('slug = @slug'); req2.input('slug', sql.NVarChar, slug); }
+            if (building_id !== undefined) { updates.push('building_id = @building_id'); req2.input('building_id', sql.UniqueIdentifier, building_id); }
+            if (floor !== undefined) { updates.push('floor = @floor'); req2.input('floor', sql.NVarChar, floor); }
+            if (alicuota !== undefined) { updates.push('alicuota = @alicuota'); req2.input('alicuota', sql.Decimal(10, 4), alicuota); }
+            if (area_sqm !== undefined) { updates.push('area_sqm = @area_sqm'); req2.input('area_sqm', sql.Decimal(10, 2), area_sqm); }
+            if (type) { updates.push('type = @type'); req2.input('type', sql.NVarChar, type); }
+            if (nicknameNorm !== undefined) { updates.push('nickname = @nickname'); req2.input('nickname', sql.NVarChar, nicknameNorm); }
+            if (nicknameHash !== undefined) { updates.push('nickname_password_hash = @nickname_password_hash'); req2.input('nickname_password_hash', sql.NVarChar, nicknameHash); }
+            updates.push('updated_at = SYSDATETIME()');
+
+            const result = await req2.query(`
+                UPDATE Properties
+                SET ${updates.join(', ')}
+                OUTPUT INSERTED.*
+                WHERE id = @id
+            `);
 
             if (result.recordset.length === 0) {
                 return res.status(404).json({ error: 'Inmueble no encontrado' });

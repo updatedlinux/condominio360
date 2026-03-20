@@ -32,6 +32,13 @@ router.get('/select-property', (req, res) => {
     });
 });
 
+router.get('/owner-nickname-flow', (req, res) => {
+    res.render('auth/owner-nickname-flow', {
+        title: 'Actualizar Datos',
+        layout: false
+    });
+});
+
 router.get('/auth/complete-registration', (req, res) => {
     res.render('auth/complete-registration', {
         title: 'Completar Registro',

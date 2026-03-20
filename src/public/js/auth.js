@@ -81,6 +81,18 @@ if (loginForm) {
             const data = await response.json();
 
             if (response.ok && data.success) {
+                // 0. Nickname Flow (login por nickname de inmueble - actualizar datos)
+                if (data.nicknameFlow) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('nicknameFlow', JSON.stringify({
+                        owners: data.owners,
+                        property: data.property,
+                        requiresOwnerSelection: data.requiresOwnerSelection
+                    }));
+                    window.location.href = '/owner-nickname-flow';
+                    return;
+                }
+
                 // 1. Super Admin Check
                 if (data.user && data.user.isSuperAdmin) {
                     localStorage.setItem('token', data.token);

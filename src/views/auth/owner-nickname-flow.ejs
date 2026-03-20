@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualizar Datos | Condominio360</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .owner-card { transition: all 0.2s ease; }
+        .owner-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-xl mx-auto w-full flex-1">
+        <div class="text-center mb-8">
+            <a href="/" class="inline-flex items-center gap-2">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-12 w-12" style="object-fit: contain;">
+                <span class="text-xl text-slate-900 font-extrabold tracking-tight">Condominio360</span>
+            </a>
+            <h1 class="mt-6 text-2xl sm:text-3xl font-bold text-slate-900">
+                Actualizar datos del inmueble
+            </h1>
+            <p class="mt-2 text-slate-600 text-sm sm:text-base" id="property-info">
+                <!-- Se llena con JS -->
+            </p>
+        </div>
+
+        <!-- Paso 1: Selección de propietario (si hay varios) -->
+        <div id="owner-selection-step" class="hidden">
+            <p class="text-slate-600 mb-4">¿Qué propietario eres?</p>
+            <div id="owner-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Paso 2: Formulario de actualización -->
+        <div id="form-step" class="hidden">
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <p class="text-sm text-amber-800">Completa tus datos personales. Tu solicitud será revisada por el administrador. Una vez aprobada, podrás acceder al panel con tu correo y contraseña.</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+                <form id="update-form" class="space-y-4">
+                    <input type="hidden" id="owner_id" name="owner_id">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Nombre *</label>
+                            <input type="text" id="first_name" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Apellido *</label>
+                            <input type="text" id="last_name" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Cédula *</label>
+                        <input type="text" id="dni" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Correo electrónico *</label>
+                        <input type="email" id="email" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Teléfono</label>
+                        <input type="tel" id="phone" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none" placeholder="Opcional">
+                    </div>
+                    <button type="submit" id="submit-btn" class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60">
+                        <span id="submit-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
+                        <span id="submit-text">Enviar solicitud</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mensaje de éxito -->
+        <div id="success-step" class="hidden bg-white rounded-2xl shadow-lg border border-slate-100 p-8 text-center">
+            <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <span class="material-icons-round text-4xl text-green-600">check_circle</span>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900">Solicitud enviada</h2>
+            <p class="mt-2 text-slate-600">Serás contactado para ratificar los datos. Una vez aprobados, podrás acceder al panel con tu correo y contraseña.</p>
+            <button onclick="logout()" class="mt-6 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition">
+                Cerrar sesión
+            </button>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button onclick="logout()" class="text-sm text-slate-500 hover:text-slate-700 hover:underline transition">
+                Cerrar sesión
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const flowData = JSON.parse(localStorage.getItem('nicknameFlow') || '{}');
+        const owners = flowData.owners || [];
+        const property = flowData.property || {};
+        const requiresOwnerSelection = flowData.requiresOwnerSelection === true;
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('nicknameFlow');
+            window.location.href = '/login';
+        }
+
+        function selectOwner(owner) {
+            document.getElementById('owner_id').value = owner.id;
+            document.getElementById('first_name').value = owner.firstName || '';
+            document.getElementById('last_name').value = owner.lastName || '';
+            document.getElementById('dni').value = owner.dni || '';
+            document.getElementById('email').value = owner.email || '';
+            document.getElementById('phone').value = '';
+            document.getElementById('owner-selection-step').classList.add('hidden');
+            document.getElementById('form-step').classList.remove('hidden');
+        }
+
+        function init() {
+            document.getElementById('property-info').textContent = 
+                (property.name || 'Inmueble') + (property.tenantName ? ` • ${property.tenantName}` : '');
+
+            if (!token || !flowData.owners) {
+                window.location.href = '/login';
+                return;
+            }
+
+            if (requiresOwnerSelection && owners.length > 1) {
+                document.getElementById('owner-selection-step').classList.remove('hidden');
+                const list = document.getElementById('owner-list');
+                list.innerHTML = owners.map((o, idx) => `
+                    <button type="button" data-owner-idx="${idx}" 
+                        class="owner-card w-full text-left bg-white rounded-xl p-4 border border-slate-200 hover:border-orange-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-medium text-slate-900">${escapeHtml((o.firstName || '') + ' ' + (o.lastName || ''))}</p>
+                                <p class="text-sm text-slate-500">${escapeHtml(o.email || o.dni || '')}</p>
+                            </div>
+                            <span class="material-icons-round text-slate-400">chevron_right</span>
+                        </div>
+                    </button>
+                `).join('');
+                list.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => selectOwner(owners[parseInt(btn.dataset.ownerIdx)]));
+                });
+            } else {
+                // Un solo propietario: ir directo al formulario
+                selectOwner(owners[0]);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        document.getElementById('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const spinner = document.getElementById('submit-spinner');
+            const text = document.getElementById('submit-text');
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = 'Enviando...';
+
+            try {
+                const res = await fetch('/api/auth/nickname/submit-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        owner_id: document.getElementById('owner_id').value,
+                        first_name: document.getElementById('first_name').value.trim(),
+                        last_name: document.getElementById('last_name').value.trim(),
+                        dni: document.getElementById('dni').value.trim(),
+                        email: document.getElementById('email').value.trim(),
+                        phone: document.getElementById('phone').value.trim() || null
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error');
+                document.getElementById('form-step').classList.add('hidden');
+                document.getElementById('success-step').classList.remove('hidden');
+            } catch (err) {
+                alert(err.message || 'Error al enviar solicitud');
+                btn.disabled = false;
+            } finally {
+                spinner.classList.add('hidden');
+                text.textContent = 'Enviar solicitud';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

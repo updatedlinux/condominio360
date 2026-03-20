@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const AuthController = require('../controllers/AuthController');
-const { authenticate, requireOwner, requireTenantAdmin, requireSuperAdmin } = require('../middleware/auth');
+const { authenticate, requireOwner, requireOwnerNickname, requireTenantAdmin, requireSuperAdmin } = require('../middleware/auth');
 
 /**
  * Rutas de Autenticación
@@ -51,6 +51,9 @@ router.post('/select-tenant', authenticate, AuthController.selectTenant);
 
 // Seleccionar unidad (solo propietarios)
 router.post('/select-property', authenticate, requireOwner, AuthController.selectProperty);
+
+// Flujo nickname: enviar actualización de datos (sin login como propietario)
+router.post('/nickname/submit-update', authenticate, requireOwnerNickname, AuthController.submitNicknameUpdate);
 
 // Cambiar contraseña
 router.post('/change-password', authenticate, AuthController.changePassword);

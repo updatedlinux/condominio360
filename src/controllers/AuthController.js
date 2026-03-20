@@ -63,18 +63,22 @@ class AuthController {
                         result = await AuthService.loginTenantAdmin(loginId, password);
                     } catch (adminError) {
                         try {
-                            result = await AuthService.loginOwner(loginId, password);
-                        } catch (ownerError) {
+                            result = await AuthService.loginByNickname(loginId, password);
+                        } catch (nicknameError) {
                             try {
-                                const SecurityUserController = require('./SecurityUserController');
-                                req.body = { email: loginId, identifier: loginId, password };
-                                await SecurityUserController.login(req, res);
-                                return;
-                            } catch (securityError) {
-                                // Si todos fallan, devolver error genérico
-                                return res.status(401).json({ 
-                                    error: 'Credenciales inválidas' 
-                                });
+                                result = await AuthService.loginOwner(loginId, password);
+                            } catch (ownerError) {
+                                try {
+                                    const SecurityUserController = require('./SecurityUserController');
+                                    req.body = { email: loginId, identifier: loginId, password };
+                                    await SecurityUserController.login(req, res);
+                                    return;
+                                } catch (securityError) {
+                                    // Si todos fallan, devolver error genérico
+                                    return res.status(401).json({ 
+                                        error: 'Credenciales inválidas' 
+                                    });
+                                }
                             }
                         }
                     }
@@ -582,6 +586,93 @@ class AuthController {
             res.status(400).json({ 
                 error: error.message || 'Error al seleccionar tenant' 
             });
+        }
+    }
+
+    /**
+     * POST /api/auth/nickname/submit-update
+     * Enviar solicitud de actualización desde flujo nickname (sin login como propietario)
+     */
+    static async submitNicknameUpdate(req, res) {
+        try {
+            const { propertyId, tenantId } = req.user;
+            const { owner_id, first_name, last_name, dni, email, phone } = req.body;
+
+            if (req.user.type !== 'OWNER_NICKNAME' || !propertyId || !owner_id) {
+                return res.status(400).json({ error: 'Datos incompletos' });
+            }
+
+            const PropertyModel = require('../models/PropertyModel');
+            const DataUpdateRequestModel = require('../models/DataUpdateRequestModel');
+            const UserModel = require('../models/UserModel');
+            const EmailService = require('../services/EmailService');
+            const AdminController = require('./AdminController');
+
+            const propertyWithOwners = await PropertyModel.getWithOwners(propertyId);
+            if (!propertyWithOwners) {
+                return res.status(404).json({ error: 'Inmueble no encontrado' });
+            }
+            const owner = propertyWithOwners.owners.find(o => o.user_id === owner_id);
+            if (!owner) {
+                return res.status(403).json({ error: 'No eres propietario de este inmueble' });
+            }
+
+            const pending = await DataUpdateRequestModel.getPendingByUser(owner_id);
+            if (pending) {
+                return res.status(400).json({ error: 'Ya tienes una solicitud pendiente. Espera a que sea revisada.' });
+            }
+
+            const oldData = {
+                first_name: owner.first_name,
+                last_name: owner.last_name,
+                dni: owner.dni,
+                email: owner.email,
+                phone: owner.phone
+            };
+            const newData = {
+                first_name: (first_name || owner.first_name || '').trim(),
+                last_name: (last_name || owner.last_name || '').trim(),
+                dni: (dni || owner.dni || '').trim(),
+                email: (email || owner.email || '').trim(),
+                phone: (phone || owner.phone || '').trim() || null
+            };
+
+            if (!newData.first_name || !newData.last_name || !newData.dni || !newData.email) {
+                return res.status(400).json({ error: 'Nombre, apellido, cédula y correo son obligatorios' });
+            }
+
+            const request = await DataUpdateRequestModel.create(owner_id, oldData, newData);
+
+            await AdminController.logAudit(req, 'CREATE', 'DATA_UPDATE_REQUEST', request.id,
+                `Solicitud de actualización (nickname): ${owner.first_name} ${owner.last_name}`, null);
+
+            const superadmins = await UserModel.findAllSuperAdmins();
+            const adminUrl = `${process.env.APP_URL || 'http://localhost:3000'}/admin`;
+            try {
+                await EmailService.sendDataUpdateRequestToOwner(owner.email || newData.email, owner.first_name);
+                for (const sa of superadmins) {
+                    if (sa.email) {
+                        await EmailService.sendDataUpdateRequestToSuperAdmin(
+                            sa.email,
+                            owner.first_name,
+                            owner.last_name,
+                            owner.email || newData.email,
+                            adminUrl
+                        ).catch(e => console.error('Email to superadmin:', e));
+                    }
+                }
+            } catch (emailErr) {
+                console.error('Error sending emails:', emailErr);
+            }
+
+            res.status(201).json({
+                success: true,
+                message: 'Solicitud enviada. Serás contactado para ratificar los datos.',
+                request: { id: request.id, status: 'PENDING' }
+            });
+        } catch (error) {
+            console.error('Submit nickname update error:', error);
+            res.status(500).json({ error: 'Error al enviar solicitud' });
         }
     }
 

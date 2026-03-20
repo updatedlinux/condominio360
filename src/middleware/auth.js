@@ -64,6 +64,16 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
+ * Middleware para verificar que sea token de flujo nickname (OWNER_NICKNAME)
+ */
+const requireOwnerNickname = (req, res, next) => {
+    if (!req.user || req.user.type !== 'OWNER_NICKNAME') {
+        return res.status(403).json({ error: 'Token inválido para esta operación' });
+    }
+    next();
+};
+
+/**
  * Middleware para verificar que sea Propietario (OWNER)
  */
 const requireOwner = (req, res, next) => {
@@ -234,6 +244,7 @@ const optionalAuth = async (req, res, next) => {
 
 module.exports = {
     authenticate,
+    requireOwnerNickname,
     requireOwner,
     requireTenantAdmin,
     requireSecurity,

@@ -333,6 +333,14 @@
                     <p class="text-xs text-slate-400 mt-1">El porcentaje de participación en gastos (ej: 1.25 = 1.25%)</p>
                 </div>
                 <% } %>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Nickname (opcional)</label>
+                    <input type="text" id="prop-nickname" 
+                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Ej: bcc_apartamento0101">
+                    <p class="text-xs text-slate-400 mt-1">Para login alternativo cuando no hay DNI/correo actualizados. Usuario y contraseña = mismo valor.</p>
+                </div>
             </form>
             <div class="flex gap-3 mt-6">
                 <button type="button" onclick="closePropertyModal()" class="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-colors">
@@ -743,6 +751,7 @@
             if (serverBillingType === 'ALICUOTA') {
                 document.getElementById('prop-alicuota').value = prop.alicuota || '';
             }
+            document.getElementById('prop-nickname').value = prop.nickname || '';
             
             document.getElementById('property-modal').classList.remove('hidden');
             document.getElementById('property-modal').classList.add('flex');
@@ -761,6 +770,8 @@
             if (serverBillingType === 'ALICUOTA') {
                 data.alicuota = document.getElementById('prop-alicuota').value;
             }
+            const nicknameVal = document.getElementById('prop-nickname').value?.trim();
+            if (nicknameVal) data.nickname = nicknameVal;
 
             try {
                 const url = id 
@@ -858,7 +869,7 @@
             const baseFields = 'nombre,tipo,piso,numero';
             const buildingField = hasBuildingType && serverBuildingType === 'MULTIPLE' ? ',edificio' : '';
             const alicuotaField = hasBillingType && serverBillingType === 'ALICUOTA' ? ',alicuota' : '';
-            const optionalFields = ',observaciones';
+            const optionalFields = ',observaciones,nickname';
             
             formatDisplay.innerHTML = `${baseFields}<span class="text-yellow-400">${buildingField}</span><span class="text-cyan-400">${alicuotaField}</span>${optionalFields}`;
         }
@@ -878,29 +889,29 @@
             
             if (serverBillingType === 'ALICUOTA' && serverBuildingType === 'MULTIPLE') {
                 filename = 'ejemplo_inmuebles_alicuota_multi_edificio.csv';
-                content = `nombre,tipo,edificio,piso,numero,alicuota,observaciones
-Apartamento 1A,APARTAMENTO,Torre A,1,101,8.50,Propietario: Juan Pérez
-Apartamento 1B,APARTAMENTO,Torre A,1,102,8.50,Propietario: María García
-Apartamento 2A,APARTAMENTO,Torre A,2,201,8.50,Propietario: Carlos López
-Apartamento 1A,APARTAMENTO,Torre B,1,101,8.50,Propietario: Roberto Díaz`;
+                content = `nombre,tipo,edificio,piso,numero,alicuota,observaciones,nickname
+Apartamento 1A,APARTAMENTO,Torre A,1,101,8.50,Propietario: Juan Pérez,bcc_apto101
+Apartamento 1B,APARTAMENTO,Torre A,1,102,8.50,Propietario: María García,
+Apartamento 2A,APARTAMENTO,Torre A,2,201,8.50,Propietario: Carlos López,bcc_apto201
+Apartamento 1A,APARTAMENTO,Torre B,1,101,8.50,Propietario: Roberto Díaz,`;
             } else if (serverBillingType === 'ALICUOTA') {
                 filename = 'ejemplo_inmuebles_alicuota_edificio_unico.csv';
-                content = `nombre,tipo,piso,numero,alicuota,observaciones
-Apartamento 1A,APARTAMENTO,1,101,8.50,Propietario: Juan Pérez
-Apartamento 1B,APARTAMENTO,1,102,8.50,Propietario: María García
-Apartamento 2A,APARTAMENTO,2,201,8.50,Propietario: Carlos López`;
+                content = `nombre,tipo,piso,numero,alicuota,observaciones,nickname
+Apartamento 1A,APARTAMENTO,1,101,8.50,Propietario: Juan Pérez,bcc_apto101
+Apartamento 1B,APARTAMENTO,1,102,8.50,Propietario: María García,
+Apartamento 2A,APARTAMENTO,2,201,8.50,Propietario: Carlos López,bcc_apto201`;
             } else if (serverBuildingType === 'MULTIPLE') {
                 filename = 'ejemplo_inmuebles_facturacion_fija_multi_edificio.csv';
-                content = `nombre,tipo,edificio,piso,numero,observaciones
-Apartamento 1A,APARTAMENTO,Torre A,1,101,Propietario: Juan Pérez
-Apartamento 1B,APARTAMENTO,Torre A,1,102,Propietario: María García
-Apartamento 1A,APARTAMENTO,Torre B,1,101,Propietario: Roberto Díaz`;
+                content = `nombre,tipo,edificio,piso,numero,observaciones,nickname
+Apartamento 1A,APARTAMENTO,Torre A,1,101,Propietario: Juan Pérez,bcc_apto101
+Apartamento 1B,APARTAMENTO,Torre A,1,102,Propietario: María García,
+Apartamento 1A,APARTAMENTO,Torre B,1,101,Propietario: Roberto Díaz,`;
             } else {
                 filename = 'ejemplo_inmuebles_facturacion_fija_edificio_unico.csv';
-                content = `nombre,tipo,piso,numero,observaciones
-Apartamento 1A,APARTAMENTO,1,101,Propietario: Juan Pérez
-Apartamento 1B,APARTAMENTO,1,102,Propietario: María García
-Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López`;
+                content = `nombre,tipo,piso,numero,observaciones,nickname
+Apartamento 1A,APARTAMENTO,1,101,Propietario: Juan Pérez,bcc_apto101
+Apartamento 1B,APARTAMENTO,1,102,Propietario: María García,
+Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López,bcc_apto201`;
             }
 
             const blob = new Blob([content], { type: 'text/csv' });
@@ -987,6 +998,7 @@ Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López`;
             const displayHeaders = ['nombre', 'tipo', 'piso', 'numero'];
             if (serverBuildingType === 'MULTIPLE') displayHeaders.push('edificio');
             if (serverBillingType === 'ALICUOTA') displayHeaders.push('alicuota');
+            displayHeaders.push('nickname');
             
             document.getElementById('preview-header').innerHTML = displayHeaders.map(h => 
                 `<th class="px-4 py-3 text-left font-medium text-slate-600">${h}</th>`
@@ -1063,6 +1075,9 @@ Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López`;
                         area_sqm: null,
                         alicuota: serverBillingType === 'ALICUOTA' ? parseFloat(row.alicuota) : null
                     };
+                    if (row.nickname && row.nickname.trim()) {
+                        data.nickname = row.nickname.trim();
+                    }
 
                     const res = await fetch(`/api/admin/tenants/${tenantId}/properties`, {
                         method: 'POST',

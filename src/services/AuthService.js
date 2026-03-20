@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const UserModel = require('../models/UserModel');
 const TenantAdminModel = require('../models/TenantAdminModel');
 const PropertyModel = require('../models/PropertyModel');
@@ -14,6 +15,63 @@ const EmailService = require('./EmailService');
 class AuthService {
     
     // ==================== LOGIN ====================
+
+    /**
+     * Login por nickname de inmueble (cuando no hay DNI/correo actualizados)
+     * Usuario y contraseña = mismo valor (nickname)
+     * @param {string} nickname 
+     * @param {string} password 
+     * @returns {Promise<Object>}
+     */
+    static async loginByNickname(nickname, password) {
+        const normalized = (nickname || '').trim().toLowerCase();
+        if (!normalized) throw new Error('Credenciales inválidas');
+
+        const property = await PropertyModel.findByNickname(normalized);
+        if (!property || !property.nickname_password_hash) {
+            throw new Error('Credenciales inválidas');
+        }
+
+        const isValid = await bcrypt.compare(password, property.nickname_password_hash);
+        if (!isValid) {
+            throw new Error('Credenciales inválidas');
+        }
+
+        const propertyWithOwners = await PropertyModel.getWithOwners(property.id);
+        const owners = (propertyWithOwners?.owners || []).map(o => ({
+            id: o.user_id,
+            firstName: o.first_name,
+            lastName: o.last_name,
+            email: o.email,
+            dni: o.dni
+        }));
+
+        const token = jwt.sign(
+            {
+                userId: null,
+                propertyId: property.id,
+                tenantId: property.tenant_id,
+                type: 'OWNER_NICKNAME'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+        );
+
+        return {
+            token,
+            nicknameFlow: true,
+            requiresOwnerSelection: owners.length > 1,
+            owners,
+            property: {
+                id: property.id,
+                name: property.name,
+                building: property.building_name,
+                tenantId: property.tenant_id,
+                tenantName: property.tenant_name,
+                tenantSlug: property.tenant_slug
+            }
+        };
+    }
 
     /**
      * Login para Propietarios
