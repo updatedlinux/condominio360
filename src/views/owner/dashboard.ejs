@@ -346,9 +346,12 @@
         const availableProperties = JSON.parse(localStorage.getItem('availableProperties') || '[]');
         let tenantBillingType = null;  // Se carga desde el dashboard API
 
-        // Inicializar datos del usuario
-        document.getElementById('user-name').textContent = user?.firstName || 'Usuario';
-        document.getElementById('user-avatar').textContent = (user?.firstName || 'U').charAt(0).toUpperCase();
+        // Inicializar datos del usuario (nombre completo del propietario autenticado)
+        const firstName = user?.firstName || user?.first_name || '';
+        const lastName = user?.lastName || user?.last_name || '';
+        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+        document.getElementById('user-name').textContent = fullName || 'Usuario';
+        document.getElementById('user-avatar').textContent = (fullName || firstName || 'U').charAt(0).toUpperCase();
         document.getElementById('header-property').textContent = selectedProperty?.tenantName || selectedProperty?.name || 'Condominio';
 
         // Cargar datos de la propiedad
