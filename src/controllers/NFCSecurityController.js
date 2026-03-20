@@ -56,17 +56,20 @@ class NFCSecurityController {
             );
 
             if (!validation.valid) {
-                await NFCModel.logAccess({
-                    tenant_id: tenantId,
-                    card_uid: card_uid.toString().toUpperCase().trim(),
-                    access_type: normalizedType,
-                    status: 'DENIED',
-                    denial_reason: validation.message,
-                    owner_name: validation.card?.owner_name || null,
-                    property_name: validation.card?.property_name || null,
-                    registered_by: userId,
-                    device_info: 'WebNFC'
-                });
+                // No registrar en log cuando la tarjeta no está registrada (evita ", • ," en la lista)
+                if (validation.reason !== 'CARD_NOT_FOUND') {
+                    await NFCModel.logAccess({
+                        tenant_id: tenantId,
+                        card_uid: card_uid.toString().toUpperCase().trim(),
+                        access_type: normalizedType,
+                        status: 'DENIED',
+                        denial_reason: validation.message,
+                        owner_name: validation.card?.owner_name || null,
+                        property_name: validation.card?.property_name || null,
+                        registered_by: userId,
+                        device_info: 'WebNFC'
+                    });
+                }
 
                 return res.status(403).json({
                     success: false,
@@ -174,7 +177,8 @@ class NFCSecurityController {
             const logs = await NFCModel.getAccessLogs(tenantId, {
                 limit: 50,
                 startDate: today + 'T00:00:00',
-                endDate: today + 'T23:59:59.999'
+                endDate: today + 'T23:59:59.999',
+                status: 'GRANTED'
             });
 
             res.json({

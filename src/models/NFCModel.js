@@ -360,8 +360,10 @@ class NFCModel {
         try {
             const pool = await connectDB();
             let query = `
-                SELECT l.*, c.card_uid, c.card_name, l.owner_name, l.property_name,
-                       u.first_name + ' ' + u.last_name as registered_by_name
+                SELECT l.id, l.tenant_id, l.nfc_card_id, l.card_uid, l.access_type, l.status, l.access_time,
+                       l.owner_name, l.property_name, l.denial_reason, l.registered_by, l.device_info,
+                       c.card_name,
+                       u.first_name + ' ' + ISNULL(u.last_name, '') as registered_by_name
                 FROM NFC_AccessLogs l
                 LEFT JOIN NFC_Cards c ON l.nfc_card_id = c.id
                 LEFT JOIN Users u ON l.registered_by = u.id

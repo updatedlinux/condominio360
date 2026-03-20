@@ -1043,6 +1043,9 @@
                         <div class="space-y-3">
                             ${logs.map(l => {
                                 const isEntry = l.access_type === 'ENTRY';
+                                const ownerName = (l.owner_name || '').split(',')[0].trim() || '-';
+                                const propertyName = (l.property_name || '').split(',')[0].trim() || '-';
+                                const cardUid = (l.card_uid || '').split(',')[0].trim() || '-';
                                 return `
                                 <div class="flex items-center justify-between p-3 rounded-xl ${isEntry ? 'bg-green-50' : 'bg-red-50'}">
                                     <div class="flex items-center gap-3">
@@ -1050,8 +1053,8 @@
                                             <span class="material-icons-round ${isEntry ? 'text-green-700' : 'text-red-700'}">${isEntry ? 'login' : 'logout'}</span>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-[#3C4043]">${l.owner_name || '-'} • ${l.property_name || '-'}</p>
-                                            <p class="text-sm text-[#5F6368]">Tarjeta: ${l.card_uid || '-'}</p>
+                                            <p class="font-medium text-[#3C4043]">${ownerName} • ${propertyName}</p>
+                                            <p class="text-sm text-[#5F6368]">Tarjeta: ${cardUid}</p>
                                         </div>
                                     </div>
                                     <div class="text-right">
