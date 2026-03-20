@@ -385,8 +385,10 @@ class CommonAreaModel {
         
         const reservations = reservationsResult.recordset;
         // Convertir tiempo a minutos desde medianoche (maneja Date, TIME, string "09:00", "09:00:00", etc.)
+        // SQL Server TIME se devuelve como Date en UTC; getUTCHours evita desfase en servidores con zona horaria (ej. Venezuela)
         const timeToMinutes = (t) => {
             if (!t) return 0;
+            if (t instanceof Date) return t.getUTCHours() * 60 + t.getUTCMinutes();
             const s = String(t);
             const m = s.match(/(\d{1,2}):(\d{0,2})/);
             if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2] || '0', 10);

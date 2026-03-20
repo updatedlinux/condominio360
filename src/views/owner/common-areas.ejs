@@ -314,7 +314,7 @@
                 list.innerHTML = reservations.map(r => {
                     const datePart = (typeof r.reservation_date === 'string' ? r.reservation_date.split('T')[0] : (r.reservation_date instanceof Date ? r.reservation_date.toISOString().split('T')[0] : String(r.reservation_date || '').split('T')[0]));
                     const dateStr = datePart ? new Date(datePart + 'T12:00:00').toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short' }) : '--';
-                    const timeStr = `${formatTime(r.start_time)} - ${formatTime(r.end_time)}`;
+                    const timeStr = `${formatTimeAmPm(r.start_time)} - ${formatTimeAmPm(r.end_time)}`;
                     const canCancel = ['PENDING', 'CONFIRMED'].includes(r.status);
                     return `
                         <div class="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -382,6 +382,15 @@
             return s.length >= 5 ? s.substring(0, 5) : s;
         }
 
+        function formatTimeAmPm(t) {
+            const hhmm = formatTime(t);
+            if (!hhmm) return '';
+            const [h, m] = hhmm.split(':').map(Number);
+            const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+            const ampm = h < 12 ? 'a.m.' : 'p.m.';
+            return `${h12}:${String(m || 0).padStart(2,'0')} ${ampm}`;
+        }
+
         let existingReservationsForDate = [];
 
         function timeToMinutes(t) {
@@ -428,7 +437,7 @@
                 const takenList = document.getElementById('reservations-taken-list');
                 if (existing.length > 0) {
                     takenList.innerHTML = existing.map(r => 
-                        `<div>${formatTime(r.start_time)} - ${formatTime(r.end_time)} ${r.unit_number ? `(${r.building || ''} ${r.unit_number})` : ''}</div>`
+                        `<div>${formatTimeAmPm(r.start_time)} - ${formatTimeAmPm(r.end_time)} ${r.unit_number ? `(${r.building || ''} ${r.unit_number})` : ''}</div>`
                     ).join('');
                 } else {
                     takenList.innerHTML = '<div class="text-[#9AA0A6]">Ninguna reserva ese día</div>';
@@ -448,7 +457,7 @@
 
                 document.getElementById('slots-grid').innerHTML = availableSlots.map(s => `
                     <button type="button" onclick="selectSlot('${s.start_time}', '${s.end_time}')" class="slot-btn px-3 py-2 rounded-lg border border-[#E5E5E5] text-sm font-medium text-[#3C4043] transition-all">
-                        ${formatTime(s.start_time)} - ${formatTime(s.end_time)}
+                        ${formatTimeAmPm(s.start_time)} - ${formatTimeAmPm(s.end_time)}
                     </button>
                 `).join('');
             } catch (e) {
@@ -481,7 +490,7 @@
                 msgEl.className = 'mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 flex items-center gap-2';
                 const iconEl = msgEl.querySelector('.material-icons-round');
                 if (iconEl) { iconEl.textContent = 'check_circle'; iconEl.className = 'material-icons-round text-green-600'; }
-                textEl.textContent = `${formatTime(start)} - ${formatTime(end)} está disponible. Sin conflictos con otras reservas.`;
+                textEl.textContent = `${formatTimeAmPm(start)} - ${formatTimeAmPm(end)} está disponible. Sin conflictos con otras reservas.`;
                 msgEl.classList.remove('hidden');
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');

@@ -83,8 +83,9 @@ class OwnerCommonAreaController {
                 return res.status(404).json({ success: false, error: 'Área no encontrada' });
             }
 
+            const dur = parseInt(durationHours) || area.max_duration_hours || 1;
             const [slots, existingReservations] = await Promise.all([
-                CommonAreaModel.getAvailableSlots(id, date, parseInt(durationHours) || 1),
+                CommonAreaModel.getAvailableSlots(id, date, dur),
                 CommonAreaModel.getReservationsForAreaDate(id, date)
             ]);
             res.json({ success: true, slots, existingReservations });
