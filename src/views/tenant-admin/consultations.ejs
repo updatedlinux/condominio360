@@ -152,8 +152,11 @@
                 <button type="button" onclick="closeModal()" class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
                     Cancelar
                 </button>
-                <button type="button" onclick="saveConsultation()" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg">
-                    Crear Consulta
+                <button type="button" id="save-consultation-btn" onclick="saveConsultation()" class="flex-1 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none flex items-center justify-center gap-2">
+                    <span id="save-consultation-text">Crear Consulta</span>
+                    <span id="save-consultation-spinner" class="hidden">
+                        <span class="material-icons-round animate-spin text-xl">sync</span>
+                    </span>
                 </button>
             </div>
         </div>
@@ -428,12 +431,30 @@
         }
 
         // Modal
+        let isSubmittingConsultation = false;
+
+        function setSaveButtonState(loading) {
+            const btn = document.getElementById('save-consultation-btn');
+            const text = document.getElementById('save-consultation-text');
+            const spinner = document.getElementById('save-consultation-spinner');
+            if (loading) {
+                btn.disabled = true;
+                text.textContent = 'Creando...';
+                spinner.classList.remove('hidden');
+            } else {
+                btn.disabled = false;
+                text.textContent = 'Crear Consulta';
+                spinner.classList.add('hidden');
+            }
+        }
+
         function openModal() {
             document.getElementById('consultation-modal').classList.remove('hidden');
             document.getElementById('consultation-modal').classList.add('flex');
             document.getElementById('modal-title').textContent = 'Nueva Consulta';
             document.getElementById('consultation-form').reset();
             document.getElementById('consultation-id').value = '';
+            setSaveButtonState(false);
             document.getElementById('questions-container').innerHTML = '';
             questionCount = 0;
             setDefaultDates();
@@ -491,11 +512,17 @@
 
         // Save
         async function saveConsultation() {
+            if (isSubmittingConsultation) return;
+            isSubmittingConsultation = true;
+            setSaveButtonState(true);
+
             const title = document.getElementById('cons-title').value;
             const startDate = document.getElementById('cons-start-date').value;
             const endDate = document.getElementById('cons-end-date').value;
 
             if (!title || !startDate || !endDate) {
+                isSubmittingConsultation = false;
+                setSaveButtonState(false);
                 showToast('Título, fecha de inicio y fecha de cierre son requeridos', 'error');
                 return;
             }
@@ -520,11 +547,15 @@
             // Compare timestamps
             if (start.getTime() < tomorrow.getTime()) {
                 showToast('La fecha de inicio debe ser al menos 1 día después de hoy', 'error');
+                isSubmittingConsultation = false;
+                setSaveButtonState(false);
                 return;
             }
 
             if (end.getTime() <= start.getTime()) {
                 showToast('La fecha de cierre debe ser posterior a la fecha de inicio', 'error');
+                isSubmittingConsultation = false;
+                setSaveButtonState(false);
                 return;
             }
 
@@ -543,6 +574,8 @@
 
             if (questions.length === 0) {
                 showToast('Debes agregar al menos una pregunta con 2 opciones', 'error');
+                isSubmittingConsultation = false;
+                setSaveButtonState(false);
                 return;
             }
 
@@ -577,6 +610,9 @@
             } catch (e) {
                 console.error('Error saving:', e);
                 showToast('Error al guardar consulta', 'error');
+            } finally {
+                isSubmittingConsultation = false;
+                setSaveButtonState(false);
             }
         }
 
