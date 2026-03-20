@@ -1,5 +1,6 @@
 const { sql, connectDB } = require('../config/database');
 const AuditService = require('../services/AuditService');
+const VisitorModel = require('../models/VisitorModel');
 const { getTodayVenezuela } = require('../utils/dateUtils');
 const crypto = require('crypto');
 
@@ -778,61 +779,37 @@ class SecurityController {
                 });
             }
 
-            // Crear o buscar visitante
-            let visitorResult = await pool.request()
-                .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, visitorDniTrimmed)
-                .query(`
-                    SELECT * FROM Visitors 
-                    WHERE tenant_id = @tenantId AND dni = @dni
-                `);
+            // Crear o buscar visitante (mismo flujo que propietario)
+            const visitor = await VisitorModel.findOrCreate({
+                tenant_id: tenantId,
+                dni: visitorDniTrimmed,
+                first_name: visitor_first_name,
+                last_name: visitor_last_name,
+                phone: visitorPhoneTrimmed || null
+            });
 
-            let visitorId;
-            if (visitorResult.recordset.length === 0) {
-                // Crear nuevo visitante (solo datos básicos)
-                const newVisitor = await pool.request()
-                    .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                    .input('first_name', sql.NVarChar, visitor_first_name)
-                    .input('last_name', sql.NVarChar, visitor_last_name)
-                    .input('dni', sql.NVarChar, visitorDniTrimmed)
-                    .input('phone', sql.NVarChar, visitorPhoneTrimmed || null)
-                    .query(`
-                        INSERT INTO Visitors (tenant_id, first_name, last_name, dni, phone)
-                        OUTPUT INSERTED.*
-                        VALUES (@tenant_id, @first_name, @last_name, @dni, @phone)
-                    `);
-                visitorId = newVisitor.recordset[0].id;
-            } else {
-                visitorId = visitorResult.recordset[0].id;
-            }
-
-            // Crear pase de visita - usar horario Venezuela (GMT-4)
-            // visit_date viene como YYYY-MM-DD
-            const validFrom = new Date(visit_date + 'T04:00:00.000Z'); // 00:00 Venezuela
+            // Crear pase con la misma lógica que OwnerController.createVisitor (ONE_TIME)
+            const visitDate = visit_date; // YYYY-MM-DD
+            const passValidFrom = new Date(visitDate + 'T04:00:00.000Z');
             if (visit_time) {
                 const [hours, minutes] = visit_time.split(':');
-                validFrom.setUTCHours(validFrom.getUTCHours() + parseInt(hours || 0), parseInt(minutes || 0), 0, 0);
+                passValidFrom.setUTCHours(passValidFrom.getUTCHours() + parseInt(hours || 0), parseInt(minutes || 0), 0, 0);
             }
-            const [y, m, d] = visit_date.split('-').map(Number);
-            const validUntil = visit_time
-                ? new Date(validFrom.getTime() + 24 * 60 * 60 * 1000) // 24h desde hora estimada
-                : new Date(Date.UTC(y, m - 1, d + 1, 3, 59, 59, 999)); // 23:59:59 Venezuela (fin del día)
+            const [y, m, d] = visitDate.split('-').map(Number);
+            const passValidUntil = visit_time
+                ? new Date(passValidFrom.getTime() + 24 * 60 * 60 * 1000)
+                : new Date(Date.UTC(y, m - 1, d + 1, 3, 59, 59, 999));
 
-            const passResult = await pool.request()
-                .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                .input('visitor_id', sql.UniqueIdentifier, visitorId)
-                .input('user_id', sql.UniqueIdentifier, owner.id)
-                .input('property_id', sql.UniqueIdentifier, owner.property_id)
-                .input('type', sql.NVarChar, 'ONE_TIME')
-                .input('valid_from', sql.DateTime2, validFrom)
-                .input('valid_until', sql.DateTime2, validUntil)
-                .query(`
-                    INSERT INTO VisitorPasses 
-                        (tenant_id, visitor_id, user_id, property_id, type, valid_from, valid_until, status)
-                    OUTPUT INSERTED.*
-                    VALUES 
-                        (@tenant_id, @visitor_id, @user_id, @property_id, @type, @valid_from, @valid_until, 'PENDING')
-                `);
+            const pass = await VisitorModel.createPass({
+                tenant_id: tenantId,
+                visitor_id: visitor.id,
+                user_id: owner.id,
+                property_id: owner.property_id,
+                type: 'ONE_TIME',
+                alias: null,
+                valid_from: passValidFrom,
+                valid_until: passValidUntil
+            });
 
             // Registrar en auditoría
             await AuditService.log({
@@ -840,7 +817,7 @@ class SecurityController {
                 actorId: securityUserId,
                 action: 'MANUAL_VISIT_CREATED',
                 entityType: 'VISITOR_PASS',
-                entityId: passResult.recordset[0].id,
+                entityId: pass.id,
                 metadata: { 
                     visitor_name: `${visitor_first_name} ${visitor_last_name}`,
                     owner_dni,
@@ -854,7 +831,7 @@ class SecurityController {
                 success: true,
                 message: 'Visita registrada exitosamente',
                 data: {
-                    pass: passResult.recordset[0],
+                    pass,
                     owner: {
                         name: `${owner.first_name} ${owner.last_name}`,
                         dni: owner.dni,
