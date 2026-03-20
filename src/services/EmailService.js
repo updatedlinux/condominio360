@@ -1053,7 +1053,7 @@ class EmailService {
      */
     _arsysIntelaTemplate(content, options = {}) {
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-        const logoUrl = `${baseUrl}/assets/images/svgMAIN-intelalogo.svg`;
+        const logoUrl = `${baseUrl}/assets/images/main-intelawhite.svg`;
         const { title, subtitle } = options;
 
         return `<!DOCTYPE html>
@@ -1089,6 +1089,7 @@ class EmailService {
         <div class="content">${content}</div>
         <div class="footer">
             <strong>Arsys Intela - Casa Matriz de Condominio360</strong>
+            <p>www.arsysintela.com / www.condominio-360.com</p>
             <p>Gestión inteligente de condominios. Moderniza tu comunidad con tecnología de punta.</p>
         </div>
     </div>
@@ -1108,7 +1109,7 @@ class EmailService {
                 <p><strong>Serás contactado en breve</strong> por el equipo de <strong>Arsys Intela</strong> (casa matriz de Condominio360) para otorgarte un demo personalizado y atender todas tus consultas.</p>
                 <p>Te contactaremos en menos de 24 horas al correo que nos proporcionaste.</p>
             </div>
-            <p>Mientras tanto, puedes explorar nuestras funciones en <a href="${process.env.APP_URL || 'http://localhost:3000'}">condominio360.com</a>.</p>
+            <p>Mientras tanto, puedes explorar nuestras funciones en <a href="${process.env.APP_URL || 'http://localhost:3000'}">condominio-360.com</a>.</p>
         `;
         const html = this._arsysIntelaTemplate(content, {
             title: 'Solicitud Recibida',
