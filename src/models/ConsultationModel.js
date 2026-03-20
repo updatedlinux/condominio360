@@ -93,15 +93,16 @@ class ConsultationModel {
             
             const targetBuilding = consultResult.recordset[0].target_building;
             
-            // Count eligible properties
+            // Count eligible properties: usar Buildings.name (building_id) o building (legacy)
             let query = `
                 SELECT COUNT(*) as count 
-                FROM Properties 
-                WHERE tenant_id = @tenant_id
+                FROM Properties p
+                LEFT JOIN Buildings b ON p.building_id = b.id
+                WHERE p.tenant_id = @tenant_id
             `;
             
             if (targetBuilding) {
-                query += ` AND building = @target_building`;
+                query += ` AND (p.building = @target_building OR b.name = @target_building)`;
             }
             
             const result = await pool.request()
@@ -133,20 +134,21 @@ class ConsultationModel {
             
             const targetBuilding = consultResult.recordset[0].target_building;
             
-            // Get user's properties that are eligible
+            // Get user's properties that are eligible: usar Buildings.name (building_id) o building (legacy)
             let query = `
-                SELECT DISTINCT p.id, p.name, p.building
+                SELECT DISTINCT p.id, p.name, COALESCE(b.name, p.building) as building
                 FROM Properties p
                 INNER JOIN PropertyOwners po ON p.id = po.property_id
+                LEFT JOIN Buildings b ON p.building_id = b.id
                 WHERE p.tenant_id = @tenant_id 
                 AND po.user_id = @user_id
             `;
             
             if (targetBuilding) {
-                query += ` AND p.building = @target_building`;
+                query += ` AND (p.building = @target_building OR b.name = @target_building)`;
             }
             
-            query += ` ORDER BY p.building, p.name`;
+            query += ` ORDER BY COALESCE(b.name, p.building), p.name`;
             
             const request = pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)

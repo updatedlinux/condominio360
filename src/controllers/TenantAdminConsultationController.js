@@ -525,15 +525,16 @@ class TenantAdminConsultationController {
 
             const targetBuilding = consultResult.recordset[0].target_building;
 
-            // Get all eligible properties with voting status
+            // Get all eligible properties: usar Buildings.name (building_id) o building (legacy)
             let query = `
                 SELECT 
-                    p.id, p.name, p.building,
+                    p.id, p.name, COALESCE(b.name, p.building) as building,
                     u.first_name + ' ' + u.last_name as owner_name,
                     CASE WHEN v.property_id IS NOT NULL THEN 1 ELSE 0 END as has_voted,
                     v.voted_at
                 FROM Properties p
                 INNER JOIN PropertyOwners po ON p.id = po.property_id
+                LEFT JOIN Buildings b ON p.building_id = b.id
                 LEFT JOIN Users u ON po.user_id = u.id
                 LEFT JOIN (
                     SELECT DISTINCT property_id, voted_at 
@@ -544,10 +545,10 @@ class TenantAdminConsultationController {
             `;
 
             if (targetBuilding) {
-                query += ` AND p.building = @target_building`;
+                query += ` AND (p.building = @target_building OR b.name = @target_building)`;
             }
 
-            query += ` ORDER BY p.building, p.name`;
+            query += ` ORDER BY COALESCE(b.name, p.building), p.name`;
 
             const result = await pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)

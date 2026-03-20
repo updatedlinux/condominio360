@@ -12,11 +12,12 @@ async function getUserProperties(tenantId, userId) {
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .input('user_id', sql.UniqueIdentifier, userId)
             .query(`
-                SELECT p.id, p.name, p.building
+                SELECT p.id, p.name, COALESCE(b.name, p.building) as building
                 FROM Properties p
                 INNER JOIN PropertyOwners po ON p.id = po.property_id
+                LEFT JOIN Buildings b ON p.building_id = b.id
                 WHERE p.tenant_id = @tenant_id AND po.user_id = @user_id
-                ORDER BY p.building, p.name
+                ORDER BY COALESCE(b.name, p.building), p.name
             `);
         console.log(`[DEBUG] getUserProperties: found ${result.recordset.length} properties`);
         return result.recordset;
