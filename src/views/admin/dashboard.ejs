@@ -1597,6 +1597,13 @@
         let durPage = 1;
         let durCurrentDetail = null;
 
+        function formatDateTimeVenezuela(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            const v = new Date(d.getTime() + (4 * 60 * 60 * 1000));
+            return v.toLocaleString('es-VE', { timeZone: 'America/Caracas' });
+        }
+
         async function loadDataUpdateRequests() {
             const status = document.getElementById('dur-status-filter')?.value || '';
             try {
@@ -1619,7 +1626,7 @@
                 tbody.innerHTML = rows.map(r => {
                     const statusClass = r.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : r.status === 'APPROVED' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
                     const statusLabel = r.status === 'PENDING' ? 'Pendiente' : r.status === 'APPROVED' ? 'Aprobada' : 'Rechazada';
-                    const dateStr = r.requested_at ? new Date(r.requested_at).toLocaleString('es-VE', { timeZone: 'America/Caracas' }) : '-';
+                    const dateStr = formatDateTimeVenezuela(r.requested_at);
                     return `<tr>
                         <td>${(r.first_name || '')} ${(r.last_name || '')}</td>
                         <td>${r.email || '-'}</td>
@@ -1673,10 +1680,7 @@
                     <div><label class="block text-xs text-gray-500 mb-1">Correo</label><input type="email" id="dur-edit-email" value="${(newData.email || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
                     <div><label class="block text-xs text-gray-500 mb-1">Teléfono</label><input type="text" id="dur-edit-phone" value="${(newData.phone || '').replace(/"/g, '&quot;')}" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
                 `;
-                // SQL Server devuelve hora que el driver interpreta como UTC; sumar 4h para Venezuela (GMT-4)
-                const d = new Date(req.requested_at);
-                const venezuelaDate = new Date(d.getTime() + (4 * 60 * 60 * 1000));
-                document.getElementById('dur-requested-at').textContent = venezuelaDate.toLocaleString('es-VE', { timeZone: 'America/Caracas', dateStyle: 'medium', timeStyle: 'medium' });
+                document.getElementById('dur-requested-at').textContent = formatDateTimeVenezuela(req.requested_at);
                 document.getElementById('dur-modal-loading').classList.add('hidden');
                 document.getElementById('dur-modal-content').classList.remove('hidden');
                 if (req.status === 'PENDING') {
