@@ -198,7 +198,7 @@ class DeliveryAnnouncementModel {
             const result = await req.query(`
                 UPDATE DeliveryAnnouncements 
                 SET status = 'ARRIVED',
-                    arrival_time = GETUTCDATE(),
+                    arrival_time = SYSDATETIME(),
                     received_by = @received_by,
                     updated_at = SYSDATETIME()
                 OUTPUT INSERTED.*
@@ -225,7 +225,7 @@ class DeliveryAnnouncementModel {
             const result = await req.query(`
                 UPDATE DeliveryAnnouncements 
                 SET status = 'DELIVERED',
-                    delivered_at = GETUTCDATE(),
+                    delivered_at = SYSDATETIME(),
                     updated_at = SYSDATETIME()
                 OUTPUT INSERTED.*
                 ${whereClause}

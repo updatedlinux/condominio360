@@ -3,6 +3,23 @@ const AuditService = require('../services/AuditService');
 const { sql, connectDB } = require('../config/database');
 
 /**
+ * Formatea datetime para API: la DB guarda hora Venezuela (SYSDATETIME) pero el driver
+ * la interpreta como UTC al serializar. Enviamos con offset -04:00 para que el cliente
+ * muestre la hora correcta.
+ */
+function formatDeliveryForApi(delivery) {
+    if (!delivery) return delivery;
+    const d = { ...delivery };
+    ['arrival_time', 'delivered_at', 'announced_at', 'created_at', 'updated_at'].forEach(field => {
+        if (d[field] instanceof Date) {
+            const iso = d[field].toISOString();
+            d[field] = iso.slice(0, 19) + '-04:00';
+        }
+    });
+    return d;
+}
+
+/**
  * Controller para gestión de Deliveries
  * Incluye funciones para propietarios y seguridad
  */
@@ -90,7 +107,7 @@ class DeliveryController {
 
             res.json({
                 success: true,
-                data: deliveries
+                data: deliveries.map(formatDeliveryForApi)
             });
 
         } catch (error) {
@@ -123,7 +140,7 @@ class DeliveryController {
 
             res.json({
                 success: true,
-                data: deliveries
+                data: deliveries.map(formatDeliveryForApi)
             });
 
         } catch (error) {
@@ -158,7 +175,7 @@ class DeliveryController {
 
             res.json({
                 success: true,
-                data: deliveries
+                data: deliveries.map(formatDeliveryForApi)
             });
 
         } catch (error) {
@@ -203,7 +220,7 @@ class DeliveryController {
 
             res.json({
                 success: true,
-                delivery
+                delivery: formatDeliveryForApi(delivery)
             });
 
         } catch (error) {
@@ -240,7 +257,7 @@ class DeliveryController {
 
             res.json({
                 success: true,
-                delivery
+                delivery: formatDeliveryForApi(delivery)
             });
 
         } catch (error) {
