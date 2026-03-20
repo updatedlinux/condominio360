@@ -28,12 +28,12 @@
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside id="owner-sidebar" class="owner-sidebar fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#E5E5E5] flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300">
-            <div class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#E5E5E5]">
-                <div class="flex items-center gap-3">
+            <div class="h-16 flex items-center justify-between gap-3 px-4 md:px-6 border-b border-[#E5E5E5] min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
                     <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
-                    <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+                    <span class="font-bold text-xl text-[#f97316] truncate">Condominio360</span>
                 </div>
-                <button type="button" onclick="toggleOwnerMobileNav()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
+                <button type="button" onclick="toggleOwnerMobileNav()" class="md:hidden w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
                     <span class="material-icons-round">close</span>
                 </button>
             </div>

@@ -34,12 +34,12 @@
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside id="owner-sidebar" class="owner-sidebar fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#E5E5E5] flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300">
-            <div class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#E5E5E5]">
-                <div class="flex items-center gap-3">
+            <div class="h-16 flex items-center justify-between gap-3 px-4 md:px-6 border-b border-[#E5E5E5] min-w-0">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
                     <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
-                    <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+                    <span class="font-bold text-xl text-[#f97316] truncate">Condominio360</span>
                 </div>
-                <button type="button" onclick="toggleOwnerMobileNav()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
+                <button type="button" onclick="toggleOwnerMobileNav()" class="md:hidden w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
                     <span class="material-icons-round">close</span>
                 </button>
             </div>
@@ -162,7 +162,7 @@
                                     <span class="material-icons-round text-xl">swap_horiz</span>
                                     <span class="hidden sm:inline">Cambiar</span>
                                 </button>
-                                <div id="property-dropdown" class="hidden absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-2rem))] max-h-80 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#E5E5E5] py-2 z-50">
+                                <div id="property-dropdown" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[min(18rem,calc(100vw-2rem))] max-h-80 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#E5E5E5] py-2 z-50">
                                     <!-- Items cargados dinámicamente -->
                                 </div>
                             </div>
