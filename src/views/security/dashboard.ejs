@@ -1926,6 +1926,16 @@
 
         function formatDateOnly(dateStr) {
             if (!dateStr) return '-';
+            const str = String(dateStr);
+            const match = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+            const months = ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'];
+            if (match) {
+                const [, y, m, day] = match;
+                const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(str.trim()) || str.includes('T00:00:00');
+                if (isDateOnly) {
+                    return `${parseInt(day)} ${months[parseInt(m) - 1]} ${y}`;
+                }
+            }
             const d = new Date(dateStr);
             if (isNaN(d.getTime())) return '-';
             return d.toLocaleDateString('es-VE', { 
