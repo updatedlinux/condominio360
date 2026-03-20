@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="/js/owner-nav.js"></script>
     <style>
         * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
@@ -26,10 +27,15 @@
 <body class="bg-[#FAFAFA]">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <aside class="w-64 bg-white border-r border-[#E5E5E5] hidden md:flex flex-col">
-            <div class="h-16 flex items-center gap-3 px-6 border-b border-[#E5E5E5]">
-                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
-                <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+        <aside id="owner-sidebar" class="owner-sidebar fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#E5E5E5] flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-[#E5E5E5]">
+                <div class="flex items-center gap-3">
+                    <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-8 w-8 flex-shrink-0" style="object-fit: contain;">
+                    <span class="font-bold text-xl text-[#f97316]">Condominio360</span>
+                </div>
+                <button type="button" onclick="toggleOwnerMobileNav()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
+                    <span class="material-icons-round">close</span>
+                </button>
             </div>
             <div class="flex-1 overflow-y-auto py-4">
                 <nav class="space-y-1 px-3">
@@ -93,13 +99,17 @@
                 </button>
             </div>
         </aside>
+        <div id="owner-mobile-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleOwnerMobileNav()"></div>
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="bg-white shadow-sm sticky top-0 z-40">
-                <div class="px-6 py-4">
-                    <div class="flex items-center gap-4">
-                        <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043]">
+                <div class="px-4 md:px-6 py-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <button type="button" onclick="toggleOwnerMobileNav()" class="md:hidden w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] text-[#5F6368]">
+                            <span class="material-icons-round">menu</span>
+                        </button>
+                        <a href="/owner/dashboard" class="text-[#5F6368] hover:text-[#3C4043] flex-shrink-0">
                             <span class="material-icons-round">arrow_back</span>
                         </a>
                         <div>

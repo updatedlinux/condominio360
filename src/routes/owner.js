@@ -25,6 +25,9 @@ const requireOwnerOrTenantAdmin = (req, res, next) => {
 // Aplicar middleware a todas las rutas
 router.use(authenticate, requireOwner);
 
+// ==================== PROPIEDADES (switch de inmuebles) ====================
+router.get('/properties', OwnerController.getProperties);
+
 // ==================== DASHBOARD ====================
 router.get('/dashboard', OwnerController.getDashboard);
 router.get('/activity', OwnerController.getActivity);

@@ -28,6 +28,39 @@ function formatRequestForApi(req) {
  */
 class OwnerController {
     
+    // ==================== PROPIEDADES (para switch) ====================
+
+    /**
+     * GET /api/owner/properties
+     * Lista todas las propiedades del propietario (para cambiar de inmueble sin desloguearse)
+     */
+    static async getProperties(req, res) {
+        try {
+            const userId = req.user.userId;
+            const properties = await PropertyModel.getByOwner(userId);
+
+            const formatted = properties.map(p => ({
+                id: p.id,
+                name: p.name,
+                type: p.type,
+                building: p.building_name || p.building,
+                floor: p.floor,
+                area: p.area_sqm,
+                alicuota: p.alicuota,
+                tenantId: p.tenant_id,
+                tenantName: p.tenant_name,
+                tenantSlug: p.tenant_slug,
+                isPrimary: p.is_primary_owner,
+                percentage: p.percentage_ownership
+            }));
+
+            res.json({ success: true, properties: formatted });
+        } catch (error) {
+            console.error('Get owner properties error:', error);
+            res.status(500).json({ error: 'Error al cargar propiedades' });
+        }
+    }
+
     // ==================== DASHBOARD ====================
 
     /**
