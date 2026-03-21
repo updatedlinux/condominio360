@@ -1784,7 +1784,26 @@
 
         async function exportPreliminary(preliminaryId) {
             try {
-                window.open(`/api/tenant-admin/billing/export/${preliminaryId}`, '_blank');
+                const res = await fetch(`/api/tenant-admin/billing/export/${preliminaryId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.error || 'Error al exportar preliminar', 'error');
+                    return;
+                }
+                if (!data.success || !data.data) {
+                    showToast('Error al exportar preliminar', 'error');
+                    return;
+                }
+                const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `preliminar-${preliminaryId}-export.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Exportación descargada', 'success');
             } catch (e) {
                 showToast('Error al exportar preliminar', 'error');
             }
