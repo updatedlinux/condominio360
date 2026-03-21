@@ -1853,8 +1853,8 @@
                 </div>
             `).join('');
         }
-        async function generateSaaSInvoices() {
-            const tenantId = saasOverviewSelectedTenantId;
+        async function generateSaaSInvoices(overrideTenantId) {
+            const tenantId = overrideTenantId ?? saasOverviewSelectedTenantId;
             if (!tenantId) {
                 showSnackbar('Selecciona un condominio', 'error');
                 return;
@@ -2146,8 +2146,9 @@
             updateSaaSOverviewTotals(toBill);
         }
         function confirmGenerateSaaSInvoices() {
+            const tenantId = saasOverviewSelectedTenantId;
             closeSaaSOverviewModal();
-            generateSaaSInvoices();
+            generateSaaSInvoices(tenantId);
         }
         async function deleteSaaSInvoice(id, name) {
             openConfirmModal('Eliminar factura', '¿Eliminar la factura de ' + name + '? Solo se permite eliminar facturas pendientes.', async () => {
