@@ -103,6 +103,17 @@
             }
         }
         
+        /* Desktop: margen del main para que no quede bajo el sidebar fijo */
+        @media (min-width: 1024px) {
+            main#main-content {
+                margin-left: 300px;
+                transition: margin-left 0.3s;
+            }
+            aside.nav-rail.collapsed ~ main#main-content {
+                margin-left: 80px;
+            }
+        }
+        
         /* Navigation Items */
         .nav-item {
             display: flex;
@@ -565,7 +576,7 @@
         </aside>
 
         <!-- Main Content -->
-        <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
+        <main id="main-content" class="flex-1 min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
             <!-- Top App Bar -->
             <header class="app-top-bar sticky top-0 z-30 flex-shrink-0">
                 <!-- Hamburger móvil -->

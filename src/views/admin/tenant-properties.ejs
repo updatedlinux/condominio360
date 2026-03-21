@@ -61,6 +61,10 @@
             .admin-mobile-overlay.active { display: block; }
             .mobile-hamburger-btn { display: flex !important; }
         }
+        @media (min-width: 1024px) {
+            main#main-content { margin-left: 300px; transition: margin-left 0.3s; }
+            aside.nav-rail.collapsed ~ main#main-content { margin-left: 80px; }
+        }
 
         .nav-item {
             display: flex;
@@ -171,7 +175,7 @@
         </aside>
 
         <!-- Main Content -->
-        <main id="main-content" class="flex-1 ml-[300px] min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
+        <main id="main-content" class="flex-1 min-h-0 transition-all duration-300 flex flex-col overflow-hidden">
             <!-- Header -->
             <header class="bg-white shadow-sm sticky top-0 z-30 flex-shrink-0">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
