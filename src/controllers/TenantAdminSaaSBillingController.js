@@ -2,6 +2,7 @@ const SaaSBillingModel = require('../models/SaaSBillingModel');
 const SaaSBillingRateService = require('../services/SaaSBillingRateService');
 const SystemSettingsModel = require('../models/SystemSettingsModel');
 const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
+const { sql, connectDB } = require('../config/database');
 
 /**
  * Controlador para que el Tenant Admin vea sus facturas de Condominio360
@@ -109,7 +110,18 @@ class TenantAdminSaaSBillingController {
     static async reportPayment(req, res) {
         try {
             const tenantId = req.user.tenantId;
-            const adminId = req.user.userId;
+            let submittedById = req.user.userId;
+            if (req.user.isSuperAdmin || req.user.type === 'SUPERADMIN') {
+                const pool = await connectDB();
+                const taRes = await pool.request()
+                    .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                    .query('SELECT TOP 1 id FROM TenantAdmins WHERE tenant_id = @tenant_id AND is_active = 1');
+                if (taRes.recordset.length > 0) {
+                    submittedById = taRes.recordset[0].id;
+                } else {
+                    return res.status(400).json({ error: 'El condominio no tiene administradores de junta registrados. Cree uno desde el panel Super Admin.' });
+                }
+            }
             const { id } = req.params;
             const invoice = await SaaSBillingModel.getInvoiceWithItems(id);
             if (!invoice || String(invoice.tenant_id) !== String(tenantId)) {
@@ -130,7 +142,7 @@ class TenantAdminSaaSBillingController {
             const attachmentPath = req.file ? `payment-receipts/${req.file.filename}` : null;
             const report = await SaaSBillingModel.createPaymentReport({
                 invoice_id: id,
-                submitted_by: adminId,
+                submitted_by: submittedById,
                 banco_emisor: String(banco_emisor).trim(),
                 fecha_transferencia: String(fecha_transferencia).trim(),
                 ref_transferencia: String(ref_transferencia).trim(),
