@@ -1787,23 +1787,25 @@
                 const res = await fetch(`/api/tenant-admin/billing/export/${preliminaryId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                const data = await res.json();
                 if (!res.ok) {
-                    showToast(data.error || 'Error al exportar preliminar', 'error');
+                    const errData = await res.json().catch(() => ({}));
+                    showToast(errData.error || 'Error al exportar preliminar', 'error');
                     return;
                 }
-                if (!data.success || !data.data) {
-                    showToast('Error al exportar preliminar', 'error');
-                    return;
+                const blob = await res.blob();
+                const disposition = res.headers.get('Content-Disposition');
+                let filename = `preliminar-${preliminaryId}.xlsx`;
+                if (disposition) {
+                    const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"'\s]+)["']?/i) || disposition.match(/filename=([^;\s]+)/);
+                    if (match) filename = decodeURIComponent(match[1].trim().replace(/^["']|["']$/g, ''));
                 }
-                const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `preliminar-${preliminaryId}-export.json`;
+                a.download = filename;
                 a.click();
                 URL.revokeObjectURL(url);
-                showToast('Exportación descargada', 'success');
+                showToast('Exportación descargada (Excel)', 'success');
             } catch (e) {
                 showToast('Error al exportar preliminar', 'error');
             }

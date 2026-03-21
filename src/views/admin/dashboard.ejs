@@ -2228,7 +2228,7 @@
                                 ${r.attachment_path ? `<a href="/uploads/${r.attachment_path}" target="_blank" class="text-[var(--md-sys-color-primary)] hover:underline">Ver comprobante</a>` : ''}
                             </div>
                             <div class="flex gap-3 mt-3">
-                                <button onclick="confirmSaaSPayment('${inv.id}')" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">Confirmar pago</button>
+                                <button onclick="confirmSaaSPayment('${inv.id}')" class="px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90" style="background-color:#059669;">Confirmar pago</button>
                                 <button onclick="showSaaSRejectModal('${inv.id}')" class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-sm font-medium">Rechazar</button>
                             </div>
                         </div>

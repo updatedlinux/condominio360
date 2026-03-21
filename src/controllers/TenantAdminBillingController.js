@@ -1,3 +1,4 @@
+const ExcelJS = require('exceljs');
 const VendorModel = require('../models/VendorModel');
 const VendorContractModel = require('../models/VendorContractModel');
 const BillingModel = require('../models/BillingModel');
@@ -1369,34 +1370,91 @@ class TenantAdminBillingController {
             }
 
             const invoices = await BillingModel.getInvoicesByPreliminary(preliminary_id, tenantId);
+            const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            const periodStr = `${months[(preliminary.billing_month || 1) - 1]} ${preliminary.billing_year || ''}`;
 
-            // Formatear datos para Excel
-            const exportData = {
-                preliminary: {
-                    name: preliminary.name,
-                    month: preliminary.billing_month,
-                    year: preliminary.billing_year,
-                    exchange_rate: preliminary.exchange_rate_usd,
-                    total_usd: preliminary.total_amount_usd,
-                    total_ves: preliminary.total_amount_ves
-                },
-                items: preliminary.items,
-                invoices: invoices.map(inv => ({
-                    invoice_number: inv.invoice_number,
-                    property: inv.property_name,
-                    building: inv.building,
-                    owner: inv.owner_name,
-                    proportion: inv.proportion_value,
-                    amount_usd: inv.assigned_amount_usd,
-                    amount_ves: inv.assigned_amount_ves,
-                    status: inv.status
-                }))
-            };
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Condominio360';
+            workbook.created = new Date();
 
-            res.json({
-                success: true,
-                data: exportData
+            // Hoja 1: Resumen
+            const sheetResumen = workbook.addWorksheet('Resumen', { properties: { tabColor: { argb: 'FFF97316' } } });
+            sheetResumen.columns = [
+                { header: 'Campo', key: 'campo', width: 25 },
+                { header: 'Valor', key: 'valor', width: 35 }
+            ];
+            sheetResumen.getRow(1).font = { bold: true, size: 12 };
+            sheetResumen.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF97316' } };
+            sheetResumen.getRow(1).font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+            sheetResumen.addRows([
+                { campo: 'Preliminar', valor: preliminary.name || '-' },
+                { campo: 'Período', valor: periodStr },
+                { campo: 'Tasa de cambio (USD→VES)', valor: parseFloat(preliminary.exchange_rate_usd || 0).toFixed(2) },
+                { campo: 'Total USD', valor: `$ ${parseFloat(preliminary.total_amount_usd || 0).toFixed(2)}` },
+                { campo: 'Total VES', valor: parseFloat(preliminary.total_amount_ves || 0).toLocaleString('es-VE') },
+                { campo: 'Total recibos', valor: String(invoices.length) }
+            ]);
+
+            // Hoja 2: Ítems del preliminar
+            const sheetItems = workbook.addWorksheet('Ítems', { properties: { tabColor: { argb: 'FF3B82F6' } } });
+            sheetItems.columns = [
+                { header: 'Tipo', key: 'tipo', width: 15 },
+                { header: 'Descripción', key: 'descripcion', width: 35 },
+                { header: 'Proveedor', key: 'proveedor', width: 20 },
+                { header: 'Monto base', key: 'base', width: 15 },
+                { header: 'Moneda', key: 'moneda', width: 8 },
+                { header: 'Monto VES', key: 'ves', width: 18 },
+                { header: 'Notas', key: 'notas', width: 25 }
+            ];
+            sheetItems.getRow(1).font = { bold: true };
+            sheetItems.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+            sheetItems.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            (preliminary.items || []).forEach(item => {
+                sheetItems.addRow({
+                    tipo: item.item_type || '-',
+                    descripcion: item.description || '-',
+                    proveedor: item.vendor_name || item.contract_description || '-',
+                    base: parseFloat(item.base_amount || 0),
+                    moneda: item.currency || 'USD',
+                    ves: parseFloat(item.converted_amount_ves || 0),
+                    notas: item.notes || ''
+                });
             });
+
+            // Hoja 3: Recibos
+            const sheetRecibos = workbook.addWorksheet('Recibos', { properties: { tabColor: { argb: 'FF10B981' } } });
+            sheetRecibos.columns = [
+                { header: 'Nº Recibo', key: 'recibo', width: 14 },
+                { header: 'Inmueble', key: 'inmueble', width: 18 },
+                { header: 'Edificio', key: 'edificio', width: 15 },
+                { header: 'Propietario', key: 'propietario', width: 25 },
+                { header: 'Alicuota', key: 'alicuota', width: 12 },
+                { header: 'Monto USD', key: 'usd', width: 14 },
+                { header: 'Monto VES', key: 'ves', width: 18 },
+                { header: 'Estado', key: 'estado', width: 12 }
+            ];
+            sheetRecibos.getRow(1).font = { bold: true };
+            sheetRecibos.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+            sheetRecibos.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            invoices.forEach(inv => {
+                sheetRecibos.addRow({
+                    recibo: inv.invoice_number || '-',
+                    inmueble: inv.property_name || '-',
+                    edificio: inv.building || '-',
+                    propietario: inv.owner_name || '-',
+                    alicuota: parseFloat(inv.proportion_value || 0),
+                    usd: parseFloat(inv.assigned_amount_usd || 0),
+                    ves: parseFloat(inv.assigned_amount_ves || 0),
+                    estado: inv.status || 'PENDIENTE'
+                });
+            });
+
+            const safeName = (preliminary.name || 'preliminar').replace(/[^\w\s-]/g, '').slice(0, 50);
+            const filename = `preliminar-${safeName}-${periodStr.replace(/\s/g, '-')}.xlsx`;
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            await workbook.xlsx.write(res);
         } catch (error) {
             console.error('Export preliminary error:', error);
             res.status(500).json({ error: 'Error al exportar preliminar' });
