@@ -15,6 +15,22 @@ class TenantAdminBalanceController {
         try {
             const tenantId = req.user.tenantId;
             const pool = await connectDB();
+
+            const billingModeResult = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query('SELECT billing_mode FROM Tenants WHERE id = @tenant_id');
+            const billingMode = billingModeResult.recordset[0]?.billing_mode || 'FULL';
+
+            if (billingMode === 'SUPPORT') {
+                return res.json({
+                    success: true,
+                    data: {
+                        billing_mode: 'SUPPORT',
+                        support_message: true
+                    }
+                });
+            }
+
             const latestRate = await ExchangeRateModel.getLatest();
             const rateVes = latestRate ? parseFloat(latestRate.usd_rate) : 0;
 
@@ -109,6 +125,7 @@ class TenantAdminBalanceController {
             res.json({
                 success: true,
                 data: {
+                    billing_mode: 'FULL',
                     latest_rate_ves: rateVes,
                     latest_rate_date: latestRate?.rate_date,
                     totals: {

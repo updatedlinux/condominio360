@@ -27,6 +27,15 @@
             </header>
 
             <main class="flex-1 overflow-y-auto p-6">
+                <!-- Mensaje modo Apoyo (cuando billing_mode === SUPPORT) -->
+                <div id="support-mode-message" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
+                    <span class="material-icons-round text-5xl text-amber-600 mb-4">info</span>
+                    <p class="text-lg font-medium text-[#3C4043] mb-2">El tipo de facturación de tu Condominio está en modo Apoyo</p>
+                    <p class="text-[#5F6368]">Estas proyecciones y cálculos son responsabilidad del administrador o empresa administradora.</p>
+                </div>
+
+                <!-- Contenido normal (cuando billing_mode === FULL) -->
+                <div id="balance-content">
                 <!-- Totales -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div class="bg-white rounded-xl border border-[#E5E5E5] p-4">
@@ -113,6 +122,7 @@
                         </table>
                     </div>
                 </div>
+                </div>
             </main>
             <%- include('../partials/panels-footer') %>
         </div>
@@ -143,6 +153,15 @@
                     document.getElementById('stat-collected-ves').textContent = 'Error al cargar';
                     return;
                 }
+
+                if (data.support_message || data.billing_mode === 'SUPPORT') {
+                    document.getElementById('support-mode-message').classList.remove('hidden');
+                    document.getElementById('balance-content').classList.add('hidden');
+                    return;
+                }
+
+                document.getElementById('support-mode-message').classList.add('hidden');
+                document.getElementById('balance-content').classList.remove('hidden');
 
                 const t = data.totals || {};
                 document.getElementById('stat-collected-ves').textContent = fmtVes(t.collected_ves);
