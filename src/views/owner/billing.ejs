@@ -505,7 +505,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[#5F6368] mb-1">Fecha de Transferencia *</label>
-                            <input type="text" id="report-fecha" required placeholder="dd/mm/aaaa" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" maxlength="10">
+                            <input type="date" id="report-fecha" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
                         </div>
                     </div>
                     <div>
@@ -544,11 +544,6 @@
 
                 if (!banco || !fecha || !ref) {
                     showToast('Complete los campos obligatorios', 'error');
-                    return;
-                }
-                const dateMatch = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-                if (!dateMatch) {
-                    showToast('Fecha debe estar en formato dd/mm/aaaa', 'error');
                     return;
                 }
 
