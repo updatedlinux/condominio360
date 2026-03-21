@@ -175,7 +175,15 @@
                     return;
                 }
                 const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-                const rateDate = inv.bcv_rate_date ? new Date(inv.bcv_rate_date).toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                const monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                function formatRateDate(val) {
+                    if (!val) return 'N/A';
+                    const s = String(val).split('T')[0];
+                    if (!/^\d{4}-\d{2}-\d{2}/.test(s)) return 'N/A';
+                    const [y, m, d] = s.split('-');
+                    return `${parseInt(d, 10)} de ${monthNames[parseInt(m, 10) - 1]} de ${y}`;
+                }
+                const rateDate = formatRateDate(inv.bcv_rate_date);
                 const itemsHtml = (inv.items || []).map(it => `
                     <tr class="border-b border-[#E5E5E5] last:border-0">
                         <td class="py-2 text-sm text-[#3C4043]">${it.description || '-'}</td>
