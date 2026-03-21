@@ -168,6 +168,8 @@ class AdminBalanceController {
             }
 
             // Balance por tenant
+            // Cobro Condo = lo que Condominio360 ha cobrado a cada condominio (SaaS pagado)
+            // Total Cobrado Condo = suma de todos los pagos SaaS confirmados
             const tenantsList = condoCollectedResult.recordset.map(t => {
                 const saasPending = saasResult.recordset
                     .filter(s => String(s.tenant_id) === String(t.tenant_id) && s.status === 'PENDING')
@@ -180,7 +182,7 @@ class AdminBalanceController {
                     tenant_id: t.tenant_id,
                     tenant_name: t.tenant_name,
                     properties: props,
-                    condo_collected_ves: parseFloat(t.total_collected_ves) || 0,
+                    condo_collected_ves: saasPaid,
                     condo_pending_ves: parseFloat(t.total_pending_ves) || 0,
                     saas_paid_ves: saasPaid,
                     saas_pending_usd: saasPending,
@@ -197,7 +199,7 @@ class AdminBalanceController {
                     comparative,
                     projection,
                     totals: {
-                        condo_collected: tenantsList.reduce((s, t) => s + t.condo_collected_ves, 0),
+                        condo_collected: tenantsList.reduce((s, t) => s + t.saas_paid_ves, 0),
                         condo_pending: tenantsList.reduce((s, t) => s + t.condo_pending_ves, 0),
                         saas_pending_usd: tenantsList.reduce((s, t) => s + t.saas_pending_usd, 0),
                         saas_pending_ves: tenantsList.reduce((s, t) => s + t.saas_pending_ves, 0)
