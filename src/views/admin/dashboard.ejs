@@ -809,13 +809,17 @@
                             <h3 class="text-2xl font-medium text-gray-900">Solicitudes de Actualización de Datos</h3>
                             <p class="text-gray-500 mt-1">Propietarios solicitan cambios en sus datos personales</p>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-wrap items-center">
                             <select id="dur-status-filter" onchange="loadDataUpdateRequests()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
                                 <option value="">Todas</option>
                                 <option value="PENDING">Pendientes</option>
                                 <option value="APPROVED">Aprobadas</option>
                                 <option value="REJECTED">Rechazadas</option>
                             </select>
+                            <button type="button" onclick="exportDataUpdateRequestsExcel()" class="inline-flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700" title="Una hoja por condominio">
+                                <span class="material-symbols-rounded text-lg">table_view</span>
+                                Descargar Excel
+                            </button>
                         </div>
                     </div>
                     <div class="md-card overflow-hidden">
@@ -1668,6 +1672,36 @@
             const d = new Date(dateStr);
             const v = new Date(d.getTime() + (4 * 60 * 60 * 1000));
             return v.toLocaleString('es-VE', { timeZone: 'America/Caracas' });
+        }
+
+        async function exportDataUpdateRequestsExcel() {
+            const status = document.getElementById('dur-status-filter')?.value || '';
+            try {
+                let url = '/api/admin/data-update-requests/export';
+                if (status) url += `?status=${encodeURIComponent(status)}`;
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    showSnackbar(err.error || 'Error al exportar', 'error');
+                    return;
+                }
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition');
+                let filename = 'solicitudes-actualizacion-datos.xlsx';
+                if (cd && cd.includes('filename=')) {
+                    const m = cd.match(/filename="?([^";]+)"?/);
+                    if (m) filename = decodeURIComponent(m[1]);
+                }
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showSnackbar('Excel descargado', 'success');
+            } catch (e) {
+                console.error(e);
+                showSnackbar('Error al descargar Excel', 'error');
+            }
         }
 
         async function loadDataUpdateRequests() {

@@ -111,6 +111,50 @@ class DataUpdateRequestModel {
             `);
         return result.recordset[0] || null;
     }
+
+    /**
+     * Filas para Excel: solicitud × condominio (un propietario en varios conjuntos genera varias filas)
+     */
+    static async listExportRowsByTenant({ status = null } = {}) {
+        const pool = await connectDB();
+        let whereStatus = '';
+        const request = pool.request();
+        if (status) {
+            whereStatus = 'AND dur.status = @status';
+            request.input('status', sql.NVarChar, status);
+        }
+        const result = await request.query(`
+            SELECT
+                dur.id AS solicitud_id,
+                dur.user_id,
+                dur.status,
+                dur.requested_at,
+                dur.reviewed_at,
+                dur.rejection_reason,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.dni,
+                u.phone,
+                t.id AS tenant_id,
+                t.name AS condominio
+            FROM DataUpdateRequests dur
+            INNER JOIN Users u ON dur.user_id = u.id
+            INNER JOIN (
+                SELECT DISTINCT tu.user_id, tu.tenant_id
+                FROM TenantUsers tu
+                WHERE tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                UNION
+                SELECT DISTINCT po.user_id, p.tenant_id
+                FROM PropertyOwners po
+                INNER JOIN Properties p ON p.id = po.property_id
+            ) AS map ON map.user_id = u.id
+            INNER JOIN Tenants t ON t.id = map.tenant_id
+            WHERE 1=1 ${whereStatus}
+            ORDER BY t.name, dur.requested_at DESC
+        `);
+        return result.recordset;
+    }
 }
 
 module.exports = DataUpdateRequestModel;

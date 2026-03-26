@@ -442,6 +442,50 @@ class PropertyModel {
             `);
         return result.recordset;
     }
+
+    /**
+     * Todos los inmuebles de un tenant con detalle para exportación Excel (sin paginación)
+     */
+    static async findAllForExport(tenantId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT
+                    p.id,
+                    p.name,
+                    p.slug,
+                    p.type,
+                    COALESCE(b.name, p.building) AS edificio,
+                    b.code AS edificio_codigo,
+                    p.floor AS piso,
+                    p.area_sqm AS area_m2,
+                    p.alicuota,
+                    p.nickname,
+                    CASE WHEN p.nickname_active = 1 THEN N'Sí' WHEN p.nickname_active = 0 THEN N'No' ELSE N'' END AS nickname_activo,
+                    p.created_at,
+                    p.updated_at,
+                    (SELECT COUNT(*) FROM PropertyOwners po WHERE po.property_id = p.id) AS num_propietarios,
+                    (
+                        SELECT STRING_AGG(
+                            CONCAT(
+                                u.first_name, N' ', u.last_name, N' <', u.email, N'> ',
+                                CAST(ISNULL(po.percentage_ownership, 0) AS NVARCHAR(20)), N'%',
+                                CASE WHEN po.is_primary_owner = 1 THEN N' [principal]' ELSE N'' END
+                            ),
+                            N'; '
+                        )
+                        FROM PropertyOwners po
+                        INNER JOIN Users u ON u.id = po.user_id
+                        WHERE po.property_id = p.id
+                    ) AS propietarios_detalle
+                FROM Properties p
+                LEFT JOIN Buildings b ON b.id = p.building_id
+                WHERE p.tenant_id = @tenant_id
+                ORDER BY COALESCE(b.name, p.building, N''), p.name
+            `);
+        return result.recordset;
+    }
 }
 
 module.exports = PropertyModel;

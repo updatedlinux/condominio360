@@ -1133,6 +1133,12 @@
                                     Eliminar
                                 </button>
                             ` : ''}
+                            ${p.status === 'FINALIZED' && billingConfig?.billing_mode === 'FULL' ? `
+                                <button onclick="event.stopPropagation(); exportPreliminary('${p.id}')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center gap-1">
+                                    <span class="material-icons-round text-sm">download</span>
+                                    Excel
+                                </button>
+                            ` : ''}
                             ${p.status === 'FINALIZED' && billingConfig?.billing_mode === 'FULL' && !p.sent_to_owners ? `
                                 <button onclick="event.stopPropagation(); showSendConfirmModal('${p.id}')" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
                                     Enviar a Propietarios
@@ -2093,12 +2099,20 @@
                             Eliminar
                         </button>
                     `;
-                } else if (p.status === 'FINALIZED' && billingConfig?.billing_mode === 'FULL' && !p.sent_to_owners) {
+                } else if (p.status === 'FINALIZED' && billingConfig?.billing_mode === 'FULL') {
                     actionsHtml += `
-                        <button onclick="closeModal('preliminary-detail-modal'); showSendConfirmModal('${p.id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                            Enviar a Propietarios
+                        <button onclick="closeModal('preliminary-detail-modal'); exportPreliminary('${p.id}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
+                            <span class="material-icons-round text-sm">download</span>
+                            Descargar Excel (inmuebles y cobro)
                         </button>
                     `;
+                    if (!p.sent_to_owners) {
+                        actionsHtml += `
+                            <button onclick="closeModal('preliminary-detail-modal'); showSendConfirmModal('${p.id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                Enviar a Propietarios
+                            </button>
+                        `;
+                    }
                 }
                 
                 actionsContainer.innerHTML = actionsHtml || '<span class="text-sm text-[#9AA0A6]">No hay acciones disponibles</span>';

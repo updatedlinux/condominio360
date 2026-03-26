@@ -297,6 +297,56 @@ class BillingModel {
     }
 
     /**
+     * Todos los inmuebles del tenant con datos del recibo del preliminar (LEFT JOIN: sin recibo si no aplica)
+     */
+    static async getPropertiesWithInvoiceForPreliminary(preliminaryId, tenantId) {
+        try {
+            const pool = await connectDB();
+            const result = await pool.request()
+                .input('preliminary_id', sql.UniqueIdentifier, preliminaryId)
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT
+                        p.id AS property_id,
+                        p.name AS property_name,
+                        COALESCE(b.name, p.building) AS building_label,
+                        p.floor,
+                        p.area_sqm,
+                        p.alicuota,
+                        i.id AS invoice_id,
+                        i.invoice_number,
+                        i.status,
+                        i.assigned_amount_usd,
+                        i.assigned_amount_ves,
+                        i.paid_amount_ves,
+                        i.paid_at,
+                        i.payment_method,
+                        i.payment_reference,
+                        i.payment_notes,
+                        LTRIM(RTRIM(CONCAT(ISNULL(ou.first_name, N''), N' ', ISNULL(ou.last_name, N'')))) AS owner_name,
+                        ou.email AS owner_email
+                    FROM Properties p
+                    LEFT JOIN Buildings b ON b.id = p.building_id
+                    LEFT JOIN BillingInvoices i
+                        ON i.property_id = p.id AND i.preliminary_id = @preliminary_id AND i.tenant_id = @tenant_id
+                    OUTER APPLY (
+                        SELECT TOP 1 u.first_name, u.last_name, u.email
+                        FROM PropertyOwners po
+                        INNER JOIN Users u ON u.id = po.user_id
+                        WHERE po.property_id = p.id
+                        ORDER BY po.is_primary_owner DESC, po.percentage_ownership DESC
+                    ) AS ou
+                    WHERE p.tenant_id = @tenant_id
+                    ORDER BY COALESCE(b.name, p.building, N''), p.name
+                `);
+            return result.recordset;
+        } catch (error) {
+            console.error('Error fetching properties with invoices:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Obtener recibo por ID con items
      */
     static async getInvoiceWithItems(id, tenantId) {

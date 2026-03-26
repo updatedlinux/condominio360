@@ -1370,6 +1370,7 @@ class TenantAdminBillingController {
             }
 
             const invoices = await BillingModel.getInvoicesByPreliminary(preliminary_id, tenantId);
+            const propertyInvoiceRows = await BillingModel.getPropertiesWithInvoiceForPreliminary(preliminary_id, tenantId);
             const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
             const periodStr = `${months[(preliminary.billing_month || 1) - 1]} ${preliminary.billing_year || ''}`;
 
@@ -1421,7 +1422,55 @@ class TenantAdminBillingController {
                 });
             });
 
-            // Hoja 3: Recibos
+            // Hoja: Inmuebles y estado de cobro (todos los inmuebles del conjunto)
+            const sheetInmuebles = workbook.addWorksheet('Inmuebles y cobro', { properties: { tabColor: { argb: 'FF6366F1' } } });
+            sheetInmuebles.columns = [
+                { header: 'Inmueble', key: 'inmueble', width: 20 },
+                { header: 'Edificio', key: 'edificio', width: 16 },
+                { header: 'Piso', key: 'piso', width: 8 },
+                { header: 'Área m²', key: 'area', width: 10 },
+                { header: 'Alícuota', key: 'alicuota', width: 10 },
+                { header: 'Contacto (recibo)', key: 'contacto', width: 28 },
+                { header: 'Nº Recibo', key: 'recibo', width: 14 },
+                { header: 'Estado pago', key: 'estado', width: 14 },
+                { header: 'Monto USD', key: 'usd', width: 12 },
+                { header: 'Monto VES', key: 'ves', width: 14 },
+                { header: 'Pagado VES', key: 'pagado_ves', width: 14 },
+                { header: 'Fecha pago', key: 'paid_at', width: 18 },
+                { header: 'Método pago', key: 'payment_method', width: 14 },
+                { header: 'Referencia', key: 'payment_reference', width: 22 },
+                { header: 'Notas pago', key: 'payment_notes', width: 28 }
+            ];
+            sheetInmuebles.getRow(1).font = { bold: true };
+            sheetInmuebles.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+            sheetInmuebles.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            const estadoLabel = (s) => {
+                if (!s) return 'Sin recibo';
+                if (s === 'PAID') return 'Pagado';
+                if (s === 'PENDING') return 'Pendiente';
+                return String(s);
+            };
+            propertyInvoiceRows.forEach((row) => {
+                sheetInmuebles.addRow({
+                    inmueble: row.property_name || '-',
+                    edificio: row.building_label || '-',
+                    piso: row.floor || '',
+                    area: row.area_sqm != null ? parseFloat(row.area_sqm) : '',
+                    alicuota: row.alicuota != null ? parseFloat(row.alicuota) : '',
+                    contacto: row.owner_name ? `${(row.owner_name || '').trim()} ${row.owner_email ? '<' + row.owner_email + '>' : ''}`.trim() : '',
+                    recibo: row.invoice_number || '',
+                    estado: estadoLabel(row.status),
+                    usd: row.assigned_amount_usd != null ? parseFloat(row.assigned_amount_usd) : '',
+                    ves: row.assigned_amount_ves != null ? parseFloat(row.assigned_amount_ves) : '',
+                    pagado_ves: row.paid_amount_ves != null ? parseFloat(row.paid_amount_ves) : '',
+                    paid_at: row.paid_at ? new Date(row.paid_at) : '',
+                    payment_method: row.payment_method || '',
+                    payment_reference: row.payment_reference || '',
+                    payment_notes: row.payment_notes || ''
+                });
+            });
+
+            // Hoja: Recibos (detalle)
             const sheetRecibos = workbook.addWorksheet('Recibos', { properties: { tabColor: { argb: 'FF10B981' } } });
             sheetRecibos.columns = [
                 { header: 'Nº Recibo', key: 'recibo', width: 14 },
@@ -1431,7 +1480,11 @@ class TenantAdminBillingController {
                 { header: 'Alicuota', key: 'alicuota', width: 12 },
                 { header: 'Monto USD', key: 'usd', width: 14 },
                 { header: 'Monto VES', key: 'ves', width: 18 },
-                { header: 'Estado', key: 'estado', width: 12 }
+                { header: 'Estado', key: 'estado', width: 12 },
+                { header: 'Pagado VES', key: 'pagado_ves', width: 14 },
+                { header: 'Fecha pago', key: 'paid_at', width: 18 },
+                { header: 'Método', key: 'metodo', width: 14 },
+                { header: 'Referencia', key: 'ref', width: 20 }
             ];
             sheetRecibos.getRow(1).font = { bold: true };
             sheetRecibos.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
@@ -1445,7 +1498,11 @@ class TenantAdminBillingController {
                     alicuota: parseFloat(inv.proportion_value || 0),
                     usd: parseFloat(inv.assigned_amount_usd || 0),
                     ves: parseFloat(inv.assigned_amount_ves || 0),
-                    estado: inv.status || 'PENDIENTE'
+                    estado: estadoLabel(inv.status),
+                    pagado_ves: inv.paid_amount_ves != null ? parseFloat(inv.paid_amount_ves) : '',
+                    paid_at: inv.paid_at ? new Date(inv.paid_at) : '',
+                    metodo: inv.payment_method || '',
+                    ref: inv.payment_reference || ''
                 });
             });
 

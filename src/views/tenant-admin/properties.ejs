@@ -30,7 +30,11 @@
                         <h1 class="text-2xl font-medium text-[#3C4043]">Inmuebles</h1>
                         <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <button type="button" onclick="exportPropertiesExcel()" class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm text-[#3C4043] hover:bg-[#F5F5F5] flex items-center gap-2" title="Exportar todos los inmuebles con detalle">
+                            <span class="material-icons-round text-lg">table_view</span>
+                            Descargar Excel
+                        </button>
                         <select id="building-filter" onchange="loadProperties()" class="bg-white border border-[#E5E5E5] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
                             <option value="">Todos los edificios</option>
                         </select>
@@ -114,6 +118,34 @@
             loadBuildings();
             loadProperties();
         });
+
+        async function exportPropertiesExcel() {
+            try {
+                const res = await fetch('/api/tenant-admin/properties/export', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'Error al exportar');
+                    return;
+                }
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition');
+                let filename = 'inmuebles.xlsx';
+                if (cd && cd.includes('filename=')) {
+                    const m = cd.match(/filename="?([^";]+)"?/);
+                    if (m) filename = decodeURIComponent(m[1]);
+                }
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                console.error(e);
+                alert('Error al descargar Excel');
+            }
+        }
 
         async function loadBuildings() {
             try {

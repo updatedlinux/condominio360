@@ -36,6 +36,7 @@ router.get('/owners/search', AdminController.searchOwners);
 
 // ==================== ACTUALIZACIÓN DE DATOS (Solicitudes de propietarios) ====================
 router.get('/data-update-requests', AdminDataUpdateController.list);
+router.get('/data-update-requests/export', AdminDataUpdateController.exportExcel);
 router.get('/data-update-requests/:id', AdminDataUpdateController.getById);
 router.post('/data-update-requests/:id/approve', AdminDataUpdateController.approve);
 router.post('/data-update-requests/:id/reject', AdminDataUpdateController.reject);
@@ -59,12 +60,14 @@ router.put('/buildings/:id', AdminController.updateBuilding);
 router.delete('/buildings/:id', AdminController.deleteBuilding);
 
 // ==================== PROPERTIES (INMUEBLES) ====================
+router.get('/tenants/:id/properties/export', AdminController.exportPropertiesExcel);
 router.get('/tenants/:id/properties', AdminController.getProperties);
 router.post('/tenants/:id/properties', AdminController.createProperty);
 router.put('/properties/:id', AdminController.updateProperty);
 router.delete('/properties/:id', AdminController.deleteProperty);
 
 // ==================== OWNERS (PROPIETARIOS) ====================
+router.get('/tenants/:id/owners/export', AdminController.exportOwnersExcel);
 router.get('/tenants/:id/owners', AdminController.getOwners);
 router.post('/tenants/:id/owners/bulk', AdminController.createOwnersBulk);
 router.post('/tenants/:id/owners', AdminController.createOwner);

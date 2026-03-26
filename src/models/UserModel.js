@@ -699,6 +699,39 @@ class UserModel {
     }
 
     /**
+     * Filas de exportación: una por vínculo propietario–inmueble en el tenant (incluye filas sin inmueble asignado en el conjunto)
+     */
+    static async findOwnersForExport(tenantId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT
+                    u.id AS user_id,
+                    u.first_name,
+                    u.last_name,
+                    u.email,
+                    u.phone,
+                    u.dni,
+                    u.is_active,
+                    u.created_at AS usuario_creado,
+                    p.id AS property_id,
+                    p.name AS inmueble,
+                    COALESCE(b.name, p.building) AS edificio,
+                    po.is_primary_owner,
+                    po.percentage_ownership AS porcentaje_participacion
+                FROM Users u
+                INNER JOIN TenantUsers tu
+                    ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                LEFT JOIN PropertyOwners po ON u.id = po.user_id
+                LEFT JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
+                LEFT JOIN Buildings b ON p.building_id = b.id
+                ORDER BY u.last_name, u.first_name, p.name
+            `);
+        return result.recordset;
+    }
+
+    /**
      * Obtener un propietario con sus propiedades (para Tenant Admin)
      * @param {string} userId 
      * @param {string} tenantId

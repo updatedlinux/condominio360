@@ -1,3 +1,4 @@
+const ExcelJS = require('exceljs');
 const DataUpdateRequestModel = require('../models/DataUpdateRequestModel');
 const UserModel = require('../models/UserModel');
 const PropertyModel = require('../models/PropertyModel');
@@ -231,6 +232,87 @@ class AdminDataUpdateController {
         } catch (error) {
             console.error('Reject data update error:', error);
             res.status(500).json({ error: 'Error al rechazar solicitud' });
+        }
+    }
+
+    /**
+     * GET /api/admin/data-update-requests/export
+     * Excel: solicitudes por condominio (una hoja por conjunto)
+     */
+    static async exportExcel(req, res) {
+        try {
+            const status = req.query.status || null;
+            const rows = await DataUpdateRequestModel.listExportRowsByTenant({ status });
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Condominio360';
+            const byTenant = new Map();
+            for (const r of rows) {
+                const tid = r.tenant_id;
+                if (!byTenant.has(tid)) byTenant.set(tid, []);
+                byTenant.get(tid).push(r);
+            }
+            const usedSheetNames = new Set();
+            const sheetTitle = (name) => {
+                let base = (name || 'Condominio').replace(/[\[\]\*\?\:\\/]/g, '').trim().slice(0, 28);
+                if (!base) base = 'Condominio';
+                let s = base.slice(0, 31);
+                let n = 1;
+                while (usedSheetNames.has(s)) {
+                    const suffix = '-' + n;
+                    s = (base.slice(0, 31 - suffix.length) + suffix).slice(0, 31);
+                    n += 1;
+                }
+                usedSheetNames.add(s);
+                return s;
+            };
+            const addRowsToSheet = (sheet, list) => {
+                sheet.columns = [
+                    { header: 'ID solicitud', key: 'solicitud_id', width: 38 },
+                    { header: 'Estado', key: 'status', width: 12 },
+                    { header: 'Solicitado', key: 'requested_at', width: 20 },
+                    { header: 'Revisado', key: 'reviewed_at', width: 20 },
+                    { header: 'Nombre', key: 'first_name', width: 16 },
+                    { header: 'Apellido', key: 'last_name', width: 16 },
+                    { header: 'Email', key: 'email', width: 28 },
+                    { header: 'DNI', key: 'dni', width: 14 },
+                    { header: 'Teléfono', key: 'phone', width: 14 },
+                    { header: 'Motivo rechazo', key: 'rejection_reason', width: 40 },
+                    { header: 'ID usuario', key: 'user_id', width: 38 }
+                ];
+                sheet.getRow(1).font = { bold: true };
+                list.forEach((x) => {
+                    sheet.addRow({
+                        solicitud_id: x.solicitud_id,
+                        status: x.status,
+                        requested_at: x.requested_at ? new Date(x.requested_at) : '',
+                        reviewed_at: x.reviewed_at ? new Date(x.reviewed_at) : '',
+                        first_name: x.first_name,
+                        last_name: x.last_name,
+                        email: x.email,
+                        dni: x.dni || '',
+                        phone: x.phone || '',
+                        rejection_reason: x.rejection_reason || '',
+                        user_id: x.user_id
+                    });
+                });
+            };
+            if (byTenant.size === 0) {
+                const sheet = workbook.addWorksheet('Solicitudes');
+                addRowsToSheet(sheet, []);
+            } else {
+                for (const [, list] of byTenant) {
+                    const name = list[0]?.condominio || 'Condominio';
+                    const sheet = workbook.addWorksheet(sheetTitle(name));
+                    addRowsToSheet(sheet, list);
+                }
+            }
+            const filename = `solicitudes-actualizacion-datos-${new Date().toISOString().slice(0, 10)}.xlsx`;
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            await workbook.xlsx.write(res);
+        } catch (error) {
+            console.error('Export data update requests error:', error);
+            res.status(500).json({ error: 'Error al exportar solicitudes' });
         }
     }
 }

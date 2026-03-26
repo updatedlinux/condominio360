@@ -183,6 +183,10 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" onclick="exportOwnersExcel()" class="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition" title="Propietarios e inmuebles asignados">
+                    <span class="material-symbols-rounded">table_view</span>
+                    Descargar Excel
+                </button>
                 <button onclick="openBulkUploadModal()" class="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition">
                     <span class="material-symbols-rounded">upload_file</span>
                     Carga Masiva
@@ -562,6 +566,34 @@
         let availableProperties = [];
         let csvData = [];
         let pendingConfirmAction = null;
+
+        async function exportOwnersExcel() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/owners/export`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'Error al exportar');
+                    return;
+                }
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition');
+                let filename = 'propietarios.xlsx';
+                if (cd && cd.includes('filename=')) {
+                    const m = cd.match(/filename="?([^";]+)"?/);
+                    if (m) filename = decodeURIComponent(m[1]);
+                }
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                console.error(e);
+                alert('Error al descargar Excel');
+            }
+        }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');

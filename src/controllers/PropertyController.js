@@ -1,6 +1,8 @@
+const ExcelJS = require('exceljs');
 const PropertyModel = require('../models/PropertyModel');
 const BuildingModel = require('../models/BuildingModel');
 const UserModel = require('../models/UserModel');
+const TenantModel = require('../models/TenantModel');
 const AuditService = require('../services/AuditService');
 
 /**
@@ -281,6 +283,66 @@ class PropertyController {
         } catch (error) {
             console.error('Error listing properties:', error);
             res.status(500).json({ success: false, error: 'Error al listar propiedades' });
+        }
+    }
+
+    /**
+     * GET /api/tenant-admin/properties/export
+     * Excel: todos los inmuebles del tenant con detalle
+     */
+    static async exportForTenantAdmin(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const tenant = await TenantModel.findById(tenantId);
+            const rows = await PropertyModel.findAllForExport(tenantId);
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Condominio360';
+            const sheet = workbook.addWorksheet('Inmuebles');
+            sheet.columns = [
+                { header: 'Unidad', key: 'name', width: 22 },
+                { header: 'Slug', key: 'slug', width: 18 },
+                { header: 'Tipo', key: 'type', width: 14 },
+                { header: 'Edificio', key: 'edificio', width: 22 },
+                { header: 'Código edificio', key: 'edificio_codigo', width: 14 },
+                { header: 'Piso', key: 'piso', width: 10 },
+                { header: 'Área (m²)', key: 'area_m2', width: 12 },
+                { header: 'Alícuota (%)', key: 'alicuota', width: 12 },
+                { header: 'Nickname', key: 'nickname', width: 14 },
+                { header: 'Nickname activo', key: 'nickname_activo', width: 14 },
+                { header: 'Nº propietarios', key: 'num_propietarios', width: 14 },
+                { header: 'Propietarios (detalle)', key: 'propietarios_detalle', width: 60 },
+                { header: 'Creado', key: 'created_at', width: 20 },
+                { header: 'Actualizado', key: 'updated_at', width: 20 },
+                { header: 'ID inmueble', key: 'id', width: 38 }
+            ];
+            sheet.getRow(1).font = { bold: true };
+            rows.forEach((r) => {
+                sheet.addRow({
+                    name: r.name,
+                    slug: r.slug || '',
+                    type: r.type,
+                    edificio: r.edificio || '',
+                    edificio_codigo: r.edificio_codigo || '',
+                    piso: r.piso || '',
+                    area_m2: r.area_m2 != null ? parseFloat(r.area_m2) : '',
+                    alicuota: r.alicuota != null ? parseFloat(r.alicuota) : '',
+                    nickname: r.nickname || '',
+                    nickname_activo: r.nickname_activo || '',
+                    num_propietarios: r.num_propietarios,
+                    propietarios_detalle: r.propietarios_detalle || '',
+                    created_at: r.created_at ? new Date(r.created_at) : '',
+                    updated_at: r.updated_at ? new Date(r.updated_at) : '',
+                    id: r.id
+                });
+            });
+            const safeName = (tenant?.name || 'condominio').replace(/[^\w\s-]/g, '').slice(0, 40);
+            const filename = `inmuebles-${safeName}.xlsx`;
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            await workbook.xlsx.write(res);
+        } catch (error) {
+            console.error('Export properties (tenant admin) error:', error);
+            res.status(500).json({ success: false, error: 'Error al exportar inmuebles' });
         }
     }
 

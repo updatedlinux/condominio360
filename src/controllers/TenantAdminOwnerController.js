@@ -1,5 +1,7 @@
+const ExcelJS = require('exceljs');
 const UserModel = require('../models/UserModel');
 const PropertyModel = require('../models/PropertyModel');
+const TenantModel = require('../models/TenantModel');
 const AuditService = require('../services/AuditService');
 
 /**
@@ -32,6 +34,60 @@ class TenantAdminOwnerController {
         } catch (error) {
             console.error('Error listing owners:', error);
             res.status(500).json({ success: false, error: 'Error al listar propietarios' });
+        }
+    }
+
+    /**
+     * GET /api/tenant-admin/owners/export
+     * Excel: propietarios e inmuebles asignados en el tenant
+     */
+    static async exportExcel(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const tenant = await TenantModel.findById(tenantId);
+            const rows = await UserModel.findOwnersForExport(tenantId);
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Condominio360';
+            const sheet = workbook.addWorksheet('Propietarios');
+            sheet.columns = [
+                { header: 'Nombre', key: 'first_name', width: 18 },
+                { header: 'Apellido', key: 'last_name', width: 18 },
+                { header: 'Email', key: 'email', width: 28 },
+                { header: 'Teléfono', key: 'phone', width: 16 },
+                { header: 'DNI / Documento', key: 'dni', width: 16 },
+                { header: 'Usuario activo', key: 'is_active', width: 12 },
+                { header: 'Inmueble', key: 'inmueble', width: 22 },
+                { header: 'Edificio', key: 'edificio', width: 18 },
+                { header: 'Principal', key: 'is_primary_owner', width: 10 },
+                { header: '% participación', key: 'porcentaje_participacion', width: 14 },
+                { header: 'ID propietario', key: 'user_id', width: 38 },
+                { header: 'ID inmueble', key: 'property_id', width: 38 }
+            ];
+            sheet.getRow(1).font = { bold: true };
+            rows.forEach((r) => {
+                sheet.addRow({
+                    first_name: r.first_name,
+                    last_name: r.last_name,
+                    email: r.email,
+                    phone: r.phone || '',
+                    dni: r.dni || '',
+                    is_active: r.is_active ? 'Sí' : 'No',
+                    inmueble: r.inmueble || '(sin inmueble en este conjunto)',
+                    edificio: r.edificio || '',
+                    is_primary_owner: r.is_primary_owner === true || r.is_primary_owner === 1 ? 'Sí' : (r.property_id ? 'No' : ''),
+                    porcentaje_participacion: r.porcentaje_participacion != null ? parseFloat(r.porcentaje_participacion) : '',
+                    user_id: r.user_id,
+                    property_id: r.property_id || ''
+                });
+            });
+            const safeName = (tenant?.name || 'condominio').replace(/[^\w\s-]/g, '').slice(0, 40);
+            const filename = `propietarios-${safeName}.xlsx`;
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            await workbook.xlsx.write(res);
+        } catch (error) {
+            console.error('Export owners (tenant admin) error:', error);
+            res.status(500).json({ success: false, error: 'Error al exportar propietarios' });
         }
     }
 

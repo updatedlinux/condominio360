@@ -106,6 +106,7 @@ router.get('/buildings/:id/properties', BuildingController.getProperties);
 
 // ==================== INMUEBLES/PROPIEDADES (SOLO LECTURA) ====================
 router.get('/properties', PropertyController.listForTenantAdmin);
+router.get('/properties/export', PropertyController.exportForTenantAdmin);
 router.get('/properties/:id', PropertyController.getForTenantAdmin);
 router.get('/properties/:id/owners', PropertyController.getPropertyOwners);
 router.get('/properties/:id/audit', TenantAdminController.getPropertyAudit); // Auditoría completa
@@ -113,6 +114,7 @@ router.get('/properties/:id/billing-invoices', TenantAdminBillingController.getP
 
 // ==================== PROPIETARIOS (LECTURA Y EDICIÓN) ====================
 router.get('/owners', TenantAdminOwnerController.list);
+router.get('/owners/export', TenantAdminOwnerController.exportExcel);
 router.get('/owners/:id', TenantAdminOwnerController.getById);
 router.put('/owners/:id', TenantAdminOwnerController.update);
 router.get('/owners/:id/properties', TenantAdminOwnerController.getProperties);

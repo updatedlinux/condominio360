@@ -197,6 +197,10 @@
                     Alícuotas: <span id="alicuota-total">0</>% / 100%
                 </div>
                 <% } %>
+                <button type="button" onclick="exportPropertiesExcel()" class="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition" title="Todos los inmuebles con detalle">
+                    <span class="material-symbols-rounded">table_view</span>
+                    Descargar Excel
+                </button>
                 <button onclick="openBulkConfigModal()" class="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition">
                     <span class="material-symbols-rounded">upload_file</span>
                     Carga Masiva CSV
@@ -561,6 +565,34 @@
         let currentBuildingFilter = '';
         let csvUploadData = [];
         let pendingConfirmAction = null;
+
+        async function exportPropertiesExcel() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/properties/export`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'Error al exportar');
+                    return;
+                }
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition');
+                let filename = 'inmuebles.xlsx';
+                if (cd && cd.includes('filename=')) {
+                    const m = cd.match(/filename="?([^";]+)"?/);
+                    if (m) filename = decodeURIComponent(m[1]);
+                }
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                console.error(e);
+                alert('Error al descargar Excel');
+            }
+        }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
