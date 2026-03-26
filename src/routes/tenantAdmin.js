@@ -272,6 +272,7 @@ router.post('/billing/preliminaries/:id/send', TenantAdminBillingController.send
 
 // Recibos
 router.get('/billing/invoices', TenantAdminBillingController.listInvoices);
+router.get('/billing/invoices/export-by-month', TenantAdminBillingController.exportInvoicesByMonth);
 router.get('/billing/invoices/:id', TenantAdminBillingController.getInvoice);
 router.post('/billing/invoices/:id/payment', TenantAdminBillingController.registerPayment);
 router.post('/billing/invoices/:id/confirm-payment', TenantAdminBillingController.confirmPayment);

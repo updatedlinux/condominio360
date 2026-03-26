@@ -1072,6 +1072,124 @@ class TenantAdminBillingController {
     }
 
     /**
+     * GET /api/tenant-admin/billing/invoices/export-by-month?year=YYYY&month=M
+     * Excel solo del mes indicado (recuentos + detalle de recibos)
+     */
+    static async exportInvoicesByMonth(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const year = parseInt(req.query.year, 10);
+            const month = parseInt(req.query.month, 10);
+            if (!year || year < 2000 || year > 2100 || !month || month < 1 || month > 12) {
+                return res.status(400).json({ error: 'Parámetros year y month inválidos (month 1-12)' });
+            }
+
+            const rows = await BillingModel.getInvoicesForBillingMonth(tenantId, year, month);
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const periodLabel = `${months[month - 1]} ${year}`;
+
+            let paid = 0;
+            let pending = 0;
+            let other = 0;
+            let sumAssignedVes = 0;
+            let sumPaidVes = 0;
+            let pendingReport = 0;
+            rows.forEach((r) => {
+                const st = r.status;
+                if (st === 'PAID') {
+                    paid += 1;
+                } else if (st === 'PENDING') {
+                    pending += 1;
+                } else {
+                    other += 1;
+                }
+                sumAssignedVes += parseFloat(r.assigned_amount_ves) || 0;
+                if (st === 'PAID') sumPaidVes += parseFloat(r.paid_amount_ves) || parseFloat(r.assigned_amount_ves) || 0;
+                if (r.payment_report_pending === 1 || r.payment_report_pending === true) pendingReport += 1;
+            });
+
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Condominio360';
+            const sheetRes = workbook.addWorksheet('Resumen', { properties: { tabColor: { argb: 'FFF97316' } } });
+            sheetRes.columns = [
+                { header: 'Concepto', key: 'k', width: 28 },
+                { header: 'Valor', key: 'v', width: 40 }
+            ];
+            sheetRes.getRow(1).font = { bold: true };
+            sheetRes.addRows([
+                { k: 'Período de facturación', v: periodLabel },
+                { k: 'Total recibos', v: rows.length },
+                { k: 'Pagados', v: paid },
+                { k: 'Pendientes de pago', v: pending },
+                { k: 'Otros estados', v: other },
+                { k: 'Con reporte de pago pendiente de confirmación', v: pendingReport },
+                { k: 'Monto total asignado (VES)', v: sumAssignedVes },
+                { k: 'Monto cobrado según recibos pagados (VES)', v: sumPaidVes }
+            ]);
+
+            const sheetDet = workbook.addWorksheet('Recibos', { properties: { tabColor: { argb: 'FF10B981' } } });
+            sheetDet.columns = [
+                { header: 'Nº Recibo', key: 'num', width: 16 },
+                { header: 'Preliminar', key: 'prelim', width: 28 },
+                { header: 'Inmueble', key: 'prop', width: 22 },
+                { header: 'Edificio', key: 'edif', width: 18 },
+                { header: 'Propietario', key: 'owner', width: 26 },
+                { header: 'Email', key: 'email', width: 28 },
+                { header: 'Estado', key: 'estado', width: 12 },
+                { header: 'Tipo reparto', key: 'prop_type', width: 14 },
+                { header: 'Alícuota / parte', key: 'prop_val', width: 14 },
+                { header: 'Monto USD', key: 'usd', width: 14 },
+                { header: 'Monto VES', key: 'ves', width: 16 },
+                { header: 'Pagado VES', key: 'paid_ves', width: 14 },
+                { header: 'Fecha pago', key: 'paid_at', width: 18 },
+                { header: 'Método pago', key: 'pm', width: 14 },
+                { header: 'Referencia', key: 'ref', width: 22 },
+                { header: 'Reporte pendiente', key: 'rep_pend', width: 16 },
+                { header: 'Tasa creación', key: 'rate_c', width: 12 },
+                { header: 'Tasa actual', key: 'rate_a', width: 12 },
+                { header: 'ID recibo', key: 'id', width: 38 }
+            ];
+            sheetDet.getRow(1).font = { bold: true };
+            sheetDet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+            sheetDet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+            const estadoTxt = (s) => (s === 'PAID' ? 'Pagado' : s === 'PENDING' ? 'Pendiente' : (s || '-'));
+
+            rows.forEach((r) => {
+                sheetDet.addRow({
+                    num: r.invoice_number || '-',
+                    prelim: r.preliminary_name || '-',
+                    prop: r.property_name || '-',
+                    edif: r.building_label || '-',
+                    owner: (r.owner_name || '').trim() || '-',
+                    email: r.owner_email || '',
+                    estado: estadoTxt(r.status),
+                    prop_type: r.proportion_type || '',
+                    prop_val: r.proportion_value != null ? parseFloat(r.proportion_value) : '',
+                    usd: parseFloat(r.assigned_amount_usd || 0),
+                    ves: parseFloat(r.assigned_amount_ves || 0),
+                    paid_ves: r.paid_amount_ves != null ? parseFloat(r.paid_amount_ves) : '',
+                    paid_at: r.paid_at ? new Date(r.paid_at) : '',
+                    pm: r.payment_method || '',
+                    ref: r.payment_reference || '',
+                    rep_pend: r.payment_report_pending ? 'Sí' : 'No',
+                    rate_c: r.exchange_rate_at_creation != null ? parseFloat(r.exchange_rate_at_creation) : '',
+                    rate_a: r.current_exchange_rate != null ? parseFloat(r.current_exchange_rate) : '',
+                    id: r.id
+                });
+            });
+
+            const filename = `recibos-${year}-${String(month).padStart(2, '0')}.xlsx`;
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            await workbook.xlsx.write(res);
+        } catch (error) {
+            console.error('Export invoices by month error:', error);
+            res.status(500).json({ error: 'Error al exportar recibos del mes' });
+        }
+    }
+
+    /**
      * GET /api/tenant-admin/billing/invoices/:id
      */
     static async getInvoice(req, res) {

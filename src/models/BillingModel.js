@@ -347,6 +347,70 @@ class BillingModel {
     }
 
     /**
+     * Recibos de un mes/período de facturación (para export Excel tenant admin)
+     */
+    static async getInvoicesForBillingMonth(tenantId, billingYear, billingMonth) {
+        try {
+            const pool = await connectDB();
+            const result = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .input('billing_year', sql.Int, billingYear)
+                .input('billing_month', sql.Int, billingMonth)
+                .query(`
+                    SELECT
+                        i.id,
+                        i.invoice_number,
+                        i.status,
+                        i.total_amount_usd,
+                        i.total_amount_ves,
+                        i.assigned_amount_usd,
+                        i.assigned_amount_ves,
+                        i.proportion_type,
+                        i.proportion_value,
+                        i.paid_amount_ves,
+                        i.paid_at,
+                        i.payment_method,
+                        i.payment_reference,
+                        i.exchange_rate_at_creation,
+                        i.current_exchange_rate,
+                        i.created_at,
+                        p.name AS property_name,
+                        COALESCE(b.name, p.building) AS building_label,
+                        p.floor,
+                        pr.billing_month,
+                        pr.billing_year,
+                        pr.name AS preliminary_name,
+                        pr.id AS preliminary_id,
+                        LTRIM(RTRIM(CONCAT(ISNULL(ou.first_name, N''), N' ', ISNULL(ou.last_name, N'')))) AS owner_name,
+                        ou.email AS owner_email,
+                        CASE WHEN EXISTS (
+                            SELECT 1 FROM BillingPaymentReports r
+                            WHERE r.invoice_id = i.id AND r.status = N'PENDING_CONFIRMATION'
+                        ) THEN 1 ELSE 0 END AS payment_report_pending
+                    FROM BillingInvoices i
+                    INNER JOIN Properties p ON i.property_id = p.id
+                    LEFT JOIN Buildings b ON b.id = p.building_id
+                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    OUTER APPLY (
+                        SELECT TOP 1 u.first_name, u.last_name, u.email
+                        FROM PropertyOwners po
+                        INNER JOIN Users u ON u.id = po.user_id
+                        WHERE po.property_id = p.id
+                        ORDER BY po.is_primary_owner DESC, po.percentage_ownership DESC
+                    ) AS ou
+                    WHERE i.tenant_id = @tenant_id
+                      AND pr.billing_year = @billing_year
+                      AND pr.billing_month = @billing_month
+                    ORDER BY COALESCE(b.name, p.building, N''), p.name, i.invoice_number
+                `);
+            return result.recordset;
+        } catch (error) {
+            console.error('Error fetching invoices for billing month:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Obtener recibo por ID con items
      */
     static async getInvoiceWithItems(id, tenantId) {
