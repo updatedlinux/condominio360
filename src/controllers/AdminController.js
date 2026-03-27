@@ -2407,10 +2407,21 @@ class AdminController {
             await SystemSettingsModel.updateBcvApiKey(apiKey.trim(), userId);
             BCVService.invalidateApiKeyCache();
 
+            // Una consulta inmediata con la nueva clave (el cron diario / horario no se modifica)
+            const rateRefresh = await BCVService.fetchAndSave();
+
             await AdminController.logAudit(req, 'UPDATE', 'SYSTEM_SETTINGS', 'BCV_API_KEY',
                 'Actualizó clave API DolarVzla (BCV) en configuración global', null);
 
-            res.json({ success: true, message: 'Clave API guardada correctamente' });
+            const message = rateRefresh
+                ? 'Clave API guardada y tasas BCV actualizadas desde la API'
+                : 'Clave API guardada. No se pudo obtener la tasa desde la API ahora; verifica la clave o inténtalo más tarde. La actualización automática seguirá según el horario configurado.';
+
+            res.json({
+                success: true,
+                message,
+                data: { bcvRateRefreshed: !!rateRefresh }
+            });
         } catch (error) {
             console.error('updateBcvSettings error:', error);
             res.status(500).json({ success: false, error: 'Error al guardar la clave API' });

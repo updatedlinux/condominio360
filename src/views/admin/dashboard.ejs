@@ -1729,7 +1729,9 @@
                     return;
                 }
                 input.value = '';
-                showSnackbar('Clave API guardada', 'success');
+                const refreshed = data.data?.bcvRateRefreshed;
+                const snackType = refreshed === false ? 'warning' : 'success';
+                showSnackbar(data.message || 'Clave API guardada', snackType);
                 await loadBcvSettings();
             } catch (e) {
                 showSnackbar('Error al guardar', 'error');
@@ -3294,6 +3296,8 @@
                 snackbar.style.background = '#ba1a1a';
             } else if (type === 'success') {
                 snackbar.style.background = '#006c4c';
+            } else if (type === 'warning') {
+                snackbar.style.background = '#b45309';
             } else {
                 snackbar.style.background = 'var(--md-sys-color-on-surface)';
             }
