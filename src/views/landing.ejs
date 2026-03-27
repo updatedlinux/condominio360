@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <% if (typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) { %>
+    <script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>"></script>
+    <% } %>
     <style>
         body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
     </style>
@@ -552,7 +555,38 @@
     </div>
     <style>@keyframes fadeIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}</style>
 
+    <script>window.RECAPTCHA_SITE_KEY = '<%= typeof recaptchaSiteKey !== "undefined" ? (recaptchaSiteKey || "") : "" %>';</script>
     <script>
+        /** Misma lógica que login (auth.js): reCAPTCHA v3 con acción distinta para el backend */
+        function getRecaptchaTokenDemo() {
+            const siteKey = (window.RECAPTCHA_SITE_KEY || '').trim();
+            if (!siteKey) return Promise.resolve(null);
+            if (typeof grecaptcha === 'undefined') {
+                console.warn('[reCAPTCHA] grecaptcha no definido. Verifica que el script cargue.');
+                return Promise.resolve(null);
+            }
+            return new Promise((resolve) => {
+                try {
+                    grecaptcha.ready(function() {
+                        try {
+                            grecaptcha.execute(siteKey, { action: 'demo_request' }).then(function(token) {
+                                resolve(token || null);
+                            }).catch(function(err) {
+                                console.warn('[reCAPTCHA] execute error:', err);
+                                resolve(null);
+                            });
+                        } catch (e) {
+                            console.warn('[reCAPTCHA] Error:', e.message);
+                            resolve(null);
+                        }
+                    });
+                } catch (err) {
+                    console.warn('[reCAPTCHA] Error:', err.message || err);
+                    resolve(null);
+                }
+            });
+        }
+
         function toggleMobileMenu() {
             document.getElementById('mobile-menu').classList.toggle('hidden');
         }
@@ -633,10 +667,14 @@
             }
 
             try {
+                const recaptchaToken = await getRecaptchaTokenDemo();
+                const body = { email };
+                if (recaptchaToken) body.recaptchaToken = recaptchaToken;
+
                 const res = await fetch('/api/demo-request', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify(body)
                 });
                 const data = await res.json();
 

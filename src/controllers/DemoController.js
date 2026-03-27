@@ -4,6 +4,7 @@
  */
 const EmailService = require('../services/EmailService');
 const UserModel = require('../models/UserModel');
+const { verifyRecaptcha } = require('../services/RecaptchaService');
 
 class DemoController {
     /**
@@ -12,7 +13,7 @@ class DemoController {
      */
     static async requestDemo(req, res) {
         try {
-            const { email } = req.body;
+            const { email, recaptchaToken } = req.body;
             const emailTrim = (email || '').trim().toLowerCase();
 
             if (!emailTrim) {
@@ -23,6 +24,22 @@ class DemoController {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(emailTrim)) {
                 return res.status(400).json({ success: false, error: 'Correo electrónico inválido' });
+            }
+
+            if (process.env.RECAPTCHA_SECRET_KEY) {
+                if (!recaptchaToken) {
+                    console.warn('[reCAPTCHA] Solicitud demo sin token. ¿RECAPTCHA_SITE_KEY está en .env y el script carga en el landing?');
+                }
+                const recap = await verifyRecaptcha(recaptchaToken, 'demo_request');
+                if (!recap.ok) {
+                    if (!recap.skipped) {
+                        console.warn('[reCAPTCHA] Demo request falló:', recap.error, recap.details ? { details: recap.details } : '');
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        error: recap.skipped ? 'Error de verificación' : (recap.error || 'Verificación de seguridad fallida. Intenta de nuevo.')
+                    });
+                }
             }
 
             // 1. Enviar acuse de recibo al solicitante (Arsys Intela branding)
