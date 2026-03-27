@@ -26,6 +26,10 @@ router.get('/stats', AdminController.getStats);
 router.get('/activity', AdminController.getActivity);
 router.get('/audit-logs', AdminController.getAuditLogs);
 
+// API DolarVzla / BCV (clave en BD; .env como respaldo)
+router.get('/bcv-settings', AdminController.getBcvSettings);
+router.put('/bcv-settings', AdminController.updateBcvSettings);
+
 // ==================== SUPERADMINS ====================
 router.get('/superadmins', AdminController.getSuperAdmins);
 router.post('/superadmins', AdminController.createSuperAdmin);

@@ -13,6 +13,20 @@ function formatDateVenezuela(dateVal, options = { weekday: 'long', year: 'numeri
 }
 
 /**
+ * Valor de cabecera From para nodemailer.
+ * Si SMTP_FROM ya trae formato RFC ("Nombre <correo@dominio>"), no se vuelve a envolver
+ * (evita "Condominio360" <Condominio360 <...>> y el remitente roto tipo "Condominio360>").
+ */
+function resolveSmtpFromHeader() {
+    const raw = (process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@condominio360.com').trim();
+    // Ya es "Nombre <correo@dominio>" (o similar con <...>)
+    if (/<[^>]+@[^>]+>/.test(raw)) {
+        return raw;
+    }
+    return `"Condominio360" <${raw}>`;
+}
+
+/**
  * Servicio de Email para envío de notificaciones e invitaciones
  */
 class EmailService {
@@ -69,10 +83,8 @@ class EmailService {
      * Enviar email genérico
      */
     async send(to, subject, html, text = null) {
-        const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@condominio360.com';
-        
         const mailOptions = {
-            from: `"Condominio360" <${from}>`,
+            from: resolveSmtpFromHeader(),
             to,
             subject,
             html,

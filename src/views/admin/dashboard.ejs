@@ -534,7 +534,9 @@
             <nav class="flex-1 py-4 overflow-y-auto">
                 <div class="nav-item active" onclick="showSection('dashboard', this)">
                     <span class="icon material-symbols-rounded">space_dashboard</span>
-                    <span class="label">Dashboard</span>
+                    <span class="label flex items-center gap-2">Dashboard
+                        <span id="bcv-nav-badge" class="hidden min-w-[8px] h-2 rounded-full bg-red-500" title="Clave API BCV"></span>
+                    </span>
                 </div>
                 <div class="nav-item" onclick="showSection('tenants', this)">
                     <span class="icon material-symbols-rounded">apartment</span>
@@ -597,6 +599,49 @@
             <div class="p-6 max-w-7xl mx-auto">
                 <!-- Dashboard Section -->
                 <section id="section-dashboard" class="space-y-6">
+                    <!-- Recordatorio clave API DolarVzla (BCV) -->
+                    <div id="bcv-reminder-banner" class="hidden rounded-xl border p-4 flex gap-3 items-start">
+                        <span class="material-symbols-rounded flex-shrink-0 text-2xl">key</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-900" id="bcv-reminder-title">Clave API BCV</p>
+                            <p class="text-sm mt-1 text-gray-700" id="bcv-reminder-text"></p>
+                        </div>
+                    </div>
+
+                    <!-- Configuración API DolarVzla -->
+                    <div class="md-card p-6 border border-gray-100">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
+                                    <span class="material-symbols-rounded text-[var(--md-sys-color-primary)]">currency_exchange</span>
+                                    Tasa BCV — API DolarVzla
+                                </h3>
+                                <p class="text-sm text-gray-500 mt-1">El token de la API expira aproximadamente cada 2 días. Guárdalo aquí para evitar editar el servidor y reinicios.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Clave actual (referencia)</span>
+                                <p class="font-mono text-gray-900 mt-2" id="bcv-key-masked">—</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Origen</span>
+                                <p class="mt-2" id="bcv-key-source">—</p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <span class="text-gray-500">Última actualización en panel</span>
+                                <p class="mt-2" id="bcv-key-updated">—</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-100 pt-4 space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Nueva clave API (x-dolarvzla-key)</label>
+                            <textarea id="bcv-api-key-input" rows="2" placeholder="Pega aquí el token generado en dolarvzla.com" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:border-transparent"></textarea>
+                            <button type="button" onclick="saveBcvApiKey()" class="md-button md-button-filled">
+                                Guardar clave
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Stats Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <!-- Stat Card 1 -->
@@ -1598,6 +1643,8 @@
                 loadSaaSBilling();
             } else if (sectionName === 'balance-financiero') {
                 loadBalanceFinanciero();
+            } else if (sectionName === 'dashboard') {
+                loadBcvSettings();
             }
         }
 
@@ -1605,8 +1652,88 @@
         async function loadDashboard() {
             await Promise.all([
                 loadStats(),
-                loadActivity()
+                loadActivity(),
+                loadBcvSettings()
             ]);
+        }
+
+        async function loadBcvSettings() {
+            try {
+                const res = await fetch('/api/admin/bcv-settings', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (!data.success) return;
+                applyBcvSettingsUi(data.data);
+            } catch (e) {
+                console.error('loadBcvSettings', e);
+            }
+        }
+
+        function applyBcvSettingsUi(d) {
+            const banner = document.getElementById('bcv-reminder-banner');
+            const titleEl = document.getElementById('bcv-reminder-title');
+            const textEl = document.getElementById('bcv-reminder-text');
+            const navDot = document.getElementById('bcv-nav-badge');
+            document.getElementById('bcv-key-masked').textContent = d.keyMasked || '—';
+            document.getElementById('bcv-key-source').textContent =
+                d.source === 'database' ? 'Base de datos (recomendado)' :
+                d.source === 'environment' ? 'Variable de entorno (.env)' : 'Ninguna';
+            document.getElementById('bcv-key-updated').textContent = d.updatedAt
+                ? new Date(d.updatedAt).toLocaleString('es-VE', { timeZone: 'America/Caracas' })
+                : '—';
+
+            banner.classList.remove('hidden', 'bg-amber-50', 'border-amber-200', 'bg-red-50', 'border-red-200', 'bg-blue-50', 'border-blue-200');
+            navDot.classList.add('hidden');
+            navDot.classList.remove('bg-red-500', 'bg-amber-500', 'bg-blue-500', 'w-2', 'h-2', 'min-w-[8px]');
+
+            if (d.reminderLevel === 'none' || !d.reminderMessage) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            const msg = d.reminderMessage;
+            textEl.textContent = msg;
+            if (d.reminderLevel === 'urgent') {
+                banner.classList.add('bg-red-50', 'border-red-200', 'border');
+                titleEl.textContent = 'Acción requerida: clave API BCV';
+                navDot.classList.remove('hidden');
+                navDot.classList.add('bg-red-500', 'w-2', 'h-2', 'min-w-[8px]');
+            } else if (d.reminderLevel === 'warning') {
+                banner.classList.add('bg-amber-50', 'border-amber-200', 'border');
+                titleEl.textContent = 'Renueva pronto la clave API BCV';
+                navDot.classList.remove('hidden');
+                navDot.classList.add('bg-amber-500', 'w-2', 'h-2', 'min-w-[8px]');
+            } else if (d.reminderLevel === 'info') {
+                banner.classList.add('bg-blue-50', 'border-blue-200', 'border');
+                titleEl.textContent = 'Sugerencia: clave API BCV';
+                navDot.classList.remove('hidden');
+                navDot.classList.add('bg-blue-500', 'w-2', 'h-2', 'min-w-[8px]');
+            }
+        }
+
+        async function saveBcvApiKey() {
+            const input = document.getElementById('bcv-api-key-input');
+            const val = (input?.value || '').trim();
+            if (!val) {
+                showSnackbar('Pega la clave API', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/bcv-settings', {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: val })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    showSnackbar(data.error || 'Error al guardar', 'error');
+                    return;
+                }
+                input.value = '';
+                showSnackbar('Clave API guardada', 'success');
+                await loadBcvSettings();
+            } catch (e) {
+                showSnackbar('Error al guardar', 'error');
+            }
         }
 
         async function loadStats() {

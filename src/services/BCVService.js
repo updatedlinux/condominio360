@@ -3,11 +3,42 @@ const ExchangeRateModel = require('../models/ExchangeRateModel');
 
 /**
  * Servicio para consultar y gestionar las tasas de cambio BCV
+ * La clave API se lee de SystemSettings (BD) en prioridad; si no existe, de BCV_API_KEY en .env.
  */
 class BCVService {
     constructor() {
         this.apiUrl = 'https://api.dolarvzla.com/public/bcv/exchange-rate';
-        this.apiKey = process.env.BCV_API_KEY || '1a5f1abbecf35cd232a178b213fca110c105edec7e089cfdbd93f93f9609b1c9';
+    }
+
+    /**
+     * Invalidar caché en memoria tras actualizar la clave en BD (opcional)
+     */
+    invalidateApiKeyCache() {
+        this._apiKeyCache = null;
+        this._apiKeyCacheExpiry = 0;
+    }
+
+    /**
+     * @returns {Promise<string|null>}
+     */
+    async getApiKey() {
+        const now = Date.now();
+        if (this._apiKeyCache && now < this._apiKeyCacheExpiry) {
+            return this._apiKeyCache;
+        }
+        let key = null;
+        try {
+            const SystemSettingsModel = require('../models/SystemSettingsModel');
+            key = await SystemSettingsModel.getBcvApiKey();
+        } catch (e) {
+            console.warn('BCV getApiKey (BD):', e.message);
+        }
+        if (!key) {
+            key = (process.env.BCV_API_KEY || '').trim() || null;
+        }
+        this._apiKeyCache = key;
+        this._apiKeyCacheExpiry = now + 60_000;
+        return key;
     }
 
     /**
@@ -16,12 +47,17 @@ class BCVService {
      */
     async fetchFromAPI() {
         try {
+            const apiKey = await this.getApiKey();
+            if (!apiKey) {
+                console.error('❌ No hay clave API BCV: configúrela en Super Admin → Dashboard o BCV_API_KEY en .env');
+                return null;
+            }
             console.log('🔄 Consultando API BCV para tasas de cambio...');
-            
+
             const response = await axios.get(this.apiUrl, {
                 timeout: 30000,
                 headers: {
-                    'x-dolarvzla-key': this.apiKey,
+                    'x-dolarvzla-key': apiKey,
                     'Accept': 'application/json',
                     'User-Agent': 'Condominio360/1.0'
                 }
@@ -181,11 +217,15 @@ class BCVService {
      */
     async needsUpdate() {
         try {
-            // Consultar la API para obtener la fecha de la tasa más reciente
+            const apiKey = await this.getApiKey();
+            if (!apiKey) {
+                console.error('❌ No hay clave API BCV para verificar actualización');
+                return false;
+            }
             const response = await axios.get(this.apiUrl, {
                 timeout: 10000,
                 headers: {
-                    'x-dolarvzla-key': this.apiKey,
+                    'x-dolarvzla-key': apiKey,
                     'Accept': 'application/json',
                     'User-Agent': 'Condominio360/1.0'
                 }
