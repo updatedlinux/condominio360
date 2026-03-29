@@ -94,6 +94,23 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', uptime: process.uptime() });
 });
 
+// Rutas no definidas: respuesta controlada (sin mensaje técnico "Cannot GET") — 404 para HTML, JSON mínimo para API
+app.use((req, res) => {
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ success: false, error: 'Recurso no encontrado' });
+    }
+    if (req.method === 'HEAD') {
+        return res.status(404).end();
+    }
+    if (req.method === 'GET') {
+        return res.status(404).render('error-not-found', {
+            title: 'Página no encontrada',
+            layout: false
+        });
+    }
+    return res.status(404).send('Not found');
+});
+
 // Importar Scheduler y Queue Service
 const SchedulerService = require('./services/SchedulerService');
 const CommuniqueQueueService = require('./services/CommuniqueQueueService');
