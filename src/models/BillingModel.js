@@ -473,6 +473,10 @@ class BillingModel {
                     FROM BillingInvoices i
                     INNER JOIN Tenants t ON i.tenant_id = t.id
                     WHERE i.status = 'PENDING'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM BillingPaymentReports r
+                          WHERE r.invoice_id = i.id AND r.status = N'PENDING_CONFIRMATION'
+                      )
                     ORDER BY i.tenant_id, i.property_id
                 `);
             return result.recordset;
@@ -508,6 +512,39 @@ class BillingModel {
             return updated;
         } catch (error) {
             console.error('Error updating invoice rate:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Recalcula el monto VES del recibo con la tasa BCV más reciente (misma lógica que el job diario).
+     * Se usa al rechazar un reporte de pago: el recibo vuelve a pendiente y debe reflejar la tasa del día.
+     */
+    static async refreshInvoiceToLatestBcvRate(invoiceId, tenantId) {
+        try {
+            const ExchangeRateModel = require('./ExchangeRateModel');
+            const latestRate = await ExchangeRateModel.getLatest();
+            if (!latestRate || latestRate.usd_rate == null) {
+                return null;
+            }
+            const pool = await connectDB();
+            const invRes = await pool.request()
+                .input('id', sql.UniqueIdentifier, invoiceId)
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT assigned_amount_usd FROM BillingInvoices
+                    WHERE id = @id AND tenant_id = @tenant_id AND status = N'PENDING'
+                `);
+            const row = invRes.recordset[0];
+            if (!row) {
+                return null;
+            }
+            const usd = parseFloat(row.assigned_amount_usd) || 0;
+            const newRate = parseFloat(latestRate.usd_rate);
+            const newAmountVes = usd * newRate;
+            return BillingModel.updateInvoiceRate(invoiceId, newRate, newAmountVes);
+        } catch (error) {
+            console.error('Error refreshing invoice BCV rate:', error);
             throw error;
         }
     }
@@ -646,7 +683,11 @@ class BillingModel {
                     OUTPUT INSERTED.*
                     WHERE id = @report_id
                 `);
-            return result.recordset[0] || null;
+            const out = result.recordset[0] || null;
+            if (out) {
+                await BillingModel.refreshInvoiceToLatestBcvRate(invoiceId, tenantId);
+            }
+            return out;
         } catch (error) {
             console.error('Error rejecting payment report:', error);
             throw error;

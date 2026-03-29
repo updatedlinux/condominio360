@@ -110,7 +110,11 @@ class OwnerBillingController {
                 .query(`
                     SELECT i.*, p.name as property_name, p.building,
                         pr.billing_month, pr.billing_year, pr.name as preliminary_name,
-                        pr.exchange_rate_usd
+                        pr.exchange_rate_usd,
+                        CASE WHEN EXISTS (
+                            SELECT 1 FROM BillingPaymentReports r
+                            WHERE r.invoice_id = i.id AND r.status = N'PENDING_CONFIRMATION'
+                        ) THEN 1 ELSE 0 END AS payment_report_pending
                     FROM BillingInvoices i
                     INNER JOIN Properties p ON i.property_id = p.id
                     INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
