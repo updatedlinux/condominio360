@@ -3,6 +3,7 @@ const router = express.Router();
 const AdminController = require('../controllers/AdminController');
 const AdminDataUpdateController = require('../controllers/AdminDataUpdateController');
 const AdminSaaSBillingController = require('../controllers/AdminSaaSBillingController');
+const { conditionalSaaSFiscalUpload } = require('../middleware/uploadSaaSFiscalInvoice');
 const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
 const PropertyController = require('../controllers/PropertyController');
@@ -86,7 +87,7 @@ router.get('/saas-billing/payment-config', AdminSaaSBillingController.getPayment
 router.put('/saas-billing/payment-config', AdminSaaSBillingController.savePaymentConfig);
 router.get('/saas-billing/invoices', AdminSaaSBillingController.listInvoices);
 router.get('/saas-billing/invoices/:id', AdminSaaSBillingController.getInvoice);
-router.post('/saas-billing/invoices', AdminSaaSBillingController.createInvoice);
+router.post('/saas-billing/invoices', conditionalSaaSFiscalUpload, AdminSaaSBillingController.createInvoice);
 router.patch('/saas-billing/invoices/:id', AdminSaaSBillingController.updateInvoice);
 router.post('/saas-billing/invoices/:id/recalculate', AdminSaaSBillingController.recalculateInvoice);
 router.post('/saas-billing/invoices/:id/confirm-payment', AdminSaaSBillingController.confirmPayment);

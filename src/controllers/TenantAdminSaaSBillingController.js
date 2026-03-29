@@ -61,6 +61,7 @@ class TenantAdminSaaSBillingController {
             }
             const rateInfo = await SaaSBillingRateService.getApplicableRate();
             const paymentReport = invoice.status === 'PENDING' ? await SaaSBillingModel.getLatestPaymentReport(invoice.id) : null;
+            const has_pending_payment_report = !!(paymentReport && paymentReport.status === 'PENDING_CONFIRMATION');
             res.json({
                 success: true,
                 data: {
@@ -68,7 +69,8 @@ class TenantAdminSaaSBillingController {
                     current_rate: rateInfo.rate,
                     current_rate_date: rateInfo.rateDate,
                     applied_rule: rateInfo.appliedRule,
-                    payment_report: paymentReport
+                    payment_report: paymentReport,
+                    has_pending_payment_report
                 }
             });
         } catch (error) {

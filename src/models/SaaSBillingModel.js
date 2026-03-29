@@ -1,6 +1,8 @@
 const { sql, connectDB } = require('../config/database');
 
 const UNIT_PRICE_USD = 0.50;
+const FISCAL_SHIPPING_USD = 10;
+const IVA_RATE = 0.16;
 
 /**
  * Modelo para facturación SaaS (Condominio360 → Condominios)
@@ -8,9 +10,18 @@ const UNIT_PRICE_USD = 0.50;
 class SaaSBillingModel {
     /**
      * Crear factura mensual para un tenant
+     * @param {object} [options]
+     * @param {'FISCAL'|'VOUCHER'} [options.billingDocumentType] - FISCAL: IVA 16% + envío US$10; VOUCHER: sin recargos
+     * @param {string} [options.fiscalAttachmentPath] - URL pública del PDF/imagen (requerido si FISCAL)
+     * @param {string} [options.fiscalAttachmentMime]
      */
-    static async createInvoice(tenantId, periodMonth, periodYear, extraItems = [], paymentMethod = null, createdBy = null) {
+    static async createInvoice(tenantId, periodMonth, periodYear, extraItems = [], paymentMethod = null, createdBy = null, options = {}) {
         const pool = await connectDB();
+
+        let billingDocumentType = options.billingDocumentType || 'VOUCHER';
+        if (billingDocumentType !== 'FISCAL' && billingDocumentType !== 'VOUCHER') {
+            billingDocumentType = 'VOUCHER';
+        }
 
         const propCount = await pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
@@ -22,11 +33,29 @@ class SaaSBillingModel {
         for (const it of extraItems) {
             extraTotalUsd += (it.amount_usd || 0);
         }
-        const totalUsd = baseTotalUsd + extraTotalUsd;
+        const subtotalUsd = baseTotalUsd + extraTotalUsd;
 
         const SaaSBillingRateService = require('../services/SaaSBillingRateService');
         const { rate: bcvRate, rateDate: bcvRateDate } = await SaaSBillingRateService.getApplicableRate();
-        const totalVes = totalUsd * bcvRate;
+        const subtotalVes = subtotalUsd * bcvRate;
+
+        let ivaUsd = 0;
+        let shippingUsd = 0;
+        let totalUsd = subtotalUsd;
+        let totalVes = subtotalVes;
+        let fiscalAttachmentPath = null;
+        let fiscalAttachmentMime = null;
+
+        if (billingDocumentType === 'FISCAL') {
+            ivaUsd = subtotalUsd * IVA_RATE;
+            shippingUsd = FISCAL_SHIPPING_USD;
+            totalUsd = subtotalUsd + ivaUsd + shippingUsd;
+            const ivaVes = subtotalVes * IVA_RATE;
+            const shippingVes = FISCAL_SHIPPING_USD * bcvRate;
+            totalVes = subtotalVes + ivaVes + shippingVes;
+            fiscalAttachmentPath = options.fiscalAttachmentPath || null;
+            fiscalAttachmentMime = options.fiscalAttachmentMime || null;
+        }
 
         const tx = pool.transaction();
         await tx.begin();
@@ -43,12 +72,17 @@ class SaaSBillingModel {
                 .input('payment_method', sql.NVarChar, paymentMethod)
                 .input('property_count', sql.Int, count)
                 .input('created_by', sql.UniqueIdentifier, createdBy)
+                .input('billing_document_type', sql.NVarChar, billingDocumentType)
+                .input('fiscal_invoice_attachment_path', sql.NVarChar, fiscalAttachmentPath)
+                .input('fiscal_invoice_attachment_mime', sql.NVarChar, fiscalAttachmentMime)
                 .query(`
                     INSERT INTO SaaSInvoices 
-                        (tenant_id, period_month, period_year, total_usd, total_ves, bcv_rate, bcv_rate_date, payment_method, property_count, created_by)
+                        (tenant_id, period_month, period_year, total_usd, total_ves, bcv_rate, bcv_rate_date, payment_method, property_count, created_by,
+                         billing_document_type, fiscal_invoice_attachment_path, fiscal_invoice_attachment_mime)
                     OUTPUT INSERTED.*
                     VALUES 
-                        (@tenant_id, @period_month, @period_year, @total_usd, @total_ves, @bcv_rate, @bcv_rate_date, @payment_method, @property_count, @created_by)
+                        (@tenant_id, @period_month, @period_year, @total_usd, @total_ves, @bcv_rate, @bcv_rate_date, @payment_method, @property_count, @created_by,
+                         @billing_document_type, @fiscal_invoice_attachment_path, @fiscal_invoice_attachment_mime)
                 `);
 
             const invoice = invResult.recordset[0];
@@ -79,6 +113,31 @@ class SaaSBillingModel {
                     .query(`
                         INSERT INTO SaaSInvoiceItems (invoice_id, item_type, description, quantity, unit_price_usd, total_usd, sort_order)
                         VALUES (@invoice_id, 'EXTRA', @description, @quantity, @unit_price, @total_usd, @sort_order)
+                    `);
+            }
+
+            if (billingDocumentType === 'FISCAL') {
+                await tx.request()
+                    .input('invoice_id', sql.UniqueIdentifier, invoice.id)
+                    .input('description', sql.NVarChar, 'Impuesto al valor agregado (IVA 16% sobre subtotal en Bs.)')
+                    .input('quantity', sql.Decimal(10, 2), 1)
+                    .input('unit_price', sql.Decimal(15, 4), ivaUsd)
+                    .input('total_usd', sql.Decimal(15, 4), ivaUsd)
+                    .input('sort_order', sql.Int, order++)
+                    .query(`
+                        INSERT INTO SaaSInvoiceItems (invoice_id, item_type, description, quantity, unit_price_usd, total_usd, sort_order)
+                        VALUES (@invoice_id, 'FISCAL_IVA', @description, @quantity, @unit_price, @total_usd, @sort_order)
+                    `);
+                await tx.request()
+                    .input('invoice_id', sql.UniqueIdentifier, invoice.id)
+                    .input('description', sql.NVarChar, 'Envío de factura fiscal (envío físico al domicilio del conjunto; incluye costos operativos)')
+                    .input('quantity', sql.Decimal(10, 2), 1)
+                    .input('unit_price', sql.Decimal(15, 4), FISCAL_SHIPPING_USD)
+                    .input('total_usd', sql.Decimal(15, 4), FISCAL_SHIPPING_USD)
+                    .input('sort_order', sql.Int, order++)
+                    .query(`
+                        INSERT INTO SaaSInvoiceItems (invoice_id, item_type, description, quantity, unit_price_usd, total_usd, sort_order)
+                        VALUES (@invoice_id, 'FISCAL_SHIPPING', @description, @quantity, @unit_price, @total_usd, @sort_order)
                     `);
             }
 
@@ -113,7 +172,11 @@ class SaaSBillingModel {
         const pool = await connectDB();
         const { limit = 50, offset = 0, status } = options;
         let q = `
-            SELECT i.*, t.name as tenant_name
+            SELECT i.*, t.name as tenant_name,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM SaaSPaymentReports r
+                    WHERE r.invoice_id = i.id AND r.status = N'PENDING_CONFIRMATION'
+                ) THEN 1 ELSE 0 END AS payment_report_pending
             FROM SaaSInvoices i
             INNER JOIN Tenants t ON i.tenant_id = t.id
             WHERE i.tenant_id = @tenant_id
@@ -176,13 +239,18 @@ class SaaSBillingModel {
     }
 
     static async recalculateVes(invoiceId) {
+        const pending = await this.getLatestPaymentReport(invoiceId);
+        if (pending && pending.status === 'PENDING_CONFIRMATION') {
+            return null;
+        }
+
         const SaaSBillingRateService = require('../services/SaaSBillingRateService');
         const { rate, rateDate } = await SaaSBillingRateService.getApplicableRate();
 
         const pool = await connectDB();
         const inv = await pool.request()
             .input('id', sql.UniqueIdentifier, invoiceId)
-            .query('SELECT total_usd FROM SaaSInvoices WHERE id = @id');
+            .query('SELECT total_usd FROM SaaSInvoices WHERE id = @id AND status = N\'PENDING\'');
         if (!inv.recordset[0]) return null;
 
         const totalVes = inv.recordset[0].total_usd * rate;
@@ -192,6 +260,35 @@ class SaaSBillingModel {
             .input('bcv_rate', sql.Decimal(12, 4), rate)
             .input('bcv_rate_date', sql.Date, rateDate)
             .query('UPDATE SaaSInvoices SET total_ves = @total_ves, bcv_rate = @bcv_rate, bcv_rate_date = @bcv_rate_date, updated_at = SYSDATETIME() WHERE id = @id');
+
+        return this.getInvoiceWithItems(invoiceId);
+    }
+
+    /**
+     * Recalcula total VES con la tasa BCV vigente (tras rechazo de reporte de pago).
+     */
+    static async refreshInvoiceVesToLatestRate(invoiceId) {
+        const SaaSBillingRateService = require('../services/SaaSBillingRateService');
+        const { rate, rateDate } = await SaaSBillingRateService.getApplicableRate();
+        if (!rate) return null;
+
+        const pool = await connectDB();
+        const inv = await pool.request()
+            .input('id', sql.UniqueIdentifier, invoiceId)
+            .query('SELECT total_usd FROM SaaSInvoices WHERE id = @id AND status = N\'PENDING\'');
+        if (!inv.recordset[0]) return null;
+
+        const totalVes = parseFloat(inv.recordset[0].total_usd) * rate;
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, invoiceId)
+            .input('total_ves', sql.Decimal(18, 2), totalVes)
+            .input('bcv_rate', sql.Decimal(12, 4), rate)
+            .input('bcv_rate_date', sql.Date, rateDate)
+            .query(`
+                UPDATE SaaSInvoices
+                SET total_ves = @total_ves, bcv_rate = @bcv_rate, bcv_rate_date = @bcv_rate_date, updated_at = SYSDATETIME()
+                WHERE id = @id AND status = N'PENDING'
+            `);
 
         return this.getInvoiceWithItems(invoiceId);
     }
@@ -266,7 +363,11 @@ class SaaSBillingModel {
                 OUTPUT INSERTED.*
                 WHERE id = @report_id
             `);
-        return r.recordset[0] || null;
+        const out = r.recordset[0] || null;
+        if (out) {
+            await SaaSBillingModel.refreshInvoiceVesToLatestRate(invoiceId);
+        }
+        return out;
     }
 
     static async existsForPeriod(tenantId, month, year) {

@@ -1064,10 +1064,28 @@
                         <div id="saas-overview-extra-list" class="space-y-2 mb-2"></div>
                         <button type="button" onclick="addSaaSExtraItemInModal()" class="text-sm text-[var(--md-sys-color-primary)] hover:underline">+ Añadir ítem extraordinario</button>
                     </div>
+                    <div class="border-t border-gray-100 pt-4 mb-4">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Documento de cobro</p>
+                        <p class="text-xs text-gray-500 mb-3">Seleccione una opción (una sola).</p>
+                        <label class="flex items-start gap-2 mb-3 cursor-pointer">
+                            <input type="radio" name="saas-billing-doc" value="VOUCHER" checked onchange="toggleSaaSFiscalFields(); updateSaaSOverviewTotalsFromData();" class="mt-1">
+                            <span class="text-sm text-gray-800">Enviar comprobante de cobro — sin costo adicional</span>
+                        </label>
+                        <label class="flex items-start gap-2 mb-2 cursor-pointer">
+                            <input type="radio" name="saas-billing-doc" value="FISCAL" onchange="toggleSaaSFiscalFields(); updateSaaSOverviewTotalsFromData();" class="mt-1">
+                            <span class="text-sm text-gray-800">Agregar factura fiscal (IVA 16% sobre subtotal en Bs. + envío US$10)</span>
+                        </label>
+                        <p id="saas-fiscal-help" class="hidden text-xs text-gray-500 mb-2 pl-6">Se enviará físicamente la factura a la dirección del conjunto. El cargo de US$10 incluye costos operativos de envío (referencia interna ≈ US$7).</p>
+                        <div id="saas-fiscal-file-wrap" class="hidden pl-6">
+                            <label class="block text-sm text-gray-700 mb-1">Adjunto de factura fiscal (PDF o imagen) *</label>
+                            <input type="file" id="saas-fiscal-file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,image/*" class="text-sm text-gray-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-gray-100">
+                        </div>
+                    </div>
                 </div>
                 <div id="saas-overview-totals" class="bg-gray-50 rounded-xl p-4 text-sm mt-4">
-                    <p class="text-gray-600">Total base estimado: <span id="saas-overview-base">$0</span> USD</p>
+                    <p class="text-gray-600">Subtotal base estimado: <span id="saas-overview-base">$0</span> USD</p>
                     <p class="text-gray-600 mt-1">Total extraordinarios: <span id="saas-overview-extra">$0</span> USD</p>
+                    <p id="saas-overview-fiscal-lines" class="text-gray-600 mt-1 hidden"></p>
                     <p class="font-medium text-gray-900 mt-2">Total: <span id="saas-overview-total">$0</span> USD <span id="saas-overview-ves" class="text-gray-600 font-normal"></span></p>
                     <p class="text-xs text-gray-500 mt-2" id="saas-overview-rate-info">Cargando tasa BCV...</p>
                 </div>
@@ -2028,18 +2046,27 @@
             const month = parseInt(document.getElementById('saas-period-month').value);
             const year = parseInt(document.getElementById('saas-period-year').value);
             const paymentMethod = document.getElementById('saas-payment-method').value?.trim() || null;
-            const body = {
-                period_month: month,
-                period_year: year,
-                payment_method: paymentMethod,
-                extra_items: saasExtraItems,
-                tenant_id: tenantId
-            };
+            const docType = document.querySelector('input[name="saas-billing-doc"]:checked')?.value || 'VOUCHER';
+            const fiscalFile = document.getElementById('saas-fiscal-file');
+            if (docType === 'FISCAL' && (!fiscalFile || !fiscalFile.files || !fiscalFile.files[0])) {
+                showSnackbar('Adjunte el PDF o imagen de la factura fiscal', 'error');
+                return;
+            }
+            const fd = new FormData();
+            fd.append('billing_document_type', docType);
+            fd.append('period_month', String(month));
+            fd.append('period_year', String(year));
+            if (paymentMethod) fd.append('payment_method', paymentMethod);
+            fd.append('tenant_id', tenantId);
+            fd.append('extra_items', JSON.stringify(saasExtraItems));
+            if (docType === 'FISCAL' && fiscalFile.files[0]) {
+                fd.append('fiscal_attachment', fiscalFile.files[0], fiscalFile.files[0].name);
+            }
             try {
                 const res = await fetch('/api/admin/saas-billing/invoices', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(body)
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: fd
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error');
@@ -2188,6 +2215,11 @@
             selectorText.classList.add('text-gray-500');
             document.getElementById('saas-tenant-selector-trigger').disabled = true;
             document.getElementById('saas-overview-modal').classList.remove('hidden');
+            const voucherRadio = document.querySelector('input[name="saas-billing-doc"][value="VOUCHER"]');
+            if (voucherRadio) voucherRadio.checked = true;
+            const ff = document.getElementById('saas-fiscal-file');
+            if (ff) ff.value = '';
+            toggleSaaSFiscalFields();
             document.getElementById('saas-overview-rate-info').textContent = 'Cargando tasa BCV...';
             document.getElementById('saas-overview-ves').textContent = '';
             const month = parseInt(document.getElementById('saas-period-month').value);
@@ -2214,6 +2246,7 @@
                     document.getElementById('saas-tenant-selector-text').textContent = 'No hay condominios elegibles (todos ya facturados)';
                 }
                 renderSaaSOverviewExtras();
+                toggleSaaSFiscalFields();
                 updateSaaSOverviewTotals([]);
             } catch (e) {
                 document.getElementById('saas-tenant-selector-text').textContent = 'Error al cargar';
@@ -2262,6 +2295,7 @@
                 `<p class="text-sm text-gray-700"><span class="font-medium">${tenant.name}</span> — ${tenant.property_count || 0} unidad(es)</p><p class="text-sm font-medium text-gray-900 mt-2 pt-2 border-t border-gray-100">Total: ${tenant.property_count || 0} inmuebles</p>` : '';
             document.getElementById('saas-generate-btn').disabled = !tenantId;
             updateSaaSOverviewTotals(toBill);
+            toggleSaaSFiscalFields();
         }
         function closeSaaSOverviewModal() {
             document.getElementById('saas-overview-modal').classList.add('hidden');
@@ -2287,18 +2321,46 @@
         let saasOverviewTenantsCache = [];
         let saasOverviewRate = 0;
         let saasOverviewRateDate = null;
+        function toggleSaaSFiscalFields() {
+            const fiscal = document.querySelector('input[name="saas-billing-doc"]:checked')?.value === 'FISCAL';
+            const help = document.getElementById('saas-fiscal-help');
+            const wrap = document.getElementById('saas-fiscal-file-wrap');
+            if (help) help.classList.toggle('hidden', !fiscal);
+            if (wrap) wrap.classList.toggle('hidden', !fiscal);
+        }
         function updateSaaSOverviewTotals(tenants) {
             saasOverviewTenantsCache = tenants || saasOverviewTenantsCache;
             const totalUnits = (tenants || saasOverviewTenantsCache).reduce((s,t) => s + (t.property_count||0), 0);
             const baseUsd = totalUnits * 0.5;
             const extraUsd = saasExtraItems.reduce((s,it) => s + (parseFloat(it.amount_usd)||0), 0);
-            const totalUsd = baseUsd + extraUsd;
+            const subtotalUsd = baseUsd + extraUsd;
+            const docType = document.querySelector('input[name="saas-billing-doc"]:checked')?.value || 'VOUCHER';
+            let ivaUsd = 0;
+            let totalUsd = subtotalUsd;
+            const fiscalLinesEl = document.getElementById('saas-overview-fiscal-lines');
+            if (docType === 'FISCAL') {
+                ivaUsd = subtotalUsd * 0.16;
+                totalUsd = subtotalUsd + ivaUsd + 10;
+                if (fiscalLinesEl) {
+                    fiscalLinesEl.classList.remove('hidden');
+                    fiscalLinesEl.innerHTML = `+ IVA 16%: <span class="font-medium">$${ivaUsd.toFixed(2)}</span> USD · Envío factura fiscal: <span class="font-medium">$10.00</span> USD`;
+                }
+            } else if (fiscalLinesEl) {
+                fiscalLinesEl.classList.add('hidden');
+                fiscalLinesEl.textContent = '';
+            }
             document.getElementById('saas-overview-base').textContent = '$' + baseUsd.toFixed(2);
             document.getElementById('saas-overview-extra').textContent = '$' + extraUsd.toFixed(2);
             document.getElementById('saas-overview-total').textContent = '$' + totalUsd.toFixed(2);
             const vesEl = document.getElementById('saas-overview-ves');
             if (saasOverviewRate > 0) {
-                const totalVes = totalUsd * saasOverviewRate;
+                let totalVes = totalUsd * saasOverviewRate;
+                if (docType === 'FISCAL') {
+                    const subVes = subtotalUsd * saasOverviewRate;
+                    const ivaVes = subVes * 0.16;
+                    const shipVes = 10 * saasOverviewRate;
+                    totalVes = subVes + ivaVes + shipVes;
+                }
                 const rateDateStr = saasOverviewRateDate ? (() => {
                     const raw = String(saasOverviewRateDate).split('T')[0];
                     const [y, m, d2] = raw.split('-');
@@ -2392,6 +2454,21 @@
                 }
                 currentSaaSInvoiceDetail = inv;
                 const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                const docLabel = inv.billing_document_type === 'FISCAL'
+                    ? 'Factura fiscal (IVA 16% + envío US$10 + adjunto)'
+                    : inv.billing_document_type === 'VOUCHER'
+                        ? 'Comprobante de cobro — sin costo adicional'
+                        : '—';
+                const fiscalPath = inv.fiscal_invoice_attachment_path;
+                const fiscalIsPdf = inv.fiscal_invoice_attachment_mime === 'application/pdf' || (fiscalPath && /\.pdf$/i.test(fiscalPath));
+                const fiscalAttachBlock = (inv.billing_document_type === 'FISCAL' && fiscalPath) ? `
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Adjunto factura fiscal</span>
+                            ${fiscalIsPdf
+                                ? `<a href="${fiscalPath}" target="_blank" rel="noopener noreferrer" class="text-[var(--md-sys-color-primary)] hover:underline inline-flex items-center gap-1"><span class="material-symbols-rounded text-lg">search</span> Abrir PDF</a>`
+                                : `<a href="${fiscalPath}" target="_blank" rel="noopener noreferrer" class="text-[var(--md-sys-color-primary)] hover:underline inline-flex items-center gap-1"><span class="material-symbols-rounded text-lg">search</span> Ver imagen</a>`}
+                        </div>
+                    ` : '';
                 const itemsHtml = (inv.items || []).map(it => `
                     <tr class="border-b border-gray-100 last:border-0">
                         <td class="py-2 text-sm text-gray-900">${it.description || '-'}</td>
@@ -2440,6 +2517,11 @@
                             <span class="text-gray-600">Estado</span>
                             <span class="px-2 py-1 rounded text-xs ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status}</span>
                         </div>
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="text-gray-600">Tipo de cobro</span>
+                            <span class="font-medium text-gray-900 text-right text-sm">${docLabel}</span>
+                        </div>
+                        ${fiscalAttachBlock}
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Total USD</span>
                             <span class="font-bold text-gray-900">$${parseFloat(inv.total_usd || 0).toFixed(2)}</span>

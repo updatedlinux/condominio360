@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>
     <style>
         * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .sidebar-item { transition: all 0.2s; }
@@ -107,6 +110,13 @@
             window.location.href = '/login';
         }
 
+        function escapeHtml(s) {
+            if (s == null || s === '') return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
         async function loadData() {
             try {
                 const [summaryRes, listRes, configRes] = await Promise.all([
@@ -150,6 +160,7 @@
                             <div class="flex items-center gap-6">
                                 <span class="text-[#5F6368]">$${parseFloat(inv.total_usd).toFixed(2)} USD</span>
                                 <span class="font-medium text-[#3C4043]">Bs. ${parseFloat(inv.total_ves).toLocaleString('es-VE')}</span>
+                                ${inv.payment_report_pending ? '<span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">Pago en verificación</span>' : ''}
                                 <span class="px-3 py-1 rounded-full text-xs font-medium ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status === 'PENDING' ? 'Pendiente' : 'Pagada'}</span>
                                 <span class="material-icons-round text-[#9AA0A6] text-lg">chevron_right</span>
                             </div>
@@ -192,6 +203,34 @@
                         <td class="py-2 text-sm text-right font-medium text-[#3C4043]">$${parseFloat(it.total_usd || 0).toFixed(2)}</td>
                     </tr>
                 `).join('');
+                const docType = inv.billing_document_type;
+                const docInfoHtml = docType === 'FISCAL' ? `
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                            <p class="font-medium">Factura fiscal</p>
+                            <p class="text-xs mt-1 text-amber-900/90">Incluye IVA 16% sobre el subtotal en bolívares y envío de US$10 (contravalor en Bs. según la tasa BCV de la factura).</p>
+                        </div>
+                    ` : `
+                        <div class="rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-3 text-sm text-[#5F6368]">
+                            <p class="font-medium text-[#3C4043]">${docType === 'VOUCHER' ? 'Comprobante de cobro' : 'Facturación registrada'}</p>
+                            <p class="text-xs mt-1">${docType === 'VOUCHER' ? 'Sin costo adicional a efectos fiscales (IVA y envío en Bs. = 0).' : 'Generada antes de la opción factura fiscal / comprobante.'}</p>
+                        </div>
+                    `;
+                const fiscalPath = inv.fiscal_invoice_attachment_path;
+                const isPdf = inv.fiscal_invoice_attachment_mime === 'application/pdf' || (fiscalPath && /\.pdf$/i.test(fiscalPath));
+                const fiscalAttachHtml = (docType === 'FISCAL' && fiscalPath) ? `
+                        <div class="flex items-center justify-between gap-2 rounded-lg border border-[#E5E5E5] p-3">
+                            <span class="text-sm text-[#5F6368]">Adjunto factura fiscal</span>
+                            ${isPdf
+                                ? `<a href="${fiscalPath}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[#f97316] hover:underline text-sm font-medium"><span class="material-icons-round text-lg">search</span> Abrir PDF</a>`
+                                : `<a href="${fiscalPath}" data-lightbox="saas-fiscal" data-title="${escapeHtml('Factura fiscal')}" class="inline-flex items-center gap-1 text-[#f97316] hover:underline text-sm font-medium"><span class="material-icons-round text-lg">search</span> Ver imagen</a>`}
+                        </div>
+                    ` : '';
+                const rateDiffNote = inv.has_pending_payment_report ? `
+                        <div class="flex gap-2 text-sm text-blue-900 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                            <span class="material-icons-round text-blue-600 flex-shrink-0">info</span>
+                            <p class="leading-snug">Su pago está en verificación. El monto en bolívares de esta factura no cambia por demoras; no se aplica recargo por diferencial de tasa hasta que Condominio360 confirme o rechace el pago.</p>
+                        </div>
+                    ` : '';
                 content.innerHTML = `
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
@@ -202,6 +241,9 @@
                             <span class="text-[#5F6368]">Estado</span>
                             <span class="px-3 py-1 rounded-full text-xs font-medium ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status === 'PENDING' ? 'Pendiente' : 'Pagada'}</span>
                         </div>
+                        ${docInfoHtml}
+                        ${fiscalAttachHtml}
+                        ${rateDiffNote}
                         <div class="flex justify-between items-center">
                             <span class="text-[#5F6368]">Tasa BCV utilizada (${rateDate})</span>
                             <span class="font-medium text-[#3C4043]">Bs. ${parseFloat(inv.bcv_rate || 0).toLocaleString('es-VE')} / USD</span>
@@ -228,14 +270,14 @@
                             <span class="font-medium text-[#3C4043]">Total Bs.</span>
                             <span class="font-bold text-[#3C4043]">Bs. ${parseFloat(inv.total_ves || 0).toLocaleString('es-VE')}</span>
                         </div>
-                        ${inv.status === 'PENDING' && (!inv.payment_report || inv.payment_report.status === 'REJECTED') ? `
+                        ${inv.status === 'PENDING' && !inv.has_pending_payment_report ? `
                         <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
                             <button type="button" onclick="showReportPaymentForm('${inv.id}')" class="w-full py-3 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] font-medium flex items-center justify-center gap-2">
                                 <span class="material-icons-round">payments</span>
                                 Reportar Pago
                             </button>
                         </div>
-                        ` : inv.status === 'PENDING' && inv.payment_report?.status === 'PENDING_CONFIRMATION' ? `
+                        ` : inv.status === 'PENDING' && inv.has_pending_payment_report ? `
                         <div class="pt-4 mt-4 border-t border-[#E5E5E5] bg-blue-50 rounded-lg p-4">
                             <div class="flex items-center gap-2">
                                 <span class="material-icons-round text-blue-600">schedule</span>

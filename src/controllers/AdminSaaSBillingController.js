@@ -1,3 +1,4 @@
+const path = require('path');
 const SaaSBillingModel = require('../models/SaaSBillingModel');
 const SaaSBillingRateService = require('../services/SaaSBillingRateService');
 const SystemSettingsModel = require('../models/SystemSettingsModel');
@@ -84,7 +85,38 @@ class AdminSaaSBillingController {
      */
     static async createInvoice(req, res) {
         try {
-            const { tenant_id, tenant_ids, period_month, period_year, extra_items = [], payment_method } = req.body;
+            const isMultipart = req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data');
+            let body = req.body;
+            if (isMultipart) {
+                body = { ...req.body };
+                if (typeof body.extra_items === 'string') {
+                    try {
+                        body.extra_items = JSON.parse(body.extra_items || '[]');
+                    } catch (e) {
+                        return res.status(400).json({ error: 'extra_items inválido' });
+                    }
+                }
+                if (body.period_month != null && body.period_month !== '') {
+                    body.period_month = parseInt(body.period_month, 10);
+                }
+                if (body.period_year != null && body.period_year !== '') {
+                    body.period_year = parseInt(body.period_year, 10);
+                }
+            }
+
+            const { tenant_id, tenant_ids, period_month, period_year, extra_items = [], payment_method, billing_document_type } = body;
+
+            let fiscalAttachmentPath = null;
+            let fiscalAttachmentMime = null;
+            if (req.file && req.file.path) {
+                fiscalAttachmentPath = `/uploads/saas-fiscal-invoices/${path.basename(req.file.path)}`;
+                fiscalAttachmentMime = req.file.mimetype || null;
+            }
+
+            const docType = billing_document_type === 'FISCAL' ? 'FISCAL' : 'VOUCHER';
+            if (docType === 'FISCAL' && !fiscalAttachmentPath) {
+                return res.status(400).json({ error: 'La factura fiscal requiere adjuntar PDF o imagen de la factura' });
+            }
 
             const pool = await connectDB();
             const now = new Date();
@@ -119,7 +151,12 @@ class AdminSaaSBillingController {
                     continue;
                 }
                 const invoice = await SaaSBillingModel.createInvoice(
-                    tenant.id, month, year, extra_items, payment_method, req.user?.userId
+                    tenant.id, month, year, extra_items, payment_method, req.user?.userId,
+                    {
+                        billingDocumentType: docType,
+                        fiscalAttachmentPath,
+                        fiscalAttachmentMime
+                    }
                 );
                 created.push(invoice);
                 await AdminController.logAudit(req, 'CREATE', 'SAAS_INVOICE', invoice.id,
@@ -159,7 +196,9 @@ class AdminSaaSBillingController {
         try {
             const invoice = await SaaSBillingModel.recalculateVes(req.params.id);
             if (!invoice) {
-                return res.status(404).json({ error: 'Factura no encontrada' });
+                return res.status(400).json({
+                    error: 'No se puede recalcular: factura no pendiente o existe un reporte de pago en verificación'
+                });
             }
             await AdminController.logAudit(req, 'UPDATE', 'SAAS_INVOICE', invoice.id,
                 `Recalculó factura Condominio360 (tasa BCV)`, null);
