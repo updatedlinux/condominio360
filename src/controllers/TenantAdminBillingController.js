@@ -1,3 +1,4 @@
+const path = require('path');
 const ExcelJS = require('exceljs');
 const VendorModel = require('../models/VendorModel');
 const VendorContractModel = require('../models/VendorContractModel');
@@ -464,10 +465,40 @@ class TenantAdminBillingController {
         try {
             const tenantId = req.user.tenantId;
             const userId = req.user.userId;
-            const { billing_month, billing_year, name, items } = req.body;
+
+            const isMultipart = req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data');
+            let body = req.body;
+            if (isMultipart) {
+                body = { ...req.body };
+                if (typeof body.items === 'string') {
+                    try {
+                        body.items = JSON.parse(body.items);
+                    } catch (e) {
+                        return res.status(400).json({ error: 'Formato de items inválido' });
+                    }
+                }
+                if (body.billing_month != null && body.billing_month !== '') {
+                    body.billing_month = parseInt(body.billing_month, 10);
+                }
+                if (body.billing_year != null && body.billing_year !== '') {
+                    body.billing_year = parseInt(body.billing_year, 10);
+                }
+            }
+
+            const { billing_month, billing_year, name, items } = body;
 
             if (!billing_month || !billing_year || !items || !Array.isArray(items) || items.length === 0) {
                 return res.status(400).json({ error: 'Mes, año e items son requeridos' });
+            }
+
+            const fileByIndex = {};
+            if (req.files && Array.isArray(req.files)) {
+                for (const f of req.files) {
+                    const m = /^attachment_(\d+)$/.exec(f.fieldname);
+                    if (m) {
+                        fileByIndex[parseInt(m[1], 10)] = f;
+                    }
+                }
             }
 
             // Obtener tasa BCV actual
@@ -480,11 +511,11 @@ class TenantAdminBillingController {
 
             // Determinar tipo de preliminar
             let invoiceType = 'ORDINARY';
-            if (req.body.target_building) {
+            if (body.target_building) {
                 invoiceType = 'EXTRAORDINARY_BUILDING';
-            } else if (req.body.target_property) {
+            } else if (body.target_property) {
                 invoiceType = 'EXTRAORDINARY_PROPERTY';
-            } else if (req.body.is_extraordinary) {
+            } else if (body.is_extraordinary) {
                 invoiceType = 'EXTRAORDINARY';
             }
 
@@ -503,17 +534,25 @@ class TenantAdminBillingController {
             let totalUsd = 0;
             let totalVes = 0;
 
-            for (const item of items) {
-                let itemUsd, itemVes;
-                
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                let itemUsd;
+                let itemVes;
+
                 if (item.currency === 'USD') {
-                    // USD -> VES
                     itemUsd = item.amount;
                     itemVes = item.amount * exchangeRate;
                 } else {
-                    // VES -> USD
                     itemVes = item.amount;
                     itemUsd = item.amount / exchangeRate;
+                }
+
+                let attachment_path = null;
+                let attachment_mime = null;
+                const up = fileByIndex[i];
+                if (up && up.path) {
+                    attachment_path = `/uploads/billing-preliminary-items/${tenantId}/${path.basename(up.path)}`;
+                    attachment_mime = up.mimetype || null;
                 }
 
                 await BillingModel.addPreliminaryItem({
@@ -524,7 +563,9 @@ class TenantAdminBillingController {
                     base_amount: item.amount,
                     currency: item.currency,
                     converted_amount_ves: itemVes,
-                    notes: item.notes
+                    notes: item.notes,
+                    attachment_path,
+                    attachment_mime
                 });
 
                 totalUsd += itemUsd;
@@ -682,7 +723,9 @@ class TenantAdminBillingController {
                     currency: item.currency,
                     converted_amount_ves: itemConvVes,
                     assigned_amount_ves: assignedItemAmount,
-                        notes: item.notes
+                        notes: item.notes,
+                        attachment_path: item.attachment_path || null,
+                        attachment_mime: item.attachment_mime || null
                     });
                 }
 
@@ -796,7 +839,9 @@ class TenantAdminBillingController {
                     currency: item.currency,
                     converted_amount_ves: itemConvVes,
                     assigned_amount_ves: itemConvVes, // Monto completo
-                    notes: item.notes
+                    notes: item.notes,
+                    attachment_path: item.attachment_path || null,
+                    attachment_mime: item.attachment_mime || null
                 });
             }
 

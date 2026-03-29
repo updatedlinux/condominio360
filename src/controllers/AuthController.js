@@ -248,12 +248,7 @@ class AuthController {
                 });
             }
 
-            // Verificar expiración
-            const invitedAt = new Date(user.invited_at);
-            const now = new Date();
-            const diffDays = (now - invitedAt) / (1000 * 60 * 60 * 24);
-
-            if (diffDays > 7) {
+            if (AuthService.isInvitationExpired(user.invited_at)) {
                 return res.status(400).json({ 
                     valid: false,
                     error: 'Token expirado' 

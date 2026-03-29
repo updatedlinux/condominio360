@@ -47,10 +47,12 @@ class BillingModel {
                 .input('currency', sql.NVarChar, data.currency)
                 .input('converted_amount_ves', sql.Decimal(15, 2), data.converted_amount_ves)
                 .input('notes', sql.NVarChar, data.notes || null)
+                .input('attachment_path', sql.NVarChar, data.attachment_path || null)
+                .input('attachment_mime', sql.NVarChar, data.attachment_mime || null)
                 .query(`
-                    INSERT INTO BillingPreliminaryItems (preliminary_id, item_type, description, vendor_contract_id, base_amount, currency, converted_amount_ves, notes)
+                    INSERT INTO BillingPreliminaryItems (preliminary_id, item_type, description, vendor_contract_id, base_amount, currency, converted_amount_ves, notes, attachment_path, attachment_mime)
                     OUTPUT INSERTED.*
-                    VALUES (@preliminary_id, @item_type, @description, @vendor_contract_id, @base_amount, @currency, @converted_amount_ves, @notes)
+                    VALUES (@preliminary_id, @item_type, @description, @vendor_contract_id, @base_amount, @currency, @converted_amount_ves, @notes, @attachment_path, @attachment_mime)
                 `);
             return result.recordset[0];
         } catch (error) {
@@ -257,10 +259,12 @@ class BillingModel {
                 .input('converted_amount_ves', sql.Decimal(15, 2), data.converted_amount_ves)
                 .input('assigned_amount_ves', sql.Decimal(15, 2), data.assigned_amount_ves)
                 .input('notes', sql.NVarChar, data.notes || null)
+                .input('attachment_path', sql.NVarChar, data.attachment_path || null)
+                .input('attachment_mime', sql.NVarChar, data.attachment_mime || null)
                 .query(`
-                    INSERT INTO BillingInvoiceItems (invoice_id, item_type, description, base_amount, currency, converted_amount_ves, assigned_amount_ves, notes)
+                    INSERT INTO BillingInvoiceItems (invoice_id, item_type, description, base_amount, currency, converted_amount_ves, assigned_amount_ves, notes, attachment_path, attachment_mime)
                     OUTPUT INSERTED.*
-                    VALUES (@invoice_id, @item_type, @description, @base_amount, @currency, @converted_amount_ves, @assigned_amount_ves, @notes)
+                    VALUES (@invoice_id, @item_type, @description, @base_amount, @currency, @converted_amount_ves, @assigned_amount_ves, @notes, @attachment_path, @attachment_mime)
                 `);
             return result.recordset[0];
         } catch (error) {

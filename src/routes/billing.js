@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const TenantAdminBillingController = require('../controllers/TenantAdminBillingController');
+const { conditionalPreliminaryUpload } = require('../middleware/uploadBillingPreliminaryItems');
 const { authenticate, requireTenantAdmin } = require('../middleware/auth');
 
 // Todas las rutas requieren autenticación de TenantAdmin
@@ -26,7 +27,7 @@ router.delete('/contracts/:id', TenantAdminBillingController.deleteContract);
 // Preliminares
 router.get('/preliminaries', TenantAdminBillingController.listPreliminaries);
 router.get('/preliminaries/:id', TenantAdminBillingController.getPreliminary);
-router.post('/preliminaries', TenantAdminBillingController.createPreliminary);
+router.post('/preliminaries', conditionalPreliminaryUpload, TenantAdminBillingController.createPreliminary);
 router.post('/preliminaries/:id/generate', TenantAdminBillingController.generateInvoices);
 router.post('/preliminaries/:id/send', TenantAdminBillingController.sendInvoices);
 

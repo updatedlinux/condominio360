@@ -357,6 +357,22 @@
         </div>
     </div>
 
+    <!-- Advertencia: ítems sin comprobante de factura (opcional pero irreversible) -->
+    <div id="missing-attachments-modal" class="modal fixed inset-0 z-[60] hidden items-center justify-center bg-black/30 p-4">
+        <div class="bg-white rounded-xl w-full max-w-lg mx-auto p-6 shadow-xl">
+            <h3 class="text-lg font-medium text-[#3C4043] mb-2">Comprobantes de factura</h3>
+            <p class="text-sm text-[#5F6368] mb-3">No adjuntó imagen o PDF de factura para los siguientes ítems:</p>
+            <ul id="missing-attachments-list" class="list-disc pl-5 text-sm text-[#3C4043] mb-4 space-y-1 max-h-48 overflow-y-auto"></ul>
+            <p class="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                Esta acción no tiene retroceso. Si no adjunta el comprobante ahora, no podrá agregarlo después al crear este preliminar.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeMissingAttachmentsModal()" class="px-4 py-2 border border-[#E5E5E5] rounded-lg text-[#5F6368] hover:bg-[#FAFAFA]">Volver</button>
+                <button type="button" id="missing-attachments-confirm" class="px-4 py-2 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">Crear preliminar de todos modos</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Recibo Extraordinario por Edificio -->
     <div id="extraordinary-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
         <div class="bg-white rounded-xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
@@ -786,6 +802,70 @@
         let preliminaryItems = [];
         let currentRate = 0;
         let currentRateDate = null;  // Fecha efectiva de la tasa (según API), no la de extracción
+        let pendingMissingAttachmentsCallback = null;
+
+        function escapeHtml(s) {
+            if (s == null || s === '') return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function onPreliminaryAttachmentChange(idx, input) {
+            const f = input.files && input.files[0];
+            if (preliminaryItems[idx]) {
+                if (f) {
+                    preliminaryItems[idx]._attachmentFile = f;
+                    preliminaryItems[idx]._attachmentName = f.name;
+                } else {
+                    delete preliminaryItems[idx]._attachmentFile;
+                    delete preliminaryItems[idx]._attachmentName;
+                }
+            }
+            renderPreliminaryItems();
+        }
+
+        function onExtraordinaryAttachmentChange(idx, input) {
+            const f = input.files && input.files[0];
+            if (extraordinaryItems[idx]) {
+                if (f) {
+                    extraordinaryItems[idx]._attachmentFile = f;
+                    extraordinaryItems[idx]._attachmentName = f.name;
+                } else {
+                    delete extraordinaryItems[idx]._attachmentFile;
+                    delete extraordinaryItems[idx]._attachmentName;
+                }
+            }
+            renderExtraordinaryItems();
+        }
+
+        function onPropertyInvoiceAttachmentChange(idx, input) {
+            const f = input.files && input.files[0];
+            if (propertyInvoiceItems[idx]) {
+                if (f) {
+                    propertyInvoiceItems[idx]._attachmentFile = f;
+                    propertyInvoiceItems[idx]._attachmentName = f.name;
+                } else {
+                    delete propertyInvoiceItems[idx]._attachmentFile;
+                    delete propertyInvoiceItems[idx]._attachmentName;
+                }
+            }
+            renderPropertyInvoiceItems();
+        }
+
+        function closeMissingAttachmentsModal() {
+            pendingMissingAttachmentsCallback = null;
+            closeModal('missing-attachments-modal');
+        }
+
+        document.getElementById('missing-attachments-confirm')?.addEventListener('click', () => {
+            closeModal('missing-attachments-modal');
+            if (pendingMissingAttachmentsCallback) {
+                const fn = pendingMissingAttachmentsCallback;
+                pendingMissingAttachmentsCallback = null;
+                fn();
+            }
+        });
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', () => {
@@ -1558,6 +1638,15 @@
                                     </select>
                                     <span class="col-span-5 text-xs text-[#5F6368]">${convertedText} <span class="text-[#9AA0A6]">(tasa: ${currentRate})</span></span>
                                 </div>
+                                <div class="flex flex-wrap items-center gap-2 mt-2">
+                                    <span class="text-xs text-[#5F6368] whitespace-nowrap">Factura (opcional)</span>
+                                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.pdf" class="hidden" id="prel-attach-${idx}" onchange="onPreliminaryAttachmentChange(${idx}, this)">
+                                    <label for="prel-attach-${idx}" class="inline-flex items-center gap-1 px-2 py-1 text-xs border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-white text-[#f97316]">
+                                        <span class="material-icons-round text-sm">attach_file</span>
+                                        Adjuntar
+                                    </label>
+                                    <span class="text-xs text-[#9AA0A6] truncate max-w-[200px]">${item._attachmentName ? escapeHtml(item._attachmentName) : 'Sin archivo'}</span>
+                                </div>
                             </div>
                             <button type="button" onclick="removePreliminaryItem(${idx})" class="text-red-500 hover:text-red-700 mt-1">
                                 <span class="material-icons-round text-sm">delete</span>
@@ -1571,11 +1660,37 @@
             document.getElementById('prel-total-ves').textContent = formatCurrency(totalVes, 'VES');
         }
 
+        async function postPreliminaryMultipart(meta) {
+            const fd = new FormData();
+            fd.append('billing_month', String(meta.billing_month));
+            fd.append('billing_year', String(meta.billing_year));
+            fd.append('name', meta.name);
+            fd.append('items', JSON.stringify(meta.items));
+            if (meta.target_building) fd.append('target_building', meta.target_building);
+            if (meta.target_property) fd.append('target_property', meta.target_property);
+            if (meta.is_extraordinary) fd.append('is_extraordinary', 'true');
+            if (meta.is_property_invoice) fd.append('is_property_invoice', 'true');
+            (meta.attachments || []).forEach((file, i) => {
+                if (file) fd.append(`attachment_${i}`, file, file.name);
+            });
+            const res = await fetch('/api/tenant-admin/billing/preliminaries', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: fd
+            });
+            return res.json();
+        }
+
         // Formulario Preliminar
         document.getElementById('preliminary-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const items = preliminaryItems.map(i => ({
+
+            if (preliminaryItems.length === 0) {
+                showToast('Debe agregar al menos un ítem', 'error');
+                return;
+            }
+
+            const itemsPayload = preliminaryItems.map(i => ({
                 item_type: i.type,
                 description: i.description,
                 amount: i.amount,
@@ -1583,32 +1698,40 @@
                 vendor_contract_id: i.contract_id || null
             }));
 
-            try {
-                const res = await fetch('/api/tenant-admin/billing/preliminaries', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        billing_month: parseInt(document.getElementById('prel-month').value),
-                        billing_year: parseInt(document.getElementById('prel-year').value),
+            const missingLabels = preliminaryItems
+                .map((it, i) => (!it._attachmentFile ? (it.description || `Ítem ${i + 1}`) : null))
+                .filter(Boolean);
+
+            const runCreate = async () => {
+                try {
+                    const data = await postPreliminaryMultipart({
+                        billing_month: parseInt(document.getElementById('prel-month').value, 10),
+                        billing_year: parseInt(document.getElementById('prel-year').value, 10),
                         name: document.getElementById('prel-name').value || `Recibo ${document.getElementById('prel-month').value}/${document.getElementById('prel-year').value}`,
-                        items: items
-                    })
-                });
-                
-                const data = await res.json();
-                if (data.success) {
-                    showToast('Preliminar creado exitosamente');
-                    closeModal('preliminary-modal');
-                    loadPreliminaries();
-                } else {
-                    showToast(data.error || 'Error al crear preliminar', 'error');
+                        items: itemsPayload,
+                        attachments: preliminaryItems.map(i => i._attachmentFile || null)
+                    });
+                    if (data.success) {
+                        showToast('Preliminar creado exitosamente');
+                        closeModal('preliminary-modal');
+                        loadPreliminaries();
+                    } else {
+                        showToast(data.error || 'Error al crear preliminar', 'error');
+                    }
+                } catch (err) {
+                    showToast('Error al crear preliminar', 'error');
                 }
-            } catch (e) {
-                showToast('Error al crear preliminar', 'error');
+            };
+
+            if (missingLabels.length > 0) {
+                const ul = document.getElementById('missing-attachments-list');
+                ul.innerHTML = missingLabels.map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+                pendingMissingAttachmentsCallback = runCreate;
+                showModal('missing-attachments-modal');
+                return;
             }
+
+            await runCreate();
         });
 
         // Formulario Proveedor
@@ -2453,6 +2576,15 @@
                                     </select>
                                     <span class="text-xs text-[#5F6368] flex-1">${convertedText} <span class="text-[#9AA0A6]">(tasa: ${currentRate})</span></span>
                                 </div>
+                                <div class="flex flex-wrap items-center gap-2 mt-2">
+                                    <span class="text-xs text-[#5F6368] whitespace-nowrap">Factura (opcional)</span>
+                                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.pdf" class="hidden" id="extra-attach-${idx}" onchange="onExtraordinaryAttachmentChange(${idx}, this)">
+                                    <label for="extra-attach-${idx}" class="inline-flex items-center gap-1 px-2 py-1 text-xs border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-white text-[#f97316]">
+                                        <span class="material-icons-round text-sm">attach_file</span>
+                                        Adjuntar
+                                    </label>
+                                    <span class="text-xs text-[#9AA0A6] truncate max-w-[200px]">${item._attachmentName ? escapeHtml(item._attachmentName) : 'Sin archivo'}</span>
+                                </div>
                             </div>
                             <button type="button" onclick="removeExtraordinaryItem(${idx})" class="text-red-500 hover:text-red-700">
                                 <span class="material-icons-round">delete</span>
@@ -2520,44 +2652,53 @@
             
             // Usar el billing_type del tenant (FIXED o ALICUOTA)
             const tenantBillingType = billingConfig?.billing_type || 'FIXED';
-            
-            try {
-                const response = await fetch('/api/tenant-admin/billing/preliminaries', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
+
+            const itemsPayload = extraordinaryItems.map(i => ({
+                item_type: 'EXTRAORDINARY',
+                description: i.description,
+                amount: i.amount,
+                amount_type: tenantBillingType,
+                currency: i.currency || 'USD'
+            }));
+
+            const missingLabels = extraordinaryItems
+                .map((it, i) => (!it._attachmentFile ? (it.description || `Ítem ${i + 1}`) : null))
+                .filter(Boolean);
+
+            const runCreateExtra = async () => {
+                try {
+                    const result = await postPreliminaryMultipart({
                         billing_month: month,
                         billing_year: year,
                         name: name,
-                        items: extraordinaryItems.map(i => ({
-                            item_type: 'EXTRAORDINARY',
-                            description: i.description,
-                            amount: i.amount,
-                            amount_type: tenantBillingType, // Usar el tipo del tenant, no del item
-                            currency: i.currency || 'USD'
-                        })),
+                        items: itemsPayload,
                         target_building: building,
-                        is_extraordinary: true
-                    })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    showToast('Recibo extraordinario creado. Generando recibos para el edificio...');
-                    closeModal('extraordinary-modal');
-                    // Generar recibos solo para el edificio seleccionado
-                    await generateInvoicesForBuilding(result.data.id, building);
-                    loadPreliminaries();
-                } else {
-                    showToast(result.message || 'Error al crear recibo', 'error');
+                        is_extraordinary: true,
+                        attachments: extraordinaryItems.map(i => i._attachmentFile || null)
+                    });
+                    if (result.success) {
+                        showToast('Recibo extraordinario creado. Generando recibos para el edificio...');
+                        closeModal('extraordinary-modal');
+                        await generateInvoicesForBuilding(result.data.id, building);
+                        loadPreliminaries();
+                    } else {
+                        showToast(result.error || result.message || 'Error al crear recibo', 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('Error al crear recibo extraordinario', 'error');
                 }
-            } catch (e) {
-                console.error(e);
-                showToast('Error al crear recibo extraordinario', 'error');
+            };
+
+            if (missingLabels.length > 0) {
+                const ul = document.getElementById('missing-attachments-list');
+                ul.innerHTML = missingLabels.map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+                pendingMissingAttachmentsCallback = runCreateExtra;
+                showModal('missing-attachments-modal');
+                return;
             }
+
+            await runCreateExtra();
         });
 
         async function generateInvoicesForBuilding(preliminaryId, buildingName) {
@@ -2729,6 +2870,15 @@
                                     </select>
                                     <span class="text-xs text-[#5F6368] flex-1">${convertedText} <span class="text-[#9AA0A6]">(tasa: ${currentRate})</span></span>
                                 </div>
+                                <div class="flex flex-wrap items-center gap-2 mt-2">
+                                    <span class="text-xs text-[#5F6368] whitespace-nowrap">Factura (opcional)</span>
+                                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.pdf" class="hidden" id="prop-attach-${idx}" onchange="onPropertyInvoiceAttachmentChange(${idx}, this)">
+                                    <label for="prop-attach-${idx}" class="inline-flex items-center gap-1 px-2 py-1 text-xs border border-[#E5E5E5] rounded-lg cursor-pointer hover:bg-white text-[#f97316]">
+                                        <span class="material-icons-round text-sm">attach_file</span>
+                                        Adjuntar
+                                    </label>
+                                    <span class="text-xs text-[#9AA0A6] truncate max-w-[200px]">${item._attachmentName ? escapeHtml(item._attachmentName) : 'Sin archivo'}</span>
+                                </div>
                             </div>
                             <button type="button" onclick="removePropertyInvoiceItem(${idx})" class="text-red-500 hover:text-red-700">
                                 <span class="material-icons-round">delete</span>
@@ -2793,44 +2943,52 @@
                 }
             }
             
-            try {
-                // Crear preliminar especial para un inmueble
-                const response = await fetch('/api/tenant-admin/billing/preliminaries', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
+            const itemsPayload = propertyInvoiceItems.map(i => ({
+                item_type: 'EXTRAORDINARY',
+                description: i.description,
+                amount: i.amount,
+                amount_type: 'FIXED',
+                currency: i.currency || 'USD'
+            }));
+
+            const missingLabels = propertyInvoiceItems
+                .map((it, i) => (!it._attachmentFile ? (it.description || `Ítem ${i + 1}`) : null))
+                .filter(Boolean);
+
+            const runCreateProperty = async () => {
+                try {
+                    const result = await postPreliminaryMultipart({
                         billing_month: month,
                         billing_year: year,
                         name: name,
-                        items: propertyInvoiceItems.map(i => ({
-                            item_type: 'EXTRAORDINARY',
-                            description: i.description,
-                            amount: i.amount,
-                            amount_type: 'FIXED', // Siempre fijo para inmuebles individuales
-                            currency: i.currency || 'USD'
-                        })),
-                        target_property: propertyId, // ID del inmueble específico
-                        is_property_invoice: true // Flag para identificar este tipo
-                    })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    showToast('Recibo creado. Generando para el inmueble...');
-                    closeModal('property-invoice-modal');
-                    // Generar recibo solo para el inmueble específico
-                    await generateInvoiceForProperty(result.data.id, propertyId);
-                    loadPreliminaries();
-                } else {
-                    showToast(result.message || 'Error al crear recibo', 'error');
+                        items: itemsPayload,
+                        target_property: propertyId,
+                        is_property_invoice: true,
+                        attachments: propertyInvoiceItems.map(i => i._attachmentFile || null)
+                    });
+                    if (result.success) {
+                        showToast('Recibo creado. Generando para el inmueble...');
+                        closeModal('property-invoice-modal');
+                        await generateInvoiceForProperty(result.data.id, propertyId);
+                        loadPreliminaries();
+                    } else {
+                        showToast(result.error || result.message || 'Error al crear recibo', 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('Error al crear recibo', 'error');
                 }
-            } catch (e) {
-                console.error(e);
-                showToast('Error al crear recibo', 'error');
+            };
+
+            if (missingLabels.length > 0) {
+                const ul = document.getElementById('missing-attachments-list');
+                ul.innerHTML = missingLabels.map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+                pendingMissingAttachmentsCallback = runCreateProperty;
+                showModal('missing-attachments-modal');
+                return;
             }
+
+            await runCreateProperty();
         });
 
         async function generateInvoiceForProperty(preliminaryId, propertyId) {

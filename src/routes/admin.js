@@ -74,6 +74,7 @@ router.delete('/properties/:id', AdminController.deleteProperty);
 router.get('/tenants/:id/owners/export', AdminController.exportOwnersExcel);
 router.get('/tenants/:id/owners', AdminController.getOwners);
 router.post('/tenants/:id/owners/bulk', AdminController.createOwnersBulk);
+router.post('/tenants/:id/owners/bulk/send-welcome-emails', AdminController.sendBulkWelcomeEmails);
 router.post('/tenants/:id/owners', AdminController.createOwner);
 router.delete('/tenants/:id/owners/:ownerId', AdminController.deleteOwner);
 router.put('/owners/:id', AdminController.updateOwner);

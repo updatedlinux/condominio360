@@ -251,6 +251,13 @@ class AuthService {
 
     // ==================== REGISTRO DESDE INVITACIÓN ====================
 
+    /** Enlace de invitación válido 24 horas desde invited_at */
+    static isInvitationExpired(invitedAt) {
+        if (!invitedAt) return true;
+        const maxMs = 24 * 60 * 60 * 1000;
+        return Date.now() - new Date(invitedAt).getTime() > maxMs;
+    }
+
     /**
      * Completar registro desde invitación
      * @param {string} token 
@@ -264,12 +271,8 @@ class AuthService {
             throw new Error('Token de invitación inválido o expirado');
         }
 
-        // Verificar que no haya expirado (7 días)
-        const invitedAt = new Date(user.invited_at);
-        const now = new Date();
-        const diffDays = (now - invitedAt) / (1000 * 60 * 60 * 24);
-        
-        if (diffDays > 7) {
+        // Invitación: 24 horas desde invited_at (coherente con el correo y verify-invitation)
+        if (AuthService.isInvitationExpired(user.invited_at)) {
             throw new Error('El enlace de invitación ha expirado. Solicite una nueva invitación.');
         }
 

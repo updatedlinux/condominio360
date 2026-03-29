@@ -11,6 +11,7 @@ const PropertyController = require('../controllers/PropertyController');
 const TenantAdminBillingController = require('../controllers/TenantAdminBillingController');
 const { authenticate } = require('../middleware/auth');
 const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
+const { conditionalPreliminaryUpload } = require('../middleware/uploadBillingPreliminaryItems');
 const TenantAdminBalanceController = require('../controllers/TenantAdminBalanceController');
 
 // Middleware to ensure user is Tenant Admin
@@ -264,7 +265,7 @@ router.delete('/billing/contracts/:id', TenantAdminBillingController.deleteContr
 // Preliminares
 router.get('/billing/preliminaries', TenantAdminBillingController.listPreliminaries);
 router.get('/billing/preliminaries/:id', TenantAdminBillingController.getPreliminary);
-router.post('/billing/preliminaries', TenantAdminBillingController.createPreliminary);
+router.post('/billing/preliminaries', conditionalPreliminaryUpload, TenantAdminBillingController.createPreliminary);
 router.delete('/billing/preliminaries/:id', TenantAdminBillingController.deletePreliminary);
 router.post('/billing/preliminaries/:id/generate', TenantAdminBillingController.generateInvoices);
 router.post('/billing/preliminaries/:id/generate-property/:propertyId', TenantAdminBillingController.generateInvoiceForProperty);

@@ -413,11 +413,15 @@
                             numero_documento,nombre,email,telefono,inmueble_slug,tipo_documento<br>
                             12345678,Juan Pérez,juan@email.com,555-0000,apartamento-101,DNI
                         </code>
-                        <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
+                        <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded space-y-1">
                             <p class="text-xs text-amber-800">
                                 <span class="material-symbols-rounded text-xs align-text-bottom">warning</span>
                                 <strong>Importante:</strong> El <strong>numero_documento</strong> es el identificador único. 
                                 Si el documento ya existe, se actualizarán los datos del propietario.
+                            </p>
+                            <p class="text-xs text-amber-900">
+                                <strong>Carga atómica:</strong> si una fila falla, no se guarda ningún registro del archivo (todo o nada).
+                                Los correos de bienvenida no se envían solos: tras un resultado exitoso podrás encolar el envío cuando verifiques los datos.
                             </p>
                         </div>
                         <p class="text-xs text-slate-400 mt-2">
@@ -487,6 +491,16 @@
             <div id="results-errors-list" class="hidden max-h-[200px] overflow-y-auto border rounded-xl p-4 mb-6">
                 <p class="text-sm font-medium text-red-700 mb-2">Detalle de errores:</p>
                 <ul class="text-sm text-red-600 space-y-1"></ul>
+            </div>
+            <div id="results-welcome-block" class="hidden mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-left">
+                <p class="text-sm text-amber-950 mb-1">
+                    <span class="material-symbols-rounded text-lg align-text-bottom text-amber-700">mark_email_unread</span>
+                    Hay <strong id="results-welcome-count">0</strong> notificación(es) de bienvenida pendientes de envío por correo.
+                </p>
+                <p class="text-xs text-amber-900 mb-3">Cuando revises que los propietarios e inmuebles quedaron bien en el sistema, encola el envío. Se procesará en lotes (no bloquea el servidor).</p>
+                <button type="button" id="btn-send-welcome-emails" onclick="sendBulkWelcomeEmails()" class="w-full px-4 py-3 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                    Enviar invitaciones por correo
+                </button>
             </div>
             <button onclick="closeResultsModal()" class="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
                 Aceptar
@@ -566,6 +580,7 @@
         let availableProperties = [];
         let csvData = [];
         let pendingConfirmAction = null;
+        let pendingWelcomeBatchId = null;
 
         async function exportOwnersExcel() {
             try {
@@ -645,7 +660,7 @@
 
         async function loadProperties() {
             try {
-                const res = await fetch(`/api/admin/tenants/${tenantId}/properties`, {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/properties?limit=10000`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -1160,19 +1175,22 @@
                     results.success = data.successCount || 0;
                     results.errors = data.errorCount || 0;
                     results.errorDetails = data.errorDetails || [];
+                    showResults(results, {
+                        batchId: data.batchId,
+                        welcomeEmailsPending: data.welcomeEmailsPending || 0
+                    });
                 } else {
                     results.success = data.successCount || 0;
                     results.errors = data.errorCount ?? 1;
                     results.errorDetails = data.errorDetails || [data.error || 'Error desconocido'];
+                    showResults(results, {});
                 }
-
-                showResults(results);
             } catch (error) {
                 showResults({
                     success: 0,
                     errors: csvData.length,
                     errorDetails: [error.message || 'Error de conexión']
-                });
+                }, {});
             } finally {
                 window.processCSVInProgress = false;
                 btn.disabled = false;
@@ -1181,7 +1199,8 @@
             }
         }
 
-        function showResults(results) {
+        function showResults(results, opts = {}) {
+            pendingWelcomeBatchId = null;
             closeBulkModal();
             document.getElementById('results-modal').classList.remove('hidden');
             document.getElementById('results-modal').classList.add('flex');
@@ -1211,15 +1230,65 @@
                 document.getElementById('results-errors-list').classList.add('hidden');
             }
 
+            const welcomeBlock = document.getElementById('results-welcome-block');
+            const sendBtn = document.getElementById('btn-send-welcome-emails');
+            if (welcomeBlock && sendBtn) {
+                if (results.errors === 0 && results.success > 0 && opts.batchId && (opts.welcomeEmailsPending || 0) > 0) {
+                    pendingWelcomeBatchId = opts.batchId;
+                    welcomeBlock.classList.remove('hidden');
+                    document.getElementById('results-welcome-count').textContent = String(opts.welcomeEmailsPending);
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = 'Enviar invitaciones por correo';
+                } else {
+                    welcomeBlock.classList.add('hidden');
+                }
+            }
+
             // Reload data if any success
             if (results.success > 0) {
                 loadData();
             }
         }
 
+        async function sendBulkWelcomeEmails() {
+            const batchId = pendingWelcomeBatchId;
+            if (!batchId) return;
+            const btn = document.getElementById('btn-send-welcome-emails');
+            if (!btn) return;
+            btn.disabled = true;
+            const prevText = btn.textContent;
+            btn.textContent = 'Encolando...';
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/owners/bulk/send-welcome-emails`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ batchId })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    alert(data.error || 'No se pudo encolar el envío');
+                    btn.disabled = false;
+                    btn.textContent = prevText;
+                    return;
+                }
+                pendingWelcomeBatchId = null;
+                document.getElementById('results-welcome-block').classList.add('hidden');
+                alert(data.message || 'Correos en cola. Se enviarán en lotes.');
+            } catch (e) {
+                console.error(e);
+                alert('Error de conexión');
+                btn.disabled = false;
+                btn.textContent = prevText;
+            }
+        }
+
         function closeResultsModal() {
             document.getElementById('results-modal').classList.add('hidden');
             document.getElementById('results-modal').classList.remove('flex');
+            pendingWelcomeBatchId = null;
         }
 
         // Password Modal Functions

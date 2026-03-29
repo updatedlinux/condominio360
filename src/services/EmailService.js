@@ -157,7 +157,7 @@ class EmailService {
             <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px;">
                 ${invitationLink}
             </p>
-            <p><strong>Nota:</strong> Este enlace expirará en 7 días por seguridad.</p>
+            <p><strong>Nota:</strong> Este enlace expira a las 24 horas por seguridad.</p>
             <p>Si no esperabas esta invitación, puedes ignorar este correo.</p>
         </div>
         <div class="footer">
@@ -1039,7 +1039,7 @@ class EmailService {
             <p style="word-break: break-all; background: #f3f4f6; padding: 12px; border-radius: 6px; font-size: 13px;">
                 ${invitationLink}
             </p>
-            <p><strong>Nota:</strong> Este enlace expirará en 7 días por seguridad.</p>
+            <p><strong>Nota:</strong> Este enlace expira a las 24 horas por seguridad.</p>
             <p>Una vez completado, podrás ingresar con tu cédula o correo electrónico y la contraseña que definas.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Datos Aprobados', subtitle: 'Define tu contraseña', color: '#16a34a' });

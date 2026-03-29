@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 const ExcelJS = require('exceljs');
 const TenantModel = require('../models/TenantModel');
 const UserModel = require('../models/UserModel');
@@ -6,6 +7,8 @@ const PropertyModel = require('../models/PropertyModel');
 const SystemSettingsModel = require('../models/SystemSettingsModel');
 const BCVService = require('../services/BCVService');
 const EmailService = require('../services/EmailService');
+const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
+const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailService');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -1191,8 +1194,10 @@ class AdminController {
     static async getProperties(req, res) {
         try {
             const { id } = req.params;
-            const { building_id, page = 1, limit = 100 } = req.query;
-            
+            const { building_id, page = 1 } = req.query;
+            const rawLimit = parseInt(req.query.limit, 10);
+            const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 100, 10000);
+
             const pool = await connectDB();
             let query = `
                 SELECT 
@@ -1791,8 +1796,9 @@ class AdminController {
 
     /**
      * POST /api/admin/tenants/:id/owners/bulk
-     * Carga masiva de propietarios. Procesa todos en una transacción.
-     * Solo envía correos cuando TODO el proceso termina exitosamente.
+     * Carga masiva de propietarios. Una sola transacción: todo OK o rollback (nada se guarda).
+     * Los correos de bienvenida NO se envían aquí: quedan en cola hasta que el Super Admin
+     * confirme con POST .../owners/bulk/send-welcome-emails.
      */
     static async createOwnersBulk(req, res) {
         const pool = await connectDB();
@@ -2050,6 +2056,7 @@ class AdminController {
                     const ownerEmail = user.email || email;
                     if (ownerEmail) {
                         pendingEmails.push({
+                            userId: user.id,
                             email: ownerEmail,
                             firstName: user.first_name,
                             isNewUser,
@@ -2075,27 +2082,23 @@ class AdminController {
             await transaction.commit();
             transactionStarted = false;
 
-            const tenant = await TenantModel.findById(id);
-            const tenantName = tenant?.name || 'Condominio';
-            const baseUrl = process.env.APP_URL || (req.protocol + '://' + (req.get('host') || 'localhost:3000'));
-
-            for (const p of pendingEmails) {
-                try {
-                    let propertyLabel = null;
-                    if (p.property_id) {
-                        const prop = await PropertyModel.findById(p.property_id);
-                        if (prop) propertyLabel = prop.building_name ? `${prop.building_name}, ${prop.name}` : prop.name;
-                    }
-                    if (p.isNewUser && p.invitationToken) {
-                        const invitationLink = `${baseUrl}/auth/complete-registration?token=${p.invitationToken}`;
-                        await EmailService.sendOwnerInvitation(p.email, p.firstName, tenantName, invitationLink, propertyLabel);
-                    } else {
-                        const loginUrl = `${baseUrl}/login`;
-                        await EmailService.sendOwnerAddedToCondominio(p.email, p.firstName, tenantName, propertyLabel, loginUrl);
-                    }
-                } catch (mailErr) {
-                    console.error('Error enviando email a', p.email, mailErr);
-                }
+            let batchId = null;
+            let welcomeEmailsPending = 0;
+            if (pendingEmails.length > 0) {
+                batchId = uuidv4();
+                const items = pendingEmails.map((p) => ({
+                    userId: String(p.userId),
+                    propertyId: p.property_id != null ? String(p.property_id) : null,
+                    isNewUser: Boolean(p.isNewUser)
+                }));
+                await BulkOwnerWelcomeBatchModel.create({
+                    id: batchId,
+                    tenant_id: id,
+                    created_by: req.user.userId,
+                    items_json: JSON.stringify(items),
+                    total_items: items.length
+                });
+                welcomeEmailsPending = items.length;
             }
 
             for (const s of results.success) {
@@ -2104,10 +2107,14 @@ class AdminController {
 
             res.status(201).json({
                 success: true,
-                message: 'Carga masiva completada. Se enviaron los correos a los propietarios.',
+                message: welcomeEmailsPending > 0
+                    ? 'Carga masiva completada. Puedes enviar las invitaciones por correo cuando verifiques los datos.'
+                    : 'Carga masiva completada.',
                 successCount: results.success.length,
                 errorCount: 0,
-                total: owners.length
+                total: owners.length,
+                batchId,
+                welcomeEmailsPending
             });
         } catch (error) {
             if (transactionStarted) {
@@ -2115,6 +2122,53 @@ class AdminController {
             }
             console.error('Create owners bulk error:', error);
             res.status(500).json({ error: error.message || 'Error en la carga masiva' });
+        }
+    }
+
+    /**
+     * POST /api/admin/tenants/:id/owners/bulk/send-welcome-emails
+     * Encola el envío de correos de bienvenida de un lote creado tras carga masiva (lotes en PENDING_SEND).
+     */
+    static async sendBulkWelcomeEmails(req, res) {
+        try {
+            const { id } = req.params;
+            const { batchId } = req.body || {};
+
+            if (!batchId || typeof batchId !== 'string') {
+                return res.status(400).json({ success: false, error: 'batchId es requerido' });
+            }
+
+            const batch = await BulkOwnerWelcomeBatchModel.findById(batchId);
+            const norm = (g) => String(g || '').replace(/[{}]/g, '').toLowerCase();
+            if (!batch || norm(batch.tenant_id) !== norm(id)) {
+                return res.status(404).json({ success: false, error: 'Lote no encontrado' });
+            }
+
+            if (batch.status !== 'PENDING_SEND') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Este lote ya fue procesado o está en envío. No se puede repetir.'
+                });
+            }
+
+            OwnerBulkWelcomeEmailService.queueProcess(batchId);
+
+            await AdminController.logAudit(
+                req,
+                'UPDATE',
+                'BULK_OWNER_WELCOME',
+                batchId,
+                `Encoló envío de correos de bienvenida (${batch.total_items} notificaciones)`,
+                id
+            );
+
+            res.json({
+                success: true,
+                message: 'Envío de correos en cola. Se enviarán en lotes con pausa entre lotes.'
+            });
+        } catch (error) {
+            console.error('sendBulkWelcomeEmails error:', error);
+            res.status(500).json({ success: false, error: error.message || 'Error al encolar correos' });
         }
     }
 
