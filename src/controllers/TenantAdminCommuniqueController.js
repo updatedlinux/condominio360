@@ -303,6 +303,7 @@ class TenantAdminCommuniqueController {
                     success: true,
                     data: {
                         type: 'pdf',
+                        title: communique.title,
                         downloadUrl: `/uploads/communiques/${path.basename(communique.storage_path)}`
                     }
                 });

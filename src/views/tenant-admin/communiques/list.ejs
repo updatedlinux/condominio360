@@ -155,7 +155,7 @@
                             <input type="file" id="file-input" name="file" accept=".docx,.pdf" required class="hidden" onchange="handleFileSelect(this)">
                             <span class="material-icons-round text-4xl text-[#9AA0A6] mb-2">cloud_upload</span>
                             <p class="text-sm text-[#5F6368]" id="file-name">Arrastra o haz clic para subir</p>
-                            <p class="text-xs text-[#9AA0A6] mt-1">Máximo 25MB</p>
+                            <p class="text-xs text-[#9AA0A6] mt-1">PDF o DOCX. Hasta 50 MB por defecto (variable COMMUNIQUE_MAX_UPLOAD_MB en el servidor).</p>
                         </div>
                     </div>
                 </div>
@@ -176,15 +176,15 @@
 
     <!-- Preview Modal -->
     <div id="preview-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl w-full max-w-4xl mx-4 h-[90vh] flex flex-col">
-            <div class="flex items-center justify-between p-6 border-b border-[#E5E5E5]">
+        <div class="bg-white rounded-xl w-full max-w-6xl mx-4 h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-6 border-b border-[#E5E5E5] shrink-0">
                 <h3 class="text-xl font-medium text-[#3C4043]" id="preview-title">Vista Previa</h3>
                 <button onclick="closePreviewModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
                     <span class="material-icons-round">close</span>
                 </button>
             </div>
-            <div class="flex-1 overflow-auto p-6 bg-[#FAFAFA]">
-                <iframe id="preview-iframe" class="w-full h-full bg-white rounded-lg shadow"></iframe>
+            <div class="flex-1 min-h-0 overflow-hidden p-4 bg-[#525659]">
+                <iframe id="preview-iframe" class="w-full h-full min-h-[70vh] bg-white rounded-lg shadow border-0" title="Vista previa del comunicado"></iframe>
             </div>
         </div>
     </div>
@@ -372,20 +372,34 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
+                const iframe = document.getElementById('preview-iframe');
+                if (!data.success || !data.data) return;
 
-                if (data.success && data.data.type === 'html') {
-                    document.getElementById('preview-title').textContent = data.data.title;
-                    const iframe = document.getElementById('preview-iframe');
+                document.getElementById('preview-title').textContent = data.data.title || 'Vista previa';
+
+                if (data.data.type === 'html') {
+                    iframe.removeAttribute('src');
                     iframe.srcdoc = data.data.html;
-                    document.getElementById('preview-modal').classList.remove('hidden');
-                    document.getElementById('preview-modal').classList.add('flex');
+                } else if (data.data.type === 'pdf' && data.data.downloadUrl) {
+                    iframe.srcdoc = '';
+                    iframe.src = data.data.downloadUrl + '#view=FitH';
+                } else {
+                    return;
                 }
+
+                document.getElementById('preview-modal').classList.remove('hidden');
+                document.getElementById('preview-modal').classList.add('flex');
             } catch (error) {
                 console.error('Error:', error);
             }
         }
 
         function closePreviewModal() {
+            const iframe = document.getElementById('preview-iframe');
+            if (iframe) {
+                iframe.removeAttribute('src');
+                iframe.srcdoc = '';
+            }
             document.getElementById('preview-modal').classList.add('hidden');
             document.getElementById('preview-modal').classList.remove('flex');
         }

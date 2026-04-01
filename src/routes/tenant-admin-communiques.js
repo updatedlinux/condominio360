@@ -27,10 +27,13 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({ 
+const maxUploadMb = parseInt(process.env.COMMUNIQUE_MAX_UPLOAD_MB || '50', 10);
+const uploadMaxBytes = (Number.isFinite(maxUploadMb) && maxUploadMb > 0 ? maxUploadMb : 50) * 1024 * 1024;
+
+const upload = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 25 * 1024 * 1024 } // 25MB
+    limits: { fileSize: uploadMaxBytes }
 });
 
 // Todas las rutas requieren autenticación de Tenant Admin
@@ -41,7 +44,19 @@ router.get('/stats/overview', CommuniqueController.getTenantStats);
 
 // Rutas generales
 router.get('/', CommuniqueController.getCommuniques);
-router.post('/', upload.single('file'), CommuniqueController.createCommunique);
+router.post('/', (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+        if (err && err.code === 'LIMIT_FILE_SIZE') {
+            const mb = Math.round(uploadMaxBytes / (1024 * 1024));
+            return res.status(400).json({
+                success: false,
+                error: `El archivo supera el tamaño máximo permitido (${mb} MB).`
+            });
+        }
+        if (err) return next(err);
+        next();
+    });
+}, CommuniqueController.createCommunique);
 router.get('/:id', CommuniqueController.getCommuniqueById);
 router.get('/:id/stats', CommuniqueController.getStats);
 router.get('/:id/content', CommuniqueController.getContent);

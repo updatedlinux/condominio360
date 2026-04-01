@@ -323,7 +323,7 @@ class WordProcessingService {
     }
 
     /**
-     * Procesar PDF (placeholder - solo guarda el archivo)
+     * PDF: no se convierte a HTML; el navegador muestra el archivo tal cual (embed / visor nativo).
      */
     async processPdf(filePath) {
         return {

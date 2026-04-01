@@ -399,17 +399,26 @@
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             });
             
+            const pdfUrl = communique.file_type === 'pdf'
+                ? `/uploads/communiques/${communique.filename}`
+                : '';
             let contentHtml = '';
             if (communique.file_type === 'pdf') {
                 contentHtml = `
-                    <div class="text-center py-12">
-                        <span class="material-icons-round text-6xl text-red-500 mb-4">picture_as_pdf</span>
-                        <h3 class="text-xl font-medium text-[#3C4043] mb-2">Documento PDF</h3>
-                        <p class="text-[#5F6368] mb-6">Este comunicado está disponible como archivo PDF</p>
-                        <a href="/uploads/communiques/${communique.filename}" target="_blank"
-                           class="inline-flex items-center gap-2 px-6 py-3 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
-                            <span class="material-icons-round">visibility</span>
-                            Ver PDF
+                    <p class="text-sm text-[#5F6368] mb-2">Documento PDF (mismo aspecto que el archivo original).</p>
+                    <div class="rounded-lg overflow-hidden border border-[#E5E5E5] bg-[#525659] -mx-2">
+                        <iframe src="${pdfUrl}#view=FitH" class="w-full min-h-[55vh] border-0" title="PDF"></iframe>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2 justify-center">
+                        <a href="${pdfUrl}" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1 px-4 py-2 bg-[#f97316] text-white rounded-lg text-sm hover:bg-[#ea580c]">
+                            <span class="material-icons-round text-base">open_in_new</span>
+                            Nueva pestaña
+                        </a>
+                        <a href="${pdfUrl}" download
+                           class="inline-flex items-center gap-1 px-4 py-2 border border-[#E5E5E5] rounded-lg text-sm text-[#3C4043] hover:bg-[#FAFAFA]">
+                            <span class="material-icons-round text-base">download</span>
+                            Descargar
                         </a>
                     </div>
                 `;
@@ -418,8 +427,8 @@
             }
             
             modal.innerHTML = `
-                <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                    <div class="flex items-center justify-between p-6 border-b border-[#E5E5E5]">
+                <div class="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between p-6 border-b border-[#E5E5E5] shrink-0">
                         <div>
                             <h2 class="text-xl font-medium text-[#3C4043]">${communique.title}</h2>
                             <p class="text-sm text-[#9AA0A6] mt-1">Publicado el ${date} por ${communique.author_name}</p>
@@ -428,10 +437,10 @@
                             <span class="material-icons-round text-2xl">close</span>
                         </button>
                     </div>
-                    <div class="flex-1 overflow-auto p-6 bg-[#FAFAFA]">
-                        <div class="bg-white rounded-lg shadow-sm p-8">
+                    <div class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-[#FAFAFA]">
+                        <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
                             ${communique.description ? `
-                                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
                                     <p class="text-[#5F6368] italic">${communique.description}</p>
                                 </div>
                             ` : ''}

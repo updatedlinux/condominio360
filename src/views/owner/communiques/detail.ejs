@@ -264,17 +264,30 @@
                     </div>
 
                     <!-- Content -->
-                    <div class="communique-container bg-white rounded-xl shadow-sm p-8 md:p-12">
+                    <div class="communique-container bg-white rounded-xl shadow-sm p-4 md:p-8">
                         <% if (communique.file_type === 'pdf') { %>
-                            <div class="text-center py-12">
-                                <span class="material-icons-round text-6xl text-red-500 mb-4">picture_as_pdf</span>
-                                <h3 class="text-xl font-medium text-[#3C4043] mb-2">Documento PDF</h3>
-                                <p class="text-[#5F6368] mb-6">Este comunicado está disponible como archivo PDF</p>
-                                <a href="/uploads/communiques/<%= communique.filename %>" 
-                                   target="_blank"
-                                   class="inline-flex items-center gap-2 px-6 py-3 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c]">
-                                    <span class="material-icons-round">visibility</span>
-                                    Ver PDF
+                            <p class="text-sm text-[#5F6368] mb-3 text-center md:text-left">
+                                Vista del documento original (PDF). Si no se muestra, ábrelo en una pestaña nueva.
+                            </p>
+                            <div class="rounded-xl overflow-hidden border border-[#E5E5E5] bg-[#525659]">
+                                <iframe
+                                    src="/uploads/communiques/<%= communique.filename %>#view=FitH"
+                                    class="w-full min-h-[75vh] border-0"
+                                    title="PDF del comunicado"
+                                ></iframe>
+                            </div>
+                            <div class="mt-4 flex flex-wrap gap-3 justify-center">
+                                <a href="/uploads/communiques/<%= communique.filename %>"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#f97316] text-white rounded-lg hover:bg-[#ea580c] text-sm font-medium">
+                                    <span class="material-icons-round text-lg">open_in_new</span>
+                                    Abrir en nueva pestaña
+                                </a>
+                                <a href="/uploads/communiques/<%= communique.filename %>"
+                                   download
+                                   class="inline-flex items-center gap-2 px-5 py-2.5 border border-[#E5E5E5] text-[#3C4043] rounded-lg hover:bg-[#FAFAFA] text-sm font-medium">
+                                    <span class="material-icons-round text-lg">download</span>
+                                    Descargar
                                 </a>
                             </div>
                         <% } else { %>
