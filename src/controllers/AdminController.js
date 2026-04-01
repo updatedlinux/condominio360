@@ -1589,18 +1589,24 @@ class AdminController {
                     .query('SELECT email FROM UserEmails WHERE user_id = @user_id');
                 const dbEmails = (dbEmailsResult.recordset || []).map(r => (r.email || '').trim().toLowerCase()).filter(Boolean);
                 const dbPrimaryEmail = dbEmail || (dbEmails[0] || '');
+                const fullDbName = `${dbFirst} ${dbLast}`.trim();
 
                 const nameMatch = !display_name?.trim() ||
                     (incomingFirst === dbFirst && incomingLast === dbLast) ||
-                    (display_name.trim() === `${dbFirst} ${dbLast}`.trim());
-                // Email debe coincidir con el correo primario del usuario (no secundarios)
-                const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail;
-                const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
+                    (display_name.trim() === fullDbName) ||
+                    (AdminController._normOwnerName(display_name) === AdminController._normOwnerName(fullDbName));
+                const emailMatch = !incomingEmail ||
+                    incomingEmail === dbPrimaryEmail ||
+                    dbEmails.includes(incomingEmail);
+                let phoneMatch = !incomingPhone || incomingPhone === dbPhone;
                 const dniMatch = !incomingDni || incomingDni === dbDni;
                 const emailMatchesExistingAccount = incomingEmail && (
                     incomingEmail === dbPrimaryEmail ||
                     dbEmails.includes(incomingEmail)
                 );
+                if (!phoneMatch && dniMatch && emailMatchesExistingAccount && nameMatch) {
+                    phoneMatch = true;
+                }
 
                 if (!nameMatch || !emailMatch || !phoneMatch || !dniMatch) {
                     if (emailMatchesExistingAccount && incomingDni && dbDni && incomingDni !== dbDni) {
@@ -1806,6 +1812,58 @@ class AdminController {
         }
     }
 
+    /** Normaliza nombre para comparar (mismo titular en varias filas del CSV). */
+    static _normOwnerName(s) {
+        return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    /**
+     * Pre-carga masiva: mismo documento en varias filas con distintos inmuebles → requiere confirmación.
+     * Mismo documento con distinto correo o nombre entre filas → error (no se confirma).
+     */
+    static validateBulkOwnersPreflight(owners) {
+        const errors = [];
+        const warnings = [];
+        const byDni = new Map();
+        for (let i = 0; i < owners.length; i++) {
+            const row = owners[i];
+            const dni = (row.numero_documento || row.document_number || '').trim();
+            if (!dni) continue;
+            const name = AdminController._normOwnerName(row.nombre || row.display_name || '');
+            const email = (row.email || '').trim().toLowerCase();
+            const slug = (row.inmueble_slug || '').trim();
+            if (!byDni.has(dni)) byDni.set(dni, []);
+            byDni.get(dni).push({ rowIndex: i + 1, name, email, slug });
+        }
+        for (const [dni, rows] of byDni) {
+            if (rows.length < 2) continue;
+            const emails = new Set(rows.map((r) => r.email).filter(Boolean));
+            const names = new Set(rows.map((r) => r.name).filter(Boolean));
+            const slugs = [...new Set(rows.map((r) => r.slug).filter(Boolean))];
+            if (emails.size > 1) {
+                errors.push(
+                    `Documento ${dni}: el correo no coincide entre filas (${rows.map((r) => r.rowIndex).join(', ')}). Cada persona debe tener un único correo.`
+                );
+                continue;
+            }
+            if (names.size > 1) {
+                errors.push(
+                    `Documento ${dni}: el nombre no coincide entre filas (${rows.map((r) => r.rowIndex).join(', ')}). Unifique el texto o revise el archivo.`
+                );
+                continue;
+            }
+            if (slugs.length > 1) {
+                warnings.push({
+                    type: 'SAME_OWNER_MULTIPLE_PROPERTIES',
+                    documentNumber: dni,
+                    rowNumbers: rows.map((r) => r.rowIndex),
+                    propertySlugs: slugs
+                });
+            }
+        }
+        return { errors, warnings };
+    }
+
     /**
      * POST /api/admin/tenants/:id/owners/bulk
      * Carga masiva de propietarios. Una sola transacción: todo OK o rollback (nada se guarda).
@@ -1819,10 +1877,28 @@ class AdminController {
 
         try {
             const { id } = req.params;
-            const { owners } = req.body;
+            const { owners, confirmMultiPropertyWarnings } = req.body;
 
             if (!Array.isArray(owners) || owners.length === 0) {
                 return res.status(400).json({ error: 'Se requiere un array de propietarios' });
+            }
+
+            const preflight = AdminController.validateBulkOwnersPreflight(owners);
+            if (preflight.errors.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: preflight.errors.join(' '),
+                    errorDetails: preflight.errors
+                });
+            }
+            if (preflight.warnings.length > 0 && !confirmMultiPropertyWarnings) {
+                return res.status(409).json({
+                    success: false,
+                    requiresConfirmation: true,
+                    warnings: preflight.warnings,
+                    message:
+                        'Hay titulares que aparecen en varias filas con distintos inmuebles. Confirme para continuar con la carga.'
+                });
             }
 
             await transaction.begin();
@@ -1921,17 +1997,25 @@ class AdminController {
                             .query('SELECT email FROM UserEmails WHERE user_id = @user_id');
                         const dbEmails = (dbEmailsResult.recordset || []).map(r => (r.email || '').trim().toLowerCase()).filter(Boolean);
                         const dbPrimaryEmail = dbEmail || (dbEmails[0] || '');
+                        const fullDbName = `${dbFirst} ${dbLast}`.trim();
 
                         const nameMatch = !display_name?.trim() ||
                             (incomingFirst === dbFirst && incomingLast === dbLast) ||
-                            (display_name.trim() === `${dbFirst} ${dbLast}`.trim());
-                        const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail;
-                        const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
+                            (display_name.trim() === fullDbName) ||
+                            (AdminController._normOwnerName(display_name) === AdminController._normOwnerName(fullDbName));
+                        const emailMatch = !incomingEmail ||
+                            incomingEmail === dbPrimaryEmail ||
+                            dbEmails.includes(incomingEmail);
+                        let phoneMatch = !incomingPhone || incomingPhone === dbPhone;
                         const dniMatch = !incomingDni || incomingDni === dbDni;
                         const emailMatchesExistingAccount = incomingEmail && (
                             incomingEmail === dbPrimaryEmail ||
                             dbEmails.includes(incomingEmail)
                         );
+                        // Mismo titular en otra fila (otro inmueble): no exigir mismo teléfono si documento+correo+nombre coinciden
+                        if (!phoneMatch && dniMatch && emailMatchesExistingAccount && nameMatch) {
+                            phoneMatch = true;
+                        }
 
                         if (!nameMatch || !emailMatch || !phoneMatch || !dniMatch) {
                             if (emailMatchesExistingAccount && incomingDni && dbDni && incomingDni !== dbDni) {
