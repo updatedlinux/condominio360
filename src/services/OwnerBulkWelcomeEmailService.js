@@ -11,8 +11,11 @@ const { sql, connectDB } = require('../config/database');
  */
 class OwnerBulkWelcomeEmailService {
     constructor() {
-        this.chunkSize = parseInt(process.env.BULK_WELCOME_EMAIL_CHUNK || '5', 10);
-        this.delayMs = parseInt(process.env.BULK_WELCOME_EMAIL_DELAY_MS || '2000', 10);
+        this.chunkSize = parseInt(process.env.BULK_WELCOME_EMAIL_CHUNK || '30', 10);
+        this.delayMs = parseInt(
+            process.env.BULK_WELCOME_EMAIL_CHUNK_DELAY_MS || process.env.BULK_WELCOME_EMAIL_DELAY_MS || '30000',
+            10
+        );
     }
 
     /**

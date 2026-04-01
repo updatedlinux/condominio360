@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const emailRateLimiter = require('./EmailRateLimiter');
 
 /**
  * Formatea fecha para correos: la DB guarda hora Venezuela pero el driver la interpreta como UTC.
@@ -100,6 +101,8 @@ class EmailService {
             console.log('=====================================================\n');
             return { messageId: 'dev-mode', preview: true };
         }
+
+        await emailRateLimiter.acquire();
 
         try {
             const result = await this.transporter.sendMail(mailOptions);

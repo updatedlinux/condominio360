@@ -549,9 +549,20 @@
                     Hay <strong id="results-welcome-count">0</strong> notificación(es) de bienvenida pendientes de envío por correo.
                 </p>
                 <p class="text-xs text-amber-900 mb-3">Cuando revises que los propietarios e inmuebles quedaron bien en el sistema, encola el envío. Se procesará en lotes (no bloquea el servidor).</p>
-                <button type="button" id="btn-send-welcome-emails" onclick="sendBulkWelcomeEmails()" class="w-full px-4 py-3 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                    Enviar invitaciones por correo
+                <button type="button" id="btn-send-welcome-emails" onclick="sendBulkWelcomeEmails()" class="w-full px-4 py-3 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <span id="btn-welcome-spinner" class="hidden shrink-0">
+                        <span class="inline-block h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true"></span>
+                    </span>
+                    <span id="btn-welcome-label">Enviar invitaciones por correo</span>
                 </button>
+                <div id="welcome-progress-toast" class="hidden mt-3 rounded-lg border border-amber-200 bg-white/90 text-amber-950 text-sm px-3 py-2.5 flex items-start gap-2 shadow-sm">
+                    <span class="material-symbols-rounded text-amber-600 text-xl shrink-0">schedule_send</span>
+                    <span id="welcome-progress-toast-text" class="leading-snug pt-0.5"></span>
+                </div>
+            </div>
+            <div id="welcome-done-toast" class="hidden mb-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 text-sm px-4 py-3 flex items-start gap-2">
+                <span class="material-symbols-rounded text-emerald-600 text-xl shrink-0">check_circle</span>
+                <span id="welcome-done-toast-text" class="leading-snug pt-0.5"></span>
             </div>
             <button onclick="closeResultsModal()" class="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
                 Aceptar
@@ -1364,13 +1375,17 @@
 
             const welcomeBlock = document.getElementById('results-welcome-block');
             const sendBtn = document.getElementById('btn-send-welcome-emails');
+            resetWelcomeFeedbackToasts();
+            const wl = document.getElementById('btn-welcome-label');
+            const sp = document.getElementById('btn-welcome-spinner');
+            if (wl) wl.textContent = 'Enviar invitaciones por correo';
+            if (sp) sp.classList.add('hidden');
             if (welcomeBlock && sendBtn) {
                 if (results.errors === 0 && results.success > 0 && opts.batchId && (opts.welcomeEmailsPending || 0) > 0) {
                     pendingWelcomeBatchId = opts.batchId;
                     welcomeBlock.classList.remove('hidden');
                     document.getElementById('results-welcome-count').textContent = String(opts.welcomeEmailsPending);
                     sendBtn.disabled = false;
-                    sendBtn.textContent = 'Enviar invitaciones por correo';
                 } else {
                     welcomeBlock.classList.add('hidden');
                 }
@@ -1382,14 +1397,79 @@
             }
         }
 
+        function applyWelcomeDoneToastVariant(success) {
+            const done = document.getElementById('welcome-done-toast');
+            if (!done) return;
+            done.classList.remove('border-emerald-200', 'bg-emerald-50', 'text-emerald-900', 'border-red-200', 'bg-red-50', 'text-red-900');
+            const ic = done.querySelector('.material-symbols-rounded');
+            if (success) {
+                done.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-900');
+                if (ic) {
+                    ic.textContent = 'check_circle';
+                    ic.classList.remove('text-red-600');
+                    ic.classList.add('text-emerald-600');
+                }
+            } else {
+                done.classList.add('border-red-200', 'bg-red-50', 'text-red-900');
+                if (ic) {
+                    ic.textContent = 'error';
+                    ic.classList.remove('text-emerald-600');
+                    ic.classList.add('text-red-600');
+                }
+            }
+        }
+
+        function resetWelcomeFeedbackToasts() {
+            document.getElementById('welcome-progress-toast')?.classList.add('hidden');
+            document.getElementById('welcome-done-toast')?.classList.add('hidden');
+            applyWelcomeDoneToastVariant(true);
+        }
+
+        function setWelcomeSendLoading(loading) {
+            const btn = document.getElementById('btn-send-welcome-emails');
+            const label = document.getElementById('btn-welcome-label');
+            const spin = document.getElementById('btn-welcome-spinner');
+            if (!btn || !label || !spin) return;
+            if (loading) {
+                btn.disabled = true;
+                spin.classList.remove('hidden');
+                label.textContent = 'Encolando...';
+            } else {
+                btn.disabled = false;
+                spin.classList.add('hidden');
+                label.textContent = 'Enviar invitaciones por correo';
+            }
+        }
+
+        function showWelcomeProgressToast(msg) {
+            const box = document.getElementById('welcome-progress-toast');
+            const text = document.getElementById('welcome-progress-toast-text');
+            if (text) text.textContent = msg || '';
+            box?.classList.remove('hidden');
+        }
+
+        function hideWelcomeProgressToast() {
+            document.getElementById('welcome-progress-toast')?.classList.add('hidden');
+        }
+
+        function showWelcomeDoneToast(msg) {
+            const box = document.getElementById('welcome-done-toast');
+            const text = document.getElementById('welcome-done-toast-text');
+            if (text) text.textContent = msg || '';
+            box?.classList.remove('hidden');
+        }
+
         async function sendBulkWelcomeEmails() {
             const batchId = pendingWelcomeBatchId;
             if (!batchId) return;
             const btn = document.getElementById('btn-send-welcome-emails');
             if (!btn) return;
-            btn.disabled = true;
-            const prevText = btn.textContent;
-            btn.textContent = 'Encolando...';
+
+            resetWelcomeFeedbackToasts();
+
+            setWelcomeSendLoading(true);
+            showWelcomeProgressToast('Envío de correos en cola. Se enviarán en lotes con pausa entre lotes.');
+
             try {
                 const res = await fetch(`/api/admin/tenants/${tenantId}/owners/bulk/send-welcome-emails`, {
                     method: 'POST',
@@ -1401,19 +1481,24 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    alert(data.error || 'No se pudo encolar el envío');
-                    btn.disabled = false;
-                    btn.textContent = prevText;
+                    hideWelcomeProgressToast();
+                    setWelcomeSendLoading(false);
+                    applyWelcomeDoneToastVariant(false);
+                    showWelcomeDoneToast(data.error || 'No se pudo encolar el envío.');
                     return;
                 }
                 pendingWelcomeBatchId = null;
-                document.getElementById('results-welcome-block').classList.add('hidden');
-                alert(data.message || 'Correos en cola. Se enviarán en lotes.');
+                hideWelcomeProgressToast();
+                setWelcomeSendLoading(false);
+                document.getElementById('results-welcome-block')?.classList.add('hidden');
+                applyWelcomeDoneToastVariant(true);
+                showWelcomeDoneToast(data.message || 'Correos encolados correctamente. Se enviarán en lotes.');
             } catch (e) {
                 console.error(e);
-                alert('Error de conexión');
-                btn.disabled = false;
-                btn.textContent = prevText;
+                hideWelcomeProgressToast();
+                setWelcomeSendLoading(false);
+                applyWelcomeDoneToastVariant(false);
+                showWelcomeDoneToast('Error de conexión. Intente de nuevo.');
             }
         }
 
@@ -1421,6 +1506,8 @@
             document.getElementById('results-modal').classList.add('hidden');
             document.getElementById('results-modal').classList.remove('flex');
             pendingWelcomeBatchId = null;
+            resetWelcomeFeedbackToasts();
+            setWelcomeSendLoading(false);
         }
 
         // Password Modal Functions
