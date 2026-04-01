@@ -1597,8 +1597,20 @@ class AdminController {
                 const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail;
                 const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
                 const dniMatch = !incomingDni || incomingDni === dbDni;
+                const emailMatchesExistingAccount = incomingEmail && (
+                    incomingEmail === dbPrimaryEmail ||
+                    dbEmails.includes(incomingEmail)
+                );
 
                 if (!nameMatch || !emailMatch || !phoneMatch || !dniMatch) {
+                    if (emailMatchesExistingAccount && incomingDni && dbDni && incomingDni !== dbDni) {
+                        throw new Error(
+                            `El correo ${incomingEmail} ya está asignado a ${dbFirst} ${dbLast} (documento ${dbDni || 'N/A'}). ` +
+                            `Los datos de esta carga corresponden a otra persona (${display_name?.trim() || '—'}, documento ${incomingDni}). ` +
+                            `En el sistema cada propietario tiene un correo único: no puede haber dos personas distintas con el mismo correo. ` +
+                            `Si son copropietarios del mismo inmueble, use un correo distinto para cada uno.`
+                        );
+                    }
                     throw new Error(`El documento ${document_number || 'N/A'} ya pertenece a otro propietario (${dbFirst} ${dbLast}, ${dbPrimaryEmail || 'sin email'}). Los datos cargados no coinciden. No se puede sobrescribir.`);
                 }
 
@@ -1916,8 +1928,20 @@ class AdminController {
                         const emailMatch = !incomingEmail || incomingEmail === dbPrimaryEmail;
                         const phoneMatch = !incomingPhone || incomingPhone === dbPhone;
                         const dniMatch = !incomingDni || incomingDni === dbDni;
+                        const emailMatchesExistingAccount = incomingEmail && (
+                            incomingEmail === dbPrimaryEmail ||
+                            dbEmails.includes(incomingEmail)
+                        );
 
                         if (!nameMatch || !emailMatch || !phoneMatch || !dniMatch) {
+                            if (emailMatchesExistingAccount && incomingDni && dbDni && incomingDni !== dbDni) {
+                                throw new Error(
+                                    `El correo ${incomingEmail} ya está asignado a ${dbFirst} ${dbLast} (documento ${dbDni || 'N/A'}). ` +
+                                    `Los datos de esta fila corresponden a otra persona (${display_name?.trim() || '—'}, documento ${incomingDni}). ` +
+                                    `En el sistema cada propietario tiene un correo único: no puede haber dos personas distintas con el mismo correo. ` +
+                                    `Si son copropietarios del mismo inmueble, use un correo distinto para cada uno.`
+                                );
+                            }
                             throw new Error(`El documento ${document_number || 'N/A'} ya pertenece a otro propietario (${dbFirst} ${dbLast}, ${dbPrimaryEmail || 'sin email'}). Los datos cargados no coinciden. No se puede sobrescribir.`);
                         }
 
