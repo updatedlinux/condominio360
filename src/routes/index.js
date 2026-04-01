@@ -9,6 +9,30 @@ router.get('/', (req, res) => {
     });
 });
 
+/**
+ * Política de privacidad (pública). URLs para proveedores de correo (p. ej. Mailgun) en mailgunUrlList.
+ */
+router.get('/privacy', (req, res) => {
+    const raw = (process.env.APP_URL || 'https://condominio-360.com').trim().replace(/\/$/, '');
+    const extra = (process.env.PUBLIC_PRIVACY_URLS || '')
+        .split(',')
+        .map((s) => s.trim().replace(/\/$/, ''))
+        .filter(Boolean);
+    const urlSet = new Set([raw, ...extra]);
+    const mailgunUrlList = [...urlSet].join(', ');
+    res.render('privacy-policy', {
+        title: 'Política de privacidad',
+        layout: false,
+        appUrl: raw,
+        mailgunUrlList,
+        lastUpdated: '28 de marzo de 2026'
+    });
+});
+
+router.get('/politica-privacidad', (req, res) => {
+    res.redirect(301, '/privacy');
+});
+
 router.get('/login', (req, res) => {
     res.render('auth/login', {
         title: 'Iniciar Sesión',

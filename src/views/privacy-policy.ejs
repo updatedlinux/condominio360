@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> | Condominio360</title>
+    <meta name="description" content="Política de privacidad de Condominio360: origen de los correos electrónicos y tratamiento de datos personales.">
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .legal-prose h2 { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .legal-prose h3 { font-size: 1rem; font-weight: 600; color: #334155; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+        .legal-prose p, .legal-prose li { color: #475569; line-height: 1.75; }
+        .legal-prose ul { list-style: disc; padding-left: 1.25rem; margin: 0.75rem 0; }
+        .legal-prose li { margin: 0.35rem 0; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+    <header class="border-b border-slate-200 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+            <a href="/" class="flex items-center gap-3">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-10 w-10" width="40" height="40">
+                <span class="text-lg font-extrabold text-slate-900 tracking-tight">Condominio360</span>
+            </a>
+            <a href="/login" class="text-sm font-semibold text-orange-600 hover:text-orange-700">Iniciar sesión</a>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <p class="text-sm text-slate-500 mb-2">Última actualización: <%= lastUpdated %></p>
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-8">Política de privacidad</h1>
+
+        <div class="legal-prose space-y-4 text-[15px] sm:text-base">
+
+            <p>
+                Condominio360 es una plataforma de software como servicio (SaaS) para la administración de condominios y comunidades.
+                Esta política describe cómo tratamos los datos personales, en particular las <strong>direcciones de correo electrónico</strong>
+                utilizadas para notificaciones transaccionales y comunicaciones relacionadas con el servicio.
+            </p>
+
+            <h2>1. Responsable del tratamiento</h2>
+            <p>
+                El tratamiento de datos se realiza en el marco del servicio Condominio360 ofrecido a administradores de condominios y propietarios.
+                Para consultas sobre privacidad puede utilizarse los canales de contacto indicados por su condominio o los publicados en el sitio web oficial.
+            </p>
+
+            <h2>2. Origen de las direcciones de correo electrónico</h2>
+            <p>
+                <strong>No utilizamos listas compradas, bases de datos de brokers, ni técnicas de extracción masiva de correos desde internet.</strong>
+                Las direcciones de correo que pueden recibir mensajes desde nuestra plataforma provienen <strong>únicamente</strong> de:
+            </p>
+            <ul>
+                <li>Personas que se registran o completan su registro en la aplicación web Condominio360 (cuentas de propietarios, administradores de junta u otros roles autorizados).</li>
+                <li>Datos introducidos por personal autorizado del condominio (por ejemplo, administración de junta o mesa de ayuda) sobre titulares o residentes que deben usar el sistema, conforme a la relación real con el condominio.</li>
+                <li>Cargas administrativas supervisadas (por ejemplo, importación de datos de propietarios) realizadas dentro del panel autorizado, donde el condominio aporta la información.</li>
+            </ul>
+            <p>
+                Todos estos supuestos implican una relación legítima con el condominio y el uso del software para gestión y comunicación institucional,
+                no para campañas de marketing masivo a públicos ajenos al servicio.
+            </p>
+
+            <h2>3. Dominios y URLs de la plataforma (origen de los datos de contacto)</h2>
+            <p>
+                El registro de usuarios, la autenticación y las operaciones donde se recogen o confirman correos electrónicos tienen lugar
+                a través de la aplicación alojada en los siguientes sitios (según el entorno desplegado):
+            </p>
+            <div class="my-6 p-4 sm:p-5 rounded-xl bg-slate-900 text-slate-100 border border-slate-700">
+                <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold mb-2">URLs / dominios (para verificación de proveedores de correo)</p>
+                <p class="font-mono text-sm sm:text-base break-all text-orange-200 select-all" id="mailgun-url-line"><%= mailgunUrlList %></p>
+                <p class="text-xs text-slate-400 mt-3">
+                    Puede copiar la línea anterior tal cual en formularios que soliciten dominios o URLs separados por coma.
+                </p>
+            </div>
+            <p class="text-sm text-slate-600">
+                Sitio principal de referencia: <a href="<%= appUrl %>" class="text-orange-600 font-medium hover:underline"><%= appUrl %></a>
+            </p>
+
+            <h2>4. Finalidad del tratamiento y del envío de correos</h2>
+            <p>
+                Los correos se utilizan para fines necesarios del servicio: invitaciones, recuperación de acceso, notificaciones sobre trámites,
+                comunicados de la junta, facturación o avisos similares vinculados al condominio. No vendemos direcciones de correo a terceros.
+            </p>
+
+            <h2>5. Conservación y seguridad</h2>
+            <p>
+                Los datos se conservan mientras se mantenga la relación con el servicio y según las necesidades legales o contractuales del condominio.
+                Aplicamos medidas técnicas y organizativas razonables para proteger la información.
+            </p>
+
+            <h2>6. Derechos de los usuarios</h2>
+            <p>
+                Las personas pueden ejercer los derechos reconocidos por la normativa aplicable (acceso, rectificación, supresión u otros)
+                a través de su condominio o de los canales que este habilite, según corresponda.
+            </p>
+
+            <h2>7. Cambios</h2>
+            <p>
+                Podemos actualizar esta política. La versión vigente estará publicada en esta página con la fecha de última actualización indicada arriba.
+            </p>
+        </div>
+
+        <p class="mt-12 pt-8 border-t border-slate-200">
+            <a href="/" class="text-orange-600 font-semibold hover:underline">← Volver al inicio</a>
+        </p>
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white py-8">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center text-sm text-slate-500">
+            © <%= new Date().getFullYear() %> Condominio360
+        </div>
+    </footer>
+</body>
+</html>
