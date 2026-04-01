@@ -2,6 +2,8 @@ const HOUR_MS = 60 * 60 * 1000;
 
 /**
  * Cola global de envíos SMTP (p. ej. Mailgun): ventana deslizante de 1 h.
+ * Aplica a todo el SaaS: comunicados por tenant/admin de junta, carga masiva de propietarios,
+ * notificaciones y cualquier otro correo que use EmailService — un solo pool por proceso Node.
  * Cada `acquire()` espera hasta haber cupo; así la app no supera el tope y el proveedor no corta la cuenta.
  * Nota: un solo proceso Node = un solo contador. Si escalas varias instancias con el mismo SMTP,
  * cada una tendría su propio límite (habría que coordinar con Redis u otro store compartido).

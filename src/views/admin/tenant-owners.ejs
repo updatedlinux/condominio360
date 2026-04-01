@@ -548,7 +548,21 @@
                     <span class="material-symbols-rounded text-lg align-text-bottom text-amber-700">mark_email_unread</span>
                     Hay <strong id="results-welcome-count">0</strong> notificación(es) de bienvenida pendientes de envío por correo.
                 </p>
-                <p class="text-xs text-amber-900 mb-3">Cuando revises que los propietarios e inmuebles quedaron bien en el sistema, encola el envío. Se procesará en lotes (no bloquea el servidor).</p>
+                <p class="text-xs text-amber-900 mb-3">Cuando revises que los propietarios e inmuebles quedaron bien, elige enviar ahora o programar la hora. El servidor respeta un máximo de 100 correos por hora (cola global).</p>
+                <div class="space-y-2 mb-4">
+                    <label class="flex items-start gap-2 cursor-pointer text-sm text-amber-950">
+                        <input type="radio" name="welcome-send-mode" value="now" checked class="mt-1 rounded-full border-amber-400 text-amber-600 focus:ring-amber-500" onchange="toggleWelcomeScheduleRow()">
+                        <span><strong>Enviar ahora</strong> — se encola de inmediato (límite 100/h).</span>
+                    </label>
+                    <label class="flex items-start gap-2 cursor-pointer text-sm text-amber-950">
+                        <input type="radio" name="welcome-send-mode" value="scheduled" class="mt-1 rounded-full border-amber-400 text-amber-600 focus:ring-amber-500" onchange="toggleWelcomeScheduleRow()">
+                        <span><strong>Programar</strong> — el envío empieza solo a la hora indicada (hora de tu equipo).</span>
+                    </label>
+                    <div id="welcome-schedule-row" class="hidden pl-7 pt-1">
+                        <label for="welcome-scheduled-at" class="block text-xs font-medium text-amber-900 mb-1">Fecha y hora de inicio</label>
+                        <input type="datetime-local" id="welcome-scheduled-at" class="w-full max-w-sm px-3 py-2 border border-amber-200 rounded-lg bg-white text-slate-900 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                </div>
                 <button type="button" id="btn-send-welcome-emails" onclick="sendBulkWelcomeEmails()" class="w-full px-4 py-3 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     <span id="btn-welcome-spinner" class="hidden shrink-0">
                         <span class="inline-block h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true"></span>
@@ -1386,6 +1400,7 @@
                     welcomeBlock.classList.remove('hidden');
                     document.getElementById('results-welcome-count').textContent = String(opts.welcomeEmailsPending);
                     sendBtn.disabled = false;
+                    resetWelcomeSendMode();
                 } else {
                     welcomeBlock.classList.add('hidden');
                 }
@@ -1425,7 +1440,36 @@
             applyWelcomeDoneToastVariant(true);
         }
 
-        function setWelcomeSendLoading(loading) {
+        function toggleWelcomeScheduleRow() {
+            const sched = document.querySelector('input[name="welcome-send-mode"][value="scheduled"]')?.checked;
+            document.getElementById('welcome-schedule-row')?.classList.toggle('hidden', !sched);
+            const lbl = document.getElementById('btn-welcome-label');
+            if (lbl && !document.getElementById('btn-welcome-spinner')?.classList.contains('hidden')) return;
+            if (lbl) lbl.textContent = sched ? 'Programar envío' : 'Enviar invitaciones por correo';
+        }
+
+        function initWelcomeScheduleMin() {
+            const inp = document.getElementById('welcome-scheduled-at');
+            if (!inp) return;
+            const d = new Date();
+            d.setMinutes(d.getMinutes() + 3);
+            const pad = (n) => String(n).padStart(2, '0');
+            inp.min = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            const suggest = new Date(d.getTime());
+            suggest.setHours(suggest.getHours() + 1);
+            inp.value = `${suggest.getFullYear()}-${pad(suggest.getMonth() + 1)}-${pad(suggest.getDate())}T${pad(suggest.getHours())}:${pad(suggest.getMinutes())}`;
+        }
+
+        function resetWelcomeSendMode() {
+            const nowRadio = document.querySelector('input[name="welcome-send-mode"][value="now"]');
+            if (nowRadio) nowRadio.checked = true;
+            document.getElementById('welcome-schedule-row')?.classList.add('hidden');
+            initWelcomeScheduleMin();
+            const lbl = document.getElementById('btn-welcome-label');
+            if (lbl) lbl.textContent = 'Enviar invitaciones por correo';
+        }
+
+        function setWelcomeSendLoading(loading, opts = {}) {
             const btn = document.getElementById('btn-send-welcome-emails');
             const label = document.getElementById('btn-welcome-label');
             const spin = document.getElementById('btn-welcome-spinner');
@@ -1433,11 +1477,12 @@
             if (loading) {
                 btn.disabled = true;
                 spin.classList.remove('hidden');
-                label.textContent = 'Encolando...';
+                label.textContent = opts.scheduled ? 'Programando...' : 'Encolando...';
             } else {
                 btn.disabled = false;
                 spin.classList.add('hidden');
-                label.textContent = 'Enviar invitaciones por correo';
+                const sched = document.querySelector('input[name="welcome-send-mode"][value="scheduled"]')?.checked;
+                label.textContent = sched ? 'Programar envío' : 'Enviar invitaciones por correo';
             }
         }
 
@@ -1465,19 +1510,46 @@
             const btn = document.getElementById('btn-send-welcome-emails');
             if (!btn) return;
 
+            const useSchedule = document.querySelector('input[name="welcome-send-mode"][value="scheduled"]')?.checked;
+            let scheduledSendAt = null;
+            if (useSchedule) {
+                const v = document.getElementById('welcome-scheduled-at')?.value;
+                if (!v || !String(v).trim()) {
+                    alert('Elige fecha y hora para programar el envío, o selecciona «Enviar ahora».');
+                    return;
+                }
+                const picked = new Date(v);
+                if (Number.isNaN(picked.getTime())) {
+                    alert('La fecha u hora no es válida.');
+                    return;
+                }
+                if (picked.getTime() <= Date.now()) {
+                    alert('La hora debe ser posterior a ahora. Elige otra fecha o usa «Enviar ahora».');
+                    return;
+                }
+                scheduledSendAt = picked.toISOString();
+            }
+
             resetWelcomeFeedbackToasts();
 
-            setWelcomeSendLoading(true);
-            showWelcomeProgressToast('Envío de correos en cola. Se enviarán en lotes con pausa entre lotes.');
+            setWelcomeSendLoading(true, { scheduled: !!useSchedule });
+            showWelcomeProgressToast(
+                useSchedule
+                    ? 'Guardando programación del envío…'
+                    : 'Envío de correos en cola. Se respetará el límite de 100 correos por hora.'
+            );
 
             try {
+                const body = { batchId };
+                if (scheduledSendAt) body.scheduledSendAt = scheduledSendAt;
+
                 const res = await fetch(`/api/admin/tenants/${tenantId}/owners/bulk/send-welcome-emails`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ batchId })
+                    body: JSON.stringify(body)
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -1492,7 +1564,21 @@
                 setWelcomeSendLoading(false);
                 document.getElementById('results-welcome-block')?.classList.add('hidden');
                 applyWelcomeDoneToastVariant(true);
-                showWelcomeDoneToast(data.message || 'Correos encolados correctamente. Se enviarán en lotes.');
+                let doneMsg = data.message || 'Listo.';
+                if (data.scheduled && data.scheduledSendAt) {
+                    const d = new Date(data.scheduledSendAt);
+                    if (!Number.isNaN(d.getTime())) {
+                        const local = d.toLocaleString('es-VE', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                            timeZone: 'America/Caracas'
+                        });
+                        doneMsg = `Programado para ${local} (hora Venezuela). El envío empezará solo y respetará 100 correos/hora.`;
+                    }
+                } else if (!data.scheduled) {
+                    doneMsg = data.message || 'Correos en cola. Se enviarán respetando el límite de 100 por hora.';
+                }
+                showWelcomeDoneToast(doneMsg);
             } catch (e) {
                 console.error(e);
                 hideWelcomeProgressToast();

@@ -81,7 +81,9 @@ class EmailService {
     }
 
     /**
-     * Enviar email genérico
+     * Enviar email genérico.
+     * Todo envío SMTP real pasa por aquí: un solo contador global (`SMTP_MAX_EMAILS_PER_HOUR`) para
+     * comunicados de junta, bienvenidas masivas, recuperación de clave, facturación, etc., en todos los condominios.
      */
     async send(to, subject, html, text = null) {
         const mailOptions = {

@@ -36,6 +36,7 @@ class BulkOwnerWelcomeBatchModel {
                 SET status = 'PROCESSING', started_at = SYSDATETIME()
                 OUTPUT INSERTED.id
                 WHERE id = @id AND status = 'PENDING_SEND'
+                  AND (scheduled_send_at IS NULL OR scheduled_send_at <= SYSUTCDATETIME())
             `);
         return !!(r.recordset && r.recordset.length > 0);
     }
@@ -74,6 +75,42 @@ class BulkOwnerWelcomeBatchModel {
                 SET status = 'FAILED', completed_at = SYSDATETIME(), error_summary = @error_summary
                 WHERE id = @id
             `);
+    }
+
+    /** UTC: inicio del envío programado (null = sin programar o envío inmediato al confirmar) */
+    static async setScheduledSendAt(id, scheduledSendAtUtc) {
+        const pool = await connectDB();
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, id)
+            .input('scheduled_send_at', sql.DateTime2, scheduledSendAtUtc)
+            .query(`
+                UPDATE BulkOwnerWelcomeBatches
+                SET scheduled_send_at = @scheduled_send_at
+                WHERE id = @id AND status = 'PENDING_SEND'
+            `);
+    }
+
+    static async clearScheduledSendAt(id) {
+        const pool = await connectDB();
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                UPDATE BulkOwnerWelcomeBatches
+                SET scheduled_send_at = NULL
+                WHERE id = @id AND status = 'PENDING_SEND'
+            `);
+    }
+
+    /** Lotes listos para disparar (hora llegó; el cron llama queueProcess por cada id). */
+    static async findDueScheduledBatchIds() {
+        const pool = await connectDB();
+        const r = await pool.request().query(`
+            SELECT id FROM BulkOwnerWelcomeBatches
+            WHERE status = 'PENDING_SEND'
+              AND scheduled_send_at IS NOT NULL
+              AND scheduled_send_at <= SYSUTCDATETIME()
+        `);
+        return (r.recordset || []).map((row) => String(row.id));
     }
 }
 

@@ -114,6 +114,7 @@ app.use((req, res) => {
 // Importar Scheduler y Queue Service
 const SchedulerService = require('./services/SchedulerService');
 const CommuniqueQueueService = require('./services/CommuniqueQueueService');
+const BulkOwnerWelcomeSchedulerService = require('./services/BulkOwnerWelcomeSchedulerService');
 const ConsultationNotificationService = require('./services/ConsultationNotificationService');
 const BillingRateUpdateService = require('./services/BillingRateUpdateService');
 
@@ -130,6 +131,9 @@ app.listen(PORT, () => {
     
     // Iniciar cola de comunicados
     CommuniqueQueueService.start();
+
+    // Envíos de bienvenida masiva programados por hora
+    BulkOwnerWelcomeSchedulerService.start();
     
     // Iniciar servicio de notificaciones de consultas
     ConsultationNotificationService.start();

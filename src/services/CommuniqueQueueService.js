@@ -3,13 +3,14 @@ const CommuniqueModel = require('../models/CommuniqueModel');
 const EmailService = require('./EmailService');
 
 /**
- * Servicio para manejar la cola de envío de comunicados por email
- * Envía en lotes de 3 cada 2 minutos
+ * Cola de envío de comunicados (admin de junta / tenant).
+ * El cron intenta un lote cada N minutos, pero cada correo se envía con EmailService.send(),
+ * que respeta el mismo límite global SMTP_MAX_EMAILS_PER_HOUR que el resto del SaaS (todos los condominios).
  */
 class CommuniqueQueueService {
     constructor() {
-        this.batchSize = 30; // Lotes de 30 emails
-        this.intervalMinutes = 2; // Cada 2 minutos
+        this.batchSize = 30; // Destinatarios por lote de BD
+        this.intervalMinutes = 2; // Cada 2 minutos se intenta avanzar la cola si hay pendientes
         this.isProcessing = false;
         this.task = null;
     }
@@ -94,6 +95,7 @@ class CommuniqueQueueService {
             let sentCount = 0;
             let errorCount = 0;
 
+            // Secuencial: cada send() espera en el limitador global (100/h compartido con todo el sistema)
             for (const recipient of recipients) {
                 try {
                     await EmailService.send(

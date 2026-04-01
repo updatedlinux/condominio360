@@ -2259,7 +2259,7 @@ class AdminController {
     static async sendBulkWelcomeEmails(req, res) {
         try {
             const { id } = req.params;
-            const { batchId } = req.body || {};
+            const { batchId, scheduledSendAt } = req.body || {};
 
             if (!batchId || typeof batchId !== 'string') {
                 return res.status(400).json({ success: false, error: 'batchId es requerido' });
@@ -2278,6 +2278,42 @@ class AdminController {
                 });
             }
 
+            const hasSchedule =
+                scheduledSendAt != null &&
+                typeof scheduledSendAt === 'string' &&
+                String(scheduledSendAt).trim() !== '';
+
+            let when = null;
+            if (hasSchedule) {
+                when = new Date(scheduledSendAt);
+                if (Number.isNaN(when.getTime())) {
+                    return res.status(400).json({ success: false, error: 'Fecha u hora programada no válida' });
+                }
+            }
+
+            const now = Date.now();
+            if (when && when.getTime() > now) {
+                await BulkOwnerWelcomeBatchModel.setScheduledSendAt(batchId, when);
+
+                await AdminController.logAudit(
+                    req,
+                    'UPDATE',
+                    'BULK_OWNER_WELCOME',
+                    batchId,
+                    `Programó envío de bienvenida (${batch.total_items} correos) para ${when.toISOString()}`,
+                    id
+                );
+
+                return res.json({
+                    success: true,
+                    scheduled: true,
+                    scheduledSendAt: when.toISOString(),
+                    message:
+                        'Envío programado. Se iniciará automáticamente a la hora indicada (máx. 100 correos/hora).'
+                });
+            }
+
+            await BulkOwnerWelcomeBatchModel.clearScheduledSendAt(batchId);
             OwnerBulkWelcomeEmailService.queueProcess(batchId);
 
             await AdminController.logAudit(
@@ -2289,9 +2325,10 @@ class AdminController {
                 id
             );
 
-            res.json({
+            return res.json({
                 success: true,
-                message: 'Envío de correos en cola. Se enviarán en lotes con pausa entre lotes.'
+                scheduled: false,
+                message: 'Envío de correos en cola. Se respetará el límite de 100 correos por hora.'
             });
         } catch (error) {
             console.error('sendBulkWelcomeEmails error:', error);
