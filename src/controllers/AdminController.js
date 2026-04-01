@@ -1829,11 +1829,23 @@ class AdminController {
             const row = owners[i];
             const dni = (row.numero_documento || row.document_number || '').trim();
             if (!dni) continue;
-            const name = AdminController._normOwnerName(row.nombre || row.display_name || '');
-            const email = (row.email || '').trim().toLowerCase();
+            const displayName = (row.nombre || row.display_name || '').trim();
+            const name = AdminController._normOwnerName(displayName);
+            const emailDisplay = (row.email || '').trim();
+            const email = emailDisplay.toLowerCase();
             const slug = (row.inmueble_slug || '').trim();
             if (!byDni.has(dni)) byDni.set(dni, []);
-            byDni.get(dni).push({ rowIndex: i + 1, name, email, slug });
+            const dataRowNumber = i + 1; // 1-based: primera fila de datos del CSV
+            byDni.get(dni).push({
+                rowIndex: dataRowNumber,
+                name,
+                email,
+                emailDisplay: emailDisplay || '—',
+                slug,
+                displayName: displayName || '—',
+                /** Fila en Excel: fila 1 = encabezados; primera fila de datos = 2 */
+                excelRowNumber: dataRowNumber + 1
+            });
         }
         for (const [dni, rows] of byDni) {
             if (rows.length < 2) continue;
@@ -1857,7 +1869,14 @@ class AdminController {
                     type: 'SAME_OWNER_MULTIPLE_PROPERTIES',
                     documentNumber: dni,
                     rowNumbers: rows.map((r) => r.rowIndex),
-                    propertySlugs: slugs
+                    propertySlugs: slugs,
+                    rowsDetail: rows.map((r) => ({
+                        dataRowNumber: r.rowIndex,
+                        excelRowNumber: r.excelRowNumber,
+                        nombre: r.displayName || '—',
+                        email: r.emailDisplay || r.email || '—',
+                        inmueble_slug: r.slug || '—'
+                    }))
                 });
             }
         }

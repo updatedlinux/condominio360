@@ -34,6 +34,29 @@
         .property-tag { background: rgb(209 250 229); color: rgb(5 150 105); }
         .owner-unassigned { background: rgb(255 237 213); color: rgb(194 65 12); }
 
+        .bulk-excel-preview {
+            font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .bulk-excel-preview th {
+            background: #f3f3f3;
+            border: 1px solid #c0c0c0;
+            font-weight: 600;
+            color: #333;
+            padding: 0.35rem 0.5rem;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .bulk-excel-preview td {
+            border: 1px solid #d0d0d0;
+            padding: 0.35rem 0.5rem;
+            background: #fff;
+            vertical-align: top;
+        }
+        .bulk-excel-preview tbody tr:nth-child(even) td { background: #fafafa; }
+
         /* Navigation Rail / Sidebar */
         .nav-rail {
             background: var(--md-sys-color-surface);
@@ -473,14 +496,17 @@
 
     <!-- Modal: confirmar mismo titular en varios inmuebles (CSV) -->
     <div id="bulk-confirm-multi-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/50" onclick="if(event.target===this)closeBulkConfirmMultiModal()">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
             <h3 class="text-lg font-medium text-slate-900 mb-2">Confirmar carga</h3>
-            <p class="text-sm text-slate-600 mb-4">
+            <p class="text-sm text-slate-600 mb-2">
                 El mismo <strong>número de documento</strong> aparece en varias filas con <strong>distintos inmuebles</strong>.
                 El sistema tratará a esas filas como el <strong>mismo titular</strong> y vinculará cada inmueble a esa cuenta.
-                Revise la lista y confirme si es correcto.
             </p>
-            <ul id="bulk-confirm-multi-list" class="text-sm text-slate-800 space-y-3 mb-6 border border-slate-100 rounded-xl p-4 bg-slate-50 max-h-56 overflow-y-auto"></ul>
+            <p class="text-xs text-slate-500 mb-4">
+                <strong>Fila Excel</strong> = número de fila en su hoja (incluye la fila de encabezado: la primera fila del archivo es el encabezado).
+                <strong>Fila datos</strong> = solo filas de datos, sin contar el encabezado (coincide con el orden del CSV procesado).
+            </p>
+            <div id="bulk-confirm-multi-detail" class="mb-6 max-h-[min(50vh,28rem)] overflow-auto border border-slate-200 rounded-lg shadow-inner bg-white"></div>
             <div class="flex gap-3">
                 <button type="button" onclick="closeBulkConfirmMultiModal()" class="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-slate-700 font-medium hover:bg-slate-50">
                     Volver
@@ -1176,6 +1202,61 @@
             });
         }
 
+        function escapeHtmlBulk(s) {
+            if (s == null || s === '') return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function renderBulkConfirmMultiTables(warnings) {
+            const el = document.getElementById('bulk-confirm-multi-detail');
+            if (!el) return;
+            const html = (warnings || []).map((w) => {
+                if (w.type !== 'SAME_OWNER_MULTIPLE_PROPERTIES') return '';
+                const rows = w.rowsDetail;
+                if (rows && rows.length) {
+                    const body = rows.map((r) => `
+                        <tr>
+                            <td class="tabular-nums text-slate-800">${escapeHtmlBulk(String(r.excelRowNumber ?? ''))}</td>
+                            <td class="tabular-nums text-slate-600">${escapeHtmlBulk(String(r.dataRowNumber ?? ''))}</td>
+                            <td>${escapeHtmlBulk(r.nombre)}</td>
+                            <td>${escapeHtmlBulk(r.email)}</td>
+                            <td class="whitespace-normal break-all">${escapeHtmlBulk(r.inmueble_slug)}</td>
+                        </tr>
+                    `).join('');
+                    return `
+                        <div class="mb-5 last:mb-0">
+                            <p class="text-sm font-semibold text-slate-900 mb-2 font-sans">Documento <span class="font-mono">${escapeHtmlBulk(String(w.documentNumber || '—'))}</span></p>
+                            <div class="overflow-x-auto rounded border border-[#c0c0c0]">
+                                <table class="bulk-excel-preview">
+                                    <thead>
+                                        <tr>
+                                            <th>Fila Excel</th>
+                                            <th>Fila datos</th>
+                                            <th>Nombre</th>
+                                            <th>Correo</th>
+                                            <th>Inmueble (slug)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${body}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+                const nums = (w.rowNumbers || []).map((n) => Number(n) + 1).join(', ');
+                const slugs = (w.propertySlugs || []).join(', ');
+                return `
+                    <div class="mb-4 text-sm font-sans text-slate-700">
+                        <p class="font-semibold">Documento ${escapeHtmlBulk(String(w.documentNumber))}</p>
+                        <p class="text-xs mt-1">Filas Excel: ${escapeHtmlBulk(nums)} — ${escapeHtmlBulk(slugs)}</p>
+                    </div>
+                `;
+            }).filter(Boolean).join('');
+            el.innerHTML = html || '<p class="text-sm text-slate-500 font-sans">Sin detalle.</p>';
+        }
+
         function closeBulkConfirmMultiModal() {
             const m = document.getElementById('bulk-confirm-multi-modal');
             if (m) m.classList.add('hidden');
@@ -1214,17 +1295,7 @@
                 const results = { success: 0, errors: 0, errorDetails: [], total: csvData.length };
 
                 if (res.status === 409 && data.requiresConfirmation && Array.isArray(data.warnings)) {
-                    const listEl = document.getElementById('bulk-confirm-multi-list');
-                    if (listEl) {
-                        listEl.innerHTML = data.warnings.map((w) => {
-                            if (w.type === 'SAME_OWNER_MULTIPLE_PROPERTIES') {
-                                const rows = (w.rowNumbers || []).join(', ');
-                                const slugs = (w.propertySlugs || []).join(', ');
-                                return `<li><span class="font-semibold text-slate-900">Documento ${w.documentNumber || '—'}</span> — filas ${rows} — inmuebles: <span class="font-mono text-xs">${slugs}</span></li>`;
-                            }
-                            return '';
-                        }).filter(Boolean).join('') || '<li class="text-slate-500">Revise el archivo y vuelva a intentar.</li>';
-                    }
+                    renderBulkConfirmMultiTables(data.warnings);
                     document.getElementById('bulk-confirm-multi-modal')?.classList.remove('hidden');
                     return;
                 }
