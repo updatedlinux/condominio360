@@ -101,6 +101,7 @@ router.get('/balance/exchange-rates', AdminBalanceController.getExchangeRates);
 router.get('/balance/financial-summary', AdminBalanceController.getFinancialSummary);
 
 // ==================== CORREO (Mailgun / jobs) ====================
+router.get('/outgoing-queues-summary', EmailAdminController.getOutgoingQueuesSummary);
 router.get('/email-metrics', EmailAdminController.getMetrics);
 router.get('/email-jobs', EmailAdminController.listJobs);
 router.get('/email-jobs/:id', EmailAdminController.getJob);

@@ -1,4 +1,5 @@
 const EmailJobModel = require('../models/EmailJobModel');
+const OutgoingQueuesSummaryModel = require('../models/OutgoingQueuesSummaryModel');
 const EmailOrchestrator = require('../services/email/EmailOrchestrator');
 
 function isUuid(s) {
@@ -156,6 +157,22 @@ class EmailAdminController {
             }
             console.error('[EmailAdminController.retryRecipient]', e);
             res.status(500).json({ success: false, error: e.message || 'Error al reintentar' });
+        }
+    }
+
+    /**
+     * GET /api/admin/outgoing-queues-summary
+     * Colas masivas (comunicados, Mailgun, notificaciones internas, bienvenidas) — monitoreo superadmin.
+     */
+    static async getOutgoingQueuesSummary(req, res) {
+        const s = EmailAdminController._scopeSuper(req);
+        if (s.error) return res.status(s.error.status).json(s.error.body);
+        try {
+            const data = await OutgoingQueuesSummaryModel.getGlobalSummary();
+            res.json({ success: true, data });
+        } catch (e) {
+            console.error('[EmailAdminController.getOutgoingQueuesSummary]', e);
+            res.status(500).json({ success: false, error: 'Error al leer colas de envío' });
         }
     }
 }

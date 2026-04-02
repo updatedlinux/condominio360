@@ -140,15 +140,15 @@ class PropertyModel {
             request.input('building_id', sql.UniqueIdentifier, building_id);
         }
 
+        // No usar SUM(CASE WHEN EXISTS (...)) — SQL Server error 130 (agregado sobre subconsulta).
+        const whereP2 = whereClause.replace(/\bp\./g, 'p2.');
         const result = await request.query(`
             SELECT
-                COUNT(*) AS total,
-                SUM(CASE WHEN EXISTS (
-                    SELECT 1 FROM PropertyOwners po WHERE po.property_id = p.id
-                ) THEN 1 ELSE 0 END) AS with_owners,
-                SUM(CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(p.type, '')))) = N'apartment' THEN 1 ELSE 0 END) AS apartments
-            FROM Properties p
-            ${whereClause}
+                (SELECT COUNT(*) FROM Properties p2 ${whereP2}) AS total,
+                (SELECT COUNT(*) FROM Properties p2 ${whereP2}
+                    AND EXISTS (SELECT 1 FROM PropertyOwners po WHERE po.property_id = p2.id)) AS with_owners,
+                (SELECT COUNT(*) FROM Properties p2 ${whereP2}
+                    AND LOWER(LTRIM(RTRIM(ISNULL(p2.type, N'')))) = N'apartment') AS apartments
         `);
 
         const row = result.recordset[0] || {};
