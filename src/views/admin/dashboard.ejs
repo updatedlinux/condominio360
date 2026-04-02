@@ -3582,6 +3582,19 @@
                 .replace(/"/g, '&quot;');
         }
 
+        /**
+         * DATETIME2 desde SQL: la BD guarda hora Venezuela pero el driver la expone como UTC.
+         * Se añade -04:00 al ISO para formatear en Caracas sin aplicar dos veces el offset (misma lógica que EmailService.formatDateVenezuela).
+         */
+        function formatEmailSqlDatetimeVenezuela(val) {
+            if (!val) return '—';
+            const d = val instanceof Date ? val : new Date(val);
+            if (isNaN(d.getTime())) return '—';
+            const iso = d.toISOString();
+            const isoVenezuela = iso.slice(0, 19) + '-04:00';
+            return new Date(isoVenezuela).toLocaleString('es-VE', { timeZone: 'America/Caracas' });
+        }
+
         async function loadEmailTenantOptions() {
             if (!user.isSuperAdmin) return;
             const wrap = document.getElementById('email-tenant-filter-wrap');
@@ -3654,7 +3667,7 @@
                     return;
                 }
                 tbody.innerHTML = rows.map((j) => {
-                    const dt = j.created_at ? new Date(j.created_at).toLocaleString('es-VE', { timeZone: 'America/Caracas' }) : '—';
+                    const dt = formatEmailSqlDatetimeVenezuela(j.created_at);
                     const tenant = j.tenant_name || (j.tenant_id ? '(sin nombre)' : '—');
                     return `<tr class="hover:bg-gray-50 cursor-pointer" onclick="openEmailJobModal('${j.id}')">
                         <td class="whitespace-nowrap">${dt}</td>
@@ -3764,9 +3777,7 @@
                 const body = document.getElementById('email-logs-modal-body');
                 body.textContent = logs.length
                     ? logs.map((l) => {
-                        const t = l.created_at
-                            ? new Date(l.created_at).toLocaleString('es-VE', { timeZone: 'America/Caracas' })
-                            : '—';
+                        const t = formatEmailSqlDatetimeVenezuela(l.created_at);
                         return `${t} · ${l.event_type || ''}`;
                     }).join('\n')
                     : 'Sin entradas en el período de retención configurado.';
