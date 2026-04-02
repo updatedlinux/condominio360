@@ -1,0 +1,47 @@
+<%#
+  Sidebar Super Admin homologado con admin/dashboard (mismas entradas y orden).
+  Uso: include con activePage: 'dashboard'|'tenants'|... (resaltar ítem activo)
+  Enlaces: /admin?section=... para abrir el SPA en la sección correspondiente.
+%>
+<% const ap = typeof activePage !== 'undefined' ? activePage : 'dashboard'; %>
+<% function saSection(s) { return '/admin?section=' + encodeURIComponent(s); } %>
+<nav class="flex-1 py-4 overflow-y-auto">
+    <a href="<%= saSection('dashboard') %>" class="nav-item <%= ap === 'dashboard' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">space_dashboard</span>
+        <span class="label flex items-center gap-2">Dashboard
+            <span id="bcv-nav-badge" class="hidden min-w-[8px] h-2 rounded-full bg-red-500" title="Clave API BCV"></span>
+        </span>
+    </a>
+    <a href="<%= saSection('tenants') %>" class="nav-item <%= ap === 'tenants' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">apartment</span>
+        <span class="label">Condominios</span>
+    </a>
+    <a href="<%= saSection('users') %>" class="nav-item <%= ap === 'users' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">group</span>
+        <span class="label">Usuarios</span>
+    </a>
+    <a href="<%= saSection('data-updates') %>" class="nav-item pl-4 text-sm <%= ap === 'data-updates' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded text-lg">edit_note</span>
+        <span class="label">Actualización de Datos</span>
+    </a>
+    <a href="<%= saSection('audit') %>" class="nav-item <%= ap === 'audit' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">receipt_long</span>
+        <span class="label">Auditoría</span>
+    </a>
+    <a href="<%= saSection('email') %>" class="nav-item <%= ap === 'email' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">outgoing_mail</span>
+        <span class="label">Correo saliente</span>
+    </a>
+    <a href="<%= saSection('saas-billing') %>" class="nav-item <%= ap === 'saas-billing' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">payments</span>
+        <span class="label">Facturación C360</span>
+    </a>
+    <a href="<%= saSection('balance-financiero') %>" class="nav-item <%= ap === 'balance-financiero' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">account_balance</span>
+        <span class="label">Balance Financiero</span>
+    </a>
+    <a href="<%= saSection('settings') %>" class="nav-item <%= ap === 'settings' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">settings</span>
+        <span class="label">Configuración</span>
+    </a>
+</nav>

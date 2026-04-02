@@ -530,43 +530,43 @@
             <!-- Divider -->
             <div class="h-px bg-gray-200 mx-4"></div>
 
-            <!-- Navigation Items -->
+            <!-- Navigation Items (data-nav-section: enlaces /admin?section= desde otras vistas) -->
             <nav class="flex-1 py-4 overflow-y-auto">
-                <div class="nav-item active" onclick="showSection('dashboard', this)">
+                <div class="nav-item active" data-nav-section="dashboard" onclick="showSection('dashboard', this)">
                     <span class="icon material-symbols-rounded">space_dashboard</span>
                     <span class="label flex items-center gap-2">Dashboard
                         <span id="bcv-nav-badge" class="hidden min-w-[8px] h-2 rounded-full bg-red-500" title="Clave API BCV"></span>
                     </span>
                 </div>
-                <div class="nav-item" onclick="showSection('tenants', this)">
+                <div class="nav-item" data-nav-section="tenants" onclick="showSection('tenants', this)">
                     <span class="icon material-symbols-rounded">apartment</span>
                     <span class="label">Condominios</span>
                 </div>
-                <div class="nav-item" onclick="showSection('users', this)">
+                <div class="nav-item" data-nav-section="users" onclick="showSection('users', this)">
                     <span class="icon material-symbols-rounded">group</span>
                     <span class="label">Usuarios</span>
                 </div>
-                <div class="nav-item pl-4 text-sm" onclick="showSection('data-updates', this)">
+                <div class="nav-item pl-4 text-sm" data-nav-section="data-updates" onclick="showSection('data-updates', this)">
                     <span class="icon material-symbols-rounded text-lg">edit_note</span>
                     <span class="label">Actualización de Datos</span>
                 </div>
-                <div class="nav-item" onclick="showSection('audit', this)">
+                <div class="nav-item" data-nav-section="audit" onclick="showSection('audit', this)">
                     <span class="icon material-symbols-rounded">receipt_long</span>
                     <span class="label">Auditoría</span>
                 </div>
-                <div class="nav-item" onclick="showSection('email', this)">
+                <div class="nav-item" data-nav-section="email" onclick="showSection('email', this)">
                     <span class="icon material-symbols-rounded">outgoing_mail</span>
                     <span class="label">Correo saliente</span>
                 </div>
-                <div class="nav-item" onclick="showSection('saas-billing', this)">
+                <div class="nav-item" data-nav-section="saas-billing" onclick="showSection('saas-billing', this)">
                     <span class="icon material-symbols-rounded">payments</span>
                     <span class="label">Facturación C360</span>
                 </div>
-                <div class="nav-item" onclick="showSection('balance-financiero', this)">
+                <div class="nav-item" data-nav-section="balance-financiero" onclick="showSection('balance-financiero', this)">
                     <span class="icon material-symbols-rounded">account_balance</span>
                     <span class="label">Balance Financiero</span>
                 </div>
-                <div class="nav-item" onclick="showSection('settings', this)">
+                <div class="nav-item" data-nav-section="settings" onclick="showSection('settings', this)">
                     <span class="icon material-symbols-rounded">settings</span>
                     <span class="label">Configuración</span>
                 </div>
@@ -1714,6 +1714,7 @@
 
             // Load data
             loadDashboard();
+            applySectionFromQuery();
 
             // Setup sidebar toggle
             document.getElementById('menu-toggle').addEventListener('click', toggleSidebar);
@@ -1747,6 +1748,24 @@
             const overlay = document.getElementById('admin-mobile-overlay');
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('active');
+        }
+
+        /** Si la URL es /admin?section=auditoría|email|..., abrir esa sección del SPA y limpiar query */
+        function applySectionFromQuery() {
+            const allowed = new Set([
+                'dashboard', 'tenants', 'users', 'data-updates', 'audit', 'email',
+                'saas-billing', 'balance-financiero', 'settings'
+            ]);
+            const params = new URLSearchParams(window.location.search);
+            const section = params.get('section');
+            if (!section || !allowed.has(section)) return;
+            const el = document.querySelector('[data-nav-section="' + section.replace(/"/g, '') + '"]');
+            if (el && typeof showSection === 'function') {
+                showSection(section, el);
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, '', '/admin');
+                }
+            }
         }
 
         // Section Navigation

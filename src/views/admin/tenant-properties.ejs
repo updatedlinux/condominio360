@@ -133,37 +133,7 @@
             <!-- Divider -->
             <div class="h-px bg-gray-200 mx-4"></div>
 
-            <!-- Navigation Items (homologados con dashboard) -->
-            <nav class="flex-1 py-4 overflow-y-auto">
-                <a href="/admin" class="nav-item">
-                    <span class="icon material-symbols-rounded">space_dashboard</span>
-                    <span class="label">Dashboard</span>
-                </a>
-                <a href="/admin" class="nav-item active">
-                    <span class="icon material-symbols-rounded">apartment</span>
-                    <span class="label">Condominios</span>
-                </a>
-                <a href="/admin" class="nav-item">
-                    <span class="icon material-symbols-rounded">group</span>
-                    <span class="label">Usuarios</span>
-                </a>
-                <a href="/admin" class="nav-item">
-                    <span class="icon material-symbols-rounded">receipt_long</span>
-                    <span class="label">Auditoría</span>
-                </a>
-                <a href="/admin" class="nav-item">
-                    <span class="icon material-symbols-rounded">payments</span>
-                    <span class="label">Facturación C360</span>
-                </a>
-                <a href="/admin" class="nav-item">
-                    <span class="icon material-symbols-rounded">account_balance</span>
-                    <span class="label">Balance Financiero</span>
-                </a>
-                <a href="/admin" class="nav-item">
-                    <span class="icon material-symbols-rounded">settings</span>
-                    <span class="label">Configuración</span>
-                </a>
-            </nav>
+            <%- include('admin/partials/superadmin-sidebar', { activePage: 'tenants' }) %>
 
             <!-- Bottom Actions -->
             <div class="p-4 border-t border-gray-200">
