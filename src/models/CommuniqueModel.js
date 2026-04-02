@@ -230,25 +230,23 @@ class CommuniqueModel {
     }
 
     /**
-     * Obtener destinatarios de un lote
+     * Siguientes destinatarios pendientes (no OFFSET por batchNumber: ver CommuniqueQueueService).
      */
     static async getBatchRecipients(communiqueId, batchNumber, batchSize = 30) {
         try {
             const pool = await connectDB();
-            const offset = (batchNumber - 1) * batchSize;
-            
+
             const result = await pool.request()
                 .input('communiqueId', sql.UniqueIdentifier, communiqueId)
-                .input('offset', sql.Int, offset)
                 .input('limit', sql.Int, batchSize)
                 .query(`
                     SELECT n.*, u.first_name, u.last_name
                     FROM CommuniqueNotifications n
                     LEFT JOIN Users u ON n.user_id = u.id
-                    WHERE n.communique_id = @communiqueId 
+                    WHERE n.communique_id = @communiqueId
                     AND n.status = 'pending'
                     ORDER BY n.created_at ASC
-                    OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+                    OFFSET 0 ROWS FETCH NEXT @limit ROWS ONLY
                 `);
             return result.recordset;
         } catch (error) {
@@ -324,6 +322,26 @@ class CommuniqueModel {
         } catch (error) {
             console.error('Error getting tenant communique stats:', error);
             return { total_communiques: 0, this_month: 0, total_reads: 0, queue_pending: 0 };
+        }
+    }
+
+    /**
+     * Contar notificaciones aún pendientes de envío
+     */
+    static async countPendingNotifications(communiqueId) {
+        try {
+            const pool = await connectDB();
+            const result = await pool.request()
+                .input('communiqueId', sql.UniqueIdentifier, communiqueId)
+                .query(`
+                    SELECT COUNT(*) AS n
+                    FROM CommuniqueNotifications
+                    WHERE communique_id = @communiqueId AND status = 'pending'
+                `);
+            return result.recordset[0]?.n ?? 0;
+        } catch (error) {
+            console.error('Error counting pending notifications:', error);
+            return 0;
         }
     }
 

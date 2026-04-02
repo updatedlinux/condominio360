@@ -16,6 +16,7 @@
         "cleanup-db": "node scripts/cleanup-database.js",
         "delete-orphan-owners": "node scripts/delete-orphan-owners.js",
         "send-test-email": "node scripts/send-test-email.js",
+        "requeue-communique-batches": "node scripts/requeue-communique-batches.js",
         "build:css": "tailwindcss -i ./src/public/css/styles.css -o ./src/public/css/output.css --watch"
     },
     "keywords": [

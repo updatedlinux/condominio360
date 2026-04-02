@@ -379,9 +379,12 @@
 
                 if (data.data.type === 'html') {
                     iframe.removeAttribute('src');
-                    iframe.srcdoc = data.data.html;
+                    iframe.removeAttribute('srcdoc');
+                    iframe.srcdoc = data.data.html || '<p class="p-4 text-[#5F6368]">Sin contenido HTML.</p>';
                 } else if (data.data.type === 'pdf' && data.data.downloadUrl) {
-                    iframe.srcdoc = '';
+                    // srcdoc tiene prioridad sobre src: hay que quitar el atributo, no solo vaciarlo,
+                    // si no el PDF no carga (área en blanco) tras haber visto un DOCX antes.
+                    iframe.removeAttribute('srcdoc');
                     iframe.src = data.data.downloadUrl + '#view=FitH';
                 } else {
                     return;
@@ -398,7 +401,7 @@
             const iframe = document.getElementById('preview-iframe');
             if (iframe) {
                 iframe.removeAttribute('src');
-                iframe.srcdoc = '';
+                iframe.removeAttribute('srcdoc');
             }
             document.getElementById('preview-modal').classList.add('hidden');
             document.getElementById('preview-modal').classList.remove('flex');

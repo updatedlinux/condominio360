@@ -190,15 +190,22 @@
                 const empty = document.getElementById('empty-state');
                 const pagination = document.getElementById('pagination');
 
-                // Stats
+                // Stats: usar agregados del servidor (todo el tenant / edificio), no solo la página actual
                 const props = data.properties || [];
-                const withOwners = props.filter(p => p.owner_count > 0).length;
-                const apartments = props.filter(p => p.type === 'Apartment').length;
-
-                document.getElementById('stat-total').textContent = data.pagination?.total || 0;
-                document.getElementById('stat-with-owners').textContent = withOwners;
-                document.getElementById('stat-without-owners').textContent = props.length - withOwners;
-                document.getElementById('stat-apartments').textContent = apartments;
+                const st = data.stats;
+                if (st) {
+                    document.getElementById('stat-total').textContent = st.total;
+                    document.getElementById('stat-with-owners').textContent = st.with_owners;
+                    document.getElementById('stat-without-owners').textContent = st.without_owners;
+                    document.getElementById('stat-apartments').textContent = st.apartments;
+                } else {
+                    const withOwners = props.filter(p => p.owner_count > 0).length;
+                    const apartments = props.filter(p => String(p.type || '').toLowerCase() === 'apartment').length;
+                    document.getElementById('stat-total').textContent = data.pagination?.total || 0;
+                    document.getElementById('stat-with-owners').textContent = withOwners;
+                    document.getElementById('stat-without-owners').textContent = props.length - withOwners;
+                    document.getElementById('stat-apartments').textContent = apartments;
+                }
 
                 if (props.length === 0) {
                     table.innerHTML = '';

@@ -1,10 +1,43 @@
 const crypto = require('crypto');
 const EmailJobModel = require('../models/EmailJobModel');
 
-function verifySignature(timestamp, token, signature, signingKey) {
-    if (!signingKey || !timestamp || !token || !signature) return false;
-    const encoded = crypto.createHmac('sha256', signingKey).update(String(timestamp) + String(token)).digest('hex');
-    return encoded === signature;
+/**
+ * Mailgun envía la firma en el cuerpo de dos formas:
+ * - JSON: { signature: { timestamp, token, signature }, "event-data": { ... } }
+ * - Form legacy: timestamp, token, signature en el nivel raíz (application/x-www-form-urlencoded)
+ */
+function extractWebhookSignatureFields(body) {
+    if (!body || typeof body !== 'object') return null;
+    const nested = body.signature;
+    if (nested && typeof nested === 'object' && nested.timestamp != null && nested.token != null) {
+        return {
+            timestamp: String(nested.timestamp),
+            token: String(nested.token),
+            signatureHex: String(nested.signature || '').trim().toLowerCase()
+        };
+    }
+    if (body.timestamp != null && body.token != null && body.signature != null && typeof body.signature === 'string') {
+        return {
+            timestamp: String(body.timestamp),
+            token: String(body.token),
+            signatureHex: String(body.signature).trim().toLowerCase()
+        };
+    }
+    return null;
+}
+
+function verifySignatureHex(timestamp, token, signatureHex, signingKey) {
+    if (!signingKey || !timestamp || !token || !signatureHex) return false;
+    const encoded = crypto.createHmac('sha256', signingKey).update(String(timestamp).concat(String(token))).digest('hex').toLowerCase();
+    const sig = signatureHex.toLowerCase().replace(/\s/g, '');
+    try {
+        const a = Buffer.from(encoded, 'hex');
+        const b = Buffer.from(sig, 'hex');
+        if (a.length !== b.length) return false;
+        return crypto.timingSafeEqual(a, b);
+    } catch {
+        return encoded === sig;
+    }
 }
 
 function parseEventData(body) {
@@ -26,17 +59,20 @@ function extractMessageId(eventData) {
 }
 
 /**
- * POST webhook Mailgun (application/x-www-form-urlencoded).
- * Verificación con MAILGUN_WEBHOOK_SIGNING_KEY (panel del dominio en Mailgun).
+ * POST webhook Mailgun (JSON o application/x-www-form-urlencoded).
+ * Verificación con MAILGUN_WEBHOOK_SIGNING_KEY (Sending → dominio → Webhooks en Mailgun).
  */
 class MailgunWebhookController {
     static async handle(req, res) {
         try {
             const signingKey = (process.env.MAILGUN_WEBHOOK_SIGNING_KEY || '').trim();
-            const { signature, timestamp, token } = req.body || {};
+            const sigFields = extractWebhookSignatureFields(req.body || {});
 
             if (signingKey) {
-                if (!verifySignature(timestamp, token, signature, signingKey)) {
+                if (!sigFields) {
+                    return res.status(401).send('Invalid signature');
+                }
+                if (!verifySignatureHex(sigFields.timestamp, sigFields.token, sigFields.signatureHex, signingKey)) {
                     return res.status(401).send('Invalid signature');
                 }
             } else if (process.env.NODE_ENV === 'production') {

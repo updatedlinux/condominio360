@@ -271,14 +271,29 @@ class PropertyController {
             let properties;
             if (search) {
                 properties = await PropertyModel.search(tenantId, search);
-                res.json({ success: true, properties, pagination: { total: properties.length } });
+                const withOwners = properties.filter((p) => (p.owner_count || 0) > 0).length;
+                const apartments = properties.filter(
+                    (p) => String(p.type || '').toLowerCase().trim() === 'apartment'
+                ).length;
+                res.json({
+                    success: true,
+                    properties,
+                    pagination: { total: properties.length },
+                    stats: {
+                        total: properties.length,
+                        with_owners: withOwners,
+                        without_owners: properties.length - withOwners,
+                        apartments
+                    }
+                });
             } else {
                 const result = await PropertyModel.findByTenant(tenantId, {
                     building_id,
                     page: parseInt(page) || 1,
                     limit: parseInt(limit) || 50
                 });
-                res.json({ success: true, ...result });
+                const stats = await PropertyModel.getStatsForTenant(tenantId, building_id || null);
+                res.json({ success: true, ...result, stats });
             }
         } catch (error) {
             console.error('Error listing properties:', error);

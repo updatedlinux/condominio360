@@ -80,7 +80,19 @@ class CommuniqueQueueService {
             const recipients = await this.getRecipientsForBatch(batch.communique_id, batch.batch_number);
 
             if (recipients.length === 0) {
-                console.log('⚠️ No hay destinatarios en este lote');
+                const pendingLeft = await CommuniqueModel.countPendingNotifications(batch.communique_id);
+                if (pendingLeft > 0) {
+                    console.warn(
+                        `⚠️ Lote ${batch.batch_number}/${batch.total_batches} devolvió 0 destinatarios pero quedan ${pendingLeft} notificaciones pendientes; no se marca completado (reintento en siguiente ciclo).`
+                    );
+                    await CommuniqueModel.updateBatchStatus(
+                        batch.id,
+                        'pending',
+                        'Reintento: lote sin filas con pendientes en cola'
+                    );
+                    return;
+                }
+                console.log('⚠️ No hay destinatarios en este lote (sin pendientes restantes)');
                 await CommuniqueModel.updateBatchStatus(batch.id, 'completed');
                 return;
             }
@@ -143,19 +155,18 @@ class CommuniqueQueueService {
     }
 
     /**
-     * Obtener destinatarios para un lote específico
+     * Siguiente bloque de destinatarios pendientes para este comunicado.
+     * No usar OFFSET por número de lote: tras marcar envíos como "sent", los pendientes
+     * son menos y un OFFSET alto (p. ej. lote 9 → 240) se queda sin filas.
+     * Siempre: los primeros N con status pending (mismo orden que al crear la cola).
      */
     async getRecipientsForBatch(communiqueId, batchNumber) {
         try {
-            const offset = (batchNumber - 1) * this.batchSize;
-            
-            // Obtener notificaciones pendientes con paginación
             const { connectDB, sql } = require('../config/database');
             const pool = await connectDB();
-            
+
             const result = await pool.request()
                 .input('communiqueId', sql.UniqueIdentifier, communiqueId)
-                .input('offset', sql.Int, offset)
                 .input('limit', sql.Int, this.batchSize)
                 .query(`
                     SELECT n.id, n.email, n.user_id, u.first_name, u.last_name
@@ -163,7 +174,7 @@ class CommuniqueQueueService {
                     LEFT JOIN Users u ON n.user_id = u.id
                     WHERE n.communique_id = @communiqueId AND n.status = 'pending'
                     ORDER BY n.created_at ASC
-                    OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+                    OFFSET 0 ROWS FETCH NEXT @limit ROWS ONLY
                 `);
 
             return result.recordset;

@@ -11,8 +11,37 @@ const { connectDB } = require('./config/database');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Trust proxy (Nginx, load balancers) - req.protocol y req.get('host') correctos
-app.set('trust proxy', 1);
+/**
+ * Detrás de Nginx Proxy Manager / reverse proxy: Express debe confiar en X-Forwarded-* para req.ip.
+ * TRUST_PROXY=true → confiar en toda la cadena (típico: un solo proxy delante).
+ * TRUST_PROXY=N → confiar en N saltos (número entero).
+ * Sin variable: 1 (un proxy).
+ */
+function configureTrustProxy() {
+    const raw = (process.env.TRUST_PROXY || '').trim().toLowerCase();
+    if (raw === 'true' || raw === 'yes' || raw === 'on') {
+        app.set('trust proxy', true);
+        return;
+    }
+    const n = parseInt(raw, 10);
+    if (raw !== '' && Number.isFinite(n) && n >= 0) {
+        app.set('trust proxy', n);
+        return;
+    }
+    app.set('trust proxy', 1);
+}
+configureTrustProxy();
+
+function normalizeClientIp(ip) {
+    if (!ip || ip === '::1') return ip || '-';
+    if (typeof ip === 'string' && ip.startsWith('::ffff:')) return ip.slice(7);
+    return ip;
+}
+
+morgan.token('remote-addr', (req) => {
+    const ip = req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress;
+    return normalizeClientIp(ip);
+});
 
 // Base URL global para vistas (assets, correos, enlaces)
 const BASE_URL = process.env.APP_URL || `http://localhost:${PORT}`;
@@ -32,7 +61,11 @@ app.use(helmet({
     contentSecurityPolicy: false // Desactivar para desarrollo y uso de scripts inline si es necesario
 }));
 app.use(cors());
-app.use(morgan('dev'));
+// "dev" no incluye IP; mismo estilo + cliente (detrás de Nginx Proxy Manager / trust proxy)
+const morganFormat =
+    process.env.MORGAN_FORMAT ||
+    ':remote-addr :method :url :status :response-time ms - :res[content-length]';
+app.use(morgan(morganFormat));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));

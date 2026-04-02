@@ -127,6 +127,44 @@ class PropertyModel {
     }
 
     /**
+     * Totales globales de inmuebles del tenant (mismos filtros que findByTenant).
+     * Usado en panel junta para no calcular estadísticas solo sobre la página actual.
+     */
+    static async getStatsForTenant(tenantId, building_id = null) {
+        const pool = await connectDB();
+        let whereClause = 'WHERE p.tenant_id = @tenant_id';
+        if (building_id) whereClause += ' AND p.building_id = @building_id';
+
+        const request = pool.request().input('tenant_id', sql.UniqueIdentifier, tenantId);
+        if (building_id) {
+            request.input('building_id', sql.UniqueIdentifier, building_id);
+        }
+
+        const result = await request.query(`
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN EXISTS (
+                    SELECT 1 FROM PropertyOwners po WHERE po.property_id = p.id
+                ) THEN 1 ELSE 0 END) AS with_owners,
+                SUM(CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(p.type, '')))) = N'apartment' THEN 1 ELSE 0 END) AS apartments
+            FROM Properties p
+            ${whereClause}
+        `);
+
+        const row = result.recordset[0] || {};
+        const total = Number(row.total) || 0;
+        const withOwners = Number(row.with_owners) || 0;
+        const apartments = Number(row.apartments) || 0;
+
+        return {
+            total,
+            with_owners: withOwners,
+            without_owners: Math.max(0, total - withOwners),
+            apartments
+        };
+    }
+
+    /**
      * Listar propiedades por tenant
      */
     static async findByTenant(tenantId, options = {}) {
@@ -433,7 +471,8 @@ class PropertyModel {
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .input('query', sql.NVarChar, `%${query}%`)
             .query(`
-                SELECT p.*, b.name as building_name
+                SELECT p.*, b.name as building_name,
+                    (SELECT COUNT(*) FROM PropertyOwners WHERE property_id = p.id) AS owner_count
                 FROM Properties p
                 LEFT JOIN Buildings b ON p.building_id = b.id
                 WHERE p.tenant_id = @tenant_id

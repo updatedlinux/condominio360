@@ -297,14 +297,22 @@ class TenantAdminCommuniqueController {
                 return res.status(404).json({ error: 'Comunicado no encontrado' });
             }
 
+            const fileType = String(communique.file_type || '')
+                .trim()
+                .toLowerCase();
+
             // Si es PDF, retornar link de descarga
-            if (communique.file_type === 'pdf') {
+            if (fileType === 'pdf') {
+                const basename = path.basename(communique.storage_path || '');
+                if (!basename) {
+                    return res.status(500).json({ error: 'Ruta de archivo del comunicado no disponible' });
+                }
                 return res.json({
                     success: true,
                     data: {
                         type: 'pdf',
                         title: communique.title,
-                        downloadUrl: `/uploads/communiques/${path.basename(communique.storage_path)}`
+                        downloadUrl: `/uploads/communiques/${basename}`
                     }
                 });
             }
