@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const MailgunMailProvider = require('./email/MailgunMailProvider');
 const EmailOrchestrator = require('./email/EmailOrchestrator');
 
@@ -312,7 +313,14 @@ class EmailService {
 </body>
 </html>`;
 
-        return await this.send(email, subject, html, null, { ...meta, messageType: 'password_changed' });
+        // Cada cambio de contraseña es un envío distinto (mismo asunto); clave fija impediría reenvíos y chocaba tras un fallo de Mailgun.
+        const idempotencyKey =
+            meta.idempotencyKey || crypto.randomBytes(16).toString('hex');
+        return await this.send(email, subject, html, null, {
+            ...meta,
+            messageType: 'password_changed',
+            idempotencyKey
+        });
     }
 
     /**

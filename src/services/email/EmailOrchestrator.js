@@ -51,11 +51,22 @@ class EmailOrchestrator {
         sourceBatchId = null,
         metadata = null
     }) {
-        const idem = idempotencyKey || this.buildIdempotencyKey(tenantId, messageType, to, subject);
+        let idem = idempotencyKey || this.buildIdempotencyKey(tenantId, messageType, to, subject);
 
-        const existing = await EmailJobModel.findRecipientByIdempotencyKey(idem);
+        let existing = await EmailJobModel.findRecipientByIdempotencyKey(idem);
         if (existing && existing.status === 'sent' && existing.provider_message_id) {
             return { messageId: existing.provider_message_id, duplicate: true };
+        }
+
+        // Intento anterior falló (o quedó a medias): la misma clave auto-generada bloquearía el INSERT.
+        if (!idempotencyKey && existing && !(existing.status === 'sent' && existing.provider_message_id)) {
+            idem = this.buildIdempotencyKey(
+                tenantId,
+                messageType,
+                to,
+                subject,
+                `retry:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`
+            );
         }
 
         if (!MailgunMailProvider.isConfigured()) {
