@@ -18,6 +18,7 @@
         "send-test-email": "node scripts/send-test-email.js",
         "requeue-communique-batches": "node scripts/requeue-communique-batches.js",
         "fix-communique-notification-orphans": "node scripts/fix-communique-notification-orphans.js",
+        "nfc-bridge": "node tools/nfc-local-bridge/index.js",
         "build:css": "tailwindcss -i ./src/public/css/styles.css -o ./src/public/css/output.css --watch"
     },
     "keywords": [

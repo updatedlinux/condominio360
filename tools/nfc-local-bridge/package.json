@@ -1,0 +1,15 @@
+{
+  "name": "condominio360-nfc-local-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Puente local PC/SC → HTTP para leer UID con lector NFC USB en Mac/Windows (Chrome no tiene Web NFC en escritorio).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "nfc-pcsc": "^0.8.1"
+  }
+}
