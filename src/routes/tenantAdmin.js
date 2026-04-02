@@ -13,6 +13,7 @@ const { authenticate } = require('../middleware/auth');
 const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
 const { conditionalPreliminaryUpload } = require('../middleware/uploadBillingPreliminaryItems');
 const TenantAdminBalanceController = require('../controllers/TenantAdminBalanceController');
+const EmailAdminController = require('../controllers/EmailAdminController');
 
 // Middleware to ensure user is Tenant Admin
 const verifyTenantAdmin = (req, res, next) => {
@@ -40,6 +41,13 @@ router.use(verifyTenantAdmin);
 // Dashboard stats
 router.get('/stats', TenantAdminController.getStats);
 router.get('/activity', TenantAdminController.getActivity);
+
+// Correo saliente (Mailgun: métricas, jobs, reintento)
+router.get('/email-metrics', EmailAdminController.getMetricsTenant);
+router.get('/email-jobs', EmailAdminController.listJobsTenant);
+router.get('/email-jobs/:id', EmailAdminController.getJobTenant);
+router.get('/email-recipients/:recipientId/logs', EmailAdminController.getRecipientLogsTenant);
+router.post('/email-recipients/:recipientId/retry', EmailAdminController.retryRecipientTenant);
 
 // ==================== NOTIFICACIONES IN-APP (MENSAJES CORTOS) ====================
 const InAppNotificationController = require('../controllers/InAppNotificationController');

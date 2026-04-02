@@ -551,7 +551,8 @@ class AdminController {
                     tenantName: tenant.name,
                     email: admin.email,
                     password: admin.password,
-                    loginUrl
+                    loginUrl,
+                    tenantId: tenant.id
                 });
                 welcomeSent = true;
             } catch (emailErr) {
@@ -1770,10 +1771,10 @@ class AdminController {
                 try {
                     if (isNewUser && user.invitation_token) {
                         const invitationLink = `${baseUrl}/auth/complete-registration?token=${user.invitation_token}`;
-                        await EmailService.sendOwnerInvitation(ownerEmail, user.first_name, tenantName, invitationLink, propertyLabel);
+                        await EmailService.sendOwnerInvitation(ownerEmail, user.first_name, tenantName, invitationLink, propertyLabel, { tenantId: id });
                     } else if (!isNewUser) {
                         const loginUrl = `${baseUrl}/login`;
-                        await EmailService.sendOwnerAddedToCondominio(ownerEmail, user.first_name, tenantName, propertyLabel, loginUrl);
+                        await EmailService.sendOwnerAddedToCondominio(ownerEmail, user.first_name, tenantName, propertyLabel, loginUrl, { tenantId: id });
                     }
                 } catch (mailErr) {
                     console.error('Error enviando email a propietario:', mailErr);

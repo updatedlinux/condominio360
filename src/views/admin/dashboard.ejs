@@ -554,6 +554,10 @@
                     <span class="icon material-symbols-rounded">receipt_long</span>
                     <span class="label">Auditoría</span>
                 </div>
+                <div class="nav-item" onclick="showSection('email', this)">
+                    <span class="icon material-symbols-rounded">outgoing_mail</span>
+                    <span class="label">Correo saliente</span>
+                </div>
                 <div class="nav-item" onclick="showSection('saas-billing', this)">
                     <span class="icon material-symbols-rounded">payments</span>
                     <span class="label">Facturación C360</span>
@@ -1013,6 +1017,105 @@
                             <h3 class="text-lg font-medium text-gray-900 mb-4">Proyección Próximos Meses</h3>
                             <p class="text-xs text-gray-500 mb-2">Con última tasa BCV para contravalor en VES</p>
                             <div id="balance-projection-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Correo saliente (Mailgun) -->
+                <section id="section-email" class="hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                        <div>
+                            <h3 class="text-2xl font-medium text-gray-900">Correo saliente</h3>
+                            <p class="text-gray-500 mt-1">Historial de envíos, estados y reintentos (Mailgun API)</p>
+                        </div>
+                        <button type="button" onclick="loadEmailPanel()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
+                            <span class="material-symbols-rounded">refresh</span>
+                            Actualizar
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Destinatarios enviados</p>
+                            <p class="text-2xl font-semibold text-emerald-700" id="email-metric-sent">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Pendientes / cola</p>
+                            <p class="text-2xl font-semibold text-amber-700" id="email-metric-pending">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Fallidos</p>
+                            <p class="text-2xl font-semibold text-red-600" id="email-metric-failed">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Eventos webhook</p>
+                            <p class="text-2xl font-semibold text-gray-800" id="email-metric-webhook">—</p>
+                        </div>
+                    </div>
+                    <div class="md-card p-4 flex flex-wrap gap-4 items-end">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Ventana (métricas)</label>
+                            <select id="email-filter-days" onchange="loadEmailMetrics()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="7">7 días</option>
+                                <option value="30" selected>30 días</option>
+                                <option value="90">90 días</option>
+                            </select>
+                        </div>
+                        <div id="email-tenant-filter-wrap" class="hidden">
+                            <label class="block text-xs text-gray-500 mb-1">Condominio</label>
+                            <select id="email-filter-tenant" onchange="loadEmailPanel()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm min-w-[200px]">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Ventana (tabla)</label>
+                            <select id="email-table-days" onchange="emailJobsPage=1;loadEmailJobs()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="30">30 días</option>
+                                <option value="90" selected>90 días</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Pipeline</label>
+                            <select id="email-filter-pipeline" onchange="emailJobsPage=1;loadEmailJobs()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="">Todos</option>
+                                <option value="transactional">Transaccional</option>
+                                <option value="bulk">Bulk</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Estado job</label>
+                            <select id="email-filter-status" onchange="emailJobsPage=1;loadEmailJobs()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="">Todos</option>
+                                <option value="sent">Enviado</option>
+                                <option value="partial">Parcial</option>
+                                <option value="failed">Fallido</option>
+                                <option value="processing">Procesando</option>
+                                <option value="pending">Pendiente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="md-card overflow-hidden">
+                        <div class="md-table-container">
+                            <table class="md-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Condominio</th>
+                                        <th>Tipo</th>
+                                        <th>Pipeline</th>
+                                        <th>Estado</th>
+                                        <th>Enviados / Fallidos</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="email-jobs-tbody">
+                                    <tr><td colspan="7" class="text-center py-8 text-gray-500">Cargando…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                            <button type="button" onclick="emailJobsPagePrev()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Anterior</button>
+                            <span class="text-sm text-gray-500" id="email-jobs-page-info">—</span>
+                            <button type="button" onclick="emailJobsPageNext()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Siguiente</button>
                         </div>
                     </div>
                 </section>
@@ -1550,6 +1653,38 @@
         </div>
     </div>
 
+    <!-- Modal detalle job correo -->
+    <div id="email-job-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-medium text-gray-900" id="email-job-modal-title">Detalle de envío</h3>
+                <button type="button" onclick="closeEmailJobModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                    <span class="material-symbols-rounded text-gray-600">close</span>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 text-sm" id="email-job-modal-body">
+                <p class="text-gray-500">Cargando…</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="email-logs-modal" class="fixed inset-0 z-[61] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="if(event.target===this)closeEmailLogsModal()">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-medium text-gray-900">Logs del envío</h3>
+                <button type="button" onclick="closeEmailLogsModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100" aria-label="Cerrar">
+                    <span class="material-symbols-rounded text-gray-600">close</span>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <pre id="email-logs-modal-body" class="text-xs text-gray-700 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+            </div>
+            <div class="px-6 py-3 border-t border-gray-100 flex justify-end flex-shrink-0">
+                <button type="button" onclick="closeEmailLogsModal()" class="px-4 py-2 rounded-lg bg-[var(--md-sys-color-primary)] text-white text-sm font-medium hover:opacity-90">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Snackbar -->
     <div id="snackbar" class="md-snackbar">
         <span id="snackbar-message">Mensaje</span>
@@ -1564,6 +1699,7 @@
         let token = localStorage.getItem('token');
         let user = JSON.parse(localStorage.getItem('user') || '{}');
         let pendingConfirmAction = null;
+        let emailJobsPage = 1;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1644,6 +1780,7 @@
                 'audit': 'Auditoría',
                 'saas-billing': 'Facturación Condominio360',
                 'balance-financiero': 'Balance Financiero',
+                'email': 'Correo saliente',
                 'settings': 'Configuración'
             };
             document.getElementById('page-title').textContent = titles[sectionName];
@@ -1661,6 +1798,8 @@
                 loadSaaSBilling();
             } else if (sectionName === 'balance-financiero') {
                 loadBalanceFinanciero();
+            } else if (sectionName === 'email') {
+                loadEmailPanel();
             } else if (sectionName === 'dashboard') {
                 loadBcvSettings();
             }
@@ -3413,6 +3552,231 @@
 
         function hideSnackbar() {
             document.getElementById('snackbar').classList.remove('active');
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        async function loadEmailTenantOptions() {
+            if (!user.isSuperAdmin) return;
+            const wrap = document.getElementById('email-tenant-filter-wrap');
+            const sel = document.getElementById('email-filter-tenant');
+            if (!wrap || !sel) return;
+            wrap.classList.remove('hidden');
+            try {
+                const res = await fetch('/api/admin/tenants', { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+                const cur = sel.value;
+                sel.innerHTML = '<option value="">Todos</option>' +
+                    json.data.map((t) => `<option value="${t.id}">${escapeHtml(t.name || t.slug || t.id)}</option>`).join('');
+                if (cur) sel.value = cur;
+            } catch (e) {
+                console.error('loadEmailTenantOptions', e);
+            }
+        }
+
+        async function loadEmailMetrics() {
+            const days = document.getElementById('email-filter-days')?.value || 30;
+            let url = `/api/admin/email-metrics?days=${days}`;
+            if (user.isSuperAdmin) {
+                const tid = document.getElementById('email-filter-tenant')?.value;
+                if (tid) url += `&tenantId=${encodeURIComponent(tid)}`;
+            }
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success) return;
+                const d = json.data;
+                const r = d.recipientsByStatus || {};
+                const sent = (r.sent || 0);
+                const pend = (r.pending || 0) + (r.processing || 0) + (r.retry || 0);
+                const fail = (r.failed || 0) + (r.bounced || 0) + (r.complained || 0);
+                document.getElementById('email-metric-sent').textContent = sent;
+                document.getElementById('email-metric-pending').textContent = pend;
+                document.getElementById('email-metric-failed').textContent = fail;
+                document.getElementById('email-metric-webhook').textContent = d.webhookEvents ?? 0;
+            } catch (e) {
+                console.error('loadEmailMetrics', e);
+            }
+        }
+
+        async function loadEmailJobs() {
+            const days = document.getElementById('email-table-days')?.value || 90;
+            const pipe = document.getElementById('email-filter-pipeline')?.value || '';
+            const st = document.getElementById('email-filter-status')?.value || '';
+            let url = `/api/admin/email-jobs?page=${emailJobsPage}&limit=15&days=${days}`;
+            if (pipe) url += `&pipeline=${encodeURIComponent(pipe)}`;
+            if (st) url += `&status=${encodeURIComponent(st)}`;
+            if (user.isSuperAdmin) {
+                const tid = document.getElementById('email-filter-tenant')?.value;
+                if (tid) url += `&tenantId=${encodeURIComponent(tid)}`;
+            }
+            const tbody = document.getElementById('email-jobs-tbody');
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-red-500">Error al cargar</td></tr>';
+                    return;
+                }
+                const rows = json.data || [];
+                const p = json.pagination || {};
+                document.getElementById('email-jobs-page-info').textContent =
+                    `Página ${p.page || 1} de ${p.pages || 1} (${p.total || 0} jobs)`;
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">Sin registros</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map((j) => {
+                    const dt = j.created_at ? new Date(j.created_at).toLocaleString('es-VE', { timeZone: 'America/Caracas' }) : '—';
+                    const tenant = j.tenant_name || (j.tenant_id ? '(sin nombre)' : '—');
+                    return `<tr class="hover:bg-gray-50 cursor-pointer" onclick="openEmailJobModal('${j.id}')">
+                        <td class="whitespace-nowrap">${dt}</td>
+                        <td>${escapeHtml(String(tenant))}</td>
+                        <td>${escapeHtml(j.message_type || '')}</td>
+                        <td>${escapeHtml(j.pipeline || '')}</td>
+                        <td><span class="px-2 py-0.5 rounded text-xs bg-gray-100">${escapeHtml(j.status || '')}</span></td>
+                        <td>${j.sent_count ?? 0} / ${j.failed_count ?? 0}</td>
+                        <td><span class="material-symbols-rounded text-gray-400 text-lg">chevron_right</span></td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error('loadEmailJobs', e);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-red-500">Error</td></tr>';
+            }
+        }
+
+        async function loadEmailPanel() {
+            if (user.isSuperAdmin) await loadEmailTenantOptions();
+            await loadEmailMetrics();
+            await loadEmailJobs();
+        }
+
+        function emailJobsPagePrev() {
+            if (emailJobsPage > 1) {
+                emailJobsPage--;
+                loadEmailJobs();
+            }
+        }
+
+        function emailJobsPageNext() {
+            emailJobsPage++;
+            loadEmailJobs();
+        }
+
+        async function openEmailJobModal(jobId) {
+            document.getElementById('email-job-modal').classList.remove('hidden');
+            const body = document.getElementById('email-job-modal-body');
+            body.innerHTML = '<p class="text-gray-500">Cargando…</p>';
+            let url = `/api/admin/email-jobs/${jobId}`;
+            if (user.isSuperAdmin) {
+                const tid = document.getElementById('email-filter-tenant')?.value;
+                if (tid) url += `?tenantId=${encodeURIComponent(tid)}`;
+            }
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success) {
+                    body.innerHTML = `<p class="text-red-600">${escapeHtml(json.error || 'Error')}</p>`;
+                    return;
+                }
+                const { job, recipients } = json.data;
+                document.getElementById('email-job-modal-title').textContent =
+                    `Job · ${job.message_type || ''} · ${job.pipeline || ''}`;
+                let html = '<div class="space-y-2 mb-4 text-gray-700"><p><strong>Estado:</strong> ' + escapeHtml(job.status) +
+                    ' · <strong>Job ID:</strong> <code class="text-xs">' + job.id + '</code></p>';
+                if (job.tenant_name) html += '<p><strong>Condominio:</strong> ' + escapeHtml(job.tenant_name) + '</p>';
+                html += '</div>';
+                html += '<table class="w-full text-xs border-collapse"><thead><tr class="border-b text-left text-gray-500">' +
+                    '<th class="py-2 pr-2">Destinatario</th><th class="py-2 pr-2">Estado</th><th class="py-2 pr-2">Intentos</th><th class="py-2">Acciones</th></tr></thead><tbody>';
+                for (const r of recipients) {
+                    const err = r.error_message
+                        ? '<div class="text-red-600 mt-1 max-w-xs truncate" title="' + escapeHtml(r.error_message) + '">' +
+                          escapeHtml(r.error_message) + '</div>'
+                        : '';
+                    const canRetry = (r.status === 'failed' || r.status === 'retry');
+                    const btn = canRetry
+                        ? '<button type="button" class="text-[var(--md-sys-color-primary)] font-medium" onclick="retryEmailRecipient(\'' +
+                          r.id + '\', event)">Reintentar</button>'
+                        : '';
+                    html += '<tr class="border-b border-gray-100 align-top"><td class="py-2 pr-2">' + escapeHtml(r.recipient_email) + err + '</td>' +
+                        '<td class="py-2 pr-2">' + escapeHtml(r.status) + '</td><td class="py-2 pr-2">' + (r.attempt_count ?? 0) + '</td>' +
+                        '<td class="py-2"><button type="button" class="text-gray-600 underline mr-2" onclick="showEmailLogs(\'' +
+                        r.id + '\', event)">Logs</button>' + btn + '</td></tr>';
+                }
+                html += '</tbody></table>';
+                body.innerHTML = html;
+            } catch (e) {
+                console.error('openEmailJobModal', e);
+                body.innerHTML = '<p class="text-red-600">Error al cargar detalle</p>';
+            }
+        }
+
+        function closeEmailJobModal() {
+            document.getElementById('email-job-modal').classList.add('hidden');
+        }
+
+        function closeEmailLogsModal() {
+            document.getElementById('email-logs-modal').classList.add('hidden');
+        }
+
+        async function showEmailLogs(recipientId, ev) {
+            if (ev) ev.stopPropagation();
+            let url = `/api/admin/email-recipients/${recipientId}/logs`;
+            if (user.isSuperAdmin) {
+                const tid = document.getElementById('email-filter-tenant')?.value;
+                if (tid) url += `?tenantId=${encodeURIComponent(tid)}`;
+            }
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success) {
+                    showSnackbar('No se pudieron cargar los logs', 'error');
+                    return;
+                }
+                const logs = json.data || [];
+                const body = document.getElementById('email-logs-modal-body');
+                body.textContent = logs.length
+                    ? logs.map((l) => {
+                        const t = l.created_at
+                            ? new Date(l.created_at).toLocaleString('es-VE', { timeZone: 'America/Caracas' })
+                            : '—';
+                        return `${t} · ${l.event_type || ''}`;
+                    }).join('\n')
+                    : 'Sin entradas en el período de retención configurado.';
+                document.getElementById('email-logs-modal').classList.remove('hidden');
+            } catch (e) {
+                showSnackbar('Error al cargar logs', 'error');
+            }
+        }
+
+        async function retryEmailRecipient(recipientId, ev) {
+            if (ev) ev.stopPropagation();
+            let url = `/api/admin/email-recipients/${recipientId}/retry`;
+            if (user.isSuperAdmin) {
+                const tid = document.getElementById('email-filter-tenant')?.value;
+                if (tid) url += `?tenantId=${encodeURIComponent(tid)}`;
+            }
+            try {
+                const res = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success) {
+                    showSnackbar(json.error || 'No se pudo reintentar', 'error');
+                    return;
+                }
+                showSnackbar(json.data && json.data.mode === 'queued' ? 'Encolado para envío' : 'Correo enviado', 'success');
+                loadEmailMetrics();
+                loadEmailJobs();
+            } catch (e) {
+                showSnackbar('Error de red', 'error');
+            }
         }
 
         function logout() {

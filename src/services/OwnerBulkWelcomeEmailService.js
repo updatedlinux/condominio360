@@ -131,10 +131,10 @@ class OwnerBulkWelcomeEmailService {
 
         if (isNewUser && user.invitation_token && user.registration_status === 'INVITED') {
             const invitationLink = `${baseUrl.replace(/\/$/, '')}/auth/complete-registration?token=${user.invitation_token}`;
-            await EmailService.sendOwnerInvitation(email, firstName, tenantName, invitationLink, propertyLabel);
+            await EmailService.sendOwnerInvitation(email, firstName, tenantName, invitationLink, propertyLabel, { tenantId });
         } else {
             const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
-            await EmailService.sendOwnerAddedToCondominio(email, firstName, tenantName, propertyLabel, loginUrl);
+            await EmailService.sendOwnerAddedToCondominio(email, firstName, tenantName, propertyLabel, loginUrl, { tenantId });
         }
     }
 }

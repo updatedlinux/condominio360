@@ -964,7 +964,8 @@ class TenantAdminBillingController {
                         user.email,
                         notification.title,
                         emailHtml,
-                        notification.message
+                        notification.message,
+                        { tenantId, messageType: 'billing_invoice_notification' }
                     );
                     
                     await NotificationQueueModel.markAsSent(notification.id);
@@ -1376,7 +1377,14 @@ class TenantAdminBillingController {
                 const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query('SELECT p.billing_month, p.billing_year, i.invoice_number FROM BillingInvoices i INNER JOIN BillingPreliminaries p ON i.preliminary_id = p.id WHERE i.id = @id');
                 const invData = invRes.recordset[0];
                 const periodLabel = invData ? `${months[invData.billing_month - 1]} ${invData.billing_year}` : '';
-                EmailService.sendPaymentConfirmed(owner.email, owner.first_name || 'Propietario', invData?.invoice_number || 'N/A', periodLabel, invoice.paid_amount_ves).catch(err => console.error('Error sending payment confirmed email:', err));
+                EmailService.sendPaymentConfirmed(
+                    owner.email,
+                    owner.first_name || 'Propietario',
+                    invData?.invoice_number || 'N/A',
+                    periodLabel,
+                    invoice.paid_amount_ves,
+                    { tenantId }
+                ).catch(err => console.error('Error sending payment confirmed email:', err));
             }
 
             res.json({
@@ -1430,7 +1438,14 @@ class TenantAdminBillingController {
                 const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query('SELECT p.billing_month, p.billing_year, i.invoice_number FROM BillingInvoices i INNER JOIN BillingPreliminaries p ON i.preliminary_id = p.id WHERE i.id = @id');
                 const invData = invRes.recordset[0];
                 const periodLabel = invData ? `${months[invData.billing_month - 1]} ${invData.billing_year}` : '';
-                EmailService.sendPaymentRejected(owner.email, owner.first_name || 'Propietario', invData?.invoice_number || 'N/A', periodLabel, rejection_reason).catch(err => console.error('Error sending payment rejected email:', err));
+                EmailService.sendPaymentRejected(
+                    owner.email,
+                    owner.first_name || 'Propietario',
+                    invData?.invoice_number || 'N/A',
+                    periodLabel,
+                    rejection_reason,
+                    { tenantId }
+                ).catch(err => console.error('Error sending payment rejected email:', err));
             }
 
             res.json({

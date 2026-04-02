@@ -77,7 +77,7 @@ class ConsultationNotificationService {
                     targetInfo,
                     recipientName: `${recipient.first_name} ${recipient.last_name}`,
                     consultationId: consultation.id
-                }))
+                }), consultation.tenant_id)
             ));
 
             // Small delay between batches
@@ -157,7 +157,7 @@ class ConsultationNotificationService {
                     endDate,
                     recipientName: `${recipient.first_name} ${recipient.last_name}`,
                     consultationId: consultation.id
-                }))
+                }), consultation.tenant_id)
             ));
 
             if (i + this.batchSize < recipients.length) {
@@ -207,9 +207,12 @@ class ConsultationNotificationService {
     /**
      * Enviar email
      */
-    async sendEmail(to, subject, html) {
+    async sendEmail(to, subject, html, tenantId = null) {
         try {
-            await EmailService.send(to, subject, html);
+            await EmailService.send(to, subject, html, null, {
+                tenantId,
+                messageType: 'consultation_notification'
+            });
         } catch (error) {
             console.error(`Error sending email to ${to}:`, error);
         }

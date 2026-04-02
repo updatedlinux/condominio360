@@ -7,6 +7,7 @@ const { conditionalSaaSFiscalUpload } = require('../middleware/uploadSaaSFiscalI
 const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
 const PropertyController = require('../controllers/PropertyController');
+const EmailAdminController = require('../controllers/EmailAdminController');
 
 // Middleware to ensure user is SuperAdmin
 const { authenticate } = require('../middleware/auth');
@@ -98,5 +99,12 @@ router.get('/saas-billing/tenants-available', AdminSaaSBillingController.getTena
 // ==================== BALANCE FINANCIERO ====================
 router.get('/balance/exchange-rates', AdminBalanceController.getExchangeRates);
 router.get('/balance/financial-summary', AdminBalanceController.getFinancialSummary);
+
+// ==================== CORREO (Mailgun / jobs) ====================
+router.get('/email-metrics', EmailAdminController.getMetrics);
+router.get('/email-jobs', EmailAdminController.listJobs);
+router.get('/email-jobs/:id', EmailAdminController.getJob);
+router.get('/email-recipients/:recipientId/logs', EmailAdminController.getRecipientLogs);
+router.post('/email-recipients/:recipientId/retry', EmailAdminController.retryRecipient);
 
 module.exports = router;

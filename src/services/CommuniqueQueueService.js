@@ -4,8 +4,7 @@ const EmailService = require('./EmailService');
 
 /**
  * Cola de envío de comunicados (admin de junta / tenant).
- * El cron intenta un lote cada N minutos, pero cada correo se envía con EmailService.send(),
- * que respeta el mismo límite global SMTP_MAX_EMAILS_PER_HOUR que el resto del SaaS (todos los condominios).
+ * Cada correo se envía vía EmailService (Mailgun API, orquestador). Dominio de envío por tenant (subdominio).
  */
 class CommuniqueQueueService {
     constructor() {
@@ -95,13 +94,19 @@ class CommuniqueQueueService {
             let sentCount = 0;
             let errorCount = 0;
 
-            // Secuencial: cada send() espera en el limitador global (100/h compartido con todo el sistema)
+            const tenantId = batch.tenant_id || null;
             for (const recipient of recipients) {
                 try {
                     await EmailService.send(
                         recipient.email,
                         `📢 Comunicado: ${batch.title}`,
-                        htmlContent
+                        htmlContent,
+                        null,
+                        {
+                            tenantId,
+                            messageType: 'communique',
+                            pipeline: 'transactional'
+                        }
                     );
 
                     // Actualizar notificación como enviada

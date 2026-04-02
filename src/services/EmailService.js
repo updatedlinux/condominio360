@@ -1,5 +1,5 @@
-const nodemailer = require('nodemailer');
-const emailRateLimiter = require('./EmailRateLimiter');
+const MailgunMailProvider = require('./email/MailgunMailProvider');
+const EmailOrchestrator = require('./email/EmailOrchestrator');
 
 /**
  * Formatea fecha para correos: la DB guarda hora Venezuela pero el driver la interpreta como UTC.
@@ -14,113 +14,51 @@ function formatDateVenezuela(dateVal, options = { weekday: 'long', year: 'numeri
 }
 
 /**
- * Valor de cabecera From para nodemailer.
- * Si SMTP_FROM ya trae formato RFC ("Nombre <correo@dominio>"), no se vuelve a envolver
- * (evita "Condominio360" <Condominio360 <...>> y el remitente roto tipo "Condominio360>").
- */
-function resolveSmtpFromHeader() {
-    const raw = (process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@condominio360.com').trim();
-    // Ya es "Nombre <correo@dominio>" (o similar con <...>)
-    if (/<[^>]+@[^>]+>/.test(raw)) {
-        return raw;
-    }
-    return `"Condominio360" <${raw}>`;
-}
-
-/**
- * Servicio de Email para envío de notificaciones e invitaciones
+ * Servicio de Email: delega en EmailOrchestrator (Mailgun API). Sin SMTP.
  */
 class EmailService {
     constructor() {
-        this.transporter = null;
-        this.isConfigured = false;
-        this.init();
-    }
-
-    /**
-     * Inicializar transporter con configuración de SMTP
-     */
-    init() {
-        // Verificar si hay configuración SMTP
-        if (!process.env.SMTP_HOST) {
-            console.log('⚠️  SMTP no configurado. Emails se mostrarán en consola (modo desarrollo).');
-            return;
+        if (!MailgunMailProvider.isConfigured()) {
+            console.log('⚠️  MAILGUN_API_KEY no configurada. Emails se mostrarán en consola (modo desarrollo).');
         }
+    }
 
-        this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT) || 587,
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            tls: {
-                rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false'
-            }
-        });
-
-        this.isConfigured = true;
+    get isConfigured() {
+        return MailgunMailProvider.isConfigured();
     }
 
     /**
-     * Verificar conexión SMTP
+     * Verificar que Mailgun API esté configurada
      */
     async verify() {
-        if (!this.isConfigured) {
-            return false;
-        }
-        
-        try {
-            await this.transporter.verify();
-            return true;
-        } catch (error) {
-            console.error('Error verificando SMTP:', error);
-            return false;
-        }
+        return MailgunMailProvider.isConfigured();
     }
 
     /**
-     * Enviar email genérico.
-     * Todo envío SMTP real pasa por aquí: un solo contador global (`SMTP_MAX_EMAILS_PER_HOUR`) para
-     * comunicados de junta, bienvenidas masivas, recuperación de clave, facturación, etc., en todos los condominios.
+     * @param {object} meta - tenantId, messageType, pipeline (transactional|bulk), createdBy, idempotencyKey, metadata
      */
-    async send(to, subject, html, text = null) {
-        const mailOptions = {
-            from: resolveSmtpFromHeader(),
+    async send(to, subject, html, text = null, meta = {}) {
+        const plain = text || this._htmlToText(html);
+        return EmailOrchestrator.dispatchMail({
             to,
             subject,
             html,
-            text: text || this._htmlToText(html)
-        };
-
-        // Modo desarrollo: mostrar en consola
-        if (!this.isConfigured) {
-            console.log('\n📧 =============== EMAIL (MODO DESARROLLO) ===============');
-            console.log('Para:', to);
-            console.log('Asunto:', subject);
-            console.log('Contenido HTML:', html.substring(0, 500) + (html.length > 500 ? '...' : ''));
-            console.log('=====================================================\n');
-            return { messageId: 'dev-mode', preview: true };
-        }
-
-        await emailRateLimiter.acquire();
-
-        try {
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log(`✅ Email enviado a ${to}: ${result.messageId}`);
-            return result;
-        } catch (error) {
-            console.error(`❌ Error enviando email a ${to}:`, error);
-            throw error;
-        }
+            text: plain,
+            tenantId: meta.tenantId ?? null,
+            messageType: meta.messageType || 'generic',
+            pipeline: meta.pipeline || 'transactional',
+            createdBy: meta.createdBy || null,
+            idempotencyKey: meta.idempotencyKey || null,
+            sourceBatchId: meta.sourceBatchId || null,
+            metadata: meta.metadata || null
+        });
     }
 
     /**
      * Enviar invitación a propietario nuevo (con link para confirmar registro y asignar contraseña)
      * @param {string} propertyLabel - Ej: "Edificio A, Apt 101" o "Casa 5"
      */
-    async sendOwnerInvitation(email, firstName, tenantName, invitationLink, propertyLabel = null) {
+    async sendOwnerInvitation(email, firstName, tenantName, invitationLink, propertyLabel = null, meta = {}) {
         const subject = `Invitación a Condominio360 - ${tenantName}`;
         const propertyBlock = propertyLabel
             ? `<p>Te han asignado el inmueble: <strong>${propertyLabel}</strong></p>`
@@ -172,14 +110,14 @@ class EmailService {
 </body>
 </html>`;
 
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, { ...meta, messageType: 'owner_invitation' });
     }
 
     /**
      * Notificar a propietario existente que fue agregado a otro condominio (sin link de confirmación)
      * @param {string} propertyLabel - Ej: "Edificio A, Apt 101"
      */
-    async sendOwnerAddedToCondominio(email, firstName, tenantName, propertyLabel = null, loginUrl = '/login') {
+    async sendOwnerAddedToCondominio(email, firstName, tenantName, propertyLabel = null, loginUrl = '/login', meta = {}) {
         const subject = `Has sido agregado a ${tenantName} - Condominio360`;
         const propertyBlock = propertyLabel
             ? `<p>Inmueble asignado: <strong>${propertyLabel}</strong></p>`
@@ -225,7 +163,7 @@ class EmailService {
 </body>
 </html>`;
 
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, { ...meta, messageType: 'owner_added_condominio' });
     }
 
     /**
@@ -240,14 +178,15 @@ class EmailService {
             displayName || opts.display_name || 'Admin',
             tenantName || opts.tenantName || 'Condominio',
             loginUrl || `${process.env.APP_URL || 'http://localhost:3000'}/login`,
-            password || opts.password
+            password || opts.password,
+            { tenantId: opts.tenantId || null }
         );
     }
 
     /**
      * Enviar credenciales a Admin de Junta (bienvenida onboarding)
      */
-    async sendAdminCredentials(email, firstName, tenantName, loginLink, tempPassword) {
+    async sendAdminCredentials(email, firstName, tenantName, loginLink, tempPassword, meta = {}) {
         const subject = `Bienvenido a Condominio360 - Credenciales para ${tenantName}`;
 
         const content = `
@@ -281,13 +220,13 @@ class EmailService {
             color: '#ea580c'
         });
 
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, { ...meta, messageType: 'admin_credentials' });
     }
 
     /**
      * Enviar email de recuperación de contraseña
      */
-    async sendPasswordReset(email, firstName, resetLink) {
+    async sendPasswordReset(email, firstName, resetLink, meta = {}) {
         const subject = 'Recuperación de Contraseña - Condominio360';
         
         const html = `
@@ -333,13 +272,13 @@ class EmailService {
 </body>
 </html>`;
 
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, { ...meta, messageType: 'password_reset' });
     }
 
     /**
      * Enviar notificación de cambio de contraseña
      */
-    async sendPasswordChanged(email, firstName) {
+    async sendPasswordChanged(email, firstName, meta = {}) {
         const subject = 'Contraseña Actualizada - Condominio360';
         
         const html = `
@@ -373,7 +312,7 @@ class EmailService {
 </body>
 </html>`;
 
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, { ...meta, messageType: 'password_changed' });
     }
 
     /**
@@ -623,7 +562,7 @@ class EmailService {
         });
         
         const subject = `Solicitud Registrada: ${requestType.name}`;
-        await this.send(ownerEmail, subject, html);
+        await this.send(ownerEmail, subject, html, null, {});
     }
 
     /**
@@ -676,7 +615,7 @@ class EmailService {
         const subject = `🔔 Nueva Solicitud: ${requestType.name} - ${tenantName}`;
         
         for (const email of adminEmails) {
-            await this.send(email.trim(), subject, html);
+            await this.send(email.trim(), subject, html, null, {});
         }
     }
 
@@ -752,7 +691,7 @@ class EmailService {
         });
         
         const subject = `📝 Actualización: ${requestType.name} - ${statusLabels[request.status]}`;
-        await this.send(ownerEmail, subject, html);
+        await this.send(ownerEmail, subject, html, null, {});
     }
 
     /**
@@ -785,7 +724,7 @@ class EmailService {
         const subject = `📄 Factura Condominio360: ${tenantName} - ${periodLabel}`;
         for (const email of adminEmails) {
             if (email && email.trim()) {
-                await this.send(email.trim(), subject, html);
+                await this.send(email.trim(), subject, html, null, {});
             }
         }
     }
@@ -793,7 +732,7 @@ class EmailService {
     /**
      * Enviar notificación de pago confirmado al propietario
      */
-    async sendPaymentConfirmed(email, firstName, invoiceNumber, periodLabel, amountVes) {
+    async sendPaymentConfirmed(email, firstName, invoiceNumber, periodLabel, amountVes, meta = {}) {
         const subject = `✅ Pago confirmado - Recibo ${invoiceNumber}`;
         const content = `
             <h2>Hola ${firstName},</h2>
@@ -811,13 +750,16 @@ class EmailService {
             subtitle: 'Condominio360',
             color: '#16a34a'
         });
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, {
+            ...meta,
+            messageType: meta.messageType || 'payment_confirmed'
+        });
     }
 
     /**
      * Enviar notificación de pago rechazado al propietario
      */
-    async sendPaymentRejected(email, firstName, invoiceNumber, periodLabel, rejectionReason) {
+    async sendPaymentRejected(email, firstName, invoiceNumber, periodLabel, rejectionReason, meta = {}) {
         const subject = `⚠️ Pago rechazado - Recibo ${invoiceNumber}`;
         const reason = rejectionReason ? `Motivo: ${rejectionReason}` : 'Sin motivo especificado';
         const content = `
@@ -836,7 +778,10 @@ class EmailService {
             subtitle: 'Condominio360',
             color: '#dc2626'
         });
-        return await this.send(email, subject, html);
+        return await this.send(email, subject, html, null, {
+            ...meta,
+            messageType: meta.messageType || 'payment_rejected'
+        });
     }
 
     /**
@@ -877,7 +822,7 @@ class EmailService {
         const subject = requiresApproval
             ? `⏳ Reserva registrada: ${areaName} (pendiente de aprobación)`
             : `✅ Reserva confirmada: ${areaName}`;
-        await this.send(ownerEmail, subject, html);
+        await this.send(ownerEmail, subject, html, null, {});
     }
 
     /**
@@ -912,7 +857,7 @@ class EmailService {
             color: '#10b981'
         });
         const subject = `✅ Reserva aprobada: ${areaName}`;
-        await this.send(ownerEmail, subject, html);
+        await this.send(ownerEmail, subject, html, null, {});
     }
 
     /**
@@ -952,7 +897,7 @@ class EmailService {
             color: '#dc2626'
         });
         const subject = `❌ Reserva no aprobada: ${areaName}`;
-        await this.send(ownerEmail, subject, html);
+        await this.send(ownerEmail, subject, html, null, {});
     }
 
     /**
@@ -982,7 +927,7 @@ class EmailService {
             <p>Si no realizaste esta solicitud, por favor contacta a la administración de tu condominio.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Solicitud en Proceso', subtitle: 'Actualización de datos', color: '#f97316' });
-        await this.send(email, subject, html);
+        await this.send(email, subject, html, null, {});
     }
 
     /**
@@ -1002,7 +947,7 @@ class EmailService {
             </div>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Solicitud Pendiente', subtitle: 'Actualización de datos', color: '#f97316' });
-        await this.send(email, subject, html);
+        await this.send(email, subject, html, null, {});
     }
 
     /**
@@ -1020,7 +965,7 @@ class EmailService {
             <p>Estos cambios aplican a todos los condominios e inmuebles donde tienes propiedad en Condominio360.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Datos Actualizados', subtitle: 'Solicitud aprobada', color: '#16a34a' });
-        await this.send(email, subject, html);
+        await this.send(email, subject, html, null, {});
     }
 
     /**
@@ -1048,7 +993,7 @@ class EmailService {
             <p>Una vez completado, podrás ingresar con tu cédula o correo electrónico y la contraseña que definas.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Datos Aprobados', subtitle: 'Define tu contraseña', color: '#16a34a' });
-        await this.send(email, subject, html);
+        await this.send(email, subject, html, null, {});
     }
 
     /**
@@ -1062,7 +1007,7 @@ class EmailService {
             <p>Tus datos permanecen sin cambios. Si necesitas actualizar tu información, por favor contacta directamente a la administración de tu condominio o a la Junta de Condominio.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Solicitud Rechazada', subtitle: 'Actualización de datos', color: '#dc2626' });
-        await this.send(email, subject, html);
+        await this.send(email, subject, html, null, {});
     }
 
     /**
@@ -1132,7 +1077,7 @@ class EmailService {
             title: 'Solicitud Recibida',
             subtitle: 'Condominio360 - Arsys Intela'
         });
-        return await this.send(to, subject, html);
+        return await this.send(to, subject, html, null, {});
     }
 
     /**
@@ -1152,7 +1097,7 @@ class EmailService {
             title: 'Solicitud de Demo',
             subtitle: 'Requiere atención'
         });
-        return await this.send(to, subject, html);
+        return await this.send(to, subject, html, null, {});
     }
 
     /**

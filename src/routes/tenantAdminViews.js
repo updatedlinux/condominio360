@@ -141,4 +141,12 @@ router.get('/balance-financiero', (req, res) => {
     });
 });
 
+router.get('/email', (req, res) => {
+    res.render('tenant-admin/email', {
+        title: 'Correo saliente',
+        layout: false,
+        tenant: req.tenant || { name: 'Condominio' }
+    });
+});
+
 module.exports = router;

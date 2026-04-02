@@ -322,11 +322,22 @@ class AuthService {
         // Enviar email
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
         const resetLink = `${baseUrl}/auth/reset-password?token=${resetToken}&type=${type}`;
-        
+
+        const resetMeta = {};
+        if (type === 'TENANT_ADMIN' && user.tenant_id) {
+            resetMeta.tenantId = user.tenant_id;
+        } else if (type === 'OWNER') {
+            const props = await PropertyModel.getByOwner(user.id);
+            if (props?.[0]?.tenant_id) {
+                resetMeta.tenantId = props[0].tenant_id;
+            }
+        }
+
         await EmailService.sendPasswordReset(
             user.email,
             user.first_name,
-            resetLink
+            resetLink,
+            resetMeta
         );
 
         return { 
@@ -363,12 +374,16 @@ class AuthService {
             await UserModel.update(reset.user_id, { password: newPassword });
             const user = await UserModel.findById ? await UserModel.findById(reset.user_id) : null;
             if (user) {
-                await EmailService.sendPasswordChanged(user.email, user.first_name);
+                const props = await PropertyModel.getByOwner(user.id);
+                const tenantId = props?.[0]?.tenant_id || null;
+                await EmailService.sendPasswordChanged(user.email, user.first_name, { tenantId });
             }
         } else {
             await TenantAdminModel.update(reset.user_id, { password: newPassword });
             const admin = await TenantAdminModel.findById(reset.user_id);
-            await EmailService.sendPasswordChanged(admin.email, admin.first_name);
+            await EmailService.sendPasswordChanged(admin.email, admin.first_name, {
+                tenantId: admin.tenant_id || null
+            });
         }
 
         // Invalidar token usado
@@ -452,7 +467,9 @@ class AuthService {
                 throw new Error('Contraseña actual incorrecta');
             }
             await TenantAdminModel.update(userId, { password: newPassword });
-            await EmailService.sendPasswordChanged(admin.email, admin.first_name);
+            await EmailService.sendPasswordChanged(admin.email, admin.first_name, {
+                tenantId: admin.tenant_id || null
+            });
         }
 
         return { message: 'Contraseña actualizada exitosamente' };

@@ -77,6 +77,7 @@ app.use('/api/visitors', visitorRoutes);
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/security', securityRoutes);
 app.use('/api/tenant-admin/nfc', nfcAdminRoutes);
+app.use('/api/webhooks', require('./routes/webhooks'));
 
 // Demo request desde landing (público)
 const DemoController = require('./controllers/DemoController');
@@ -117,6 +118,7 @@ const CommuniqueQueueService = require('./services/CommuniqueQueueService');
 const BulkOwnerWelcomeSchedulerService = require('./services/BulkOwnerWelcomeSchedulerService');
 const ConsultationNotificationService = require('./services/ConsultationNotificationService');
 const BillingRateUpdateService = require('./services/BillingRateUpdateService');
+const EmailWorkerService = require('./services/EmailWorkerService');
 
 // Iniciar Servidor
 app.listen(PORT, () => {
@@ -140,6 +142,9 @@ app.listen(PORT, () => {
     
     // Iniciar servicio de actualización de tasas de facturación
     BillingRateUpdateService.start();
+
+    // Cola bulk Mailgun + purga de logs de correo (retención EMAIL_LOG_RETENTION_DAYS)
+    EmailWorkerService.start();
 });
 
 module.exports = app;

@@ -215,7 +215,7 @@ class CommuniqueModel {
             const result = await pool.request()
                 .input('limit', sql.Int, limit)
                 .query(`
-                    SELECT TOP (@limit) q.*, c.title, c.description, t.name as tenant_name
+                    SELECT TOP (@limit) q.*, c.title, c.description, c.tenant_id AS tenant_id, t.name as tenant_name
                     FROM CommuniqueEmailQueue q
                     INNER JOIN Communiques c ON q.communique_id = c.id
                     INNER JOIN Tenants t ON c.tenant_id = t.id
