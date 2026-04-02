@@ -1,6 +1,6 @@
 <%#
   Sidebar Super Admin homologado con admin/dashboard (mismas entradas y orden).
-  Uso: include con activePage: 'dashboard'|'tenants'|... (resaltar ítem activo)
+  Incluir desde vistas bajo admin/ como: include('../partials/superadmin-sidebar', { activePage: 'tenants' })
   Enlaces: /admin?section=... para abrir el SPA en la sección correspondiente.
 %>
 <% const ap = typeof activePage !== 'undefined' ? activePage : 'dashboard'; %>
