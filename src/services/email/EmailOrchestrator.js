@@ -1,6 +1,4 @@
 const crypto = require('crypto');
-const { connectDB, sql } = require('../../config/database');
-const TenantModel = require('../../models/TenantModel');
 const EmailJobModel = require('../../models/EmailJobModel');
 const MailgunMailProvider = require('./MailgunMailProvider');
 
@@ -124,8 +122,7 @@ class EmailOrchestrator {
     }
 
     async _sendTransactionalNow(opts) {
-        const tenant = opts.tenantId ? await TenantModel.findById(opts.tenantId) : null;
-        const domain = MailgunMailProvider.resolveSendingDomain(tenant);
+        const domain = MailgunMailProvider.getSendingDomain();
 
         const job = await EmailJobModel.createJob({
             tenant_id: opts.tenantId,
@@ -245,8 +242,7 @@ class EmailOrchestrator {
 
     async _processOneBulkRecipient(row) {
         const tenantId = row.tenant_id;
-        const tenant = tenantId ? await TenantModel.findById(tenantId) : null;
-        const domain = MailgunMailProvider.resolveSendingDomain(tenant);
+        const domain = MailgunMailProvider.getSendingDomain();
 
         await EmailJobModel.updateRecipient(row.id, {
             status: 'processing',
@@ -345,8 +341,7 @@ class EmailOrchestrator {
             throw err;
         }
 
-        const tenant = row.tenant_id ? await TenantModel.findById(row.tenant_id) : null;
-        const domain = MailgunMailProvider.resolveSendingDomain(tenant);
+        const domain = MailgunMailProvider.getSendingDomain();
         const attempt = (row.attempt_count || 0) + 1;
 
         await EmailJobModel.updateRecipient(recipientId, {

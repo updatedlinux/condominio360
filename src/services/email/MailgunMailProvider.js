@@ -2,12 +2,17 @@ const FormData = require('form-data');
 const Mailgun = require('mailgun.js');
 
 /**
- * Cliente Mailgun API (sin SMTP). Un dominio verificado por tenant (subdominio bajo MAILGUN_BASE_DOMAIN).
+ * Cliente Mailgun API (sin SMTP).
+ * Todo el tráfico usa un solo dominio verificado en Mailgun (MAILGUN_DEFAULT_DOMAIN, por defecto el dominio base).
+ * Remitente: MAILGUN_FROM_LOCAL @ MAILGUN_FROM_DOMAIN (por defecto noreply@condominio-360.com).
  */
 class MailgunMailProvider {
     constructor() {
         this.baseDomain = (process.env.MAILGUN_BASE_DOMAIN || 'condominio-360.com').replace(/^\.+|\.+$/g, '');
-        this.defaultDomain = (process.env.MAILGUN_DEFAULT_DOMAIN || `mg.${this.baseDomain}`).trim();
+        this.sendingDomain = (process.env.MAILGUN_DEFAULT_DOMAIN || this.baseDomain).trim();
+        /** @deprecated usar sendingDomain; se mantiene para scripts (send-test-email) */
+        this.defaultDomain = this.sendingDomain;
+        this.fromDomain = (process.env.MAILGUN_FROM_DOMAIN || this.baseDomain).trim();
         this.apiKey = (process.env.MAILGUN_API_KEY || '').trim();
         this.region = (process.env.MAILGUN_REGION || 'us').toLowerCase();
         this.replyTo = (process.env.MAILGUN_REPLY_TO || '').trim() || null;
@@ -28,23 +33,13 @@ class MailgunMailProvider {
         return !!this._client && !!this.apiKey;
     }
 
-    /**
-     * Dominio Mailgun para envío: mailgun_domain del tenant, o {slug}.baseDomain, o default.
-     */
-    resolveSendingDomain(tenant) {
-        if (tenant && tenant.mailgun_domain) {
-            return String(tenant.mailgun_domain).trim().toLowerCase();
-        }
-        if (tenant && tenant.slug) {
-            const slug = String(tenant.slug).trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-            return `${slug}.${this.baseDomain}`;
-        }
-        return this.defaultDomain;
+    /** Dominio pasado a Mailgun `messages.create` (debe estar verificado en la cuenta). */
+    getSendingDomain() {
+        return this.sendingDomain;
     }
 
-    buildFromHeader(mailgunDomain) {
-        const local = this.fromLocalPart;
-        return `"Condominio360" <${local}@${mailgunDomain}>`;
+    buildFromHeader() {
+        return `"Condominio360" <${this.fromLocalPart}@${this.fromDomain}>`;
     }
 
     /**
@@ -54,7 +49,8 @@ class MailgunMailProvider {
         if (!this.isConfigured()) {
             throw new Error('Mailgun API no configurada (MAILGUN_API_KEY)');
         }
-        const from = fromOverride || this.buildFromHeader(domain);
+        const apiDomain = domain || this.sendingDomain;
+        const from = fromOverride || this.buildFromHeader();
         const data = {
             from,
             to: Array.isArray(to) ? to : [to],
@@ -65,7 +61,7 @@ class MailgunMailProvider {
         if (this.replyTo) {
             data['h:Reply-To'] = this.replyTo;
         }
-        const result = await this._client.messages.create(domain, data);
+        const result = await this._client.messages.create(apiDomain, data);
         const id = result?.id || result?.message || '';
         return { id: typeof id === 'string' ? id.replace(/[<>]/g, '') : String(id), raw: result };
     }
