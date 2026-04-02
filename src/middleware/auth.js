@@ -84,13 +84,21 @@ const requireOwner = (req, res, next) => {
 };
 
 /**
- * Middleware para verificar que sea Admin de Junta
+ * Middleware para verificar que sea Admin de Junta (o SuperAdmin en contexto de condominio, p. ej. suplantación).
+ * Debe coincidir con verifyTenantAdmin en routes/tenantAdmin.js para que /api/tenant-admin/communiques y similares
+ * no rechacen el token emitido por POST /api/auth/select-tenant (type SUPERADMIN + tenantId).
  */
 const requireTenantAdmin = (req, res, next) => {
-    if (!req.user || req.user.type !== 'TENANT_ADMIN') {
+    if (!req.user) {
         return res.status(403).json({ error: 'Acceso denegado. Se requiere ser administrador de junta.' });
     }
-    next();
+    if (req.user.type === 'TENANT_ADMIN') {
+        return next();
+    }
+    if (req.user.isSuperAdmin) {
+        return next();
+    }
+    return res.status(403).json({ error: 'Acceso denegado. Se requiere ser administrador de junta.' });
 };
 
 /**
