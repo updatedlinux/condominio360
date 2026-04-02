@@ -38,7 +38,7 @@ function truncateRecipients(recipients) {
 }
 
 /**
- * Panel de correo saliente (métricas, jobs, logs, reintento). Super Admin: filtro opcional tenantId.
+ * Auditoría de correo (métricas, jobs, logs, reintento). Solo Super Admin; filtro opcional tenantId.
  */
 class EmailAdminController {
     static _scopeSuper(req) {
@@ -47,14 +47,6 @@ class EmailAdminController {
         }
         const raw = (req.query.tenantId || '').trim();
         const tenantId = raw && isUuid(raw) ? raw : null;
-        return { tenantId };
-    }
-
-    static _scopeTenant(req) {
-        const tenantId = req.user?.tenantId;
-        if (!tenantId) {
-            return { error: { status: 403, body: { success: false, error: 'Sin condominio en sesión' } } };
-        }
         return { tenantId };
     }
 
@@ -163,104 +155,6 @@ class EmailAdminController {
                 return res.status(503).json({ success: false, error: e.message });
             }
             console.error('[EmailAdminController.retryRecipient]', e);
-            res.status(500).json({ success: false, error: e.message || 'Error al reintentar' });
-        }
-    }
-
-    // ——— Tenant Admin (siempre acotado a req.user.tenantId) ———
-
-    static async getMetricsTenant(req, res) {
-        const s = EmailAdminController._scopeTenant(req);
-        if (s.error) return res.status(s.error.status).json(s.error.body);
-        const days = parseDays(req.query.days, 30);
-        const data = await EmailJobModel.getMetricsSummary({ tenantId: s.tenantId, days });
-        res.json({ success: true, data });
-    }
-
-    static async listJobsTenant(req, res) {
-        const s = EmailAdminController._scopeTenant(req);
-        if (s.error) return res.status(s.error.status).json(s.error.body);
-        const days = parseDays(req.query.days, 90);
-        const page = parsePage(req.query.page);
-        const limit = parseLimit(req.query.limit, 20);
-        const pipeline = (req.query.pipeline || '').trim() || null;
-        const status = (req.query.status || '').trim() || null;
-
-        const total = await EmailJobModel.countJobsFiltered({
-            tenantId: s.tenantId,
-            days,
-            pipeline,
-            status
-        });
-        const rows = await EmailJobModel.listJobsFiltered({
-            tenantId: s.tenantId,
-            page,
-            limit,
-            days,
-            pipeline,
-            status
-        });
-        res.json({
-            success: true,
-            data: rows,
-            pagination: { page, limit, total, pages: Math.ceil(total / limit) || 1 }
-        });
-    }
-
-    static async getJobTenant(req, res) {
-        const s = EmailAdminController._scopeTenant(req);
-        if (s.error) return res.status(s.error.status).json(s.error.body);
-        const { id } = req.params;
-        if (!isUuid(id)) {
-            return res.status(400).json({ success: false, error: 'ID inválido' });
-        }
-        const job = await EmailJobModel.findJobById(id);
-        if (!job || String(job.tenant_id || '') !== String(s.tenantId)) {
-            return res.status(404).json({ success: false, error: 'Job no encontrado' });
-        }
-        const recipients = truncateRecipients(await EmailJobModel.listRecipientsByJob(id));
-        res.json({ success: true, data: { job, recipients } });
-    }
-
-    static async getRecipientLogsTenant(req, res) {
-        const s = EmailAdminController._scopeTenant(req);
-        if (s.error) return res.status(s.error.status).json(s.error.body);
-        const { recipientId } = req.params;
-        if (!isUuid(recipientId)) {
-            return res.status(400).json({ success: false, error: 'ID inválido' });
-        }
-        const row = await EmailJobModel.findRecipientWithJob(recipientId);
-        if (!row || String(row.tenant_id || '') !== String(s.tenantId)) {
-            return res.status(404).json({ success: false, error: 'Destinatario no encontrado' });
-        }
-        const logs = await EmailJobModel.listLogsForRecipient(recipientId, parseLimit(req.query.limit, 50));
-        res.json({ success: true, data: logs });
-    }
-
-    static async retryRecipientTenant(req, res) {
-        const s = EmailAdminController._scopeTenant(req);
-        if (s.error) return res.status(s.error.status).json(s.error.body);
-        const { recipientId } = req.params;
-        if (!isUuid(recipientId)) {
-            return res.status(400).json({ success: false, error: 'ID inválido' });
-        }
-        try {
-            const result = await EmailOrchestrator.retryRecipient(recipientId, {
-                tenantId: s.tenantId,
-                isSuperAdmin: false
-            });
-            res.json({ success: true, data: result });
-        } catch (e) {
-            if (e.code === 'FORBIDDEN') {
-                return res.status(403).json({ success: false, error: e.message });
-            }
-            if (e.code === 'CANNOT_RETRY' || e.code === 'NOT_FOUND') {
-                return res.status(400).json({ success: false, error: e.message });
-            }
-            if (e.code === 'MAILGUN_DISABLED') {
-                return res.status(503).json({ success: false, error: e.message });
-            }
-            console.error('[EmailAdminController.retryRecipientTenant]', e);
             res.status(500).json({ success: false, error: e.message || 'Error al reintentar' });
         }
     }
