@@ -46,6 +46,20 @@ class OutgoingQueuesSummaryModel {
             `)
         );
 
+        /** Pendientes cuyo comunicado ya no tiene lotes en cola (worker en reposo; suelen ser remanentes de lotes mal cerrados o reenvío pendiente). */
+        const commPendingNoQueue = await OutgoingQueuesSummaryModel._querySafe(() =>
+            pool.request().query(`
+                SELECT COUNT(*) AS n
+                FROM CommuniqueNotifications n
+                WHERE n.status = N'pending'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM CommuniqueEmailQueue q
+                      WHERE q.communique_id = n.communique_id
+                        AND q.status IN (N'pending', N'processing')
+                  )
+            `)
+        );
+
         const commBreakdown = await OutgoingQueuesSummaryModel._querySafe(() =>
             pool.request().query(`
                 SELECT TOP 15
@@ -106,6 +120,7 @@ class OutgoingQueuesSummaryModel {
 
         const tenantsWithCommQueue = Number(commTenants?.recordset?.[0]?.n) || 0;
         const commPendingNotif = Number(commPendingEmails?.recordset?.[0]?.n) || 0;
+        const commPendingNotifNoActiveQueue = Number(commPendingNoQueue?.recordset?.[0]?.n) || 0;
         const notificationQueuePending = Number(notifQ?.recordset?.[0]?.n) || 0;
         const emailRecipientsPending = Number(emailRecip?.recordset?.[0]?.n) || 0;
         const emailJobsPending = Number(emailJobsOpen?.recordset?.[0]?.n) || 0;
@@ -117,9 +132,9 @@ class OutgoingQueuesSummaryModel {
             batches_left: Number(r.batches_left) || 0
         }));
 
+        // "Actividad" = trabajo en curso en colas/workers. Los pending en BD sin lotes activos son remanentes, no bloquean el cron de comunicados.
         const hasActivity =
             commActiveBatches > 0 ||
-            commPendingNotif > 0 ||
             notificationQueuePending > 0 ||
             emailRecipientsPending > 0 ||
             emailJobsPending > 0 ||
@@ -131,6 +146,8 @@ class OutgoingQueuesSummaryModel {
                 processing_batches: processingBatches,
                 active_batches: commActiveBatches,
                 pending_emails: commPendingNotif,
+                /** Destinatarios pending cuyo comunicado no tiene ya lotes pending/processing (cola de envío vacía para ese envío). */
+                pending_emails_without_active_queue: commPendingNotifNoActiveQueue,
                 tenants_with_queue: tenantsWithCommQueue,
                 breakdown
             },

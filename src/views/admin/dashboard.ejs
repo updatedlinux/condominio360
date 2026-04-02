@@ -1900,7 +1900,11 @@
             const rows = [];
             rows.push('<div class="rounded-lg border border-gray-100 divide-y divide-gray-100 overflow-hidden">');
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Comunicados (juntas) — lotes pendientes / en proceso</span><strong class="text-gray-900">${c.pending_batches ?? 0} / ${c.processing_batches ?? 0}</strong></div>`);
-            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Comunicados — correos aún no enviados (notificaciones)</span><strong class="text-gray-900">${c.pending_emails ?? 0}</strong></div>`);
+            const pNoQ = c.pending_emails_without_active_queue ?? 0;
+            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Comunicados — destinatarios “pending” en base de datos (aún no marcados como enviados)</span><strong class="text-gray-900">${c.pending_emails ?? 0}</strong></div>`);
+            if ((c.pending_emails ?? 0) > 0 && pNoQ > 0) {
+                rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-slate-50"><span class="text-gray-600">De esos, sin ningún lote pendiente en la cola del worker (el cron ya no los procesa)</span><strong class="text-slate-800">${pNoQ}</strong></div>`);
+            }
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Condominios con cola de comunicados activa</span><strong class="text-gray-900">${c.tenants_with_queue ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Mailgun — destinatarios en cola (pending / retry / processing)</span><strong class="text-gray-900">${mq.recipients_pending ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Mailgun — jobs con destinatarios pendientes</span><strong class="text-gray-900">${mq.jobs_open ?? 0}</strong></div>`);
@@ -1908,6 +1912,9 @@
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Bienvenida masiva propietarios — lotes activos</span><strong class="text-gray-900">${bw.active_batches ?? 0}</strong></div>`);
             rows.push('</div>');
             rows.push('<p class="mt-3 text-xs text-gray-500 leading-relaxed">Los webhooks de Mailgun guardan entregas y rebotes en el historial; <strong>no</strong> actualizan el estado del job. Este panel se basa en destinatarios y lotes pendientes en base de datos.</p>');
+            if (pNoQ > 0 && (c.active_batches ?? 0) === 0) {
+                rows.push('<p class="mt-2 text-sm text-slate-700 border-l-4 border-slate-300 pl-3">El log “no hay comunicados pendientes en la cola” se refiere a <strong>CommuniqueEmailQueue</strong> (lotes). Si aún ves destinatarios pending sin cola activa, no se reenviarán solos: hay que <strong>reencolar lotes</strong> (p. ej. script <code class="text-xs bg-slate-100 px-1 rounded">requeue-communique-batches</code>) o corregir datos.</p>');
+            }
             if (!active) {
                 rows.push('<p class="mt-3 text-emerald-700 text-sm flex items-center gap-2"><span class="material-symbols-rounded text-lg">check_circle</span> No hay trabajo pendiente en estas colas. Puedes operar con normalidad.</p>');
             } else {
