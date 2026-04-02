@@ -72,16 +72,22 @@ class OutgoingQueuesSummaryModel {
                 SELECT COUNT(*) AS n
                 FROM email_job_recipients r
                 INNER JOIN email_jobs j ON j.id = r.job_id
-                WHERE r.status IN (N'pending', N'retry')
+                WHERE r.status IN (N'pending', N'retry', N'processing')
                   AND j.status <> N'cancelled'
             `)
         );
 
+        // Jobs con trabajo real pendiente (el estado del job puede quedar desincronizado; el webhook no lo actualiza).
         const emailJobsOpen = await OutgoingQueuesSummaryModel._querySafe(() =>
             pool.request().query(`
-                SELECT COUNT(*) AS n
-                FROM email_jobs
-                WHERE status IN (N'pending', N'processing')
+                SELECT COUNT(DISTINCT j.id) AS n
+                FROM email_jobs j
+                WHERE j.status <> N'cancelled'
+                  AND EXISTS (
+                    SELECT 1 FROM email_job_recipients r
+                    WHERE r.job_id = j.id
+                      AND r.status IN (N'pending', N'retry', N'processing')
+                  )
             `)
         );
 

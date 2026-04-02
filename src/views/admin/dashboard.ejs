@@ -669,19 +669,24 @@
 
                     <!-- Colas de envío masivo (monitoreo superadmin) -->
                     <div id="outgoing-queues-dashboard-wrap" class="md-card p-6 border border-gray-100 transition-colors">
-                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                            <div>
-                                <h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-                                    <span class="material-symbols-rounded text-[var(--md-sys-color-primary)]">mark_email_unread</span>
-                                    Colas de envío masivo
-                                </h3>
-                                <p class="text-sm text-gray-500 mt-1">Comunicados de junta, correo Mailgun, notificaciones internas y bienvenidas masivas. Se actualiza cada 15 s (polling).</p>
-                                <p class="text-xs text-gray-400 mt-1" id="outgoing-queues-updated-dash">—</p>
-                            </div>
-                            <button type="button" onclick="loadOutgoingQueuesSummary()" class="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 shrink-0">Actualizar ahora</button>
+                        <div class="flex items-start justify-between gap-3">
+                            <button type="button" id="outgoing-queues-dash-toggle" class="flex items-start gap-2 text-left flex-1 min-w-0 rounded-xl p-2 -m-2 hover:bg-gray-50 transition-colors" onclick="toggleOutgoingQueuesPanel('dash')" aria-expanded="true">
+                                <span id="outgoing-queues-dash-chevron" class="material-symbols-rounded text-gray-600 mt-1 shrink-0">expand_less</span>
+                                <span class="min-w-0">
+                                    <span class="text-lg font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                                        <span class="material-symbols-rounded text-[var(--md-sys-color-primary)]">mark_email_unread</span>
+                                        Colas de envío masivo
+                                    </span>
+                                    <span class="text-sm text-gray-500 mt-1 block">Comunicados de junta, Mailgun, notificaciones internas y bienvenidas. Polling 15 s. Clic para plegar.</span>
+                                </span>
+                            </button>
+                            <button type="button" onclick="loadOutgoingQueuesSummary()" class="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 shrink-0 self-start">Actualizar ahora</button>
                         </div>
-                        <div id="outgoing-queues-dashboard-body" class="text-sm text-gray-700">
-                            <p class="text-gray-500">Cargando…</p>
+                        <div id="outgoing-queues-dashboard-collapse" class="mt-3 space-y-3">
+                            <p class="text-xs text-gray-400 sm:pl-8" id="outgoing-queues-updated-dash">—</p>
+                            <div id="outgoing-queues-dashboard-body" class="text-sm text-gray-700 sm:pl-8">
+                                <p class="text-gray-500">Cargando…</p>
+                            </div>
                         </div>
                     </div>
 
@@ -1052,19 +1057,24 @@
                         </button>
                     </div>
                     <div id="outgoing-queues-email-wrap" class="md-card p-6 border border-gray-100 transition-colors mb-2">
-                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                            <div>
-                                <h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-                                    <span class="material-symbols-rounded text-amber-600">hourglass_top</span>
-                                    Estado de colas (mismo monitoreo que en el dashboard)
-                                </h3>
-                                <p class="text-sm text-gray-500 mt-1">Evita cambios que generen inconsistencias mientras haya lotes o destinatarios pendientes.</p>
-                                <p class="text-xs text-gray-400 mt-1" id="outgoing-queues-updated-email">—</p>
-                            </div>
-                            <button type="button" onclick="loadOutgoingQueuesSummary()" class="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 shrink-0">Actualizar colas</button>
+                        <div class="flex items-start justify-between gap-3">
+                            <button type="button" id="outgoing-queues-email-toggle" class="flex items-start gap-2 text-left flex-1 min-w-0 rounded-xl p-2 -m-2 hover:bg-gray-50 transition-colors" onclick="toggleOutgoingQueuesPanel('email')" aria-expanded="true">
+                                <span id="outgoing-queues-email-chevron" class="material-symbols-rounded text-gray-600 mt-1 shrink-0">expand_less</span>
+                                <span class="min-w-0">
+                                    <span class="text-lg font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                                        <span class="material-symbols-rounded text-amber-600">hourglass_top</span>
+                                        Estado de colas (mismo monitoreo que en el dashboard)
+                                    </span>
+                                    <span class="text-sm text-gray-500 mt-1 block">Evita cambios delicados mientras haya trabajo pendiente. Clic para plegar.</span>
+                                </span>
+                            </button>
+                            <button type="button" onclick="loadOutgoingQueuesSummary()" class="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 shrink-0 self-start">Actualizar colas</button>
                         </div>
-                        <div id="outgoing-queues-email-body" class="text-sm text-gray-700">
-                            <p class="text-gray-500">Cargando…</p>
+                        <div id="outgoing-queues-email-collapse" class="mt-3 space-y-3">
+                            <p class="text-xs text-gray-400 sm:pl-8" id="outgoing-queues-updated-email">—</p>
+                            <div id="outgoing-queues-email-body" class="text-sm text-gray-700 sm:pl-8">
+                                <p class="text-gray-500">Cargando…</p>
+                            </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1750,6 +1760,7 @@
             // Load data
             loadDashboard();
             startOutgoingQueuesPolling();
+            initOutgoingQueuesCollapseState();
             applySectionFromQuery();
 
             // Setup sidebar toggle
@@ -1891,11 +1902,12 @@
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Comunicados (juntas) — lotes pendientes / en proceso</span><strong class="text-gray-900">${c.pending_batches ?? 0} / ${c.processing_batches ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Comunicados — correos aún no enviados (notificaciones)</span><strong class="text-gray-900">${c.pending_emails ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Condominios con cola de comunicados activa</span><strong class="text-gray-900">${c.tenants_with_queue ?? 0}</strong></div>`);
-            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Mailgun — destinatarios en cola (pending/retry)</span><strong class="text-gray-900">${mq.recipients_pending ?? 0}</strong></div>`);
-            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Mailgun — jobs abiertos (pending/processing)</span><strong class="text-gray-900">${mq.jobs_open ?? 0}</strong></div>`);
+            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Mailgun — destinatarios en cola (pending / retry / processing)</span><strong class="text-gray-900">${mq.recipients_pending ?? 0}</strong></div>`);
+            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Mailgun — jobs con destinatarios pendientes</span><strong class="text-gray-900">${mq.jobs_open ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Cola interna (p. ej. facturación)</span><strong class="text-gray-900">${nq.pending ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Bienvenida masiva propietarios — lotes activos</span><strong class="text-gray-900">${bw.active_batches ?? 0}</strong></div>`);
             rows.push('</div>');
+            rows.push('<p class="mt-3 text-xs text-gray-500 leading-relaxed">Los webhooks de Mailgun guardan entregas y rebotes en el historial; <strong>no</strong> actualizan el estado del job. Este panel se basa en destinatarios y lotes pendientes en base de datos.</p>');
             if (!active) {
                 rows.push('<p class="mt-3 text-emerald-700 text-sm flex items-center gap-2"><span class="material-symbols-rounded text-lg">check_circle</span> No hay trabajo pendiente en estas colas. Puedes operar con normalidad.</p>');
             } else {
@@ -1968,6 +1980,33 @@
             outgoingQueuesPollId = setInterval(() => {
                 if (document.visibilityState === 'visible') loadOutgoingQueuesSummary();
             }, 15000);
+        }
+
+        function toggleOutgoingQueuesPanel(key) {
+            const collapse = document.getElementById(key === 'dash' ? 'outgoing-queues-dashboard-collapse' : 'outgoing-queues-email-collapse');
+            const chev = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-chevron' : 'outgoing-queues-email-chevron');
+            const btn = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-toggle' : 'outgoing-queues-email-toggle');
+            if (!collapse) return;
+            const hidden = collapse.classList.toggle('hidden');
+            if (chev) chev.textContent = hidden ? 'expand_more' : 'expand_less';
+            if (btn) btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+            try {
+                localStorage.setItem('outgoingQueuesCollapsed_' + key, hidden ? '1' : '0');
+            } catch (e) { /* ignore */ }
+        }
+
+        function initOutgoingQueuesCollapseState() {
+            for (const key of ['dash', 'email']) {
+                try {
+                    if (localStorage.getItem('outgoingQueuesCollapsed_' + key) !== '1') continue;
+                    const collapse = document.getElementById(key === 'dash' ? 'outgoing-queues-dashboard-collapse' : 'outgoing-queues-email-collapse');
+                    const chev = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-chevron' : 'outgoing-queues-email-chevron');
+                    const btn = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-toggle' : 'outgoing-queues-email-toggle');
+                    if (collapse) collapse.classList.add('hidden');
+                    if (chev) chev.textContent = 'expand_more';
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                } catch (e) { /* ignore */ }
+            }
         }
 
         async function loadBcvSettings() {
