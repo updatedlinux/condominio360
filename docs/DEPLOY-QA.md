@@ -135,18 +135,24 @@ npm install --omit=dev
 npm run migrate
 ```
 
-### 3.5 Levantar el servicio con PM2 (sin ecosystem)
+### 3.5 Levantar el servicio con PM2
 
-Se usa `pm2 start` apuntando directamente al entry point:
+**Opción A — `ecosystem.config.cjs` (recomendado):** incluye `log_date_format` para que cada línea en `pm2 logs` / `*-error.log` lleve fecha y hora.
 
 ```bash
-pm2 start src/app.js --name condominio360
+pm2 start ecosystem.config.cjs
+```
+
+**Opción B — línea de comandos** (sin timestamps en el archivo de log salvo que uses `--log-date-format`):
+
+```bash
+pm2 start src/app.js --name condominio360 --log-date-format "YYYY-MM-DD HH:mm:ss Z"
 ```
 
 O especificando Node explícitamente:
 
 ```bash
-pm2 start node --name condominio360 -- src/app.js
+pm2 start node --name condominio360 --log-date-format "YYYY-MM-DD HH:mm:ss Z" -- src/app.js
 ```
 
 ### 3.6 Comandos PM2 útiles
@@ -211,7 +217,7 @@ Ruta del archivo: `scripts/cleanup-database.sql`
 - [ ] `.env` configurado para QA
 - [ ] `npm install` ejecutado
 - [ ] Migraciones ejecutadas (`npm run migrate`)
-- [ ] PM2 iniciado: `pm2 start src/app.js --name condominio360`
+- [ ] PM2 iniciado: `pm2 start ecosystem.config.cjs` (o `pm2 start src/app.js --name condominio360`)
 - [ ] Verificar que la app responde: `curl http://localhost:3000` (o el puerto configurado)
 - [ ] (Opcional) Ejecutar limpieza de BD si se parte de cero: `npm run cleanup-db`
 

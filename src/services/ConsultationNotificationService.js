@@ -214,7 +214,7 @@ class ConsultationNotificationService {
                 messageType: 'consultation_notification'
             });
         } catch (error) {
-            console.error(`Error sending email to ${to}:`, error);
+            // El error ya se registra en EmailOrchestrator (evitar duplicar la misma traza en PM2).
         }
     }
 
