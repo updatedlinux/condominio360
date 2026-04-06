@@ -480,6 +480,10 @@
                 <div id="nfc-scan-status" class="text-sm text-[#5F6368] p-3 bg-gray-50 rounded-xl">
                     <span id="nfc-status-text">Seleccione Ingreso o Salida e inicie el escaneo</span>
                 </div>
+                <p class="text-xs text-[#5F6368] leading-relaxed flex gap-2 items-start">
+                    <span class="material-icons-round text-[#5F6368] text-base shrink-0 mt-0.5">info</span>
+                    <span>El escaneo NFC con el navegador (Web NFC) solo funciona en <strong>Chrome para Android</strong>, con NFC activado en el dispositivo. En escritorio u otros sistemas use el UID manual.</span>
+                </p>
                 <div class="flex gap-3" id="nfc-type-buttons">
                     <button onclick="setNFCType('ENTRY')" id="nfc-btn-entry" 
                         class="touch-target flex-1 py-3 border-2 border-gray-200 rounded-xl font-medium text-[#5F6368] hover:border-green-500 hover:text-green-700">
@@ -495,19 +499,8 @@
                     <span class="material-icons-round text-xl">nfc</span>
                     Iniciar escaneo NFC
                 </button>
-                <div id="nfc-manual-uid-wrap" class="space-y-2 pt-2 border-t border-[#E5E5E5]">
-                    <p class="text-xs text-[#5F6368]"><strong>Android (Chrome):</strong> puede usar el botón «Iniciar escaneo NFC» arriba, o UID manual / puente. <strong>Mac o Windows:</strong> Chrome no ofrece Web NFC; use UID manual o el <strong>puente local Node</strong> (lector USB).</p>
-                    <label class="flex items-start gap-2 text-sm text-[#3C4043] cursor-pointer">
-                        <input type="checkbox" id="nfc-bridge-enabled" class="mt-1 rounded border-gray-300" onchange="onNfcBridgeToggle()">
-                        <span>Usar lector USB vía puente local (Node en este PC — <code class="text-xs bg-gray-100 px-1 rounded">tools/nfc-local-bridge</code>)</span>
-                    </label>
-                    <p id="nfc-bridge-status" class="text-xs text-[#9AA0A6] hidden leading-relaxed"></p>
-                    <div class="flex flex-wrap items-center gap-2 text-xs text-[#9AA0A6]">
-                        <span>Puerto HTTP local:</span>
-                        <input type="number" id="nfc-bridge-port" value="4789" min="1024" max="65535"
-                            class="w-24 px-2 py-1 border border-[#E5E5E5] rounded-lg font-mono text-[#3C4043]"
-                            onchange="localStorage.setItem('nfcBridgePort', this.value)" title="Debe coincidir con NFC_BRIDGE_PORT del puente">
-                    </div>
+                <div id="nfc-manual-uid-wrap" class="hidden space-y-2 pt-2 border-t border-[#E5E5E5]">
+                    <p class="text-xs text-[#5F6368]">Chrome en Mac o Windows no ofrece Web NFC. Ingrese el UID de la tarjeta (hexadecimal).</p>
                     <label class="block text-sm font-medium text-[#3C4043]">UID manual (hexadecimal)</label>
                     <div class="flex gap-2 flex-col sm:flex-row">
                         <input type="text" id="nfc-manual-uid-input" autocomplete="off" placeholder="Ej: 04A1B2C3D4"
@@ -572,8 +565,6 @@
         let lastSearchResults = {};
         let nfcPendingType = null;
         let nfcAbortController = null;
-        let nfcBridgePollInterval = null;
-        let nfcBridgeLastSeenTs = 0;
         let nfcCurrentPage = 1;
         let nfcTotalPages = 1;
         const NFC_PAGE_SIZE = 10;
@@ -1147,8 +1138,8 @@
         function syncNfcUiPlatform() {
             const hasWebNfc = typeof window !== 'undefined' && 'NDEFReader' in window;
             const scanBtn = document.getElementById('nfc-scan-btn');
-            // Web NFC y UID manual / puente local coexisten: en Android se muestra el escaneo;
-            // el bloque inferior siempre visible para manual, puente USB o respaldo.
+            const manualWrap = document.getElementById('nfc-manual-uid-wrap');
+            if (manualWrap) manualWrap.classList.toggle('hidden', hasWebNfc);
             if (scanBtn) scanBtn.classList.toggle('hidden', !hasWebNfc);
         }
 
@@ -1156,17 +1147,7 @@
             document.getElementById('nfcVehicleModal').classList.remove('hidden');
             const manualIn = document.getElementById('nfc-manual-uid-input');
             if (manualIn) manualIn.value = '';
-            nfcBridgeLastSeenTs = 0;
-            const portEl = document.getElementById('nfc-bridge-port');
-            if (portEl) {
-                portEl.value = localStorage.getItem('nfcBridgePort') || '4789';
-            }
-            const bridgeCb = document.getElementById('nfc-bridge-enabled');
-            if (bridgeCb) {
-                bridgeCb.checked = localStorage.getItem('nfcBridgeEnabled') === '1';
-            }
             syncNfcUiPlatform();
-            if (bridgeCb && bridgeCb.checked) startNfcBridgePoll();
             nfcPendingType = accessType || null;
             if (accessType) setNFCType(accessType);
             else {
@@ -1183,68 +1164,10 @@
             document.getElementById('nfcVehicleModal').classList.add('hidden');
             const manualIn = document.getElementById('nfc-manual-uid-input');
             if (manualIn) manualIn.value = '';
-            stopNfcBridgePoll();
             if (nfcAbortController) {
                 nfcAbortController.abort();
                 nfcAbortController = null;
             }
-        }
-
-        function stopNfcBridgePoll() {
-            if (nfcBridgePollInterval) {
-                clearInterval(nfcBridgePollInterval);
-                nfcBridgePollInterval = null;
-            }
-            const st = document.getElementById('nfc-bridge-status');
-            if (st) st.classList.add('hidden');
-        }
-
-        function onNfcBridgeToggle() {
-            const cb = document.getElementById('nfc-bridge-enabled');
-            if (cb && cb.checked) {
-                localStorage.setItem('nfcBridgeEnabled', '1');
-                startNfcBridgePoll();
-            } else {
-                localStorage.removeItem('nfcBridgeEnabled');
-                stopNfcBridgePoll();
-            }
-        }
-
-        function startNfcBridgePoll() {
-            stopNfcBridgePoll();
-            const st = document.getElementById('nfc-bridge-status');
-            const portEl = document.getElementById('nfc-bridge-port');
-            const port = (portEl && portEl.value) ? String(portEl.value).trim() : (localStorage.getItem('nfcBridgePort') || '4789');
-            localStorage.setItem('nfcBridgePort', port);
-            const base = `http://127.0.0.1:${port}`;
-            if (st) {
-                st.classList.remove('hidden');
-                st.textContent = 'Conectando al puente en ' + base + '…';
-            }
-            const tick = async () => {
-                try {
-                    const r = await fetch(`${base}/last`, { method: 'GET', mode: 'cors', cache: 'no-store' });
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    const j = await r.json();
-                    const ts = Number(j.ts) || 0;
-                    const uid = (j.uid && String(j.uid).replace(/[^A-Fa-f0-9]/g, '').toUpperCase()) || '';
-                    if (uid.length >= 4 && ts > nfcBridgeLastSeenTs) {
-                        nfcBridgeLastSeenTs = ts;
-                        const input = document.getElementById('nfc-manual-uid-input');
-                        if (input) input.value = uid;
-                        const statusText = document.getElementById('nfc-status-text');
-                        if (statusText) statusText.textContent = 'UID leído (lector local): ' + uid;
-                        showToast('Tarjeta leída: ' + uid, 'success');
-                    }
-                    if (st) st.textContent = 'Puente local activo. Acerque la tarjeta al lector USB (puerto ' + port + ').';
-                } catch (e) {
-                    if (st) {
-                        st.textContent = 'No se alcanza el puente. En una terminal: cd tools/nfc-local-bridge && npm install && npm start';
-                    }
-                }
-            };
-            tick();
-            nfcBridgePollInterval = setInterval(tick, 350);
         }
 
         function setNFCType(type) {
@@ -1272,8 +1195,8 @@
                 return;
             }
             if (!('NDEFReader' in window)) {
-                document.getElementById('nfc-status-text').textContent = 'Web NFC no disponible en este equipo. Use el campo UID manual debajo.';
-                showToast('Chrome en Mac/Windows no incluye Web NFC (solo Chrome Android). Use el UID manual.', 'error');
+                document.getElementById('nfc-status-text').textContent = 'Web NFC no disponible. Use un Android con Chrome y NFC, o el UID manual.';
+                showToast('Use Chrome en Android con NFC o ingrese el UID manualmente.', 'error');
                 return;
             }
             try {

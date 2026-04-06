@@ -24,7 +24,7 @@ Otro puerto:
 NFC_BRIDGE_PORT=4790 npm start
 ```
 
-En el panel **Seguridad → Acceso vehicular NFC**, active **“Usar lector USB vía puente local”** y, si cambió el puerto, ajústelo en el campo numérico.
+Puede consumir `GET /last` desde un script propio o herramientas locales; no está integrado en el panel web.
 
 ## Endpoints
 
@@ -37,4 +37,4 @@ Solo escucha en **127.0.0.1** (no expone a la red LAN).
 
 ## Seguridad
 
-Ejecute el puente **solo en la PC de vigilancia** mientras use el panel. No comparta el puerto hacia internet.
+Ejecute el puente solo en la máquina local que lo necesite. No exponga el puerto hacia internet.
