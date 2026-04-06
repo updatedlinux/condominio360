@@ -146,6 +146,28 @@ class ExchangeRateModel {
     }
 
     /**
+     * Última fila con fecha estrictamente anterior a la dada (para variación % día a día).
+     * @param {string} date - YYYY-MM-DD
+     * @returns {Promise<Object|null>}
+     */
+    static async getLatestBeforeDate(date) {
+        try {
+            const pool = await connectDB();
+            const result = await pool.request()
+                .input('date', sql.Date, date)
+                .query(`
+                    SELECT TOP 1 * FROM ExchangeRates
+                    WHERE rate_date < @date
+                    ORDER BY rate_date DESC
+                `);
+            return result.recordset[0] || null;
+        } catch (error) {
+            console.error('Error getLatestBeforeDate:', error);
+            return null;
+        }
+    }
+
+    /**
      * Verificar si ya existe tasa para una fecha
      * @param {string} date - Fecha en formato YYYY-MM-DD
      * @returns {Promise<boolean>}

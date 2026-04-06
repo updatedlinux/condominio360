@@ -6,6 +6,7 @@ const UserModel = require('../models/UserModel');
 const PropertyModel = require('../models/PropertyModel');
 const SystemSettingsModel = require('../models/SystemSettingsModel');
 const BCVService = require('../services/BCVService');
+const ExchangeRateModel = require('../models/ExchangeRateModel');
 const EmailService = require('../services/EmailService');
 const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
 const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailService');
@@ -2561,89 +2562,36 @@ class AdminController {
 
     /**
      * GET /api/admin/bcv-settings
-     * Estado de la clave API DolarVzla (enmascarada) y recordatorio de renovación (~48h)
+     * Tasas BCV vigentes en BD (misma referencia que ven los propietarios).
      */
     static async getBcvSettings(req, res) {
         try {
-            const row = await SystemSettingsModel.getRow();
-            const dbKey = await SystemSettingsModel.getBcvApiKey();
-            const envKey = (process.env.BCV_API_KEY || '').trim();
-            const source = dbKey ? 'database' : (envKey ? 'environment' : 'none');
-            const activeKey = dbKey || envKey || null;
-            const keyMasked = activeKey ? SystemSettingsModel.maskKey(activeKey) : null;
-            const updatedAt = row?.bcv_api_key_updated_at || null;
-
-            let reminderLevel = 'none';
-            let reminderMessage = '';
-            if (!activeKey) {
-                reminderLevel = 'urgent';
-                reminderMessage = 'No hay clave API BCV configurada. Obtén un token en DolarVzla y guárdalo aquí (o usa BCV_API_KEY en .env como respaldo).';
-            } else if (updatedAt && dbKey) {
-                const hours = (Date.now() - new Date(updatedAt).getTime()) / 3600000;
-                if (hours >= 48) {
-                    reminderLevel = 'urgent';
-                    reminderMessage = 'Han pasado más de 2 días desde la última vez que guardaste la clave API. El token de DolarVzla suele caducar; renueva y actualiza aquí para evitar errores 401.';
-                } else if (hours >= 36) {
-                    reminderLevel = 'warning';
-                    reminderMessage = 'Pronto cumplirás 2 días con la misma clave API. Renueva el token en DolarVzla y actualízalo aquí.';
-                }
-            } else if (source === 'environment' && envKey) {
-                reminderLevel = 'info';
-                reminderMessage = 'La clave se lee desde variables de entorno. Guárdala en este panel para cambiarla sin reiniciar el servidor.';
+            const latest = await ExchangeRateModel.getLatest();
+            if (!latest) {
+                return res.json({
+                    success: true,
+                    data: {
+                        hasRates: false,
+                        message: 'Aún no hay tasas guardadas. El sistema las obtiene de ve.dolarapi.com según el horario configurado.'
+                    }
+                });
             }
-
             res.json({
                 success: true,
                 data: {
-                    hasKey: !!activeKey,
-                    keyMasked,
-                    source,
-                    updatedAt,
-                    reminderLevel,
-                    reminderMessage
+                    hasRates: true,
+                    date: latest.rate_date,
+                    usd: parseFloat(latest.usd_rate),
+                    eur: parseFloat(latest.eur_rate),
+                    changeUsd: latest.change_percentage_usd != null ? parseFloat(latest.change_percentage_usd) : 0,
+                    changeEur: latest.change_percentage_eur != null ? parseFloat(latest.change_percentage_eur) : 0,
+                    updatedAt: latest.updated_at,
+                    sourceLabel: 'BCV oficial — ve.dolarapi.com'
                 }
             });
         } catch (error) {
             console.error('getBcvSettings error:', error);
-            res.status(500).json({ success: false, error: 'Error al obtener configuración BCV' });
-        }
-    }
-
-    /**
-     * PUT /api/admin/bcv-settings
-     * body: { api_key: string }
-     */
-    static async updateBcvSettings(req, res) {
-        try {
-            const { api_key: apiKey } = req.body || {};
-            if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) {
-                return res.status(400).json({ success: false, error: 'La clave API es requerida' });
-            }
-            if (apiKey.trim().length < 24) {
-                return res.status(400).json({ success: false, error: 'La clave API parece inválida' });
-            }
-            const userId = req.user.userId;
-            await SystemSettingsModel.updateBcvApiKey(apiKey.trim(), userId);
-            BCVService.invalidateApiKeyCache();
-
-            // Una consulta inmediata con la nueva clave (el cron diario / horario no se modifica)
-            const rateRefresh = await BCVService.fetchAndSave();
-
-            await AdminController.logAudit(req, 'UPDATE', 'SYSTEM_SETTINGS', 'BCV_API_KEY',
-                'Actualizó clave API DolarVzla (BCV) en configuración global', null);
-
-            const message = rateRefresh
-                ? 'Clave API guardada y tasas BCV actualizadas desde la API'
-                : 'Clave API guardada. No se pudo obtener la tasa desde la API ahora; verifica la clave o inténtalo más tarde. La actualización automática seguirá según el horario configurado.';
-
-            res.json({
-                success: true,
-                message,
-                data: { bcvRateRefreshed: !!rateRefresh }
-            });
-        } catch (error) {
-            console.error('updateBcvSettings error:', error);
-            res.status(500).json({ success: false, error: 'Error al guardar la clave API' });
+            res.status(500).json({ success: false, error: 'Error al obtener tasas BCV' });
         }
     }
 

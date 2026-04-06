@@ -2,154 +2,106 @@ const axios = require('axios');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 
 /**
- * Servicio para consultar y gestionar las tasas de cambio BCV
- * La clave API se lee de SystemSettings (BD) en prioridad; si no existe, de BCV_API_KEY en .env.
+ * Tasas BCV oficiales vía ve.dolarapi.com (sin API key).
+ * La variación % se calcula respecto al último registro en BD con fecha anterior a la tasa actual.
  */
+const API_USD = 'https://ve.dolarapi.com/v1/dolares/oficial';
+const API_EUR = 'https://ve.dolarapi.com/v1/euros/oficial';
+
 class BCVService {
-    constructor() {
-        this.apiUrl = 'https://api.dolarvzla.com/public/bcv/exchange-rate';
-    }
-
     /**
-     * Invalidar caché en memoria tras actualizar la clave en BD (opcional)
+     * Reservado por compatibilidad; ya no hay caché de clave API.
      */
-    invalidateApiKeyCache() {
-        this._apiKeyCache = null;
-        this._apiKeyCacheExpiry = 0;
-    }
+    invalidateApiKeyCache() {}
 
     /**
-     * @returns {Promise<string|null>}
-     */
-    async getApiKey() {
-        const now = Date.now();
-        if (this._apiKeyCache && now < this._apiKeyCacheExpiry) {
-            return this._apiKeyCache;
-        }
-        let key = null;
-        try {
-            const SystemSettingsModel = require('../models/SystemSettingsModel');
-            key = await SystemSettingsModel.getBcvApiKey();
-        } catch (e) {
-            console.warn('BCV getApiKey (BD):', e.message);
-        }
-        if (!key) {
-            key = (process.env.BCV_API_KEY || '').trim() || null;
-        }
-        this._apiKeyCache = key;
-        this._apiKeyCacheExpiry = now + 60_000;
-        return key;
-    }
-
-    /**
-     * Consulta la API externa para obtener las tasas de cambio actuales
-     * @returns {Promise<Object|null>}
-     */
-    async fetchFromAPI() {
-        try {
-            const apiKey = await this.getApiKey();
-            if (!apiKey) {
-                console.error('❌ No hay clave API BCV: configúrela en Super Admin → Dashboard o BCV_API_KEY en .env');
-                return null;
-            }
-            console.log('🔄 Consultando API BCV para tasas de cambio...');
-
-            const response = await axios.get(this.apiUrl, {
-                timeout: 30000,
-                headers: {
-                    'x-dolarvzla-key': apiKey,
-                    'Accept': 'application/json',
-                    'User-Agent': 'Condominio360/1.0'
-                }
-            });
-
-            if (response.status === 200 && response.data) {
-                console.log('✅ Datos obtenidos de la API BCV:', response.data);
-                return this.parseResponse(response.data);
-            } else {
-                console.error('❌ Respuesta inválida de la API BCV');
-                return null;
-            }
-        } catch (error) {
-            console.error('❌ Error al consultar API BCV:', error.message);
-            
-            if (error.code === 'ECONNABORTED') {
-                console.error('⏰ Timeout al consultar la API BCV');
-            } else if (error.response) {
-                console.error('📡 Error HTTP:', error.response.status, error.response.statusText);
-                console.error('📄 Respuesta:', error.response.data);
-            }
-            
-            return null;
-        }
-    }
-
-    /**
-     * Extrae la fecha efectiva de la tasa desde la API (fecha a la que corresponde, no la de extracción).
-     * La API BCV registra la fecha que la tasa representa.
+     * @param {string} isoOrDate - ISO 8601 o similar
      * @returns {string|null} YYYY-MM-DD
      */
-    _extractEffectiveDate(data) {
-        const candidates = [
-            data.current?.fecha,
-            data.current?.effective_date,
-            data.current?.date_value,
-            data.current?.date,
-            data.fecha,
-            data.date,
-            data.rate_date
-        ].filter(Boolean);
-        for (const raw of candidates) {
-            if (typeof raw !== 'string') continue;
-            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-            const d = new Date(raw);
-            if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-        }
+    _extractEffectiveDateFromDolarApi(isoOrDate) {
+        if (!isoOrDate || typeof isoOrDate !== 'string') return null;
+        const m = isoOrDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+        const d = new Date(isoOrDate);
+        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
         return null;
     }
 
     /**
-     * Parsea la respuesta de la API
-     * @param {Object} data - Datos de la respuesta
-     * @returns {Object|null}
+     * @param {number} prev
+     * @param {number} next
+     * @returns {number}
      */
-    parseResponse(data) {
+    _percentChange(prev, next) {
+        const p = Number(prev);
+        const n = Number(next);
+        if (!p || isNaN(p) || isNaN(n)) return 0;
+        return ((n - p) / p) * 100;
+    }
+
+    /**
+     * Consulta ve.dolarapi.com (USD + EUR) y arma el objeto para guardar.
+     * @returns {Promise<Object|null>}
+     */
+    async fetchFromAPI() {
         try {
-            if (!data.current || !data.current.usd || !data.current.eur) {
-                console.error('❌ Estructura de datos inválida en la respuesta');
+            console.log('🔄 Consultando API BCV (ve.dolarapi.com)...');
+
+            const [usdRes, eurRes] = await Promise.all([
+                axios.get(API_USD, {
+                    timeout: 30000,
+                    headers: { Accept: 'application/json', 'User-Agent': 'Condominio360/1.0' }
+                }),
+                axios.get(API_EUR, {
+                    timeout: 30000,
+                    headers: { Accept: 'application/json', 'User-Agent': 'Condominio360/1.0' }
+                })
+            ]);
+
+            if (usdRes.status !== 200 || !usdRes.data || eurRes.status !== 200 || !eurRes.data) {
+                console.error('❌ Respuesta inválida de la API BCV');
                 return null;
             }
 
-            const usd = parseFloat(data.current.usd);
-            const eur = parseFloat(data.current.eur);
-            
+            const u = usdRes.data;
+            const e = eurRes.data;
+
+            const usd = parseFloat(u.promedio);
+            const eur = parseFloat(e.promedio);
             if (isNaN(usd) || isNaN(eur)) {
-                console.error('❌ Valores de tasa de cambio inválidos');
+                console.error('❌ Valores de tasa inválidos (promedio)');
                 return null;
             }
 
-            // Parse change percentages if available
-            const changeUsd = data.changePercentage?.usd ? parseFloat(data.changePercentage.usd) : 0;
-            const changeEur = data.changePercentage?.eur ? parseFloat(data.changePercentage.eur) : 0;
-
-            // Usar SOLO la fecha efectiva de la API (fecha a la que corresponde la tasa, no la de extracción)
-            const date = this._extractEffectiveDate(data);
+            const date =
+                this._extractEffectiveDateFromDolarApi(u.fechaActualizacion) ||
+                this._extractEffectiveDateFromDolarApi(e.fechaActualizacion);
             if (!date) {
-                console.error('❌ La API no devolvió fecha efectiva. No se guardará para evitar datos incorrectos.');
+                console.error('❌ La API no devolvió fecha efectiva (fechaActualizacion).');
                 return null;
             }
 
-            return {
-                date: date,
-                usd: usd,
-                eur: eur,
-                changePercentageUsd: changeUsd,
-                changePercentageEur: changeEur,
-                rawData: data
+            const prev = await ExchangeRateModel.getLatestBeforeDate(date);
+            const changeUsd = prev ? this._percentChange(prev.usd_rate, usd) : 0;
+            const changeEur = prev ? this._percentChange(prev.eur_rate, eur) : 0;
+
+            const rateData = {
+                date,
+                usd,
+                eur,
+                changePercentageUsd: Math.round(changeUsd * 100) / 100,
+                changePercentageEur: Math.round(changeEur * 100) / 100,
+                rawData: { usd: u, eur: e }
             };
+
+            return rateData;
         } catch (error) {
-            console.error('❌ Error al parsear respuesta:', error.message);
+            console.error('❌ Error al consultar API BCV:', error.message);
+            if (error.code === 'ECONNABORTED') {
+                console.error('⏰ Timeout al consultar la API BCV');
+            } else if (error.response) {
+                console.error('📡 Error HTTP:', error.response.status, error.response.statusText);
+            }
             return null;
         }
     }
@@ -160,30 +112,22 @@ class BCVService {
      */
     async fetchAndSave() {
         const rateData = await this.fetchFromAPI();
-        
-        if (!rateData) {
-            return null;
-        }
+        if (!rateData) return null;
 
         const success = await ExchangeRateModel.upsert(rateData);
-        
         if (success) {
             console.log('✅ Tasa BCV guardada exitosamente:', rateData);
             return rateData;
-        } else {
-            console.error('❌ Error al guardar tasa BCV');
-            return null;
         }
+        console.error('❌ Error al guardar tasa BCV');
+        return null;
     }
 
     /**
-     * Obtiene la tasa más reciente (de la DB o la API si no hay)
      * @returns {Promise<Object|null>}
      */
     async getLatestRate() {
-        // Primero intentar obtener de la base de datos
         let rate = await ExchangeRateModel.getLatest();
-        
         if (rate) {
             return {
                 date: rate.rate_date,
@@ -194,14 +138,11 @@ class BCVService {
                 source: 'database'
             };
         }
-
-        // Si no hay en DB, intentar obtener de la API
         console.log('⚠️ No hay tasas en DB, consultando API...');
         return await this.fetchAndSave();
     }
 
     /**
-     * Obtiene tasas paginadas para mostrar en el dashboard
      * @param {number} page
      * @param {number} limit
      * @returns {Promise<Object>}
@@ -211,69 +152,47 @@ class BCVService {
     }
 
     /**
-     * Verifica si necesitamos actualizar la tasa
-     * Consulta la API y verifica si ya tenemos la tasa más reciente
      * @returns {Promise<boolean>}
      */
     async needsUpdate() {
         try {
-            const apiKey = await this.getApiKey();
-            if (!apiKey) {
-                console.error('❌ No hay clave API BCV para verificar actualización');
-                return false;
-            }
-            const response = await axios.get(this.apiUrl, {
+            const response = await axios.get(API_USD, {
                 timeout: 10000,
-                headers: {
-                    'x-dolarvzla-key': apiKey,
-                    'Accept': 'application/json',
-                    'User-Agent': 'Condominio360/1.0'
-                }
+                headers: { Accept: 'application/json', 'User-Agent': 'Condominio360/1.0' }
             });
-
-            if (response.status === 200 && response.data && response.data.current) {
-                const apiDate = this._extractEffectiveDate(response.data);
-                if (!apiDate) {
-                    console.log('⚠️ API no devolvió fecha efectiva, forzando actualización');
-                    return true;
-                }
-                const exists = await ExchangeRateModel.existsForDate(apiDate);
-                
-                if (exists) {
-                    console.log(`✅ Ya existe tasa para la fecha de la API (${apiDate})`);
-                } else {
-                    console.log(`📅 API tiene tasa para ${apiDate} (no en DB), se requiere actualización`);
-                }
-                
-                return !exists;
+            if (response.status !== 200 || !response.data) return true;
+            const apiDate = this._extractEffectiveDateFromDolarApi(response.data.fechaActualizacion);
+            if (!apiDate) {
+                console.log('⚠️ API no devolvió fecha efectiva, forzando actualización');
+                return true;
             }
-            
-            // Si no podemos obtener la fecha de la API, asumimos que necesitamos actualizar
-            return true;
+            const exists = await ExchangeRateModel.existsForDate(apiDate);
+            if (exists) {
+                console.log(`✅ Ya existe tasa para la fecha de la API (${apiDate})`);
+            } else {
+                console.log(`📅 API tiene tasa para ${apiDate} (no en DB), se requiere actualización`);
+            }
+            return !exists;
         } catch (error) {
             console.error('❌ Error al verificar necesidad de actualización:', error.message);
-            // En caso de error, intentar actualizar de todos modos
             return true;
         }
     }
 
     /**
-     * Actualiza la tasa si es necesario
      * @returns {Promise<Object|null>}
      */
     async updateIfNeeded() {
         const needsUpdate = await this.needsUpdate();
-        
         if (needsUpdate) {
             console.log('📅 Nueva tasa disponible en API, actualizando...');
             return await this.fetchAndSave();
-        } else {
-            const latest = await this.getLatestRate();
-            if (latest) {
-                console.log(`✅ Ya existe tasa para ${latest.date} (USD: ${latest.usd})`);
-            }
-            return latest;
         }
+        const latest = await this.getLatestRate();
+        if (latest) {
+            console.log(`✅ Ya existe tasa para ${latest.date} (USD: ${latest.usd})`);
+        }
+        return latest;
     }
 }
 

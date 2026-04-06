@@ -28,9 +28,8 @@ router.get('/stats', AdminController.getStats);
 router.get('/activity', AdminController.getActivity);
 router.get('/audit-logs', AdminController.getAuditLogs);
 
-// API DolarVzla / BCV (clave en BD; .env como respaldo)
+// Tasas BCV (referencia en dashboard; fuente ve.dolarapi.com vía job)
 router.get('/bcv-settings', AdminController.getBcvSettings);
-router.put('/bcv-settings', AdminController.updateBcvSettings);
 
 // ==================== SUPERADMINS ====================
 router.get('/superadmins', AdminController.getSuperAdmins);
