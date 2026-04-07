@@ -70,16 +70,18 @@ class DataUpdateRequestModel {
         };
     }
 
-    static async approve(id, reviewedBy, finalData) {
+    static async approve(id, reviewedBy, finalData, approvalComment = null) {
         const pool = await connectDB();
         await pool.request()
             .input('id', sql.UniqueIdentifier, id)
             .input('reviewed_by', sql.UniqueIdentifier, reviewedBy)
             .input('new_data', sql.NVarChar, JSON.stringify(finalData))
+            .input('approval_comment', sql.NVarChar, approvalComment || null)
             .query(`
                 UPDATE DataUpdateRequests 
                 SET status = 'APPROVED', new_data = @new_data,
                     reviewed_at = SYSDATETIME(), reviewed_by = @reviewed_by,
+                    approval_comment = @approval_comment,
                     updated_at = SYSDATETIME()
                 WHERE id = @id
             `);

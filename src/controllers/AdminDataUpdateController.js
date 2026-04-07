@@ -78,6 +78,7 @@ class AdminDataUpdateController {
                     requested_at: request.requested_at,
                     reviewed_at: request.reviewed_at,
                     rejection_reason: request.rejection_reason,
+                    approval_comment: request.approval_comment || null,
                     user: {
                         first_name: request.first_name,
                         last_name: request.last_name,
@@ -101,8 +102,11 @@ class AdminDataUpdateController {
     static async approve(req, res) {
         try {
             const { id } = req.params;
-            const { new_data: overrideData } = req.body;
+            const { new_data: overrideData, comment: approvalComment } = req.body || {};
             const reviewerId = req.user.userId;
+            const commentTrim =
+                typeof approvalComment === 'string' ? approvalComment.trim() : '';
+            const storedApprovalComment = commentTrim.length > 0 ? commentTrim : null;
 
             const request = await DataUpdateRequestModel.findById(id);
             if (!request) {
@@ -130,7 +134,7 @@ class AdminDataUpdateController {
                     WHERE id = @id
                 `);
 
-            await DataUpdateRequestModel.approve(id, reviewerId, finalData);
+            await DataUpdateRequestModel.approve(id, reviewerId, finalData, storedApprovalComment);
 
             // Desactivar nickname si todos los propietarios del inmueble tienen solicitud aprobada
             const propertyIds = await PropertyModel.getPropertyIdsByOwner(request.user_id);
@@ -177,7 +181,8 @@ class AdminDataUpdateController {
                     finalData.first_name,
                     tenantName,
                     invitationLink,
-                    propertyLabel
+                    propertyLabel,
+                    storedApprovalComment
                 );
             } catch (e) {
                 console.error('Email approved:', e);
@@ -214,10 +219,13 @@ class AdminDataUpdateController {
                 return res.status(400).json({ error: 'La solicitud ya fue procesada' });
             }
 
-            await DataUpdateRequestModel.reject(id, reviewerId, reason);
+            const reasonTrim = typeof reason === 'string' ? reason.trim() : '';
+            const storedReason = reasonTrim.length > 0 ? reasonTrim : null;
+
+            await DataUpdateRequestModel.reject(id, reviewerId, storedReason);
 
             try {
-                await EmailService.sendDataUpdateRejected(request.email, request.first_name);
+                await EmailService.sendDataUpdateRejected(request.email, request.first_name, storedReason);
             } catch (e) {
                 console.error('Email rejected:', e);
             }

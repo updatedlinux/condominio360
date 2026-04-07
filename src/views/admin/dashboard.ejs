@@ -1672,6 +1672,10 @@
                         <div id="dur-new-data-form" class="space-y-4"></div>
                     </div>
                 </div>
+                <div id="dur-admin-comment-readonly" class="hidden rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
+                    <p class="text-xs font-medium text-gray-500 mb-1">Comentario del administrador <span id="dur-admin-comment-kind" class="text-gray-400 font-normal"></span></p>
+                    <p id="dur-admin-comment-readonly-text" class="text-gray-800 whitespace-pre-wrap"></p>
+                </div>
                 <div class="text-sm text-gray-500">
                     <span id="dur-requested-at"></span> (GMT-4)
                 </div>
@@ -1679,8 +1683,9 @@
         </div>
         <div id="dur-modal-actions" class="px-6 py-4 border-t border-gray-100 space-y-3 bg-gray-50/50 flex-shrink-0 hidden">
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Motivo del rechazo (opcional, si rechaza)</label>
-                <input type="text" id="dur-reject-reason" placeholder="Ej: Datos no verificados" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <label class="block text-xs text-gray-500 mb-1">Comentario para el propietario (opcional)</label>
+                <p class="text-xs text-gray-400 mb-1">Se enviará por correo al aprobar o al rechazar (mensaje informativo o motivo del rechazo).</p>
+                <input type="text" id="dur-owner-comment" placeholder="Ej: Datos verificados con documentación / Motivo del rechazo" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
             </div>
             <div class="flex gap-3 justify-end">
                 <button type="button" onclick="rejectDurRequest()" class="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium">
@@ -2224,8 +2229,14 @@
             document.getElementById('dur-modal-actions').classList.add('hidden');
             const copyBtn = document.getElementById('dur-copy-btn');
             if (copyBtn) copyBtn.classList.add('hidden');
-            const reasonEl = document.getElementById('dur-reject-reason');
-            if (reasonEl) reasonEl.value = '';
+            const commentEl = document.getElementById('dur-owner-comment');
+            if (commentEl) commentEl.value = '';
+            const readWrap = document.getElementById('dur-admin-comment-readonly');
+            const readText = document.getElementById('dur-admin-comment-readonly-text');
+            const readKind = document.getElementById('dur-admin-comment-kind');
+            if (readWrap) readWrap.classList.add('hidden');
+            if (readText) readText.textContent = '';
+            if (readKind) readKind.textContent = '';
             try {
                 const res = await fetch(`/api/admin/data-update-requests/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await res.json();
@@ -2254,6 +2265,31 @@
                 document.getElementById('dur-modal-loading').classList.add('hidden');
                 document.getElementById('dur-modal-content').classList.remove('hidden');
                 if (copyBtn) copyBtn.classList.remove('hidden');
+
+                document.querySelectorAll('#dur-new-data-form input').forEach((el) => {
+                    el.disabled = req.status !== 'PENDING';
+                });
+
+                const rw = document.getElementById('dur-admin-comment-readonly');
+                const rt = document.getElementById('dur-admin-comment-readonly-text');
+                const rk = document.getElementById('dur-admin-comment-kind');
+                if (req.status !== 'PENDING' && rw && rt) {
+                    const isRej = req.status === 'REJECTED';
+                    const msg = isRej ? (req.rejection_reason || '') : (req.approval_comment || '');
+                    const trimmed = msg && String(msg).trim();
+                    if (trimmed) {
+                        rw.classList.remove('hidden');
+                        rt.textContent = trimmed;
+                        if (rk) rk.textContent = isRej ? '(rechazo)' : '(aprobación)';
+                    } else {
+                        rw.classList.add('hidden');
+                        rt.textContent = '';
+                        if (rk) rk.textContent = '';
+                    }
+                } else if (rw) {
+                    rw.classList.add('hidden');
+                }
+
                 if (req.status === 'PENDING') {
                     document.getElementById('dur-modal-actions').classList.remove('hidden');
                 }
@@ -2308,7 +2344,7 @@
 
             const statusLabel = req.status === 'PENDING' ? 'Pendiente' : (req.status === 'APPROVED' ? 'Aprobada' : (req.status === 'REJECTED' ? 'Rechazada' : String(req.status || '')));
 
-            const text = [
+            const lines = [
                 'Solicitud de actualización de datos — Condominio360',
                 '',
                 'Estado: ' + statusLabel,
@@ -2332,9 +2368,18 @@
                 'Cédula: ' + (newDni || '—'),
                 'Correo: ' + (newEmail || '—'),
                 'Teléfono: ' + (newPhone || '—'),
-                '',
-                'Fecha de solicitud: ' + (document.getElementById('dur-requested-at')?.textContent || '—') + ' (GMT-4)'
-            ].join('\n');
+                ''
+            ];
+            const resolvedC = document.getElementById('dur-admin-comment-readonly-text')?.textContent?.trim();
+            const draftC = document.getElementById('dur-owner-comment')?.value?.trim();
+            const commentForCopy = resolvedC || draftC;
+            if (commentForCopy) {
+                lines.push('Comentario del administrador');
+                lines.push(commentForCopy);
+                lines.push('');
+            }
+            lines.push('Fecha de solicitud: ' + (document.getElementById('dur-requested-at')?.textContent || '—') + ' (GMT-4)');
+            const text = lines.join('\n');
 
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2368,10 +2413,11 @@
                 phone: document.getElementById('dur-edit-phone').value.trim() || null
             };
             try {
+                const ownerComment = document.getElementById('dur-owner-comment')?.value?.trim() || null;
                 const res = await fetch(`/api/admin/data-update-requests/${id}/approve`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ new_data: newData })
+                    body: JSON.stringify({ new_data: newData, comment: ownerComment })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error');
@@ -2386,7 +2432,7 @@
 
         async function rejectDurRequest() {
             if (!durCurrentDetail) return;
-            const reason = document.getElementById('dur-reject-reason')?.value?.trim() || null;
+            const reason = document.getElementById('dur-owner-comment')?.value?.trim() || null;
             const id = durCurrentDetail.request.id;
             try {
                 const res = await fetch(`/api/admin/data-update-requests/${id}/reject`, {

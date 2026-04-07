@@ -976,18 +976,36 @@ class EmailService {
         await this.send(email, subject, html, null, {});
     }
 
+    _escapeEmailHtml(str) {
+        if (str == null || str === '') return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
     /**
      * Enviar invitación para definir contraseña tras aprobación de actualización de datos
      * Similar a sendOwnerInvitation: el propietario debe confirmar y establecer su contraseña
+     * @param {string|null} adminComment - Mensaje opcional del superadmin para el propietario
      */
-    async sendDataUpdateApprovedWithPasswordSetup(email, firstName, tenantName, invitationLink, propertyLabel = null) {
+    async sendDataUpdateApprovedWithPasswordSetup(email, firstName, tenantName, invitationLink, propertyLabel = null, adminComment = null) {
         const subject = `Confirma tu cuenta y define tu contraseña - Condominio360`;
         const propertyBlock = propertyLabel
-            ? `<div class="details-box"><p><strong>Inmueble:</strong> ${propertyLabel}</p></div>`
+            ? `<div class="details-box"><p><strong>Inmueble:</strong> ${this._escapeEmailHtml(propertyLabel)}</p></div>`
             : '';
+        const adminNoteBlock =
+            adminComment && String(adminComment).trim()
+                ? `<div class="details-box" style="background-color:#f0fdf4;border-left:4px solid #16a34a;">
+                    <p style="margin:0 0 8px 0;"><strong>Mensaje del equipo Condominio360</strong></p>
+                    <p style="margin:0;white-space:pre-wrap;">${this._escapeEmailHtml(String(adminComment).trim())}</p>
+                   </div>`
+                : '';
         const content = `
             <h2>Hola ${firstName},</h2>
             <p>Tu solicitud de actualización de datos ha sido <strong>aprobada</strong>. Tus datos personales han sido actualizados en el sistema.</p>
+            ${adminNoteBlock}
             ${propertyBlock}
             <p>Para acceder al panel de Condominio360, debes confirmar tu cuenta y definir tu contraseña de acceso. Haz clic en el siguiente botón:</p>
             <div style="text-align: center; margin: 24px 0;">
@@ -1006,12 +1024,21 @@ class EmailService {
 
     /**
      * Notificar al propietario que su solicitud fue rechazada
+     * @param {string|null} rejectionReason - Motivo opcional mostrado al propietario
      */
-    async sendDataUpdateRejected(email, firstName) {
+    async sendDataUpdateRejected(email, firstName, rejectionReason = null) {
         const subject = 'Solicitud de actualización de datos - Condominio360';
+        const reasonTrim = rejectionReason && String(rejectionReason).trim();
+        const reasonBlock = reasonTrim
+            ? `<div class="details-box" style="background-color:#fef2f2;border-left:4px solid #dc2626;">
+                <p style="margin:0 0 8px 0;"><strong>Motivo indicado por el equipo</strong></p>
+                <p style="margin:0;white-space:pre-wrap;">${this._escapeEmailHtml(reasonTrim)}</p>
+               </div>`
+            : `<p><em>No se registró un motivo detallado en el sistema.</em> Si necesitas aclaraciones, contacta a la administración de tu condominio o a la Junta de Condominio.</p>`;
         const content = `
             <h2>Hola ${firstName},</h2>
             <p>Lamentamos informarte que tu solicitud de actualización de datos personales ha sido <strong>rechazada</strong>.</p>
+            ${reasonBlock}
             <p>Tus datos permanecen sin cambios. Si necesitas actualizar tu información, por favor contacta directamente a la administración de tu condominio o a la Junta de Condominio.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Solicitud Rechazada', subtitle: 'Actualización de datos', color: '#dc2626' });
