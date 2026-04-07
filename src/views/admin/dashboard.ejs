@@ -1634,11 +1634,17 @@
     <!-- Modal: Solicitud Actualización de Datos -->
     <div id="dur-modal-overlay" class="md-modal-overlay" onclick="closeDurModal()"></div>
     <div id="dur-modal" class="md-modal max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
-            <h3 class="text-xl font-medium text-gray-900">Solicitud de Actualización de Datos</h3>
-            <button onclick="closeDurModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
-                <span class="material-symbols-rounded text-gray-600">close</span>
-            </button>
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3 bg-gray-50/50 flex-shrink-0">
+            <h3 class="text-xl font-medium text-gray-900 min-w-0">Solicitud de Actualización de Datos</h3>
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" id="dur-copy-btn" onclick="copyDurSummaryToClipboard()" class="hidden md-button md-button-outlined normal-case text-sm px-3 py-2 font-medium tracking-normal hover:bg-gray-50/80" title="Copiar resumen para pegar en correo u otro mensaje">
+                    <span class="material-symbols-rounded text-lg">content_copy</span>
+                    Copiar
+                </button>
+                <button type="button" onclick="closeDurModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition" aria-label="Cerrar">
+                    <span class="material-symbols-rounded text-gray-600">close</span>
+                </button>
+            </div>
         </div>
         <div class="p-6 overflow-y-auto flex-1 space-y-6">
             <div id="dur-modal-loading" class="text-center py-8 text-gray-500">Cargando...</div>
@@ -2216,6 +2222,8 @@
             document.getElementById('dur-modal-loading').classList.remove('hidden');
             document.getElementById('dur-modal-content').classList.add('hidden');
             document.getElementById('dur-modal-actions').classList.add('hidden');
+            const copyBtn = document.getElementById('dur-copy-btn');
+            if (copyBtn) copyBtn.classList.add('hidden');
             const reasonEl = document.getElementById('dur-reject-reason');
             if (reasonEl) reasonEl.value = '';
             try {
@@ -2245,6 +2253,7 @@
                 document.getElementById('dur-requested-at').textContent = formatDateTimeVenezuela(req.requested_at);
                 document.getElementById('dur-modal-loading').classList.add('hidden');
                 document.getElementById('dur-modal-content').classList.remove('hidden');
+                if (copyBtn) copyBtn.classList.remove('hidden');
                 if (req.status === 'PENDING') {
                     document.getElementById('dur-modal-actions').classList.remove('hidden');
                 }
@@ -2256,6 +2265,96 @@
         function closeDurModal() {
             document.getElementById('dur-modal-overlay').classList.remove('active');
             document.getElementById('dur-modal').classList.remove('active');
+            const copyBtn = document.getElementById('dur-copy-btn');
+            if (copyBtn) copyBtn.classList.add('hidden');
+        }
+
+        /**
+         * Copia al portapapeles condominios, inmuebles, datos actuales y datos nuevos (valores actuales del formulario).
+         */
+        async function copyDurSummaryToClipboard() {
+            if (!durCurrentDetail || !durCurrentDetail.request) {
+                showSnackbar('No hay datos cargados para copiar', 'error');
+                return;
+            }
+            const d = durCurrentDetail;
+            const req = d.request;
+            const oldData = req.old_data || {};
+            const newDataFallback = req.new_data || {};
+
+            const tenantsLines = (d.tenants || []).length
+                ? (d.tenants || []).map(t => `- ${t.name}`).join('\n')
+                : '—';
+            const propsLines = (d.properties || []).length
+                ? (d.properties || []).map(p => `- ${p.tenant_name} - ${p.name || p.building_name || ''}`).join('\n')
+                : '—';
+
+            const getInput = (id) => {
+                const el = document.getElementById(id);
+                if (el && typeof el.value === 'string') return el.value.trim();
+                return null;
+            };
+            const nf = getInput('dur-edit-first_name');
+            const nl = getInput('dur-edit-last_name');
+            const nd = getInput('dur-edit-dni');
+            const ne = getInput('dur-edit-email');
+            const np = getInput('dur-edit-phone');
+
+            const newFirst = nf !== null ? nf : (newDataFallback.first_name || '');
+            const newLast = nl !== null ? nl : (newDataFallback.last_name || '');
+            const newDni = nd !== null ? nd : (newDataFallback.dni || '');
+            const newEmail = ne !== null ? ne : (newDataFallback.email || '');
+            const newPhone = np !== null ? np : (newDataFallback.phone || '');
+
+            const statusLabel = req.status === 'PENDING' ? 'Pendiente' : (req.status === 'APPROVED' ? 'Aprobada' : (req.status === 'REJECTED' ? 'Rechazada' : String(req.status || '')));
+
+            const text = [
+                'Solicitud de actualización de datos — Condominio360',
+                '',
+                'Estado: ' + statusLabel,
+                '',
+                'Condominios',
+                tenantsLines,
+                '',
+                'Inmuebles',
+                propsLines,
+                '',
+                'Datos actuales',
+                'Nombre: ' + (oldData.first_name != null && oldData.first_name !== '' ? oldData.first_name : '—'),
+                'Apellido: ' + (oldData.last_name != null && oldData.last_name !== '' ? oldData.last_name : '—'),
+                'Cédula: ' + (oldData.dni != null && oldData.dni !== '' ? oldData.dni : '—'),
+                'Correo: ' + (oldData.email != null && oldData.email !== '' ? oldData.email : '—'),
+                'Teléfono: ' + (oldData.phone != null && oldData.phone !== '' ? oldData.phone : '—'),
+                '',
+                'Datos nuevos (solicitados / editados en el formulario)',
+                'Nombre: ' + (newFirst || '—'),
+                'Apellido: ' + (newLast || '—'),
+                'Cédula: ' + (newDni || '—'),
+                'Correo: ' + (newEmail || '—'),
+                'Teléfono: ' + (newPhone || '—'),
+                '',
+                'Fecha de solicitud: ' + (document.getElementById('dur-requested-at')?.textContent || '—') + ' (GMT-4)'
+            ].join('\n');
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                showSnackbar('Resumen copiado al portapapeles', 'success');
+            } catch (err) {
+                console.error('copyDurSummaryToClipboard', err);
+                showSnackbar('No se pudo copiar. Intente de nuevo o copie manualmente.', 'error');
+            }
         }
 
         async function approveDurRequest() {
