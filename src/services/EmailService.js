@@ -260,7 +260,17 @@ class EmailService {
             headerBackground: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
         });
 
-        return await this.send(email, subject, html, null, { ...sendMeta, messageType: 'password_reset' });
+        // Cada enlace lleva un token distinto; si usáramos solo destinatario+asunto+tipo,
+        // EmailOrchestrator marcaría el 2.º envío como duplicado y no reenviaría (silencioso).
+        const idempotencyKey =
+            sendMeta.idempotencyKey ||
+            `pwdreset:${crypto.createHash('sha256').update(String(resetLink), 'utf8').digest('hex')}`;
+
+        return await this.send(email, subject, html, null, {
+            ...sendMeta,
+            messageType: 'password_reset',
+            idempotencyKey
+        });
     }
 
     _escapeHtml(text) {

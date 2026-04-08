@@ -590,26 +590,32 @@
         </div>
     </div>
 
-    <!-- Modal: Confirmar eliminación -->
+    <!-- Modal: Confirmar eliminación / acciones -->
     <div id="confirm-modal-overlay" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onclick="closeConfirmModal()">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onclick="event.stopPropagation()">
             <div class="text-center">
-                <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                    <span class="material-symbols-rounded text-4xl text-red-600">warning</span>
+                <div id="confirm-modal-icon-wrap" class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                    <span id="confirm-modal-icon" class="material-symbols-rounded text-4xl text-red-600">warning</span>
                 </div>
                 <h3 id="confirm-modal-title" class="text-xl font-semibold text-slate-900 mb-2">Confirmar eliminación</h3>
-                <p id="confirm-modal-message" class="text-slate-600 mb-6">Esta acción no se puede deshacer.</p>
-                <div class="flex gap-3 justify-center">
+                <p id="confirm-modal-message" class="text-slate-600 mb-6 text-left sm:text-center leading-relaxed">Esta acción no se puede deshacer.</p>
+                <div class="flex gap-3 justify-center flex-wrap">
                     <button type="button" onclick="closeConfirmModal()" class="px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition">
                         Cancelar
                     </button>
-                    <button type="button" id="confirm-modal-btn" onclick="executeConfirmAction()" class="px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition flex items-center gap-2">
-                        <span class="material-symbols-rounded">delete</span>
-                        Eliminar
+                    <button type="button" id="confirm-modal-btn" onclick="executeConfirmAction()" class="px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition inline-flex items-center justify-center gap-2">
+                        <span class="material-symbols-rounded confirm-modal-btn-ic">delete</span>
+                        <span class="confirm-modal-btn-label">Eliminar</span>
                     </button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Toasts globales (éxito / error / info) -->
+    <div id="page-toast" class="fixed bottom-6 left-1/2 z-[100] hidden max-w-md w-[min(100%-2rem,28rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3 pointer-events-auto bg-white border-slate-200 text-slate-800" role="status">
+        <span id="page-toast-icon" class="material-symbols-rounded text-xl shrink-0 mt-0.5 text-emerald-600">check_circle</span>
+        <p id="page-toast-text" class="text-sm leading-snug pt-0.5 flex-1"></p>
     </div>
 
     <script>
@@ -627,6 +633,35 @@
         let csvData = [];
         let pendingConfirmAction = null;
         let pendingWelcomeBatchId = null;
+        let pageToastTimer = null;
+
+        function showPageToast(message, variant = 'success') {
+            const el = document.getElementById('page-toast');
+            const text = document.getElementById('page-toast-text');
+            const icon = document.getElementById('page-toast-icon');
+            if (!el || !text || !icon) return;
+            clearTimeout(pageToastTimer);
+            text.textContent = message || '';
+            const base =
+                'fixed bottom-6 left-1/2 z-[100] max-w-md w-[min(100%-2rem,28rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3 pointer-events-auto';
+            if (variant === 'error') {
+                el.className = base + ' bg-white border-red-200 text-red-950';
+                icon.textContent = 'error';
+                icon.className = 'material-symbols-rounded text-xl shrink-0 mt-0.5 text-red-600';
+            } else if (variant === 'info') {
+                el.className = base + ' bg-white border-slate-200 text-slate-800';
+                icon.textContent = 'info';
+                icon.className = 'material-symbols-rounded text-xl shrink-0 mt-0.5 text-slate-600';
+            } else {
+                el.className = base + ' bg-white border-emerald-200 text-emerald-950';
+                icon.textContent = 'check_circle';
+                icon.className = 'material-symbols-rounded text-xl shrink-0 mt-0.5 text-emerald-600';
+            }
+            el.classList.remove('hidden');
+            pageToastTimer = setTimeout(function () {
+                el.classList.add('hidden');
+            }, 4800);
+        }
 
         async function exportOwnersExcel() {
             try {
@@ -635,7 +670,7 @@
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    alert(err.error || 'Error al exportar');
+                    showPageToast(err.error || 'Error al exportar', 'error');
                     return;
                 }
                 const blob = await res.blob();
@@ -652,7 +687,7 @@
                 URL.revokeObjectURL(a.href);
             } catch (e) {
                 console.error(e);
-                alert('Error al descargar Excel');
+                showPageToast('Error al descargar Excel', 'error');
             }
         }
 
@@ -976,22 +1011,59 @@
                 if (res.ok) {
                     closeOwnerModal();
                     await loadData();
+                    showPageToast('Propietario guardado correctamente', 'success');
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al guardar');
+                    showPageToast(err.error || 'Error al guardar', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             } finally {
                 setSaveOwnerButtonLoading(false);
             }
         }
 
-        function openConfirmModal(title, message, onConfirm) {
+        function openConfirmModal(title, message, onConfirm, opts) {
+            opts = opts || {};
+            var variant = opts.variant === 'primary' ? 'primary' : 'danger';
+            var confirmText = opts.confirmText || (variant === 'danger' ? 'Eliminar' : 'Confirmar');
+            var headerIcon = opts.icon || (variant === 'danger' ? 'warning' : 'forward_to_inbox');
+
             pendingConfirmAction = onConfirm;
             document.getElementById('confirm-modal-title').textContent = title;
             document.getElementById('confirm-modal-message').textContent = message;
+
+            var iconWrap = document.getElementById('confirm-modal-icon-wrap');
+            var iconEl = document.getElementById('confirm-modal-icon');
+            var btn = document.getElementById('confirm-modal-btn');
+            var labelSpan = btn.querySelector('.confirm-modal-btn-label');
+            var icSpan = btn.querySelector('.confirm-modal-btn-ic');
+
+            if (variant === 'primary') {
+                iconWrap.className = 'w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4';
+                iconEl.className = 'material-symbols-rounded text-4xl text-orange-600';
+                iconEl.textContent = headerIcon;
+                btn.className =
+                    'px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition inline-flex items-center justify-center gap-2';
+                if (labelSpan) labelSpan.textContent = confirmText;
+                if (icSpan) {
+                    icSpan.textContent = headerIcon;
+                    icSpan.classList.remove('hidden');
+                }
+            } else {
+                iconWrap.className = 'w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4';
+                iconEl.className = 'material-symbols-rounded text-4xl text-red-600';
+                iconEl.textContent = 'warning';
+                btn.className =
+                    'px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition inline-flex items-center justify-center gap-2';
+                if (labelSpan) labelSpan.textContent = confirmText;
+                if (icSpan) {
+                    icSpan.textContent = 'delete';
+                    icSpan.classList.remove('hidden');
+                }
+            }
+
             document.getElementById('confirm-modal-overlay').classList.remove('hidden');
             document.getElementById('confirm-modal-overlay').classList.add('flex');
         }
@@ -1019,11 +1091,19 @@
                             method: 'DELETE',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
-                        if (res.ok) await loadData();
+                        if (res.ok) {
+                            await loadData();
+                            showPageToast('Propietario eliminado del condominio', 'success');
+                        } else {
+                            const err = await res.json().catch(() => ({}));
+                            showPageToast(err.error || 'No se pudo eliminar', 'error');
+                        }
                     } catch (error) {
                         console.error('Error:', error);
+                        showPageToast('Error de conexión', 'error');
                     }
-                }
+                },
+                { variant: 'danger', confirmText: 'Eliminar', icon: 'warning' }
             );
         }
 
@@ -1070,7 +1150,10 @@
                     }).join('\n');
                 } else {
                     if (!properties || properties.length === 0) {
-                        alert('Primero carga los inmuebles del condominio. La plantilla incluirá los inmuebles existentes cuando estén disponibles.');
+                        showPageToast(
+                            'Primero carga los inmuebles del condominio. La plantilla incluirá los inmuebles existentes cuando estén disponibles.',
+                            'info'
+                        );
                         return;
                     }
                     rows = buildingType === 'MULTIPLE'
@@ -1086,7 +1169,7 @@
                 URL.revokeObjectURL(url);
             } catch (e) {
                 console.error('Error descargando plantilla:', e);
-                alert('Error al generar la plantilla. Verifica que los inmuebles estén cargados.');
+                showPageToast('Error al generar la plantilla. Verifica que los inmuebles estén cargados.', 'error');
             }
         }
 
@@ -1105,7 +1188,7 @@
         function parseCSV(text) {
             const lines = text.trim().split('\n');
             if (lines.length < 2) {
-                alert('El archivo CSV está vacío o no tiene el formato correcto');
+                showPageToast('El archivo CSV está vacío o no tiene el formato correcto', 'error');
                 return;
             }
 
@@ -1488,16 +1571,16 @@
             if (useSchedule) {
                 const v = document.getElementById('welcome-scheduled-at')?.value;
                 if (!v || !String(v).trim()) {
-                    alert('Elige fecha y hora para programar el envío, o selecciona «Enviar ahora».');
+                    showPageToast('Elige fecha y hora para programar el envío, o selecciona «Enviar ahora».', 'error');
                     return;
                 }
                 const picked = new Date(v);
                 if (Number.isNaN(picked.getTime())) {
-                    alert('La fecha u hora no es válida.');
+                    showPageToast('La fecha u hora no es válida.', 'error');
                     return;
                 }
                 if (picked.getTime() <= Date.now()) {
-                    alert('La hora debe ser posterior a ahora. Elige otra fecha o usa «Enviar ahora».');
+                    showPageToast('La hora debe ser posterior a ahora. Elige otra fecha o usa «Enviar ahora».', 'error');
                     return;
                 }
                 scheduledSendAt = picked.toISOString();
@@ -1587,10 +1670,18 @@
             currentOwnerId = null;
         }
 
-        async function sendOwnerPasswordResetEmail(ownerId) {
-            if (!confirm('¿Enviar al correo del propietario un enlace para restablecer la contraseña? El enlace caduca en 24 horas.')) {
-                return;
-            }
+        function sendOwnerPasswordResetEmail(ownerId) {
+            openConfirmModal(
+                'Enviar enlace de restablecimiento',
+                '¿Enviar al correo del propietario un enlace para restablecer la contraseña? El enlace caduca en 24 horas.',
+                function () {
+                    runSendOwnerPasswordResetEmail(ownerId);
+                },
+                { variant: 'primary', confirmText: 'Enviar', icon: 'forward_to_inbox' }
+            );
+        }
+
+        async function runSendOwnerPasswordResetEmail(ownerId) {
             try {
                 const res = await fetch(
                     `/api/admin/owners/${encodeURIComponent(ownerId)}/send-password-reset?tenant_id=${encodeURIComponent(tenantId)}`,
@@ -1606,10 +1697,10 @@
                 if (!res.ok) {
                     throw new Error(data.error || 'No se pudo enviar el correo');
                 }
-                alert(data.message || 'Correo enviado');
+                showPageToast(data.message || 'Correo enviado', 'success');
             } catch (e) {
                 console.error(e);
-                alert(e.message || 'Error al enviar el correo');
+                showPageToast(e.message || 'Error al enviar el correo', 'error');
             }
         }
 
@@ -1618,12 +1709,12 @@
             const confirmPassword = document.getElementById('password-confirm').value;
 
             if (!password || password.length < 6) {
-                alert('La contraseña debe tener al menos 6 caracteres');
+                showPageToast('La contraseña debe tener al menos 6 caracteres', 'error');
                 return;
             }
 
             if (password !== confirmPassword) {
-                alert('Las contraseñas no coinciden');
+                showPageToast('Las contraseñas no coinciden', 'error');
                 return;
             }
 
@@ -1640,14 +1731,14 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    alert('Contraseña actualizada exitosamente');
+                    showPageToast('Contraseña actualizada correctamente', 'success');
                     closePasswordModal();
                 } else {
-                    alert(data.error || 'Error al establecer contraseña');
+                    showPageToast(data.error || 'Error al establecer contraseña', 'error');
                 }
             } catch (error) {
                 console.error('Error setting password:', error);
-                alert('Error al establecer contraseña');
+                showPageToast('Error al establecer contraseña', 'error');
             }
         }
 
