@@ -225,37 +225,51 @@ class EmailService {
     }
 
     /**
-     * Enviar email de recuperación de contraseña (plantilla unificada Condominio360).
+     * Enviar email de recuperación de contraseña (marca naranja Condominio360).
+     * @param {string} recipientName - Nombre completo para el saludo (nombre y apellido).
      * @param {object} meta - tenantId, validityHours (por defecto 24), messageType, etc.
      */
-    async sendPasswordReset(email, firstName, resetLink, meta = {}) {
+    async sendPasswordReset(email, recipientName, resetLink, meta = {}) {
         const validityHours = meta.validityHours != null ? Number(meta.validityHours) : 24;
         const hoursLabel = validityHours === 1 ? '1 hora' : `${validityHours} horas`;
         const { validityHours: _vh, ...sendMeta } = meta;
 
         const subject = 'Recuperación de Contraseña - Condominio360';
-        const safeName = firstName || 'Usuario';
+        const safeName = this._escapeHtml(recipientName || 'Usuario');
+        const href = String(resetLink).replace(/&/g, '&amp;');
+        const linkPlain = this._escapeHtml(String(resetLink));
+
         const content = `
             <h2>Hola ${safeName},</h2>
             <p>Recibimos una solicitud para restablecer tu contraseña en Condominio360.</p>
-            <div style="text-align: center;">
-                <a href="${resetLink}" class="cta-button">Restablecer contraseña</a>
+            <div style="text-align: center; margin: 28px 0 22px;">
+                <a href="${href}" style="display:inline-block;background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);color:#ffffff !important;padding:14px 36px;text-decoration:none;border-radius:10px;font-weight:600;font-size:15px;box-shadow:0 4px 14px rgba(249,115,22,0.35);">Restablecer contraseña</a>
             </div>
-            <div class="details-box">
+            <div class="details-box" style="background-color:#fff7ed;border-left:4px solid #f97316;">
                 <h3>Importante</h3>
                 <p>Este enlace expira en <strong>${hoursLabel}</strong>. Si no solicitaste este cambio, puedes ignorar este correo.</p>
             </div>
             <p class="date-info">O copia y pega este enlace en tu navegador:<br>
-            <span style="word-break: break-all; background:#f1f5f9; padding:12px; border-radius:6px; display:inline-block; margin-top:8px; font-size:13px;">${resetLink}</span></p>
+            <span style="word-break: break-all; background:#f1f5f9; padding:12px; border-radius:8px; display:inline-block; margin-top:8px; font-size:13px; color:#334155;">${linkPlain}</span></p>
         `;
 
         const html = this._generateEmailTemplate(content, {
             title: 'Recuperación de contraseña',
             subtitle: 'Acceso seguro a tu cuenta',
-            color: '#ea580c'
+            color: '#f97316',
+            headerBackground: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
         });
 
         return await this.send(email, subject, html, null, { ...sendMeta, messageType: 'password_reset' });
+    }
+
+    _escapeHtml(text) {
+        if (text == null) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     /**
@@ -333,7 +347,11 @@ class EmailService {
      * Template base para emails - logo Condominio360, colores optimizados para legibilidad
      */
     _generateEmailTemplate(content, options = {}) {
-        const { title, subtitle, color = '#ea580c' } = options;
+        const { title, subtitle, color = '#ea580c', headerBackground } = options;
+        const headerBg =
+            headerBackground != null && String(headerBackground).trim() !== ''
+                ? headerBackground
+                : '#ea580c';
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
         const logoUrl = `${baseUrl}/assets/images/isotipo-naranja.svg`;
 
@@ -360,7 +378,7 @@ class EmailService {
             overflow: hidden;
         }
         .header {
-            background: #ea580c;
+            background: ${headerBg};
             padding: 28px 24px;
             text-align: center;
         }

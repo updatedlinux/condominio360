@@ -290,6 +290,15 @@ class AuthService {
 
     // ==================== RECUPERACIÓN DE CONTRASEÑA ====================
 
+    /** Nombre para saludo en correos (nombre + apellido). */
+    static _displayNameForEmail(user) {
+        if (!user) return 'Usuario';
+        const a = user.first_name != null ? String(user.first_name).trim() : '';
+        const b = user.last_name != null ? String(user.last_name).trim() : '';
+        const joined = [a, b].filter(Boolean).join(' ');
+        return joined || a || b || 'Usuario';
+    }
+
     /**
      * Solicitar recuperación de contraseña
      * @param {string} email 
@@ -334,7 +343,7 @@ class AuthService {
 
         await EmailService.sendPasswordReset(
             user.email,
-            user.first_name,
+            AuthService._displayNameForEmail(user),
             resetLink,
             { ...resetMeta, validityHours: 24 }
         );
@@ -526,7 +535,7 @@ class AuthService {
             .input('userId', sql.UniqueIdentifier, userId)
             .input('tenantId', sql.UniqueIdentifier, tenantId)
             .query(`
-                SELECT u.id, u.email, u.first_name
+                SELECT u.id, u.email, u.first_name, u.last_name
                 FROM Users u
                 INNER JOIN TenantUsers tu ON u.id = tu.user_id
                     AND tu.tenant_id = @tenantId
@@ -553,7 +562,7 @@ class AuthService {
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
         const resetLink = `${baseUrl}/auth/reset-password?token=${resetToken}&type=OWNER`;
 
-        await EmailService.sendPasswordReset(user.email, user.first_name, resetLink, {
+        await EmailService.sendPasswordReset(user.email, AuthService._displayNameForEmail(user), resetLink, {
             tenantId,
             validityHours: 24
         });
