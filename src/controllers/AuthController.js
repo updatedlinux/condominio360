@@ -323,7 +323,7 @@ class AuthController {
 
             res.json({
                 valid: true,
-                type: reset.type
+                type: reset.user_type || reset.type
             });
 
         } catch (error) {

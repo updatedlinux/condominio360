@@ -71,6 +71,13 @@ router.get('/auth/complete-registration', (req, res) => {
     });
 });
 
+router.get('/auth/reset-password', (req, res) => {
+    res.render('auth/reset-password', {
+        title: 'Restablecer contraseña',
+        layout: false
+    });
+});
+
 // Panels
 // Owner Panel Routes
 router.get('/owner/dashboard', (req, res) => {
