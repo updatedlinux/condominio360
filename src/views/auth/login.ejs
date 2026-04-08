@@ -52,6 +52,16 @@
                     </button>
                 </div>
 
+                <div class="pt-1">
+                    <button type="button" id="btn-chatwoot-help"
+                        class="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-orange-200 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/30 transition">
+                        <svg class="h-5 w-5 text-orange-500 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                        </svg>
+                        <span class="text-center leading-snug">Necesito Ayuda para Ingresar / Olvide mi Clave</span>
+                    </button>
+                </div>
+
                 <div id="errorMessage" class="hidden text-red-600 text-sm text-center py-3 bg-red-50 px-4 rounded-xl"></div>
             </form>
         </div>
@@ -62,4 +72,46 @@
 </div>
 
 <script>window.RECAPTCHA_SITE_KEY = '<%= typeof recaptchaSiteKey !== "undefined" ? (recaptchaSiteKey || "") : "" %>';</script>
+<script>
+(function (d, t) {
+    var BASE_URL = 'https://chatwoot.condominio-360.com';
+    var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
+    g.src = BASE_URL + '/packs/js/sdk.js';
+    g.async = true;
+    s.parentNode.insertBefore(g, s);
+    g.onload = function () {
+        if (window.chatwootSDK && typeof window.chatwootSDK.run === 'function') {
+            window.chatwootSDK.run({
+                websiteToken: 'Zieg2f4PtYJM74LbQtkcGGCK',
+                baseUrl: BASE_URL
+            });
+        }
+    };
+})(document, 'script');
+
+function openChatwootHelp() {
+    function tryOpen() {
+        if (window.$chatwoot && typeof window.$chatwoot.toggle === 'function') {
+            window.$chatwoot.toggle('open');
+            return true;
+        }
+        return false;
+    }
+    if (tryOpen()) return;
+    var attempts = 0;
+    var id = setInterval(function () {
+        attempts += 1;
+        if (tryOpen()) {
+            clearInterval(id);
+            return;
+        }
+        if (attempts >= 80) {
+            clearInterval(id);
+            alert('El chat de ayuda está cargando. Espere unos segundos e intente de nuevo.');
+        }
+    }, 125);
+}
+
+document.getElementById('btn-chatwoot-help')?.addEventListener('click', openChatwootHelp);
+</script>
 <script src="/js/auth.js"></script>
