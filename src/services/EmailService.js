@@ -225,55 +225,37 @@ class EmailService {
     }
 
     /**
-     * Enviar email de recuperación de contraseña
+     * Enviar email de recuperación de contraseña (plantilla unificada Condominio360).
+     * @param {object} meta - tenantId, validityHours (por defecto 24), messageType, etc.
      */
     async sendPasswordReset(email, firstName, resetLink, meta = {}) {
+        const validityHours = meta.validityHours != null ? Number(meta.validityHours) : 24;
+        const hoursLabel = validityHours === 1 ? '1 hora' : `${validityHours} horas`;
+        const { validityHours: _vh, ...sendMeta } = meta;
+
         const subject = 'Recuperación de Contraseña - Condominio360';
-        
-        const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Recuperación de Contraseña</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #dc2626; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .button { display: inline-block; background: #dc2626; color: white; padding: 12px 30px; 
-                  text-decoration: none; border-radius: 6px; margin: 20px 0; }
-        .warning { background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 Recuperación de Contraseña</h1>
-        </div>
-        <div class="content">
-            <h2>Hola ${firstName},</h2>
+        const safeName = firstName || 'Usuario';
+        const content = `
+            <h2>Hola ${safeName},</h2>
             <p>Recibimos una solicitud para restablecer tu contraseña en Condominio360.</p>
-            
-            <center>
-                <a href="${resetLink}" class="button">Restablecer Contraseña</a>
-            </center>
-
-            <div class="warning">
-                <strong>⚠️ Este enlace expira en 1 hora.</strong><br>
-                Si no solicitaste este cambio, puedes ignorar este correo.
+            <div style="text-align: center;">
+                <a href="${resetLink}" class="cta-button">Restablecer contraseña</a>
             </div>
+            <div class="details-box">
+                <h3>Importante</h3>
+                <p>Este enlace expira en <strong>${hoursLabel}</strong>. Si no solicitaste este cambio, puedes ignorar este correo.</p>
+            </div>
+            <p class="date-info">O copia y pega este enlace en tu navegador:<br>
+            <span style="word-break: break-all; background:#f1f5f9; padding:12px; border-radius:6px; display:inline-block; margin-top:8px; font-size:13px;">${resetLink}</span></p>
+        `;
 
-            <p>O copia este enlace:</p>
-            <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px;">
-                ${resetLink}
-            </p>
-        </div>
-    </div>
-</body>
-</html>`;
+        const html = this._generateEmailTemplate(content, {
+            title: 'Recuperación de contraseña',
+            subtitle: 'Acceso seguro a tu cuenta',
+            color: '#ea580c'
+        });
 
-        return await this.send(email, subject, html, null, { ...meta, messageType: 'password_reset' });
+        return await this.send(email, subject, html, null, { ...sendMeta, messageType: 'password_reset' });
     }
 
     /**

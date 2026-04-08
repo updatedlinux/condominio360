@@ -479,7 +479,35 @@
     <section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-orange-500 to-orange-600">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl lg:text-4xl font-extrabold text-white mb-6">¿Listo para modernizar tu condominio?</h2>
-            <p class="text-lg text-orange-100 mb-10">Únete a cientos de administradores que han simplificado su gestión. Prueba gratuita de 14 días.</p>
+            <p class="text-lg text-orange-100 mb-8">Únete a cientos de administradores que han simplificado su gestión. Prueba gratuita de 14 días.</p>
+
+            <div class="max-w-2xl mx-auto mb-10 rounded-2xl border border-white/35 bg-white/10 backdrop-blur-md px-4 py-4 sm:px-5 sm:py-4 text-left shadow-lg shadow-black/10">
+                <div class="flex gap-3 sm:gap-4">
+                    <div class="shrink-0 mt-0.5">
+                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/25 text-amber-100 ring-1 ring-white/20" aria-hidden="true">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </span>
+                    </div>
+                    <div class="min-w-0 flex-1 space-y-3">
+                        <p class="text-sm sm:text-base text-white leading-relaxed">
+                            <strong class="font-semibold">Importante:</strong> este formulario es para <strong>condominios</strong> interesados en <strong>integrar Condominio360</strong> (administración o junta).
+                        </p>
+                        <p class="text-sm sm:text-base text-orange-50/95 leading-relaxed">
+                            Si eres <strong>propietario</strong> y quieres ingresar o necesitas ayuda, ve aquí:
+                        </p>
+                        <div>
+                            <a href="/login" class="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-orange-600 shadow-md transition hover:bg-orange-50 hover:text-orange-700 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-orange-600">
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                </svg>
+                                Iniciar sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <form class="max-w-md mx-auto flex flex-col sm:flex-row gap-3" onsubmit="handleDemoRequest(event)">
                 <input type="email" name="email" placeholder="tu@email.com" required

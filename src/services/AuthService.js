@@ -311,12 +311,11 @@ class AuthService {
             };
         }
 
-        // Generar token de reset
+        // Generar token de reset (válido 24 h, alineado con el envío desde administración)
         const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+        const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-        // Guardar token (usar tabla o campo temporal)
-        // Por simplicidad, usaremos una tabla PasswordResets
+        await this._deleteResetTokensForUser(user.id, type);
         await this._saveResetToken(user.id, type, resetToken, resetTokenExpiry);
 
         // Enviar email
@@ -337,7 +336,7 @@ class AuthService {
             user.email,
             user.first_name,
             resetLink,
-            resetMeta
+            { ...resetMeta, validityHours: 24 }
         );
 
         return { 
@@ -369,8 +368,9 @@ class AuthService {
      */
     static async resetPassword(token, newPassword) {
         const reset = await this.verifyResetToken(token);
-        
-        if (reset.type === 'OWNER') {
+        const userType = reset.user_type || reset.type;
+
+        if (userType === 'OWNER') {
             await UserModel.update(reset.user_id, { password: newPassword });
             const user = await UserModel.findById ? await UserModel.findById(reset.user_id) : null;
             if (user) {
@@ -513,13 +513,57 @@ class AuthService {
         throw new Error('Tipo de usuario no soportado para selección de tenant');
     }
 
-    // ==================== MÉTODOS PRIVADOS ====================
-
-    static async _saveResetToken(userId, type, token, expiresAt) {
+    /**
+     * Enviar correo con enlace de restablecimiento (Super Admin, contexto de un condominio).
+     * @param {string} userId
+     * @param {string} tenantId
+     */
+    static async sendOwnerPasswordResetFromAdmin(userId, tenantId) {
         const { connectDB, sql } = require('../config/database');
         const pool = await connectDB();
-        
-        // Crear tabla si no existe
+
+        const userResult = await pool.request()
+            .input('userId', sql.UniqueIdentifier, userId)
+            .input('tenantId', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT u.id, u.email, u.first_name
+                FROM Users u
+                INNER JOIN TenantUsers tu ON u.id = tu.user_id
+                    AND tu.tenant_id = @tenantId
+                    AND tu.role = 'OWNER'
+                    AND tu.status = 'ACTIVE'
+                WHERE u.id = @userId
+            `);
+
+        if (!userResult.recordset.length) {
+            throw new Error('El propietario no pertenece a este condominio o no está activo');
+        }
+
+        const user = userResult.recordset[0];
+        if (!user.email || !String(user.email).trim()) {
+            throw new Error('El propietario no tiene correo electrónico registrado');
+        }
+
+        await this._deleteResetTokensForUser(userId, 'OWNER');
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await this._saveResetToken(userId, 'OWNER', resetToken, resetTokenExpiry);
+
+        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+        const resetLink = `${baseUrl}/auth/reset-password?token=${resetToken}&type=OWNER`;
+
+        await EmailService.sendPasswordReset(user.email, user.first_name, resetLink, {
+            tenantId,
+            validityHours: 24
+        });
+    }
+
+    // ==================== MÉTODOS PRIVADOS ====================
+
+    static async _ensurePasswordResetsTable() {
+        const { connectDB } = require('../config/database');
+        const pool = await connectDB();
         await pool.request().query(`
             IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PasswordResets]') AND type in (N'U'))
             CREATE TABLE PasswordResets (
@@ -531,6 +575,22 @@ class AuthService {
                 created_at DATETIME2 DEFAULT SYSDATETIME()
             )
         `);
+    }
+
+    static async _deleteResetTokensForUser(userId, userType) {
+        const { connectDB, sql } = require('../config/database');
+        await this._ensurePasswordResetsTable();
+        const pool = await connectDB();
+        await pool.request()
+            .input('userId', sql.UniqueIdentifier, userId)
+            .input('type', sql.NVarChar, userType)
+            .query('DELETE FROM PasswordResets WHERE user_id = @userId AND user_type = @type');
+    }
+
+    static async _saveResetToken(userId, type, token, expiresAt) {
+        const { connectDB, sql } = require('../config/database');
+        await this._ensurePasswordResetsTable();
+        const pool = await connectDB();
 
         await pool.request()
             .input('userId', sql.UniqueIdentifier, userId)

@@ -838,6 +838,9 @@
                             <button onclick="openPasswordModal('${o.id}', '${(o.display_name || o.name || '').replace(/'/g, "\\'")}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg" title="Establecer Contraseña">
                                 <span class="material-symbols-rounded">vpn_key</span>
                             </button>
+                            <button type="button" onclick="sendOwnerPasswordResetEmail('${o.id}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg" title="Enviar enlace de restablecimiento por correo">
+                                <span class="material-symbols-rounded">forward_to_inbox</span>
+                            </button>
                             <button onclick="editOwner('${o.id}')" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg" title="Editar">
                                 <span class="material-symbols-rounded">edit</span>
                             </button>
@@ -1582,6 +1585,32 @@
             document.getElementById('password-modal').classList.add('hidden');
             document.getElementById('password-modal').classList.remove('flex');
             currentOwnerId = null;
+        }
+
+        async function sendOwnerPasswordResetEmail(ownerId) {
+            if (!confirm('¿Enviar al correo del propietario un enlace para restablecer la contraseña? El enlace caduca en 24 horas.')) {
+                return;
+            }
+            try {
+                const res = await fetch(
+                    `/api/admin/owners/${encodeURIComponent(ownerId)}/send-password-reset?tenant_id=${encodeURIComponent(tenantId)}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || 'No se pudo enviar el correo');
+                }
+                alert(data.message || 'Correo enviado');
+            } catch (e) {
+                console.error(e);
+                alert(e.message || 'Error al enviar el correo');
+            }
         }
 
         async function savePassword() {

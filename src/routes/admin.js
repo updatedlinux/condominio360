@@ -80,6 +80,7 @@ router.post('/tenants/:id/owners', AdminController.createOwner);
 router.delete('/tenants/:id/owners/:ownerId', AdminController.deleteOwner);
 router.put('/owners/:id', AdminController.updateOwner);
 router.post('/owners/:id/password', AdminController.setOwnerPassword);
+router.post('/owners/:id/send-password-reset', AdminController.sendOwnerPasswordResetEmail);
 
 // ==================== FACTURACIÓN SAAS (Condominio360 → Condominios) ====================
 router.get('/saas-billing/rate', AdminSaaSBillingController.getRate);

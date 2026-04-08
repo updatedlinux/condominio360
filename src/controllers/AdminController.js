@@ -8,6 +8,7 @@ const SystemSettingsModel = require('../models/SystemSettingsModel');
 const BCVService = require('../services/BCVService');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const EmailService = require('../services/EmailService');
+const AuthService = require('../services/AuthService');
 const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
 const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailService');
 const { sql, connectDB } = require('../config/database');
@@ -2556,6 +2557,48 @@ class AdminController {
             res.status(500).json({ 
                 success: false, 
                 error: 'Error al establecer contraseña' 
+            });
+        }
+    }
+
+    /**
+     * POST /api/admin/owners/:id/send-password-reset?tenant_id=
+     * Enviar correo con enlace de restablecimiento (token 24 h). Super Admin.
+     */
+    static async sendOwnerPasswordResetEmail(req, res) {
+        try {
+            const { id } = req.params;
+            const tenantId = req.query.tenant_id || req.body.tenant_id;
+            if (!tenantId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'tenant_id es requerido'
+                });
+            }
+
+            await AuthService.sendOwnerPasswordResetFromAdmin(id, tenantId);
+
+            await AdminController.logAudit(
+                req,
+                'OWNER_SEND_PASSWORD_RESET_EMAIL',
+                'USER',
+                id,
+                `Enlace de restablecimiento de contraseña enviado por correo (condominio ${tenantId})`
+            );
+
+            res.json({
+                success: true,
+                message: 'Se envió el correo con el enlace de restablecimiento (válido 24 horas)'
+            });
+        } catch (error) {
+            console.error('sendOwnerPasswordResetEmail error:', error);
+            const msg = error.message || '';
+            if (msg.includes('no pertenece') || msg.includes('no tiene correo')) {
+                return res.status(400).json({ success: false, error: msg });
+            }
+            res.status(500).json({
+                success: false,
+                error: 'Error al enviar el correo de restablecimiento'
             });
         }
     }
