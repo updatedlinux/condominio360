@@ -385,12 +385,12 @@ class AuthService {
             if (user) {
                 const props = await PropertyModel.getByOwner(user.id);
                 const tenantId = props?.[0]?.tenant_id || null;
-                await EmailService.sendPasswordChanged(user.email, user.first_name, { tenantId });
+                await EmailService.sendPasswordChanged(user.email, AuthService._displayNameForEmail(user), { tenantId });
             }
         } else {
             await TenantAdminModel.update(reset.user_id, { password: newPassword });
             const admin = await TenantAdminModel.findById(reset.user_id);
-            await EmailService.sendPasswordChanged(admin.email, admin.first_name, {
+            await EmailService.sendPasswordChanged(admin.email, AuthService._displayNameForEmail(admin), {
                 tenantId: admin.tenant_id || null
             });
         }
@@ -476,7 +476,7 @@ class AuthService {
                 throw new Error('Contraseña actual incorrecta');
             }
             await TenantAdminModel.update(userId, { password: newPassword });
-            await EmailService.sendPasswordChanged(admin.email, admin.first_name, {
+            await EmailService.sendPasswordChanged(admin.email, AuthService._displayNameForEmail(admin), {
                 tenantId: admin.tenant_id || null
             });
         }

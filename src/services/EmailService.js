@@ -283,43 +283,30 @@ class EmailService {
     }
 
     /**
-     * Enviar notificación de cambio de contraseña
+     * Notificación de contraseña ya cambiada (misma plantilla Condominio360 que el resto del sistema).
+     * @param {string} recipientName - Nombre completo para el saludo
      */
-    async sendPasswordChanged(email, firstName, meta = {}) {
-        const subject = 'Contraseña Actualizada - Condominio360';
-        
-        const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Contraseña Actualizada</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #2563eb; color: white; padding: 30px; text-align: center; }
-        .content { background: #f9fafb; padding: 30px; }
-        .success { background: #d1fae5; border: 2px solid #059669; padding: 20px; 
-                   border-radius: 8px; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>✅ Contraseña Actualizada</h1>
-        </div>
-        <div class="content">
-            <h2>Hola ${firstName},</h2>
-            <div class="success">
-                <p>Tu contraseña ha sido actualizada exitosamente.</p>
-                <p>Si no realizaste este cambio, contacta inmediatamente al administrador.</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
+    async sendPasswordChanged(email, recipientName, meta = {}) {
+        const subject = 'Contraseña actualizada - Condominio360';
+        const safeName = this._escapeHtml(recipientName || 'Usuario');
 
-        // Cada cambio de contraseña es un envío distinto (mismo asunto); clave fija impediría reenvíos y chocaba tras un fallo de Mailgun.
+        const content = `
+            <h2>Hola ${safeName},</h2>
+            <p>Tu contraseña se ha actualizado correctamente. Ya puedes iniciar sesión con tu nueva clave.</p>
+            <div class="details-box" style="background-color:#ecfdf5;border-left:4px solid #16a34a;">
+                <h3>¿No reconoces esta actividad?</h3>
+                <p>Si no realizaste este cambio, contacta de inmediato a la administración de tu condominio o al soporte de Condominio360.</p>
+            </div>
+        `;
+
+        const html = this._generateEmailTemplate(content, {
+            title: 'Contraseña actualizada',
+            subtitle: 'Tu cuenta está protegida',
+            color: '#f97316',
+            headerBackground: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+        });
+
+        // Cada cambio es un envío distinto (mismo asunto); clave aleatoria evita bloqueos de idempotencia.
         const idempotencyKey =
             meta.idempotencyKey || crypto.randomBytes(16).toString('hex');
         return await this.send(email, subject, html, null, {
