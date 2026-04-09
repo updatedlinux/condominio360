@@ -466,9 +466,25 @@ class AuthService {
         let isValid;
 
         if (type === 'OWNER' || type === 'SUPERADMIN') {
-            // Necesitamos obtener el usuario con password_hash
-            // Asumiendo que tenemos un método para esto o lo agregamos
-            throw new Error('Método no implementado completamente');
+            const user = await UserModel.findById(userId);
+            if (!user) {
+                throw new Error('Usuario no encontrado');
+            }
+            isValid = await UserModel.validatePassword(currentPassword, user.password_hash);
+            if (!isValid) {
+                throw new Error('Contraseña actual incorrecta');
+            }
+            await UserModel.updatePassword(userId, newPassword);
+            const refreshed = await UserModel.findById(userId);
+            let tenantId = null;
+            if (type === 'OWNER') {
+                const props = await PropertyModel.getByOwner(userId);
+                tenantId = props?.[0]?.tenant_id || null;
+            }
+            await EmailService.sendPasswordChanged(refreshed.email, AuthService._displayNameForEmail(refreshed), {
+                tenantId,
+                idempotencyKey: `pwchg:${userId}:${Date.now()}:${crypto.randomBytes(8).toString('hex')}`
+            });
         } else {
             const admin = await TenantAdminModel.findById(userId);
             isValid = await TenantAdminModel.validatePassword(currentPassword, admin.password_hash);

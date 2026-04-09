@@ -136,6 +136,42 @@
                         </div>
                     </div>
 
+                    <!-- Cambiar contraseña (misma API que panel de junta: POST /api/auth/change-password) -->
+                    <div class="card p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                <span class="material-icons-round text-[#f97316]">lock</span>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-medium text-[#3C4043]">Cambiar contraseña</h2>
+                                <p class="text-sm text-[#5F6368]">Actualiza tu clave cuando quieras. Mínimo 8 caracteres.</p>
+                            </div>
+                        </div>
+                        <form id="password-change-form" class="space-y-4">
+                            <div>
+                                <label for="owner-pwd-current" class="block text-sm font-medium text-[#3C4043] mb-1">Contraseña actual *</label>
+                                <input type="password" id="owner-pwd-current" required autocomplete="current-password"
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none">
+                            </div>
+                            <div>
+                                <label for="owner-pwd-new" class="block text-sm font-medium text-[#3C4043] mb-1">Nueva contraseña *</label>
+                                <input type="password" id="owner-pwd-new" required minlength="8" autocomplete="new-password"
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none"
+                                    placeholder="Mínimo 8 caracteres">
+                            </div>
+                            <div>
+                                <label for="owner-pwd-confirm" class="block text-sm font-medium text-[#3C4043] mb-1">Confirmar nueva contraseña *</label>
+                                <input type="password" id="owner-pwd-confirm" required minlength="8" autocomplete="new-password"
+                                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] outline-none">
+                            </div>
+                            <p id="owner-pwd-error" class="text-sm text-red-600 hidden"></p>
+                            <button type="submit" id="owner-pwd-submit" class="w-full py-3 bg-[#f97316] hover:bg-[#ea580c] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                                <span id="owner-pwd-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
+                                <span id="owner-pwd-btn-text">Guardar nueva contraseña</span>
+                            </button>
+                        </form>
+                    </div>
+
                     <!-- Datos actuales -->
                     <div class="card p-6">
                         <h2 class="text-lg font-medium text-[#3C4043] mb-4">Datos actuales</h2>
@@ -237,6 +273,59 @@
                 showToast(e.message || 'Error al cargar perfil', 'error');
             }
         }
+
+        document.getElementById('password-change-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errEl = document.getElementById('owner-pwd-error');
+            const submitBtn = document.getElementById('owner-pwd-submit');
+            const spinner = document.getElementById('owner-pwd-spinner');
+            const btnText = document.getElementById('owner-pwd-btn-text');
+            errEl.classList.add('hidden');
+
+            const current = document.getElementById('owner-pwd-current').value;
+            const newPwd = document.getElementById('owner-pwd-new').value;
+            const confirm = document.getElementById('owner-pwd-confirm').value;
+
+            if (newPwd.length < 8) {
+                errEl.textContent = 'La nueva contraseña debe tener al menos 8 caracteres';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if (newPwd !== confirm) {
+                errEl.textContent = 'Las contraseñas nuevas no coinciden';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Guardando...';
+
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword: current, newPassword: newPwd })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Error al cambiar contraseña');
+
+                document.getElementById('owner-pwd-current').value = '';
+                document.getElementById('owner-pwd-new').value = '';
+                document.getElementById('owner-pwd-confirm').value = '';
+                showToast('Contraseña actualizada correctamente', 'success');
+            } catch (err) {
+                errEl.textContent = err.message || 'Error al cambiar contraseña';
+                errEl.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Guardar nueva contraseña';
+            }
+        });
 
         document.getElementById('update-form').addEventListener('submit', async (e) => {
             e.preventDefault();
