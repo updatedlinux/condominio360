@@ -380,8 +380,9 @@ class AuthService {
         const userType = reset.user_type || reset.type;
 
         if (userType === 'OWNER') {
-            await UserModel.update(reset.user_id, { password: newPassword });
-            const user = await UserModel.findById ? await UserModel.findById(reset.user_id) : null;
+            // UserModel.update no acepta "password"; hay que hashear con updatePassword.
+            await UserModel.updatePassword(reset.user_id, newPassword);
+            const user = await UserModel.findById(reset.user_id);
             if (user) {
                 const props = await PropertyModel.getByOwner(user.id);
                 const tenantId = props?.[0]?.tenant_id || null;
