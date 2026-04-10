@@ -7,6 +7,7 @@ const { normalizeVenezuelaMobileForWhatsApp } = require('../utils/venezuelaPhone
 /**
  * Cola global: máximo 30 envíos exitosos a API externa cada 2 minutos (plataforma).
  * Un job = un propietario; el API externo no encola.
+ * Solo móviles Venezuela (prefijos 424/412/416/426/414/422); otros números se omiten sin error.
  */
 class InAppWhatsAppQueueService {
     static async loadOwnerRecipientsWithPhones(tenantId) {
