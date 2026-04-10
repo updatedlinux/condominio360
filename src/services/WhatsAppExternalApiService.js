@@ -11,12 +11,18 @@ function joinUrl(baseUrl, path) {
     return `${b}${p}`;
 }
 
+function maskNationalPhone(digits) {
+    const s = String(digits || '').replace(/\D/g, '');
+    if (s.length <= 4) return '****';
+    return `***${s.slice(-4)}`;
+}
+
 class WhatsAppExternalApiService {
     /**
-     * @param {{ baseUrl: string, secretKey: string, countryCode: string, phoneNumber: string, message: string }} opts
+     * @param {{ baseUrl: string, secretKey: string, countryCode: string, phoneNumber: string, message: string, logMeta?: Record<string, unknown> }} opts
      */
     static async sendWhatsApp(opts) {
-        const { baseUrl, secretKey, countryCode, phoneNumber, message } = opts;
+        const { baseUrl, secretKey, countryCode, phoneNumber, message, logMeta } = opts;
         if (!baseUrl || !secretKey) {
             throw new Error('Configuración de API incompleta');
         }
@@ -57,6 +63,16 @@ class WhatsAppExternalApiService {
                 console.warn('[WhatsApp API] success=false', { url, error: data.error });
                 throw new Error(data.error || 'Envío rechazado por el API');
             }
+            const preview = (message || '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 120);
+            console.log('[WhatsApp API] Envío OK', {
+                ...(logMeta || {}),
+                messageId: data.messageId,
+                phone: maskNationalPhone(phoneNumber),
+                preview: preview || '(vacío)'
+            });
             return data;
         } catch (e) {
             if (e.response?.data) {

@@ -102,7 +102,12 @@ class InAppWhatsAppQueueService {
                     secretKey: cfg.secretKey,
                     countryCode: '+58',
                     phoneNumber: job.phone_national,
-                    message: job.message_body
+                    message: job.message_body,
+                    logMeta: {
+                        jobId: job.id,
+                        notificationId: job.in_app_notification_id,
+                        tenantId: job.tenant_id
+                    }
                 });
                 await WhatsAppQueueModel.markSent(job.id);
                 await WhatsAppQueueModel.logGlobalSend();
