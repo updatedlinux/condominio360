@@ -6,8 +6,11 @@ const { normalizeVenezuelaMobileForWhatsApp } = require('../utils/venezuelaPhone
 
 function buildWhatsAppOutboundBody(tenantName, userMessage) {
     const name = (tenantName || '').replace(/\s+/g, ' ').trim() || 'Condominio';
-    const header = `Mensaje enviado por la Junta de Condominio - ${name}:\n\n`;
-    return `${header}${(userMessage || '').trim()}`;
+    const header = `⚠️ Mensaje enviado por la Junta de Condominio - ${name}:\n\n`;
+    const body = (userMessage || '').trim();
+    // WhatsApp: _texto_ = cursiva
+    const footer = '\n\n_⚙️ Este es un mensaje automático del sistema. Por favor, no responda a este bot_';
+    return `${header}${body}${footer}`;
 }
 
 /**
