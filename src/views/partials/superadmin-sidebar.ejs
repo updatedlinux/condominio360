@@ -1,7 +1,7 @@
 <%#
   Sidebar Super Admin homologado con admin/dashboard (mismas entradas y orden).
   Incluir desde vistas bajo admin/ como: include('../partials/superadmin-sidebar', { activePage: 'tenants' })
-  Enlaces: /admin?section=... para abrir el SPA en la sección correspondiente.
+  Enlaces: /admin?section=... para abrir el SPA (dashboard, email, mass-whatsapp, tenants, etc.).
 %>
 <% const ap = typeof activePage !== 'undefined' ? activePage : 'dashboard'; %>
 <% function saSection(s) { return '/admin?section=' + encodeURIComponent(s); } %>
@@ -31,6 +31,10 @@
     <a href="<%= saSection('email') %>" class="nav-item <%= ap === 'email' ? 'active' : '' %>">
         <span class="icon material-symbols-rounded">outgoing_mail</span>
         <span class="label">Correo saliente</span>
+    </a>
+    <a href="<%= saSection('mass-whatsapp') %>" class="nav-item <%= ap === 'mass-whatsapp' ? 'active' : '' %>">
+        <span class="icon material-symbols-rounded">chat</span>
+        <span class="label">Mensajería masiva</span>
     </a>
     <a href="<%= saSection('saas-billing') %>" class="nav-item <%= ap === 'saas-billing' ? 'active' : '' %>">
         <span class="icon material-symbols-rounded">payments</span>

@@ -556,6 +556,10 @@
                     <span class="icon material-symbols-rounded">outgoing_mail</span>
                     <span class="label">Correo saliente</span>
                 </div>
+                <div class="nav-item" data-nav-section="mass-whatsapp" onclick="showSection('mass-whatsapp', this)">
+                    <span class="icon material-symbols-rounded">chat</span>
+                    <span class="label">Mensajería masiva</span>
+                </div>
                 <div class="nav-item" data-nav-section="saas-billing" onclick="showSection('saas-billing', this)">
                     <span class="icon material-symbols-rounded">payments</span>
                     <span class="label">Facturación C360</span>
@@ -1154,6 +1158,108 @@
                     </div>
                 </section>
 
+                <!-- Mensajería masiva (WhatsApp in-app, cola global) -->
+                <section id="section-mass-whatsapp" class="hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                        <div>
+                            <h3 class="text-2xl font-medium text-gray-900">Mensajería masiva</h3>
+                            <p class="text-gray-500 mt-1">Envíos WhatsApp por mensaje in-app (junta → propietarios). Cola global 30 / 2 min.</p>
+                        </div>
+                        <button type="button" onclick="loadMassWhatsAppPanel()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
+                            <span class="material-symbols-rounded">refresh</span>
+                            Actualizar
+                        </button>
+                    </div>
+                    <div id="outgoing-queues-wa-wrap" class="md-card p-6 border border-gray-100 transition-colors mb-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <button type="button" id="outgoing-queues-wa-toggle" class="flex items-start gap-2 text-left flex-1 min-w-0 rounded-xl p-2 -m-2 hover:bg-gray-50 transition-colors" onclick="toggleOutgoingQueuesPanel('wa')" aria-expanded="true">
+                                <span id="outgoing-queues-wa-chevron" class="material-symbols-rounded text-gray-600 mt-1 shrink-0">expand_less</span>
+                                <span class="min-w-0">
+                                    <span class="text-lg font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                                        <span class="material-symbols-rounded text-teal-600">hourglass_top</span>
+                                        Estado de colas (mismo monitoreo que en el dashboard)
+                                    </span>
+                                    <span class="text-sm text-gray-500 mt-1 block">Incluye comunicados, Mailgun, bienvenidas y WhatsApp. Polling 15 s. Clic para plegar.</span>
+                                </span>
+                            </button>
+                            <button type="button" onclick="loadOutgoingQueuesSummary()" class="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 shrink-0 self-start">Actualizar colas</button>
+                        </div>
+                        <div id="outgoing-queues-wa-collapse" class="mt-3 space-y-3">
+                            <p class="text-xs text-gray-400 sm:pl-8" id="outgoing-queues-updated-wa">—</p>
+                            <div id="outgoing-queues-wa-body" class="text-sm text-gray-700 sm:pl-8">
+                                <p class="text-gray-500">Cargando…</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Enviados (30 d)</p>
+                            <p class="text-2xl font-semibold text-emerald-700" id="wa-metric-sent">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Cola pendiente</p>
+                            <p class="text-2xl font-semibold text-amber-700" id="wa-metric-pending">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Fallidos (30 d)</p>
+                            <p class="text-2xl font-semibold text-red-600" id="wa-metric-failed">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Cupo global 2 min</p>
+                            <p class="text-2xl font-semibold text-gray-800" id="wa-metric-rate">—</p>
+                        </div>
+                    </div>
+                    <div class="md-card p-4 flex flex-wrap gap-4 items-end">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Ventana (tabla)</label>
+                            <select id="wa-table-days" onchange="waDeliveriesPage=1;loadWhatsAppDeliveries()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="7">7 días</option>
+                                <option value="30" selected>30 días</option>
+                                <option value="90">90 días</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Estado</label>
+                            <select id="wa-filter-status" onchange="waDeliveriesPage=1;loadWhatsAppDeliveries()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="">Todos</option>
+                                <option value="PENDING">Pendiente</option>
+                                <option value="SENT">Enviado</option>
+                                <option value="FAILED">Fallido</option>
+                            </select>
+                        </div>
+                        <div id="wa-tenant-filter-wrap">
+                            <label class="block text-xs text-gray-500 mb-1">Condominio</label>
+                            <select id="wa-filter-tenant" onchange="waDeliveriesPage=1;loadWhatsAppDeliveries()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm min-w-[200px]">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="md-card overflow-hidden">
+                        <div class="md-table-container overflow-x-auto">
+                            <table class="md-table min-w-[960px]">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha / estado</th>
+                                        <th>Condominio</th>
+                                        <th>Propietario</th>
+                                        <th>Tel. normalizado (+58)</th>
+                                        <th>Mensaje</th>
+                                        <th>Resultado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wa-deliveries-tbody">
+                                    <tr><td colspan="6" class="text-center py-8 text-gray-500">Cargando…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                            <button type="button" onclick="waDeliveriesPagePrev()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Anterior</button>
+                            <span class="text-sm text-gray-500" id="wa-deliveries-page-info">—</span>
+                            <button type="button" onclick="waDeliveriesPageNext()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Siguiente</button>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Settings Section (Placeholder) -->
                 <section id="section-settings" class="hidden">
                     <div class="md-card p-12 text-center">
@@ -1745,6 +1851,8 @@
         let user = JSON.parse(localStorage.getItem('user') || '{}');
         let pendingConfirmAction = null;
         let emailJobsPage = 1;
+        let waDeliveriesPage = 1;
+        let waDeliveriesTotalPages = 1;
         let outgoingQueuesPollId = null;
 
         // Initialize
@@ -1802,7 +1910,7 @@
         function applySectionFromQuery() {
             const allowed = new Set([
                 'dashboard', 'tenants', 'users', 'data-updates', 'audit', 'email',
-                'saas-billing', 'balance-financiero', 'settings'
+                'mass-whatsapp', 'saas-billing', 'balance-financiero', 'settings'
             ]);
             const params = new URLSearchParams(window.location.search);
             const section = params.get('section');
@@ -1848,6 +1956,7 @@
                 'saas-billing': 'Facturación Condominio360',
                 'balance-financiero': 'Balance Financiero',
                 'email': 'Correo saliente',
+                'mass-whatsapp': 'Mensajería masiva',
                 'settings': 'Configuración'
             };
             document.getElementById('page-title').textContent = titles[sectionName];
@@ -1867,6 +1976,8 @@
                 loadBalanceFinanciero();
             } else if (sectionName === 'email') {
                 loadEmailPanel();
+            } else if (sectionName === 'mass-whatsapp') {
+                loadMassWhatsAppPanel();
             } else if (sectionName === 'dashboard') {
                 loadBcvSettings();
                 loadOutgoingQueuesSummary();
@@ -1911,6 +2022,9 @@
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Mailgun — jobs con destinatarios pendientes</span><strong class="text-gray-900">${mq.jobs_open ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">Cola interna (p. ej. facturación)</span><strong class="text-gray-900">${nq.pending ?? 0}</strong></div>`);
             rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">Bienvenida masiva propietarios — lotes activos</span><strong class="text-gray-900">${bw.active_batches ?? 0}</strong></div>`);
+            const wa = d.whatsapp_mass || {};
+            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5"><span class="text-gray-600">WhatsApp (mensajes in-app) — destinatarios pendientes en cola interna</span><strong class="text-gray-900">${wa.pending_in_queue ?? 0}</strong></div>`);
+            rows.push(`<div class="flex flex-wrap justify-between gap-2 px-3 py-2.5 bg-gray-50/80"><span class="text-gray-600">WhatsApp — uso de cupo global en ventana 2 min (máx. ${wa.rate_max_per_window ?? 30})</span><strong class="text-gray-900">${wa.sends_in_rate_window ?? 0} / ${wa.rate_max_per_window ?? 30}</strong></div>`);
             rows.push('</div>');
             rows.push('<p class="mt-3 text-xs text-gray-500 leading-relaxed">Los webhooks de Mailgun guardan entregas y rebotes en el historial; <strong>no</strong> actualizan el estado del job. Este panel se basa en destinatarios y lotes pendientes en base de datos.</p>');
             if (pNoQ > 0 && (c.active_batches ?? 0) === 0) {
@@ -1938,7 +2052,8 @@
         function styleOutgoingQueueWraps(hasActivity) {
             const dash = document.getElementById('outgoing-queues-dashboard-wrap');
             const em = document.getElementById('outgoing-queues-email-wrap');
-            [dash, em].forEach((el) => {
+            const wa = document.getElementById('outgoing-queues-wa-wrap');
+            [dash, em, wa].forEach((el) => {
                 if (!el) return;
                 el.classList.remove('border-amber-200', 'bg-amber-50/40', 'border-gray-100', 'bg-white');
                 if (hasActivity) {
@@ -1959,10 +2074,12 @@
                 const emailBody = document.getElementById('outgoing-queues-email-body');
                 const tDash = document.getElementById('outgoing-queues-updated-dash');
                 const tEmail = document.getElementById('outgoing-queues-updated-email');
+                const waBodyEarly = document.getElementById('outgoing-queues-wa-body');
                 if (!json.success || !json.data) {
                     const err = '<p class="text-red-600">No se pudo cargar el resumen de colas.</p>';
                     if (dashBody) dashBody.innerHTML = err;
                     if (emailBody) emailBody.innerHTML = err;
+                    if (waBodyEarly) waBodyEarly.innerHTML = err;
                     return;
                 }
                 const d = json.data;
@@ -1972,28 +2089,47 @@
                 if (emailBody) emailBody.innerHTML = html;
                 if (tDash) tDash.textContent = 'Última lectura: ' + ts;
                 if (tEmail) tEmail.textContent = 'Última lectura: ' + ts;
+                const waBody = document.getElementById('outgoing-queues-wa-body');
+                const tWa = document.getElementById('outgoing-queues-updated-wa');
+                if (waBody) waBody.innerHTML = html;
+                if (tWa) tWa.textContent = 'Última lectura: ' + ts;
                 styleOutgoingQueueWraps(d.has_activity === true);
             } catch (e) {
                 console.error('loadOutgoingQueuesSummary', e);
                 const err = '<p class="text-red-600">Error de red al leer colas.</p>';
                 const dashBody = document.getElementById('outgoing-queues-dashboard-body');
                 const emailBody = document.getElementById('outgoing-queues-email-body');
+                const waBody = document.getElementById('outgoing-queues-wa-body');
                 if (dashBody) dashBody.innerHTML = err;
                 if (emailBody) emailBody.innerHTML = err;
+                if (waBody) waBody.innerHTML = err;
             }
         }
 
         function startOutgoingQueuesPolling() {
             if (outgoingQueuesPollId) clearInterval(outgoingQueuesPollId);
             outgoingQueuesPollId = setInterval(() => {
-                if (document.visibilityState === 'visible') loadOutgoingQueuesSummary();
+                if (document.visibilityState !== 'visible') return;
+                loadOutgoingQueuesSummary();
+                const waSec = document.getElementById('section-mass-whatsapp');
+                if (waSec && !waSec.classList.contains('hidden')) {
+                    loadWhatsAppDeliveries();
+                }
             }, 15000);
         }
 
+        const OUTGOING_QUEUE_PANEL_IDS = {
+            dash: ['outgoing-queues-dashboard-collapse', 'outgoing-queues-dash-chevron', 'outgoing-queues-dash-toggle'],
+            email: ['outgoing-queues-email-collapse', 'outgoing-queues-email-chevron', 'outgoing-queues-email-toggle'],
+            wa: ['outgoing-queues-wa-collapse', 'outgoing-queues-wa-chevron', 'outgoing-queues-wa-toggle']
+        };
+
         function toggleOutgoingQueuesPanel(key) {
-            const collapse = document.getElementById(key === 'dash' ? 'outgoing-queues-dashboard-collapse' : 'outgoing-queues-email-collapse');
-            const chev = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-chevron' : 'outgoing-queues-email-chevron');
-            const btn = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-toggle' : 'outgoing-queues-email-toggle');
+            const cfg = OUTGOING_QUEUE_PANEL_IDS[key];
+            if (!cfg) return;
+            const collapse = document.getElementById(cfg[0]);
+            const chev = document.getElementById(cfg[1]);
+            const btn = document.getElementById(cfg[2]);
             if (!collapse) return;
             const hidden = collapse.classList.toggle('hidden');
             if (chev) chev.textContent = hidden ? 'expand_more' : 'expand_less';
@@ -2004,16 +2140,123 @@
         }
 
         function initOutgoingQueuesCollapseState() {
-            for (const key of ['dash', 'email']) {
+            for (const key of ['dash', 'email', 'wa']) {
                 try {
                     if (localStorage.getItem('outgoingQueuesCollapsed_' + key) !== '1') continue;
-                    const collapse = document.getElementById(key === 'dash' ? 'outgoing-queues-dashboard-collapse' : 'outgoing-queues-email-collapse');
-                    const chev = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-chevron' : 'outgoing-queues-email-chevron');
-                    const btn = document.getElementById(key === 'dash' ? 'outgoing-queues-dash-toggle' : 'outgoing-queues-email-toggle');
+                    const cfg = OUTGOING_QUEUE_PANEL_IDS[key];
+                    if (!cfg) continue;
+                    const collapse = document.getElementById(cfg[0]);
+                    const chev = document.getElementById(cfg[1]);
+                    const btn = document.getElementById(cfg[2]);
                     if (collapse) collapse.classList.add('hidden');
                     if (chev) chev.textContent = 'expand_more';
                     if (btn) btn.setAttribute('aria-expanded', 'false');
                 } catch (e) { /* ignore */ }
+            }
+        }
+
+        async function loadWaTenantFilter() {
+            const sel = document.getElementById('wa-filter-tenant');
+            if (!sel) return;
+            try {
+                const res = await fetch('/api/admin/tenants', { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+                const cur = sel.value;
+                sel.innerHTML = '<option value="">Todos</option>' +
+                    json.data.map((t) => `<option value="${t.id}">${escapeHtml(t.name || t.slug || t.id)}</option>`).join('');
+                if (cur) sel.value = cur;
+            } catch (e) {
+                console.error('loadWaTenantFilter', e);
+            }
+        }
+
+        async function loadMassWhatsAppPanel() {
+            if (!user.isSuperAdmin) return;
+            await loadOutgoingQueuesSummary();
+            await loadWaTenantFilter();
+            await loadWhatsAppDeliveries();
+        }
+
+        async function loadWhatsAppDeliveries() {
+            const tbody = document.getElementById('wa-deliveries-tbody');
+            if (!tbody) return;
+            const days = document.getElementById('wa-table-days')?.value || 30;
+            const st = (document.getElementById('wa-filter-status')?.value || '').trim();
+            const tid = (document.getElementById('wa-filter-tenant')?.value || '').trim();
+            let url = `/api/admin/whatsapp-deliveries?page=${waDeliveriesPage}&limit=20&days=${encodeURIComponent(days)}`;
+            if (st) url += `&status=${encodeURIComponent(st)}`;
+            if (tid) url += `&tenantId=${encodeURIComponent(tid)}`;
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success || !json.data) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-600">${escapeHtml(json.error || 'Error')}</td></tr>`;
+                    return;
+                }
+                const { metrics, rows, pagination } = json.data;
+                waDeliveriesTotalPages = Math.max(1, pagination.pages || 1);
+                if (waDeliveriesPage > waDeliveriesTotalPages) {
+                    waDeliveriesPage = waDeliveriesTotalPages;
+                    return loadWhatsAppDeliveries();
+                }
+                const m = metrics || {};
+                const el = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+                el('wa-metric-sent', m.sent_last_30d ?? '—');
+                el('wa-metric-pending', m.pending_queue ?? '—');
+                el('wa-metric-failed', m.failed_last_30d ?? '—');
+                el('wa-metric-rate', `${m.sends_in_rate_window ?? 0} / ${m.rate_max_per_window ?? 30}`);
+                const pi = document.getElementById('wa-deliveries-page-info');
+                if (pi) {
+                    pi.textContent = `Página ${pagination.page} de ${pagination.pages} · ${pagination.total} registros`;
+                }
+                if (!rows || rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No hay envíos en este periodo.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map((r) => {
+                    const owner = [r.first_name, r.last_name].filter(Boolean).join(' ') || '—';
+                    const condo = escapeHtml(r.tenant_name || '—');
+                    const phoneDisp = r.phone_national ? ('+58' + String(r.phone_national)) : '—';
+                    const msg = escapeHtml((r.message_body || r.notification_message || '').slice(0, 120));
+                    const msgMore = (r.message_body || r.notification_message || '').length > 120 ? '…' : '';
+                    let statusHtml = '';
+                    if (r.status === 'SENT') {
+                        statusHtml = '<span class="text-emerald-700 font-medium">Enviado</span>';
+                    } else if (r.status === 'FAILED') {
+                        statusHtml = '<span class="text-red-600 font-medium">Fallido</span>';
+                    } else {
+                        statusHtml = '<span class="text-amber-700 font-medium">Pendiente</span>';
+                    }
+                    const err = r.error_message ? `<div class="text-xs text-red-600 mt-1 max-w-xs">${escapeHtml(String(r.error_message).slice(0, 200))}</div>` : '';
+                    const dt = r.sent_at || r.created_at;
+                    const when = dt ? formatOutgoingQueuesTime(dt) : '—';
+                    return `<tr class="border-t border-gray-100">
+                        <td class="py-3 px-2 align-top text-sm"><div>${when}</div><div class="text-xs text-gray-500">${escapeHtml(r.status || '')}</div></td>
+                        <td class="py-3 px-2 align-top text-sm">${condo}</td>
+                        <td class="py-3 px-2 align-top text-sm"><div>${escapeHtml(owner)}</div><div class="text-xs text-gray-500">${escapeHtml(r.owner_email || '')}</div></td>
+                        <td class="py-3 px-2 align-top font-mono text-xs">${escapeHtml(phoneDisp)}</td>
+                        <td class="py-3 px-2 align-top text-sm max-w-[220px]">${msg}${msgMore}</td>
+                        <td class="py-3 px-2 align-top text-sm">${statusHtml}${err}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error('loadWhatsAppDeliveries', e);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-600">Error de red</td></tr>';
+            }
+        }
+
+        function waDeliveriesPagePrev() {
+            if (waDeliveriesPage > 1) {
+                waDeliveriesPage--;
+                loadWhatsAppDeliveries();
+            }
+        }
+
+        function waDeliveriesPageNext() {
+            if (waDeliveriesPage < waDeliveriesTotalPages) {
+                waDeliveriesPage++;
+                loadWhatsAppDeliveries();
             }
         }
 

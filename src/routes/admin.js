@@ -8,6 +8,7 @@ const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
 const PropertyController = require('../controllers/PropertyController');
 const EmailAdminController = require('../controllers/EmailAdminController');
+const WhatsAppAdminController = require('../controllers/WhatsAppAdminController');
 
 // Middleware to ensure user is SuperAdmin
 const { authenticate } = require('../middleware/auth');
@@ -104,6 +105,7 @@ router.get('/balance/financial-summary', AdminBalanceController.getFinancialSumm
 
 // ==================== CORREO (Mailgun / jobs) ====================
 router.get('/outgoing-queues-summary', EmailAdminController.getOutgoingQueuesSummary);
+router.get('/whatsapp-deliveries', WhatsAppAdminController.listDeliveries);
 router.get('/email-metrics', EmailAdminController.getMetrics);
 router.get('/email-jobs', EmailAdminController.listJobs);
 router.get('/email-jobs/:id', EmailAdminController.getJob);

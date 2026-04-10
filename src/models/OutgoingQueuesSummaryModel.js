@@ -113,6 +113,19 @@ class OutgoingQueuesSummaryModel {
             `)
         );
 
+        const waPending = await OutgoingQueuesSummaryModel._querySafe(() =>
+            pool.request().query(`
+                SELECT COUNT(*) AS n FROM WhatsAppOutboundQueue WHERE status = N'PENDING'
+            `)
+        );
+
+        const waRateWindow = await OutgoingQueuesSummaryModel._querySafe(() =>
+            pool.request().query(`
+                SELECT COUNT(*) AS n FROM WhatsAppGlobalSendLog
+                WHERE sent_at >= DATEADD(SECOND, -120, SYSUTCDATETIME())
+            `)
+        );
+
         const row = commQueueAgg?.recordset?.[0] || {};
         const pendingBatches = Number(row.pending_batches) || 0;
         const processingBatches = Number(row.processing_batches) || 0;
@@ -125,6 +138,8 @@ class OutgoingQueuesSummaryModel {
         const emailRecipientsPending = Number(emailRecip?.recordset?.[0]?.n) || 0;
         const emailJobsPending = Number(emailJobsOpen?.recordset?.[0]?.n) || 0;
         const bulkWelcomeActive = Number(bulkWelcome?.recordset?.[0]?.active_batches) || 0;
+        const whatsappPendingQueue = Number(waPending?.recordset?.[0]?.n) || 0;
+        const whatsappSendsInRateWindow = Number(waRateWindow?.recordset?.[0]?.n) || 0;
 
         const breakdown = (commBreakdown?.recordset || []).map((r) => ({
             tenant_name: r.tenant_name,
@@ -138,7 +153,8 @@ class OutgoingQueuesSummaryModel {
             notificationQueuePending > 0 ||
             emailRecipientsPending > 0 ||
             emailJobsPending > 0 ||
-            bulkWelcomeActive > 0;
+            bulkWelcomeActive > 0 ||
+            whatsappPendingQueue > 0;
 
         return {
             communiques: {
@@ -160,6 +176,12 @@ class OutgoingQueuesSummaryModel {
             },
             bulk_owner_welcome: {
                 active_batches: bulkWelcomeActive
+            },
+            whatsapp_mass: {
+                pending_in_queue: whatsappPendingQueue,
+                sends_in_rate_window: whatsappSendsInRateWindow,
+                rate_window_seconds: 120,
+                rate_max_per_window: 30
             },
             has_activity: hasActivity,
             updated_at: new Date().toISOString()
