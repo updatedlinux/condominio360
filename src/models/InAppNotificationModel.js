@@ -2,6 +2,15 @@ const { sql, connectDB } = require('../config/database');
 
 const MAX_MESSAGE_LENGTH = 250;
 
+function coerceScheduledAt(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) {
+        throw new Error('Fecha programada no válida');
+    }
+    return d;
+}
+
 class InAppNotificationModel {
     /**
      * Crear notificación (DRAFT o SCHEDULED)
@@ -18,12 +27,14 @@ class InAppNotificationModel {
             throw new Error('El mensaje no puede estar vacío');
         }
 
+        const scheduledAtSql = coerceScheduledAt(scheduledAt);
+
         const result = await pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .input('created_by', sql.UniqueIdentifier, createdBy)
             .input('message', sql.NVarChar, trimmed)
             .input('status', sql.NVarChar, status)
-            .input('scheduled_at', sql.DateTime2, scheduledAt)
+            .input('scheduled_at', sql.DateTime2, scheduledAtSql)
             .input('send_whatsapp', sql.Bit, sendWhatsapp)
             .query(`
                 INSERT INTO InAppNotifications (tenant_id, created_by, message, status, scheduled_at, send_whatsapp)
@@ -56,7 +67,7 @@ class InAppNotificationModel {
         }
         if (scheduledAt !== undefined) {
             updates.push('scheduled_at = @scheduled_at');
-            request.input('scheduled_at', sql.DateTime2, scheduledAt);
+            request.input('scheduled_at', sql.DateTime2, coerceScheduledAt(scheduledAt));
         }
         if (sendWhatsapp !== undefined) {
             updates.push('send_whatsapp = @send_whatsapp');
@@ -178,12 +189,18 @@ class InAppNotificationModel {
      */
     static async getScheduledDue() {
         const pool = await connectDB();
-        const result = await pool.request()
-            .query(`
-                SELECT * FROM InAppNotifications
-                WHERE status = 'SCHEDULED' AND scheduled_at IS NOT NULL AND scheduled_at <= SYSDATETIME()
-            `);
-        return result.recordset || [];
+        const result = await pool.request().query(`
+            SELECT * FROM InAppNotifications
+            WHERE status = 'SCHEDULED' AND scheduled_at IS NOT NULL
+        `);
+        const rows = result.recordset || [];
+        const now = Date.now();
+        return rows.filter((row) => {
+            const raw = row.scheduled_at;
+            if (raw == null) return false;
+            const ms = raw instanceof Date ? raw.getTime() : new Date(raw).getTime();
+            return !Number.isNaN(ms) && ms <= now;
+        });
     }
 
     /**

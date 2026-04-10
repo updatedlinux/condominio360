@@ -4,6 +4,12 @@ const WhatsAppQueueModel = require('../models/WhatsAppQueueModel');
 const WhatsAppExternalApiService = require('./WhatsAppExternalApiService');
 const { normalizeVenezuelaMobileForWhatsApp } = require('../utils/venezuelaPhone');
 
+function buildWhatsAppOutboundBody(tenantName, userMessage) {
+    const name = (tenantName || '').replace(/\s+/g, ' ').trim() || 'Condominio';
+    const header = `Mensaje enviado por la Junta de Condominio - ${name}:\n\n`;
+    return `${header}${(userMessage || '').trim()}`;
+}
+
 /**
  * Cola global: máximo 30 envíos exitosos a API externa cada 2 minutos (plataforma).
  * Un job = un propietario; el API externo no encola.
@@ -96,13 +102,16 @@ class InAppWhatsAppQueueService {
                 continue;
             }
 
+            const tenantRow = await TenantModel.findById(job.tenant_id);
+            const outboundMessage = buildWhatsAppOutboundBody(tenantRow?.name, job.message_body);
+
             try {
                 await WhatsAppExternalApiService.sendWhatsApp({
                     baseUrl: cfg.baseUrl,
                     secretKey: cfg.secretKey,
                     countryCode: '+58',
                     phoneNumber: job.phone_national,
-                    message: job.message_body,
+                    message: outboundMessage,
                     logMeta: {
                         jobId: job.id,
                         notificationId: job.in_app_notification_id,

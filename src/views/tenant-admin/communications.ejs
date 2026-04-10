@@ -292,6 +292,14 @@
             return new Date(s).toLocaleString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         }
 
+        /** datetime-local usa hora local; no usar toISOString().slice (eso muestra UTC y desfasa ~4 h en VE). */
+        function toDatetimeLocalValue(d) {
+            const x = d instanceof Date ? d : new Date(d);
+            if (Number.isNaN(x.getTime())) return '';
+            const pad = n => String(n).padStart(2, '0');
+            return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}T${pad(x.getHours())}:${pad(x.getMinutes())}`;
+        }
+
         function escapeHtml(t) {
             const d = document.createElement('div');
             d.textContent = t;
@@ -356,8 +364,7 @@
                     waEl.checked = !!(n.send_whatsapp && whatsappUi.whatsappAvailable);
                     if (n.scheduled_at) {
                         document.getElementById('schedule-container').classList.remove('hidden');
-                        const dt = new Date(n.scheduled_at);
-                        document.getElementById('msg-scheduled-at').value = dt.toISOString().slice(0, 16);
+                        document.getElementById('msg-scheduled-at').value = toDatetimeLocalValue(new Date(n.scheduled_at));
                     }
                     document.getElementById('btn-schedule').classList.toggle('hidden', n.status === 'SENT');
                     document.getElementById('btn-schedule').textContent = n.scheduled_at ? 'Confirmar programación' : 'Programar';
