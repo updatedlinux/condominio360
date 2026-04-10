@@ -174,6 +174,16 @@ class TenantModel {
         if (!/^https?:\/\//i.test(u)) {
             u = `https://${u.replace(/^\/+/, '')}`;
         }
+        u = u.replace(/\/+$/, '');
+        try {
+            const parsed = new URL(u);
+            // Solo origen (p. ej. https://host) → el API suele estar bajo /api (evita 404 en …/send-message)
+            if (!parsed.pathname || parsed.pathname === '/') {
+                u = `${u}/api`;
+            }
+        } catch {
+            /* mantener u */
+        }
         return u.replace(/\/+$/, '');
     }
 

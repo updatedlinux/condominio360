@@ -40,10 +40,21 @@ class WhatsAppExternalApiService {
             });
             const data = res.data || {};
             if (res.status >= 400) {
-                const err = data.error || data.message || res.statusText || `HTTP ${res.status}`;
-                throw new Error(typeof err === 'string' ? err : JSON.stringify(err));
+                const apiDetail = data.error || data.message || res.statusText || `HTTP ${res.status}`;
+                const detailStr = typeof apiDetail === 'string' ? apiDetail : JSON.stringify(apiDetail);
+                let msg = detailStr;
+                if (res.status === 404) {
+                    msg =
+                        `HTTP 404 al POST ${url}. Suele indicar URL base incorrecta: debe apuntar al prefijo donde vive el API ` +
+                        `(p. ej. terminar en /api para que la petición sea …/api/send-message). Respuesta: ${detailStr}`;
+                } else {
+                    msg = `HTTP ${res.status} ${url}: ${detailStr}`;
+                }
+                console.warn('[WhatsApp API] Fallo envío', { url, status: res.status, detail: detailStr.slice(0, 500) });
+                throw new Error(msg.slice(0, 4000));
             }
             if (data.success === false) {
+                console.warn('[WhatsApp API] success=false', { url, error: data.error });
                 throw new Error(data.error || 'Envío rechazado por el API');
             }
             return data;
@@ -51,8 +62,23 @@ class WhatsAppExternalApiService {
             if (e.response?.data) {
                 const d = e.response.data;
                 const msg = d.error || d.message || e.message;
-                throw new Error(typeof msg === 'string' ? msg : JSON.stringify(d));
+                const out = typeof msg === 'string' ? msg : JSON.stringify(d);
+                console.warn('[WhatsApp API] Excepción axios', {
+                    url,
+                    status: e.response.status,
+                    detail: out.slice(0, 500)
+                });
+                throw new Error(
+                    e.response.status === 404
+                        ? `HTTP 404 al POST ${url}. Revise la URL base (p. ej. …/api). ${out}`.slice(0, 4000)
+                        : out.slice(0, 4000)
+                );
             }
+            if (e.code === 'ENOTFOUND' || e.code === 'EAI_AGAIN') {
+                console.warn('[WhatsApp API] DNS/red', { url, code: e.code, message: e.message });
+                throw new Error(`No se pudo resolver o conectar con el host del API (${e.code || 'red'}). Revise URL y DNS del servidor.`);
+            }
+            console.warn('[WhatsApp API] Error', { url, message: e.message });
             throw e;
         }
     }

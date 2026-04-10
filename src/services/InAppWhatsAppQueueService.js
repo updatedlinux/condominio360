@@ -107,7 +107,9 @@ class InAppWhatsAppQueueService {
                 await WhatsAppQueueModel.markSent(job.id);
                 await WhatsAppQueueModel.logGlobalSend();
             } catch (e) {
-                await WhatsAppQueueModel.markFailed(job.id, e.message || 'Error de envío');
+                const errText = e.message || 'Error de envío';
+                console.warn(`[WhatsApp queue] Job ${job.id} FAILED:`, errText);
+                await WhatsAppQueueModel.markFailed(job.id, errText);
             }
         }
     }
