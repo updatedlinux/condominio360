@@ -1,4 +1,5 @@
 const InAppNotificationModel = require('../models/InAppNotificationModel');
+const TenantAdminModel = require('../models/TenantAdminModel');
 const TenantModel = require('../models/TenantModel');
 const AuditService = require('../services/AuditService');
 const InAppWhatsAppQueueService = require('../services/InAppWhatsAppQueueService');
@@ -12,6 +13,37 @@ const WA_UNAVAILABLE_MSG =
  * Owner: listar últimas
  */
 class InAppNotificationController {
+    /**
+     * InAppNotifications.created_by referencia TenantAdmins.id.
+     * JWT TENANT_ADMIN: userId es TenantAdmins.id.
+     * Superadmin con tenant (impersonación / panel): userId es Users.id → usar un admin de junta del tenant.
+     */
+    static async resolveTenantAdminAuthorId(req) {
+        const tenantId = req.user.tenantId;
+        if (!tenantId) {
+            const err = new Error('Tenant no definido en la sesión');
+            err.statusCode = 400;
+            throw err;
+        }
+        if (req.user.type === 'TENANT_ADMIN') {
+            return req.user.userId;
+        }
+        if (req.user.isSuperAdmin) {
+            const id = await TenantAdminModel.findFirstActiveIdForTenant(tenantId);
+            if (!id) {
+                const err = new Error(
+                    'No hay administrador de junta activo en este condominio; no se puede registrar el autor del mensaje.'
+                );
+                err.statusCode = 400;
+                throw err;
+            }
+            return id;
+        }
+        const err = new Error('No autorizado');
+        err.statusCode = 403;
+        throw err;
+    }
+
     static async assertWhatsAppAllowed(tenantId, sendWhatsapp) {
         if (!sendWhatsapp) return;
         const cfg = await TenantModel.getWhatsAppDeliveryConfig(tenantId);
@@ -87,7 +119,7 @@ class InAppNotificationController {
     static async create(req, res) {
         try {
             const tenantId = req.user.tenantId;
-            const createdBy = req.user.userId;
+            const createdBy = await InAppNotificationController.resolveTenantAdminAuthorId(req);
             const {
                 message,
                 status = 'DRAFT',

@@ -102,6 +102,16 @@ class TenantAdminModel {
     }
 
     /**
+     * Primer admin de junta activo del tenant (para FK que apunta a TenantAdmins, p. ej. superadmin en contexto de condominio).
+     */
+    static async findFirstActiveIdForTenant(tenantId) {
+        const list = await TenantAdminModel.getByTenant(tenantId);
+        if (!list || list.length === 0) return null;
+        const row = list.find((x) => x.is_active !== false && x.is_active !== 0) || list[0];
+        return row.id || null;
+    }
+
+    /**
      * Create new tenant admin (by superadmin)
      * @param {Object} adminData 
      * @param {string} createdBy - Superadmin user ID
