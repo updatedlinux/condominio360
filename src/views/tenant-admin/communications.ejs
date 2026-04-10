@@ -126,13 +126,14 @@
                     <input type="datetime-local" id="msg-scheduled-at" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
                 </div>
 
-                <div class="flex items-center gap-3 p-4 bg-[#F5F5F5] rounded-xl relative" title="Próximamente">
-                    <input type="checkbox" id="msg-whatsapp" disabled class="w-5 h-5 text-[#f97316] rounded focus:ring-[#f97316] opacity-60 cursor-not-allowed">
-                    <div>
-                        <label class="font-medium text-[#3C4043] cursor-not-allowed">Enviar por WhatsApp</label>
-                        <p class="text-sm text-[#5F6368]">Próximamente</p>
+                <div id="wa-toggle-wrap" class="p-4 bg-[#F5F5F5] rounded-xl relative">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" id="msg-whatsapp" class="w-5 h-5 mt-0.5 text-[#f97316] rounded focus:ring-[#f97316] shrink-0">
+                        <div class="min-w-0 flex-1">
+                            <label for="msg-whatsapp" class="font-medium text-[#3C4043] cursor-pointer">Enviar por WhatsApp</label>
+                            <p id="wa-hint" class="text-sm text-[#5F6368] mt-0.5"></p>
+                        </div>
                     </div>
-                    <span class="absolute right-2 top-2 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded" title="Próximamente">Próximamente</span>
                 </div>
             </form>
             <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
@@ -152,6 +153,47 @@
         let currentPage = 1;
         let pagination = { total: 0, page: 1, limit: 20, pages: 1 };
         let editingId = null;
+        let whatsappUi = { whatsappAvailable: false, unavailableMessage: '' };
+
+        function getSendWhatsappFlag() {
+            const wa = document.getElementById('msg-whatsapp');
+            return !!(wa && wa.checked && !wa.disabled);
+        }
+
+        async function refreshWhatsAppStatus() {
+            try {
+                const r = await fetch('/api/tenant-admin/whatsapp-messaging-status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const d = await r.json();
+                if (d.success && d.data) {
+                    whatsappUi = {
+                        whatsappAvailable: !!d.data.whatsappAvailable,
+                        unavailableMessage: d.data.unavailableMessage || ''
+                    };
+                }
+                applyWhatsAppToggle();
+            } catch (e) {
+                whatsappUi = { whatsappAvailable: false, unavailableMessage: '' };
+                applyWhatsAppToggle();
+            }
+        }
+
+        function applyWhatsAppToggle() {
+            const cb = document.getElementById('msg-whatsapp');
+            const hint = document.getElementById('wa-hint');
+            if (!cb || !hint) return;
+            if (!whatsappUi.whatsappAvailable) {
+                cb.disabled = true;
+                cb.checked = false;
+                hint.textContent = whatsappUi.unavailableMessage || 'No disponible.';
+                cb.title = hint.textContent;
+            } else {
+                cb.disabled = false;
+                hint.textContent = 'Un envío por propietario con teléfono válido (fila en cola global de la plataforma).';
+                cb.title = '';
+            }
+        }
 
         if (!token) {
             localStorage.removeItem('token');
@@ -274,7 +316,7 @@
             document.querySelector('main').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        function openModal() {
+        async function openModal() {
             editingId = null;
             document.getElementById('msg-modal-title').textContent = 'Nuevo mensaje';
             document.getElementById('msg-id').value = '';
@@ -284,6 +326,8 @@
             document.getElementById('btn-schedule').classList.remove('hidden');
             document.getElementById('btn-schedule').textContent = 'Programar';
             document.getElementById('msg-char-count').textContent = '0/250';
+            await refreshWhatsAppStatus();
+            document.getElementById('msg-whatsapp').checked = false;
             document.getElementById('msg-modal').classList.remove('hidden');
             document.getElementById('msg-modal').classList.add('flex');
         }
@@ -295,15 +339,21 @@
 
         function editMsg(id) {
             editingId = id;
-            fetch(`/api/tenant-admin/in-app-notifications/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(r => r.json())
-                .then(d => {
+            (async () => {
+                await refreshWhatsAppStatus();
+                try {
+                    const r = await fetch(`/api/tenant-admin/in-app-notifications/${id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const d = await r.json();
                     if (!d.success) throw new Error(d.error);
                     const n = d.data;
                     document.getElementById('msg-modal-title').textContent = 'Editar mensaje';
                     document.getElementById('msg-id').value = n.id;
                     document.getElementById('msg-content').value = n.message;
                     document.getElementById('msg-char-count').textContent = n.message.length + '/' + MAX_LEN;
+                    const waEl = document.getElementById('msg-whatsapp');
+                    waEl.checked = !!(n.send_whatsapp && whatsappUi.whatsappAvailable);
                     if (n.scheduled_at) {
                         document.getElementById('schedule-container').classList.remove('hidden');
                         const dt = new Date(n.scheduled_at);
@@ -311,10 +361,13 @@
                     }
                     document.getElementById('btn-schedule').classList.toggle('hidden', n.status === 'SENT');
                     document.getElementById('btn-schedule').textContent = n.scheduled_at ? 'Confirmar programación' : 'Programar';
+                    applyWhatsAppToggle();
                     document.getElementById('msg-modal').classList.remove('hidden');
                     document.getElementById('msg-modal').classList.add('flex');
-                })
-                .catch(e => alert(e.message || 'Error al cargar mensaje'));
+                } catch (e) {
+                    alert(e.message || 'Error al cargar mensaje');
+                }
+            })();
         }
 
         async function saveDraft() {
@@ -322,7 +375,7 @@
             if (!msg) { alert('Escribe un mensaje'); return; }
             const id = document.getElementById('msg-id').value;
             try {
-                const body = { message: msg, status: 'DRAFT', sendWhatsapp: false };
+                const body = { message: msg, status: 'DRAFT', sendWhatsapp: getSendWhatsappFlag() };
                 const url = id ? `/api/tenant-admin/in-app-notifications/${id}` : '/api/tenant-admin/in-app-notifications';
                 const method = id ? 'PUT' : 'POST';
                 const r = await fetch(url, {
@@ -347,7 +400,12 @@
             if (!scheduledAt) { alert('Selecciona fecha y hora para programar'); return; }
             const id = document.getElementById('msg-id').value;
             try {
-                const body = { message: msg, status: 'SCHEDULED', scheduledAt: new Date(scheduledAt).toISOString(), sendWhatsapp: false };
+                const body = {
+                    message: msg,
+                    status: 'SCHEDULED',
+                    scheduledAt: new Date(scheduledAt).toISOString(),
+                    sendWhatsapp: getSendWhatsappFlag()
+                };
                 const url = id ? `/api/tenant-admin/in-app-notifications/${id}` : '/api/tenant-admin/in-app-notifications';
                 const method = id ? 'PUT' : 'POST';
                 const r = await fetch(url, {
@@ -373,7 +431,11 @@
                 if (id) {
                     const r = await fetch(`/api/tenant-admin/in-app-notifications/${id}/send`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ sendWhatsapp: getSendWhatsappFlag() })
                     });
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || 'Error');
@@ -381,7 +443,7 @@
                     const r = await fetch('/api/tenant-admin/in-app-notifications', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ message: msg, sendNow: true, sendWhatsapp: false })
+                        body: JSON.stringify({ message: msg, sendNow: true, sendWhatsapp: getSendWhatsappFlag() })
                     });
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || 'Error');
@@ -455,6 +517,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadTenantInfo();
             loadNotifications();
+            refreshWhatsAppStatus();
         });
     </script>
 </body>

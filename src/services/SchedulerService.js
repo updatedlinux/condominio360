@@ -74,10 +74,14 @@ class SchedulerService {
             async () => {
                 try {
                     const InAppNotificationModel = require('../models/InAppNotificationModel');
+                    const InAppWhatsAppQueueService = require('./InAppWhatsAppQueueService');
                     const due = await InAppNotificationModel.getScheduledDue();
                     for (const n of due) {
                         await InAppNotificationModel.markAsSent(n.id);
                         console.log(`📤 Notificación in-app enviada: ${n.id}`);
+                        await InAppWhatsAppQueueService.enqueueWhatsAppForSentNotification(n.id).catch((err) => {
+                            console.error('[WhatsApp enqueue programado]', err);
+                        });
                     }
                 } catch (e) {
                     console.error('Error enviando notificaciones programadas:', e);

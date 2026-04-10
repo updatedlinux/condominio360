@@ -152,6 +152,7 @@ const BulkOwnerWelcomeSchedulerService = require('./services/BulkOwnerWelcomeSch
 const ConsultationNotificationService = require('./services/ConsultationNotificationService');
 const BillingRateUpdateService = require('./services/BillingRateUpdateService');
 const EmailWorkerService = require('./services/EmailWorkerService');
+const InAppWhatsAppQueueService = require('./services/InAppWhatsAppQueueService');
 
 // Iniciar Servidor
 app.listen(PORT, () => {
@@ -178,6 +179,9 @@ app.listen(PORT, () => {
 
     // Cola bulk Mailgun + purga de logs de correo (retención EMAIL_LOG_RETENTION_DAYS)
     EmailWorkerService.start();
+
+    // Cola WhatsApp (mensajes in-app): límite global 30 envíos / 2 min al API externo
+    InAppWhatsAppQueueService.start();
 });
 
 module.exports = app;

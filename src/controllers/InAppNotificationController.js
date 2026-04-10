@@ -1,5 +1,10 @@
 const InAppNotificationModel = require('../models/InAppNotificationModel');
+const TenantModel = require('../models/TenantModel');
 const AuditService = require('../services/AuditService');
+const InAppWhatsAppQueueService = require('../services/InAppWhatsAppQueueService');
+
+const WA_UNAVAILABLE_MSG =
+    'El servicio de WhatsApp no está contratado o configurado para este condominio. Contacte a administración Condominio360.';
 
 /**
  * Controller para Notificaciones In-App (mensajes cortos)
@@ -7,6 +12,37 @@ const AuditService = require('../services/AuditService');
  * Owner: listar últimas
  */
 class InAppNotificationController {
+    static async assertWhatsAppAllowed(tenantId, sendWhatsapp) {
+        if (!sendWhatsapp) return;
+        const cfg = await TenantModel.getWhatsAppDeliveryConfig(tenantId);
+        if (!cfg) {
+            const err = new Error(WA_UNAVAILABLE_MSG);
+            err.statusCode = 400;
+            throw err;
+        }
+    }
+
+    /**
+     * GET /api/tenant-admin/whatsapp-messaging-status
+     */
+    static async getWhatsAppMessagingStatus(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const available = !!(await TenantModel.getWhatsAppDeliveryConfig(tenantId));
+            res.json({
+                success: true,
+                data: {
+                    whatsappAvailable: available,
+                    unavailableMessage:
+                        'El servicio de WhatsApp no está contratado para este condominio. Contacte a administración Condominio360 para contratarlo (costo adicional).'
+                }
+            });
+        } catch (error) {
+            console.error('getWhatsAppMessagingStatus error:', error);
+            res.status(500).json({ success: false, error: 'Error al verificar WhatsApp' });
+        }
+    }
+
     /**
      * GET /api/tenant-admin/in-app-notifications
      */
@@ -70,6 +106,8 @@ class InAppNotificationController {
                 finalStatus = 'SCHEDULED';
             }
 
+            await InAppNotificationController.assertWhatsAppAllowed(tenantId, !!sendWhatsapp);
+
             const notification = await InAppNotificationModel.create({
                 tenantId,
                 createdBy,
@@ -83,6 +121,9 @@ class InAppNotificationController {
                 await InAppNotificationModel.markAsSent(notification.id);
                 notification.status = 'SENT';
                 notification.sent_at = new Date();
+                await InAppWhatsAppQueueService.enqueueWhatsAppForSentNotification(notification.id).catch((e) => {
+                    console.error('[WhatsApp enqueue create sendNow]', e);
+                });
             }
 
             await AuditService.log({
@@ -96,12 +137,13 @@ class InAppNotificationController {
 
             res.status(201).json({
                 success: true,
-                message: sendNow ? 'Mensaje enviado' : (finalStatus === 'SCHEDULED' ? 'Mensaje programado' : 'Borrador guardado'),
+                message: sendNow ? 'Mensaje enviado' : finalStatus === 'SCHEDULED' ? 'Mensaje programado' : 'Borrador guardado',
                 data: notification
             });
         } catch (error) {
             console.error('Create in-app notification error:', error);
-            res.status(400).json({
+            const code = error.statusCode || 400;
+            res.status(code).json({
                 success: false,
                 error: error.message || 'Error al crear mensaje'
             });
@@ -126,6 +168,10 @@ class InAppNotificationController {
                 return res.status(400).json({ success: false, error: 'No se puede editar un mensaje ya enviado' });
             }
 
+            if (sendWhatsapp !== undefined) {
+                await InAppNotificationController.assertWhatsAppAllowed(tenantId, !!sendWhatsapp);
+            }
+
             const updated = await InAppNotificationModel.update(id, {
                 message,
                 status,
@@ -148,7 +194,8 @@ class InAppNotificationController {
             res.json({ success: true, data: updated });
         } catch (error) {
             console.error('Update in-app notification error:', error);
-            res.status(400).json({
+            const code = error.statusCode || 400;
+            res.status(code).json({
                 success: false,
                 error: error.message || 'Error al actualizar mensaje'
             });
@@ -157,12 +204,13 @@ class InAppNotificationController {
 
     /**
      * POST /api/tenant-admin/in-app-notifications/:id/send
-     * Enviar ahora (DRAFT o SCHEDULED)
+     * Enviar ahora (DRAFT o SCHEDULED). Body opcional: { sendWhatsapp: boolean }
      */
     static async sendNow(req, res) {
         try {
             const { id } = req.params;
             const tenantId = req.user.tenantId;
+            const { sendWhatsapp: bodySendWa } = req.body || {};
 
             const existing = await InAppNotificationModel.findById(id, tenantId);
             if (!existing) {
@@ -172,7 +220,21 @@ class InAppNotificationController {
                 return res.status(400).json({ success: false, error: 'El mensaje ya fue enviado' });
             }
 
+            if (bodySendWa !== undefined) {
+                await InAppNotificationController.assertWhatsAppAllowed(tenantId, !!bodySendWa);
+                await InAppNotificationModel.update(id, { sendWhatsapp: !!bodySendWa });
+            }
+
+            const refreshed = await InAppNotificationModel.findById(id, tenantId);
+            if (refreshed.send_whatsapp) {
+                await InAppNotificationController.assertWhatsAppAllowed(tenantId, true);
+            }
+
             const updated = await InAppNotificationModel.markAsSent(id);
+
+            await InAppWhatsAppQueueService.enqueueWhatsAppForSentNotification(id).catch((e) => {
+                console.error('[WhatsApp enqueue send]', e);
+            });
 
             await AuditService.log({
                 tenantId,
@@ -185,7 +247,11 @@ class InAppNotificationController {
             res.json({ success: true, message: 'Mensaje enviado', data: updated });
         } catch (error) {
             console.error('Send in-app notification error:', error);
-            res.status(500).json({ success: false, error: 'Error al enviar mensaje' });
+            const code = error.statusCode || 500;
+            res.status(code).json({
+                success: false,
+                error: error.message || 'Error al enviar mensaje'
+            });
         }
     }
 

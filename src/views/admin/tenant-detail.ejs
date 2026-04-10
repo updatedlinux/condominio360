@@ -368,6 +368,16 @@
                                 </div>
                                 <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
                             </button>
+                            <button type="button" onclick="configureWhatsAppMessaging()" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center group-hover:bg-teal-200/80 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-teal-700">chat</span>
+                                </div>
+                                <div class="ml-4 min-w-0">
+                                    <p class="font-semibold text-slate-900">WhatsApp (Mensajes)</p>
+                                    <p class="text-sm text-slate-500">API por condominio — módulo Mensajes, no comunicados</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto flex-shrink-0 group-hover:text-orange-500">chevron_right</span>
+                            </button>
                         </div>
                     </div>
 
@@ -758,6 +768,56 @@
             openModal('billing-mode-modal');
         }
 
+        function configureWhatsAppMessaging() {
+            openModal('whatsapp-messaging-modal');
+            loadWhatsAppSettings();
+        }
+
+        async function loadWhatsAppSettings() {
+            const hint = document.getElementById('wa-key-hint');
+            hint.textContent = 'Cargando...';
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/whatsapp-messaging`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error || 'Error');
+                const d = j.data;
+                document.getElementById('wa-enabled').checked = !!d.enabled;
+                document.getElementById('wa-base-url').value = d.apiBaseUrl || '';
+                document.getElementById('wa-api-key').value = '';
+                hint.textContent = d.hasApiSecret
+                    ? 'Hay una clave guardada. Deje el campo vacío para mantenerla.'
+                    : 'Ingrese la API Key del proveedor.';
+            } catch (e) {
+                hint.textContent = e.message || 'Error al cargar';
+            }
+        }
+
+        async function saveWhatsAppSettings() {
+            const body = {
+                enabled: document.getElementById('wa-enabled').checked,
+                apiBaseUrl: document.getElementById('wa-base-url').value.trim(),
+                apiKey: document.getElementById('wa-api-key').value.trim()
+            };
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/whatsapp-messaging`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error || 'Error al guardar');
+                closeModal('whatsapp-messaging-modal');
+                window.location.reload();
+            } catch (e) {
+                alert(e.message || 'Error');
+            }
+        }
+
         function selectBillingMode(mode) {
             document.querySelectorAll('.billing-mode-option').forEach(el => {
                 el.classList.remove('border-orange-500', 'bg-orange-50');
@@ -1125,6 +1185,46 @@
             window.location.href = '/';
         }
     </script>
+
+    <!-- WhatsApp API (Mensajes in-app) — SuperAdmin -->
+    <div id="whatsapp-messaging-modal" class="modal-overlay">
+        <div class="modal-content p-6" style="max-width: 520px;">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">WhatsApp — Mensajes a propietarios</h2>
+                <button type="button" onclick="closeModal('whatsapp-messaging-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-slate-600 mb-4">URL base y clave del API externo por condominio. La junta verá el toggle en <strong>Mensajes</strong> solo si el servicio está activo y configurado.</p>
+            <div class="space-y-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="wa-enabled" class="w-5 h-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                    <span class="font-medium text-slate-900">Servicio contratado / habilitado</span>
+                </label>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">URL base del API</label>
+                    <input type="url" id="wa-base-url" placeholder="https://wsapiback.arsystech.net/api"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm">
+                    <p class="text-xs text-slate-500 mt-1">Debe incluir <code class="bg-slate-100 px-1 rounded">/api</code> si el API lo requiere.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input type="password" id="wa-api-key" autocomplete="new-password"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                        placeholder="Dejar vacío para no cambiar la clave actual">
+                    <p class="text-xs text-slate-500 mt-1" id="wa-key-hint"></p>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-6 mt-2">
+                <button type="button" onclick="closeModal('whatsapp-messaging-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveWhatsAppSettings()" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Billing Mode Configuration Modal -->
     <div id="billing-mode-modal" class="modal-overlay">

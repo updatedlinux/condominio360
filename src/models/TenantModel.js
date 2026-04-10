@@ -163,6 +163,111 @@ class TenantModel {
             throw error;
         }
     }
+
+    /**
+     * URL base del API externo (ej. https://host.../api), sin barra final.
+     */
+    static normalizeWhatsAppApiBaseUrl(input) {
+        const t = (input || '').trim();
+        if (!t) return null;
+        let u = t;
+        if (!/^https?:\/\//i.test(u)) {
+            u = `https://${u.replace(/^\/+/, '')}`;
+        }
+        return u.replace(/\/+$/, '');
+    }
+
+    /**
+     * Configuración para envío (incluye secret). null si no está contratado/configurado.
+     */
+    static async getWhatsAppDeliveryConfig(tenantId) {
+        try {
+            const pool = await connectDB();
+            const result = await pool.request()
+                .input('id', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT whatsapp_api_base_url, whatsapp_api_secret, whatsapp_messaging_enabled
+                    FROM Tenants WHERE id = @id
+                `);
+            const t = result.recordset[0];
+            if (!t || !t.whatsapp_messaging_enabled) return null;
+            const baseUrl = TenantModel.normalizeWhatsAppApiBaseUrl(t.whatsapp_api_base_url);
+            const secretKey = (t.whatsapp_api_secret || '').trim();
+            if (!baseUrl || !secretKey) return null;
+            return { baseUrl, secretKey };
+        } catch (error) {
+            console.error('getWhatsAppDeliveryConfig error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Superadmin / UI: sin secret; indica si hay clave guardada.
+     */
+    static async getWhatsAppSettingsPublic(tenantId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT whatsapp_api_base_url, whatsapp_messaging_enabled,
+                    CASE WHEN whatsapp_api_secret IS NOT NULL AND LEN(LTRIM(RTRIM(whatsapp_api_secret))) > 0
+                        THEN 1 ELSE 0 END AS has_api_secret
+                FROM Tenants WHERE id = @id
+            `);
+        const row = result.recordset[0];
+        if (!row) return null;
+        return {
+            enabled: !!row.whatsapp_messaging_enabled,
+            apiBaseUrl: row.whatsapp_api_base_url || '',
+            hasApiSecret: !!row.has_api_secret
+        };
+    }
+
+    /**
+     * @param {Object} data - enabled?, apiBaseUrl?, apiKey? (vacío = mantener clave anterior)
+     */
+    static async updateWhatsAppSettings(tenantId, data) {
+        const pool = await connectDB();
+        const cur = await pool.request()
+            .input('id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT whatsapp_api_base_url, whatsapp_api_secret FROM Tenants WHERE id = @id
+            `);
+        const ex = cur.recordset[0];
+        if (!ex) throw new Error('Condominio no encontrado');
+
+        const request = pool.request().input('id', sql.UniqueIdentifier, tenantId);
+        const parts = [];
+
+        if (data.enabled !== undefined) {
+            parts.push('whatsapp_messaging_enabled = @w_en');
+            request.input('w_en', sql.Bit, data.enabled ? 1 : 0);
+        }
+        if (data.apiBaseUrl !== undefined) {
+            const normalized = TenantModel.normalizeWhatsAppApiBaseUrl(data.apiBaseUrl);
+            parts.push('whatsapp_api_base_url = @w_url');
+            request.input('w_url', sql.NVarChar, normalized || null);
+        }
+        if (data.apiKey !== undefined) {
+            const k = String(data.apiKey || '').trim();
+            parts.push('whatsapp_api_secret = @w_sec');
+            if (k.length > 0) {
+                request.input('w_sec', sql.NVarChar, k);
+            } else {
+                request.input('w_sec', sql.NVarChar, ex.whatsapp_api_secret || null);
+            }
+        }
+
+        if (parts.length === 0) {
+            return TenantModel.findById(tenantId);
+        }
+        parts.push('updated_at = SYSDATETIME()');
+
+        await request.query(`
+            UPDATE Tenants SET ${parts.join(', ')} WHERE id = @id
+        `);
+        return TenantModel.findById(tenantId);
+    }
 }
 
 module.exports = TenantModel;

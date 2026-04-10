@@ -175,9 +175,17 @@ class AdminController {
                 ORDER BY t.created_at DESC
             `);
 
+            const data = result.recordset.map((row) => {
+                const { whatsapp_api_secret: _w, ...rest } = row;
+                return {
+                    ...rest,
+                    whatsapp_api_secret_configured: !!(_w && String(_w).trim())
+                };
+            });
+
             res.json({
                 success: true,
-                data: result.recordset
+                data
             });
         } catch (error) {
             console.error('Get all tenants error:', error);
@@ -203,7 +211,11 @@ class AdminController {
                 return res.status(404).json({ error: 'Condominio no encontrado' });
             }
 
-            const tenant = tenantResult.recordset[0];
+            const tenantRaw = tenantResult.recordset[0];
+            const { whatsapp_api_secret: _waSecret, ...tenant } = tenantRaw;
+            const whatsapp_api_secret_configured = !!(
+                _waSecret && String(_waSecret).trim()
+            );
 
             // Estadísticas
             const statsResult = await pool.request()
@@ -235,6 +247,7 @@ class AdminController {
                 success: true,
                 data: {
                     ...tenant,
+                    whatsapp_api_secret_configured,
                     stats: statsResult.recordset[0],
                     admins: adminsResult.recordset
                 }
@@ -302,7 +315,9 @@ class AdminController {
                 });
             }
 
-            const tenant = tenantResult.recordset[0];
+            const tenantRow = tenantResult.recordset[0];
+            const { whatsapp_api_secret: _waSec, ...tenant } = tenantRow;
+            tenant.whatsapp_api_secret_configured = !!(_waSec && String(_waSec).trim());
 
             // Estadísticas
             const statsResult = await pool.request()
@@ -2755,6 +2770,45 @@ class AdminController {
         } catch (error) {
             console.error('Export owners excel error:', error);
             res.status(500).json({ error: 'Error al exportar propietarios' });
+        }
+    }
+
+    /**
+     * GET /api/admin/tenants/:id/whatsapp-messaging
+     * Configuración API WhatsApp (sin exponer la clave).
+     */
+    static async getTenantWhatsAppMessaging(req, res) {
+        try {
+            const { id } = req.params;
+            const s = await TenantModel.getWhatsAppSettingsPublic(id);
+            if (!s) {
+                return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
+            }
+            res.json({ success: true, data: s });
+        } catch (error) {
+            console.error('getTenantWhatsAppMessaging error:', error);
+            res.status(500).json({ success: false, error: 'Error al cargar configuración' });
+        }
+    }
+
+    /**
+     * PUT /api/admin/tenants/:id/whatsapp-messaging
+     * body: { enabled, apiBaseUrl, apiKey? } — apiKey vacío mantiene la clave anterior.
+     */
+    static async updateTenantWhatsAppMessaging(req, res) {
+        try {
+            const { id } = req.params;
+            const { enabled, apiBaseUrl, apiKey } = req.body || {};
+            await TenantModel.updateWhatsAppSettings(id, { enabled, apiBaseUrl, apiKey });
+            const data = await TenantModel.getWhatsAppSettingsPublic(id);
+            await AdminController.logAudit(req, 'UPDATE', 'TENANT', id, 'Configuración API WhatsApp (Mensajes)', id);
+            res.json({ success: true, data });
+        } catch (error) {
+            console.error('updateTenantWhatsAppMessaging error:', error);
+            res.status(400).json({
+                success: false,
+                error: error.message || 'Error al guardar configuración'
+            });
         }
     }
 }

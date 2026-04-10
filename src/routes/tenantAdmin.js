@@ -43,6 +43,7 @@ router.get('/activity', TenantAdminController.getActivity);
 
 // ==================== NOTIFICACIONES IN-APP (MENSAJES CORTOS) ====================
 const InAppNotificationController = require('../controllers/InAppNotificationController');
+router.get('/whatsapp-messaging-status', InAppNotificationController.getWhatsAppMessagingStatus);
 router.get('/in-app-notifications', InAppNotificationController.list);
 router.get('/in-app-notifications/max-length', (req, res) => res.json({ maxLength: 250 }));
 router.get('/in-app-notifications/:id', InAppNotificationController.getById);
