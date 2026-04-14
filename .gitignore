@@ -23,6 +23,20 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Bubblewrap / TWA / Android build outputs
+android-twa/
+twa-build/
+.bubblewrap/
+*.apk
+*.aab
+*.apks
+*.keystore
+*.jks
+*.pem
+*.p12
+*.der
+*.key
+
 # Editor
 .vscode
 .idea

@@ -2,10 +2,13 @@
   "name": "Condominio360",
   "short_name": "Condominio360",
   "start_url": "/login",
+  "id": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone"],
   "background_color": "#ffffff",
   "theme_color": "#f97316",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/assets/images/isotipo-naranja.svg",
