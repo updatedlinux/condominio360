@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.condominio360.app",
+      "sha256_cert_fingerprints": [
+        "REEMPLAZAR_CON_FINGERPRINT_SHA256_DE_TU_CERTIFICADO"
+      ]
+    }
+  }
+]
+

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %> | Condominio360</title>
+    <meta name="theme-color" content="#f97316">
+    <link rel="manifest" href="/manifest.webmanifest">
     <link href="/css/output.css" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,4 +73,12 @@
     </footer>
 
 </body>
+<script>
+// Registro básico de Service Worker (para PWA/TWA).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
+</script>
 </html>
