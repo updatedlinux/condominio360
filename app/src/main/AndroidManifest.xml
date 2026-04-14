@@ -136,6 +136,10 @@
             
 
             
+                <meta-data
+                    android:name="android.support.customtabs.trusted.DISPLAY_OVERRIDE"
+                    android:resource="@array/display_override" />
+            
 
             
 

@@ -35,13 +35,15 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://condominio-360.com/",
   "minSdkVersion": 21,
-  "orientation": "default",
+  "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],
   "fileHandlers": [],
   "launchHandlerClientMode": "",
-  "displayOverride": [],
+  "displayOverride": [
+    "standalone"
+  ],
   "appVersion": "1"
 }
