@@ -38,17 +38,31 @@ async function verifyRecaptcha(token, expectedAction = 'login') {
         const data = await res.json();
 
         if (!data.success) {
-            return { ok: false, error: 'Verificación reCAPTCHA fallida', details: data['error-codes'] };
+            return {
+                ok: false,
+                error: 'Verificación reCAPTCHA fallida',
+                details: data['error-codes'],
+                hostname: data.hostname,
+                challengeTs: data.challenge_ts
+            };
         }
 
         if (expectedAction && data.action !== expectedAction) {
-            return { ok: false, error: 'Acción reCAPTCHA inválida' };
+            return { ok: false, error: 'Acción reCAPTCHA inválida', action: data.action, hostname: data.hostname };
         }
 
         const score = data.score ?? 0;
         const minScore = minScoreForAction(expectedAction);
         if (score < minScore) {
-            return { ok: false, error: 'Score reCAPTCHA demasiado bajo', score, minScore, action: data.action };
+            return {
+                ok: false,
+                error: 'Score reCAPTCHA demasiado bajo',
+                score,
+                minScore,
+                action: data.action,
+                hostname: data.hostname,
+                challengeTs: data.challenge_ts
+            };
         }
 
         return { ok: true, score };

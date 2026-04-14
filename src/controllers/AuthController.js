@@ -1,6 +1,26 @@
 const AuthService = require('../services/AuthService');
 const { verifyRecaptcha } = require('../services/RecaptchaService');
 
+function isMobileUserAgent(ua) {
+    const s = String(ua || '');
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(s);
+}
+
+// Rate limit simple en memoria para login (mitiga bypass reCAPTCHA en móvil).
+// Nota: si tienes múltiples instancias/PM2 cluster, esto es por-proceso.
+const LOGIN_ATTEMPTS = new Map();
+const LOGIN_WINDOW_MS = 10 * 60 * 1000; // 10 min
+const LOGIN_MAX_ATTEMPTS = parseInt(process.env.LOGIN_MAX_ATTEMPTS || '20', 10); // por IP+usuario
+
+function recordAndCheckLoginAttempt(key) {
+    const now = Date.now();
+    const arr = LOGIN_ATTEMPTS.get(key) || [];
+    const fresh = arr.filter((t) => now - t <= LOGIN_WINDOW_MS);
+    fresh.push(now);
+    LOGIN_ATTEMPTS.set(key, fresh);
+    return { attempts: fresh.length, blocked: fresh.length > LOGIN_MAX_ATTEMPTS };
+}
+
 /**
  * Auth Controller
  * Maneja todas las operaciones de autenticación
@@ -17,6 +37,16 @@ class AuthController {
         try {
             const { email, identifier, password, type, recaptchaToken } = req.body;
 
+            // Rate limiting antes de intentar auth
+            const loginIdForLimit = (identifier || email || '').trim().toLowerCase() || 'unknown';
+            const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+            const limitKey = `${ip}::${loginIdForLimit}`;
+            const lim = recordAndCheckLoginAttempt(limitKey);
+            if (lim.blocked) {
+                console.warn('[Auth] Rate limit login', { ip, loginIdForLimit, attempts: lim.attempts });
+                return res.status(429).json({ error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' });
+            }
+
             if (process.env.RECAPTCHA_SECRET_KEY) {
                 if (!recaptchaToken) {
                     console.warn('[reCAPTCHA] Login sin token. ¿RECAPTCHA_SITE_KEY está en .env y el script carga en el cliente?');
@@ -24,12 +54,34 @@ class AuthController {
                 const recap = await verifyRecaptcha(recaptchaToken, 'login');
                 if (!recap.ok) {
                     if (!recap.skipped) {
-                        console.warn('[reCAPTCHA] Login falló:', recap.error, recap.details ? { details: recap.details } : '');
+                        console.warn('[reCAPTCHA] Login falló:', recap.error, {
+                            details: recap.details,
+                            score: recap.score,
+                            minScore: recap.minScore,
+                            action: recap.action,
+                            hostname: recap.hostname,
+                            challengeTs: recap.challengeTs
+                        });
                     }
-                    return res.status(400).json({
-                        error: recap.skipped ? 'Error de verificación' : (recap.error || 'Verificación de seguridad fallida. Intenta de nuevo.'),
-                        ...(recap.details && { recaptchaDetails: recap.details })
-                    });
+
+                    const bypassMobile = String(process.env.RECAPTCHA_BYPASS_MOBILE || '').trim() === '1';
+                    if (bypassMobile && isMobileUserAgent(req.headers['user-agent'])) {
+                        console.warn('[reCAPTCHA] BYPASS móvil habilitado para login', {
+                            ip,
+                            loginIdForLimit,
+                            reason: recap.error,
+                            details: recap.details,
+                            hostname: recap.hostname
+                        });
+                        // Continuar login sin bloquear por reCAPTCHA
+                    } else {
+                        return res.status(400).json({
+                            error: recap.skipped
+                                ? 'Error de verificación'
+                                : (recap.error || 'Verificación de seguridad fallida. Intenta de nuevo.'),
+                            ...(recap.details && { recaptchaDetails: recap.details })
+                        });
+                    }
                 }
             }
 
