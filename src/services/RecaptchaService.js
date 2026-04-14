@@ -2,6 +2,17 @@
  * Google reCAPTCHA v3 - Verificación server-side
  * Si RECAPTCHA_SECRET_KEY no está configurado, la verificación se omite (desarrollo)
  */
+function minScoreForAction(action) {
+    const base = parseFloat(process.env.RECAPTCHA_MIN_SCORE || '0.5');
+    const byActionKey = `RECAPTCHA_MIN_SCORE_${String(action || '').toUpperCase()}`;
+    const byAction = process.env[byActionKey];
+    if (byAction != null && String(byAction).trim() !== '') {
+        const v = parseFloat(String(byAction));
+        if (!Number.isNaN(v)) return v;
+    }
+    return Number.isNaN(base) ? 0.5 : base;
+}
+
 async function verifyRecaptcha(token, expectedAction = 'login') {
     const secret = process.env.RECAPTCHA_SECRET_KEY;
     if (!secret) {
@@ -35,9 +46,9 @@ async function verifyRecaptcha(token, expectedAction = 'login') {
         }
 
         const score = data.score ?? 0;
-        const minScore = parseFloat(process.env.RECAPTCHA_MIN_SCORE || '0.5');
+        const minScore = minScoreForAction(expectedAction);
         if (score < minScore) {
-            return { ok: false, error: 'Score reCAPTCHA demasiado bajo', score };
+            return { ok: false, error: 'Score reCAPTCHA demasiado bajo', score, minScore, action: data.action };
         }
 
         return { ok: true, score };
@@ -47,4 +58,4 @@ async function verifyRecaptcha(token, expectedAction = 'login') {
     }
 }
 
-module.exports = { verifyRecaptcha };
+module.exports = { verifyRecaptcha, minScoreForAction };
