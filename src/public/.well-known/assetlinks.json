@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.condominio360.app",
+      "package_name": "com.condominio_360.twa",
       "sha256_cert_fingerprints": [
         "A7:E6:10:0C:38:64:02:24:70:B2:C3:62:9E:68:86:46:19:A6:6A:CA:77:AA:51:50:71:5A:C4:8D:41:F4:A3:C3"
       ]
