@@ -207,10 +207,12 @@ class TenantAdminController {
             try {
                 const ownersResult = await pool.request()
                     .input('propertyId', sql.UniqueIdentifier, propertyId)
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
                     .query(`
                         SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.dni,
                                po.percentage_ownership, po.is_primary_owner
                         FROM PropertyOwners po
+                        INNER JOIN Properties p ON p.id = po.property_id AND p.tenant_id = @tenantId
                         INNER JOIN Users u ON po.user_id = u.id
                         WHERE po.property_id = @propertyId
                     `);
@@ -303,7 +305,13 @@ class TenantAdminController {
                 // Obtener IDs de propietarios del inmueble
                 const ownersResult = await pool.request()
                     .input('propertyId', sql.UniqueIdentifier, propertyId)
-                    .query(`SELECT user_id FROM PropertyOwners WHERE property_id = @propertyId`);
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
+                    .query(`
+                        SELECT po.user_id
+                        FROM PropertyOwners po
+                        INNER JOIN Properties p ON p.id = po.property_id AND p.tenant_id = @tenantId
+                        WHERE po.property_id = @propertyId
+                    `);
                 
                 const ownerIds = ownersResult.recordset.map(o => o.user_id);
                 
@@ -324,14 +332,51 @@ class TenantAdminController {
                     // Obtener lecturas de los propietarios de este inmueble
                     const readsResult = await pool.request()
                         .input('tenantId', sql.UniqueIdentifier, tenantId)
+                        .input('propertyId', sql.UniqueIdentifier, propertyId)
                         .query(`
-                            SELECT cr.communique_id, cr.read_at, cr.ip_address,
-                                   ISNULL(u.first_name + ' ' + u.last_name, 'Propietario') as reader_name
-                            FROM CommuniqueReads cr
-                            LEFT JOIN Users u ON cr.user_id = u.id
-                            WHERE cr.communique_id IN (
-                                SELECT id FROM Communiques WHERE tenant_id = @tenantId AND status = 'active'
+                            ;WITH OwnerReads AS (
+                                SELECT
+                                    cr.communique_id,
+                                    cr.user_id,
+                                    cr.read_at,
+                                    cr.ip_address,
+                                    ISNULL(u.first_name + ' ' + u.last_name, 'Propietario') as reader_name
+                                FROM CommuniqueReads cr
+                                INNER JOIN PropertyOwners po
+                                    ON po.user_id = cr.user_id
+                                   AND po.property_id = @propertyId
+                                INNER JOIN Communiques c
+                                    ON c.id = cr.communique_id
+                                   AND c.tenant_id = @tenantId
+                                   AND c.status = 'active'
+                                LEFT JOIN Users u ON cr.user_id = u.id
                             )
+                            SELECT
+                                r.communique_id,
+                                rAgg.read_at,
+                                rAgg.ip_address,
+                                rAgg.reader_name
+                            FROM (SELECT DISTINCT communique_id FROM OwnerReads) r
+                            OUTER APPLY (
+                                SELECT TOP 1
+                                    read_at,
+                                    ip_address
+                                FROM OwnerReads x
+                                WHERE x.communique_id = r.communique_id
+                                ORDER BY x.read_at DESC
+                            ) rLast
+                            OUTER APPLY (
+                                SELECT
+                                    STRING_AGG(reader_name, ', ') WITHIN GROUP (ORDER BY reader_name) as reader_name
+                                FROM OwnerReads x
+                                WHERE x.communique_id = r.communique_id
+                            ) rNames
+                            OUTER APPLY (
+                                SELECT
+                                    rLast.read_at as read_at,
+                                    rLast.ip_address as ip_address,
+                                    rNames.reader_name as reader_name
+                            ) rAgg
                         `);
                     
                     results.communiqueReads = readsResult.recordset;
