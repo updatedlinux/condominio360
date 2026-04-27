@@ -7,7 +7,6 @@ const PropertyModel = require('../models/PropertyModel');
 const SystemSettingsModel = require('../models/SystemSettingsModel');
 const BCVService = require('../services/BCVService');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
-const BCVService = require('../services/BCVService');
 const EmailService = require('../services/EmailService');
 const AuthService = require('../services/AuthService');
 const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
