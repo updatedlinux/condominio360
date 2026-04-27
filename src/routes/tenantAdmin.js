@@ -133,7 +133,9 @@ router.post('/security-users/:id/password', SecurityUserController.setPassword);
 router.delete('/security-users/:id', SecurityUserController.deactivate);
 
 // ==================== REPORTES (VISITAS / DELIVERIES) ====================
+router.get('/reports/visit-logs/export', TenantAdminReportsController.visitLogsExportExcel);
 router.get('/reports/visit-logs', TenantAdminReportsController.visitLogs);
+router.get('/reports/deliveries/export', TenantAdminReportsController.deliveriesExportExcel);
 router.get('/reports/deliveries', TenantAdminReportsController.deliveries);
 
 // ==================== FACTURACIÓN CONDOMINIO360 (SAAS) ====================
