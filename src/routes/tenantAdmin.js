@@ -13,6 +13,7 @@ const { authenticate } = require('../middleware/auth');
 const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
 const { conditionalPreliminaryUpload } = require('../middleware/uploadBillingPreliminaryItems');
 const TenantAdminBalanceController = require('../controllers/TenantAdminBalanceController');
+const TenantAdminReportsController = require('../controllers/TenantAdminReportsController');
 
 // Middleware to ensure user is Tenant Admin
 const verifyTenantAdmin = (req, res, next) => {
@@ -130,6 +131,10 @@ router.post('/security-users', SecurityUserController.create);
 router.put('/security-users/:id', SecurityUserController.update);
 router.post('/security-users/:id/password', SecurityUserController.setPassword);
 router.delete('/security-users/:id', SecurityUserController.deactivate);
+
+// ==================== REPORTES (VISITAS / DELIVERIES) ====================
+router.get('/reports/visit-logs', TenantAdminReportsController.visitLogs);
+router.get('/reports/deliveries', TenantAdminReportsController.deliveries);
 
 // ==================== FACTURACIÓN CONDOMINIO360 (SAAS) ====================
 const TenantAdminSaaSBillingController = require('../controllers/TenantAdminSaaSBillingController');

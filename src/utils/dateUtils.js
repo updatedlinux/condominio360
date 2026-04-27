@@ -21,4 +21,18 @@ function getTodayVenezuela() {
     return `${date.year}-${date.month}-${date.day}`;
 }
 
-module.exports = { getTodayVenezuela, VENEZUELA_TZ };
+/**
+ * Límites UTC (inicio inclusivo, fin exclusivo) para abarcar días completos en Venezuela (GMT-4).
+ * Misma convención que SecurityController: medianoche VE del día `from` → 04:00 UTC; fin del día `to` → medianoche VE día siguiente.
+ * @param {string} fromYmd YYYY-MM-DD
+ * @param {string} toYmd YYYY-MM-DD
+ */
+function venezuelaDateRangeToUtcBounds(fromYmd, toYmd) {
+    const [fy, fm, fd] = fromYmd.split('-').map(Number);
+    const [ty, tm, td] = toYmd.split('-').map(Number);
+    const rangeStart = new Date(Date.UTC(fy, fm - 1, fd, 4, 0, 0, 0));
+    const rangeEndExclusive = new Date(Date.UTC(ty, tm - 1, td + 1, 4, 0, 0, 0));
+    return { rangeStart, rangeEndExclusive };
+}
+
+module.exports = { getTodayVenezuela, VENEZUELA_TZ, venezuelaDateRangeToUtcBounds };

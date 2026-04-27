@@ -108,6 +108,15 @@ router.get('/security-users', (req, res) => {
     });
 });
 
+router.get('/visits-deliveries-report', (req, res) => {
+    res.render('tenant-admin/visits-deliveries-report', {
+        title: 'Reporte de Visitas y Deliveries',
+        layout: false,
+        tenant: req.tenant || { name: 'Condominio' },
+        activePage: 'visits-deliveries-report'
+    });
+});
+
 router.get('/nfc-cards', (req, res) => {
     res.render('tenant-admin/nfc-cards', {
         title: 'Tarjetas NFC',

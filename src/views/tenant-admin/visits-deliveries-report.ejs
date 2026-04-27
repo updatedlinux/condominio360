@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title><%= title %> | <%= tenant?.name || 'Condominio' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+        .report-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .report-table { min-width: 1100px; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'visits-deliveries-report' }) %>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Reporte de Visitas y Deliveries</h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
+                    </div>
+                    <button type="button" id="btn-back-choice" class="hidden items-center gap-2 px-4 py-2 text-sm font-medium text-[#5F6368] border border-[#E5E5E5] rounded-lg hover:bg-[#F5F5F5]">
+                        <span class="material-icons-round text-lg">arrow_back</span>
+                        Elegir otra sección
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                <div id="panel-choice" class="max-w-5xl mx-auto">
+                    <p class="text-sm text-[#5F6368] mb-6">Seleccione qué desea consultar para este condominio. Luego podrá filtrar por rango de fechas.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button type="button" id="card-visits" class="card card-hover p-8 text-left border-2 border-transparent hover:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-300 rounded-2xl">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center mb-5">
+                                <span class="material-icons-round text-4xl text-white">groups</span>
+                            </div>
+                            <h2 class="text-xl font-semibold text-[#3C4043]">Visitas</h2>
+                            <p class="text-sm text-[#5F6368] mt-2 leading-relaxed">Entradas y salidas registradas por vigilancia: peatonal o vehículo, propietario, inmueble y estado dentro/fuera.</p>
+                            <span class="inline-flex items-center gap-1 mt-5 text-sm font-medium text-[#f97316]">Ver reporte <span class="material-icons-round text-base">chevron_right</span></span>
+                        </button>
+                        <button type="button" id="card-deliveries" class="card card-hover p-8 text-left border-2 border-transparent hover:border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 rounded-2xl">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center mb-5">
+                                <span class="material-icons-round text-4xl text-white">local_shipping</span>
+                            </div>
+                            <h2 class="text-xl font-semibold text-[#3C4043]">Deliveries</h2>
+                            <p class="text-sm text-[#5F6368] mt-2 leading-relaxed">Encomiendas anunciadas por propietarios: fechas esperadas, llegada a portería, entrega y datos del inmueble.</p>
+                            <span class="inline-flex items-center gap-1 mt-5 text-sm font-medium text-slate-700">Ver reporte <span class="material-icons-round text-base">chevron_right</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="panel-report" class="hidden max-w-[1600px] mx-auto space-y-5">
+                    <div class="card p-4 md:p-5 flex flex-wrap items-end gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-[#5F6368] mb-1">Desde</label>
+                            <input type="date" id="filter-from" class="border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm text-[#3C4043]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-[#5F6368] mb-1">Hasta</label>
+                            <input type="date" id="filter-to" class="border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm text-[#3C4043]">
+                        </div>
+                        <button type="button" id="btn-apply" class="px-5 py-2 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md">
+                            Aplicar filtros
+                        </button>
+                        <p class="text-xs text-[#9AA0A6] w-full md:w-auto md:ml-auto">Zona horaria: Venezuela. Máximo 120 días por consulta.</p>
+                    </div>
+                    <div id="alert-truncated" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"></div>
+                    <div id="report-loading" class="hidden card p-12 text-center text-[#5F6368]">
+                        <div class="inline-block w-10 h-10 border-3 border-[#E5E5E5] border-t-[#f97316] rounded-full animate-spin"></div>
+                        <p class="mt-3">Cargando datos…</p>
+                    </div>
+                    <div id="report-empty" class="hidden card p-12 text-center text-[#9AA0A6]">
+                        <span class="material-icons-round text-5xl">inbox</span>
+                        <p class="mt-2">No hay registros en el rango seleccionado.</p>
+                    </div>
+                    <div id="report-table-container" class="hidden card overflow-hidden">
+                        <div class="report-table-wrap">
+                            <table class="report-table w-full text-left text-sm border-collapse">
+                                <thead id="report-thead" class="bg-[#F9FAFB] text-[#5F6368] text-xs uppercase tracking-wide"></thead>
+                                <tbody id="report-tbody" class="divide-y divide-[#EEF0F2] text-[#3C4043]"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const VE = { timeZone: 'America/Caracas' };
+        let currentMode = null;
+
+        function fmtDateTime(iso) {
+            if (!iso) return '—';
+            try {
+                return new Date(iso).toLocaleString('es-VE', { ...VE, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch (_) { return '—'; }
+        }
+
+        function fmtDateOnly(isoOrDate) {
+            if (!isoOrDate) return '—';
+            try {
+                const d = typeof isoOrDate === 'string' && isoOrDate.length === 10
+                    ? new Date(isoOrDate + 'T12:00:00')
+                    : new Date(isoOrDate);
+                return d.toLocaleDateString('es-VE', { ...VE, day: '2-digit', month: 'short', year: 'numeric' });
+            } catch (_) { return '—'; }
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function defaultDateRange() {
+            const to = new Date();
+            const from = new Date(to);
+            from.setDate(from.getDate() - 29);
+            const pad = (n) => String(n).padStart(2, '0');
+            const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            return { from: ymd(from), to: ymd(to) };
+        }
+
+        function setVisibility(mode) {
+            document.getElementById('panel-choice').classList.toggle('hidden', mode !== null);
+            document.getElementById('panel-report').classList.toggle('hidden', mode === null);
+            document.getElementById('btn-back-choice').classList.toggle('hidden', mode === null);
+            document.getElementById('btn-back-choice').classList.toggle('flex', mode !== null);
+        }
+
+        function visitAccessLabel(m) {
+            if (m === 'VEHICLE') return 'Vehículo';
+            return 'Peatonal';
+        }
+
+        function passTypeLabel(t) {
+            if (t === 'FREQUENT') return 'Frecuente';
+            if (t === 'ONE_TIME') return 'Única';
+            return t || '—';
+        }
+
+        function passStatusLabel(s) {
+            const map = { ACTIVE: 'Activo', USED: 'Usado', PENDING: 'Pendiente', EXPIRED: 'Expirado', REVOKED: 'Revocado' };
+            return map[s] || s || '—';
+        }
+
+        function deliveryStatusLabel(s) {
+            const map = { ANNOUNCED: 'Anunciado', ARRIVED: 'En portería', DELIVERED: 'Entregado', CANCELLED: 'Cancelado' };
+            return map[s] || s || '—';
+        }
+
+        function renderVisitsTable(rows) {
+            const th = `
+                <tr>
+                    <th class="px-3 py-3 font-semibold">Entrada</th>
+                    <th class="px-3 py-3 font-semibold">Salida</th>
+                    <th class="px-3 py-3 font-semibold">Acceso</th>
+                    <th class="px-3 py-3 font-semibold">Placa</th>
+                    <th class="px-3 py-3 font-semibold">Visitante</th>
+                    <th class="px-3 py-3 font-semibold">Inmueble</th>
+                    <th class="px-3 py-3 font-semibold">Propietario</th>
+                    <th class="px-3 py-3 font-semibold">Pase</th>
+                    <th class="px-3 py-3 font-semibold">Estado visita</th>
+                </tr>`;
+            document.getElementById('report-thead').innerHTML = th;
+            const tb = rows.map((r) => {
+                const visitor = `${escapeHtml(r.visitor_first_name || '')} ${escapeHtml(r.visitor_last_name || '')}`.trim();
+                const owner = `${escapeHtml(r.owner_first_name || '')} ${escapeHtml(r.owner_last_name || '')}`.trim();
+                const inside = !r.exit_time;
+                const stateBadge = inside
+                    ? '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Dentro</span>'
+                    : '<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">Salió</span>';
+                const prop = [escapeHtml(r.building_name), escapeHtml(r.property_name)].filter(Boolean).join(' · ') || '—';
+                const ownerDetail = [
+                    owner || '—',
+                    r.owner_email ? escapeHtml(r.owner_email) : '',
+                    r.owner_phone ? escapeHtml(r.owner_phone) : '',
+                    r.owner_dni ? `DNI ${escapeHtml(r.owner_dni)}` : ''
+                ].filter(Boolean).join('<br>');
+                const passExtra = r.pass_alias ? `<span class="text-[#9AA0A6]"> (${escapeHtml(r.pass_alias)})</span>` : '';
+                return `<tr class="hover:bg-[#FAFAFA] align-top">
+                    <td class="px-3 py-3 whitespace-nowrap">${fmtDateTime(r.entry_time)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap">${r.exit_time ? fmtDateTime(r.exit_time) : '—'}</td>
+                    <td class="px-3 py-3">${visitAccessLabel(r.access_method)}</td>
+                    <td class="px-3 py-3 font-mono text-xs">${r.vehicle_plate ? escapeHtml(r.vehicle_plate) : '—'}</td>
+                    <td class="px-3 py-3 min-w-[140px]">${escapeHtml(visitor)}<div class="text-xs text-[#5F6368] mt-0.5">${r.visitor_dni ? escapeHtml(r.visitor_dni) : ''}${r.visitor_phone ? ' · ' + escapeHtml(r.visitor_phone) : ''}</div>${r.log_notes ? `<div class="text-xs text-[#9AA0A6] mt-1">${escapeHtml(r.log_notes)}</div>` : ''}</td>
+                    <td class="px-3 py-3 min-w-[120px]">${prop}</td>
+                    <td class="px-3 py-3 min-w-[160px] text-xs leading-relaxed">${ownerDetail}</td>
+                    <td class="px-3 py-3 text-xs">${passTypeLabel(r.pass_type)}${passExtra}<div class="text-[#9AA0A6] mt-0.5">${passStatusLabel(r.pass_status)}</div></td>
+                    <td class="px-3 py-3">${stateBadge}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('report-tbody').innerHTML = tb || '';
+        }
+
+        function renderDeliveriesTable(rows) {
+            const th = `
+                <tr>
+                    <th class="px-3 py-3 font-semibold">Paquete / empresa</th>
+                    <th class="px-3 py-3 font-semibold">Tracking</th>
+                    <th class="px-3 py-3 font-semibold">Fecha esperada</th>
+                    <th class="px-3 py-3 font-semibold">Inmueble</th>
+                    <th class="px-3 py-3 font-semibold">Propietario</th>
+                    <th class="px-3 py-3 font-semibold">Estado</th>
+                    <th class="px-3 py-3 font-semibold">Anunciado</th>
+                    <th class="px-3 py-3 font-semibold">Llegada</th>
+                    <th class="px-3 py-3 font-semibold">Entregado</th>
+                    <th class="px-3 py-3 font-semibold">Recibió (vigilancia)</th>
+                </tr>`;
+            document.getElementById('report-thead').innerHTML = th;
+            const tb = rows.map((r) => {
+                const owner = `${escapeHtml(r.owner_first_name || '')} ${escapeHtml(r.owner_last_name || '')}`.trim();
+                const prop = [escapeHtml(r.building_name), escapeHtml(r.property_name)].filter(Boolean).join(' · ') || '—';
+                const recv = [escapeHtml(r.received_by_first_name || ''), escapeHtml(r.received_by_last_name || '')].join(' ').trim();
+                const notes = r.notes ? `<div class="text-xs text-[#9AA0A6] mt-1 max-w-xs">${escapeHtml(r.notes)}</div>` : '';
+                return `<tr class="hover:bg-[#FAFAFA] align-top">
+                    <td class="px-3 py-3 min-w-[160px]"><span class="font-medium">${escapeHtml(r.delivery_name || '')}</span>${notes}<div class="text-xs text-[#5F6368] mt-0.5">${escapeHtml(r.company || '')}</div></td>
+                    <td class="px-3 py-3 font-mono text-xs">${r.tracking_number ? escapeHtml(r.tracking_number) : '—'}</td>
+                    <td class="px-3 py-3 whitespace-nowrap">${fmtDateOnly(r.expected_date)}</td>
+                    <td class="px-3 py-3">${prop}</td>
+                    <td class="px-3 py-3 text-xs leading-relaxed">${owner || '—'}${r.owner_email ? '<br>' + escapeHtml(r.owner_email) : ''}${r.owner_phone ? '<br>' + escapeHtml(r.owner_phone) : ''}${r.owner_dni ? '<br>DNI ' + escapeHtml(r.owner_dni) : ''}</td>
+                    <td class="px-3 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#fff7ed] text-[#c2410c]">${deliveryStatusLabel(r.status)}</span></td>
+                    <td class="px-3 py-3 text-xs whitespace-nowrap">${r.announced_at ? fmtDateTime(r.announced_at) : '—'}</td>
+                    <td class="px-3 py-3 text-xs whitespace-nowrap">${r.arrival_time ? fmtDateTime(r.arrival_time) : '—'}</td>
+                    <td class="px-3 py-3 text-xs whitespace-nowrap">${r.delivered_at ? fmtDateTime(r.delivered_at) : '—'}</td>
+                    <td class="px-3 py-3 text-xs">${recv || '—'}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('report-tbody').innerHTML = tb || '';
+        }
+
+        async function loadReport() {
+            const from = document.getElementById('filter-from').value;
+            const to = document.getElementById('filter-to').value;
+            const loading = document.getElementById('report-loading');
+            const empty = document.getElementById('report-empty');
+            const tableC = document.getElementById('report-table-container');
+            const trunc = document.getElementById('alert-truncated');
+
+            loading.classList.remove('hidden');
+            empty.classList.add('hidden');
+            tableC.classList.add('hidden');
+            trunc.classList.add('hidden');
+
+            const path = currentMode === 'visits'
+                ? `/api/tenant-admin/reports/visit-logs?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+                : `/api/tenant-admin/reports/deliveries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+
+            try {
+                const res = await fetch(path, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                loading.classList.add('hidden');
+                if (!json.success) {
+                    empty.classList.remove('hidden');
+                    document.getElementById('report-tbody').innerHTML = '';
+                    document.getElementById('report-thead').innerHTML = '';
+                    return;
+                }
+                if (json.truncated) {
+                    trunc.textContent = `Se muestran los primeros ${json.maxRows} registros. Acorte el rango de fechas para ver todo.`;
+                    trunc.classList.remove('hidden');
+                }
+                const rows = json.data || [];
+                if (rows.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                if (currentMode === 'visits') renderVisitsTable(rows);
+                else renderDeliveriesTable(rows);
+                tableC.classList.remove('hidden');
+            } catch (e) {
+                console.error(e);
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+            }
+        }
+
+        function openMode(mode) {
+            currentMode = mode;
+            setVisibility(mode);
+            const dr = defaultDateRange();
+            document.getElementById('filter-from').value = dr.from;
+            document.getElementById('filter-to').value = dr.to;
+            loadReport();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+            if (tenant.name) {
+                document.getElementById('header-tenant').textContent = tenant.name;
+            } else {
+                document.getElementById('header-tenant').textContent = 'Junta de condominio';
+            }
+
+            document.getElementById('card-visits').addEventListener('click', () => openMode('visits'));
+            document.getElementById('card-deliveries').addEventListener('click', () => openMode('deliveries'));
+            document.getElementById('btn-back-choice').addEventListener('click', () => {
+                currentMode = null;
+                setVisibility(null);
+            });
+            document.getElementById('btn-apply').addEventListener('click', loadReport);
+        });
+    </script>
+</body>
+</html>
