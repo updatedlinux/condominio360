@@ -1612,7 +1612,20 @@
             }
             fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(raw)}`)
                 .then(r => r.json())
-                .then(d => showOwnerSuggestions('mv-owner-suggest', d.data || [], () => {}))
+                .then(d => showOwnerSuggestions('mv-owner-suggest', d.data || [], (pick) => {
+                    // mismo comportamiento que elegir en búsqueda manual
+                    selectedOwnerVisit = {
+                        id: pick.ownerId,
+                        dni: pick.ownerDni || '',
+                        properties: [{ id: pick.propertyId, name: pick.propertyName }]
+                    };
+                    document.getElementById('mv-property-wrap')?.classList.add('hidden');
+                    const propSelect = document.getElementById('mv-property-select');
+                    if (propSelect) propSelect.value = pick.propertyId;
+                    document.getElementById('mv-owner-info').textContent = `✓ ${pick.propertyName}`;
+                    document.getElementById('mv-owner-info').className = 'mt-2 text-sm text-green-600 font-medium';
+                    document.getElementById('mv-owner-info').classList.remove('hidden');
+                }))
                 .catch(() => {});
         }, 250);
 
@@ -1706,7 +1719,19 @@
             }
             fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(raw)}`)
                 .then(r => r.json())
-                .then(d => showOwnerSuggestions('md-owner-suggest', d.data || [], () => {}))
+                .then(d => showOwnerSuggestions('md-owner-suggest', d.data || [], (pick) => {
+                    selectedOwnerDelivery = {
+                        id: pick.ownerId,
+                        dni: pick.ownerDni || '',
+                        properties: [{ id: pick.propertyId, name: pick.propertyName }]
+                    };
+                    document.getElementById('md-property-wrap')?.classList.add('hidden');
+                    const propSelect = document.getElementById('md-property-select');
+                    if (propSelect) propSelect.value = pick.propertyId;
+                    document.getElementById('md-owner-info').textContent = `✓ ${pick.propertyName}`;
+                    document.getElementById('md-owner-info').className = 'mt-2 text-sm text-green-600 font-medium';
+                    document.getElementById('md-owner-info').classList.remove('hidden');
+                }))
                 .catch(() => {});
         }, 250);
 

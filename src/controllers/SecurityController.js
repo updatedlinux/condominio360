@@ -271,9 +271,11 @@ class SecurityController {
             const like = `%${term}%`;
 
             const pool = await connectDB();
-            const reqDb = pool.request().input('tenantId', sql.UniqueIdentifier, tenantId);
-            if (isNumeric && dniClean.length >= 3) reqDb.input('dni', sql.NVarChar, dniClean);
-            reqDb.input('like', sql.NVarChar, like);
+            const reqDb = pool.request()
+                .input('tenantId', sql.UniqueIdentifier, tenantId)
+                // Siempre declarar @dni (NULL si no aplica), para que la query no pierda matches por slug/nombre.
+                .input('dni', sql.NVarChar, (isNumeric && dniClean.length >= 3) ? dniClean : null)
+                .input('like', sql.NVarChar, like);
 
             const result = await reqDb.query(`
                 SELECT TOP 25
@@ -294,15 +296,15 @@ class SecurityController {
                 INNER JOIN Properties p ON po.property_id = p.id
                 WHERE p.tenant_id = @tenantId
                   AND (
-                        (u.dni = @dni)
-                     OR (u.first_name + ' ' + ISNULL(u.last_name, '') LIKE @like)
-                     OR (ISNULL(u.email, '') LIKE @like)
-                     OR (ISNULL(p.nickname, '') LIKE @like)
-                     OR (ISNULL(p.slug, '') LIKE @like)
-                     OR (ISNULL(p.name, '') LIKE @like)
+                        (@dni IS NOT NULL AND u.dni = @dni)
+                     OR (LOWER(u.first_name + ' ' + ISNULL(u.last_name, '')) LIKE LOWER(@like))
+                     OR (LOWER(ISNULL(u.email, '')) LIKE LOWER(@like))
+                     OR (LOWER(ISNULL(p.nickname, '')) LIKE LOWER(@like))
+                     OR (LOWER(ISNULL(p.slug, '')) LIKE LOWER(@like))
+                     OR (LOWER(ISNULL(p.name, '')) LIKE LOWER(@like))
                   )
                 ORDER BY
-                    CASE WHEN u.dni = @dni THEN 0 ELSE 1 END,
+                    CASE WHEN (@dni IS NOT NULL AND u.dni = @dni) THEN 0 ELSE 1 END,
                     po.is_primary_owner DESC,
                     p.name ASC
             `);
