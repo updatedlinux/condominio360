@@ -7,6 +7,7 @@ const PropertyModel = require('../models/PropertyModel');
 const SystemSettingsModel = require('../models/SystemSettingsModel');
 const BCVService = require('../services/BCVService');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
+const BCVService = require('../services/BCVService');
 const EmailService = require('../services/EmailService');
 const AuthService = require('../services/AuthService');
 const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
@@ -2634,6 +2635,7 @@ class AdminController {
                     }
                 });
             }
+            const meta = typeof BCVService.getApiStatusMeta === 'function' ? BCVService.getApiStatusMeta() : {};
             res.json({
                 success: true,
                 data: {
@@ -2644,7 +2646,8 @@ class AdminController {
                     changeUsd: latest.change_percentage_usd != null ? parseFloat(latest.change_percentage_usd) : 0,
                     changeEur: latest.change_percentage_eur != null ? parseFloat(latest.change_percentage_eur) : 0,
                     updatedAt: latest.updated_at,
-                    sourceLabel: 'BCV oficial — ve.dolarapi.com'
+                    sourceLabel: 'BCV oficial — ve.dolarapi.com',
+                    apiMeta: meta
                 }
             });
         } catch (error) {

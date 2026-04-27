@@ -284,13 +284,13 @@ class DeliveryController {
             } = req.body;
 
             // Validaciones
-            if (!owner_dni || !company || !expected_date) {
+            if ((!owner_dni && !propertyIdParam) || !company || !expected_date) {
                 return res.status(400).json({ 
-                    error: 'Faltan campos requeridos: owner_dni, company, expected_date' 
+                    error: 'Faltan campos requeridos: owner_dni o property_id, company, expected_date' 
                 });
             }
-            const ownerDniTrimmed = String(owner_dni).trim().replace(/\D/g, '');
-            if (!/^\d{1,15}$/.test(ownerDniTrimmed)) {
+            const ownerDniTrimmed = owner_dni ? String(owner_dni).trim().replace(/\D/g, '') : null;
+            if (ownerDniTrimmed && !/^\d{1,15}$/.test(ownerDniTrimmed)) {
                 return res.status(400).json({ 
                     error: 'El DNI del propietario debe contener solo números (máx. 15 dígitos)' 
                 });
@@ -298,39 +298,58 @@ class DeliveryController {
 
             const pool = await connectDB();
 
-            // Buscar propietario por DNI (schema: PropertyOwners + Properties)
-            const ownerResult = await pool.request()
-                .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, ownerDniTrimmed)
-                .query(`
-                    SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
-                           p.id as property_id, p.name as property_name
-                    FROM Users u
-                    INNER JOIN PropertyOwners po ON u.id = po.user_id
-                    INNER JOIN Properties p ON po.property_id = p.id
-                    WHERE p.tenant_id = @tenantId
-                    AND u.dni = @dni
-                    ORDER BY po.is_primary_owner DESC
-                `);
+            let owner = null;
+            if (ownerDniTrimmed) {
+                // Buscar propietario por DNI (schema: PropertyOwners + Properties)
+                const ownerResult = await pool.request()
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
+                    .input('dni', sql.NVarChar, ownerDniTrimmed)
+                    .query(`
+                        SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
+                               p.id as property_id, p.name as property_name
+                        FROM Users u
+                        INNER JOIN PropertyOwners po ON u.id = po.user_id
+                        INNER JOIN Properties p ON po.property_id = p.id
+                        WHERE p.tenant_id = @tenantId
+                        AND u.dni = @dni
+                        ORDER BY po.is_primary_owner DESC
+                    `);
 
-            if (ownerResult.recordset.length === 0) {
-                return res.status(404).json({ 
-                    error: 'No se encontró propietario con ese DNI' 
-                });
-            }
-
-            let owner = ownerResult.recordset[0];
-            const properties = ownerResult.recordset;
-            if (propertyIdParam) {
-                const matched = properties.find(p => String(p.property_id) === String(propertyIdParam));
-                if (!matched) {
-                    return res.status(400).json({ error: 'El inmueble seleccionado no pertenece al propietario' });
+                if (ownerResult.recordset.length === 0) {
+                    return res.status(404).json({ error: 'No se encontró propietario con ese DNI' });
                 }
-                owner = matched;
-            } else if (properties.length > 1) {
-                return res.status(400).json({ 
-                    error: 'El propietario tiene varios inmuebles. Seleccione el inmueble correspondiente.' 
-                });
+
+                owner = ownerResult.recordset[0];
+                const properties = ownerResult.recordset;
+                if (propertyIdParam) {
+                    const matched = properties.find(p => String(p.property_id) === String(propertyIdParam));
+                    if (!matched) {
+                        return res.status(400).json({ error: 'El inmueble seleccionado no pertenece al propietario' });
+                    }
+                    owner = matched;
+                } else if (properties.length > 1) {
+                    return res.status(400).json({ error: 'El propietario tiene varios inmuebles. Seleccione el inmueble correspondiente.' });
+                }
+            } else {
+                // Sin DNI: asociar directamente al inmueble (nickname/slug) seleccionando property_id.
+                const ownerByProp = await pool.request()
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
+                    .input('propertyId', sql.UniqueIdentifier, propertyIdParam)
+                    .query(`
+                        SELECT TOP 1
+                               u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
+                               p.id as property_id, p.name as property_name
+                        FROM Properties p
+                        INNER JOIN PropertyOwners po ON po.property_id = p.id
+                        INNER JOIN Users u ON u.id = po.user_id
+                        WHERE p.tenant_id = @tenantId
+                          AND p.id = @propertyId
+                        ORDER BY po.is_primary_owner DESC, po.percentage_ownership DESC
+                    `);
+                if (ownerByProp.recordset.length === 0) {
+                    return res.status(404).json({ error: 'No se encontró propietario para ese inmueble en este condominio' });
+                }
+                owner = ownerByProp.recordset[0];
             }
 
             // Crear delivery
@@ -356,7 +375,7 @@ class DeliveryController {
                 metadata: { 
                     name,
                     company,
-                    owner_dni,
+                    owner_dni: ownerDniTrimmed || owner?.dni || null,
                     created_by: 'security_guard'
                 }
             });

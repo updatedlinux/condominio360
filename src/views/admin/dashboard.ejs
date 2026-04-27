@@ -2316,9 +2316,21 @@
                 const upd = d.updatedAt
                     ? new Date(d.updatedAt).toLocaleString('es-VE', { timeZone: 'America/Caracas' })
                     : '—';
+                const lastCheck = d.apiMeta?.lastApiCheckAtUtc
+                    ? new Date(d.apiMeta.lastApiCheckAtUtc).toLocaleString('es-VE', { timeZone: 'America/Caracas' })
+                    : '—';
+                const lastOk = d.apiMeta?.lastApiOkAtUtc
+                    ? new Date(d.apiMeta.lastApiOkAtUtc).toLocaleString('es-VE', { timeZone: 'America/Caracas' })
+                    : '—';
+                const apiStatus = d.apiMeta?.lastApiStatus || '—';
+                const apiErr = d.apiMeta?.lastApiError ? ` (${d.apiMeta.lastApiError})` : '';
                 const src = d.sourceLabel || 've.dolarapi.com';
                 if (metaEl) {
-                    metaEl.textContent = `Fecha de la tasa: ${dateStr}. Registro actualizado en BD: ${upd}. Fuente: ${src}.`;
+                    metaEl.textContent =
+                        `Fecha de la tasa: ${dateStr}. ` +
+                        `Última verificación API: ${lastCheck} (${apiStatus}${apiErr}). ` +
+                        `Última tasa obtenida de API: ${lastOk}. ` +
+                        `Última actualización en BD: ${upd}. Fuente: ${src}.`;
                 }
             } catch (e) {
                 console.error('loadBcvSettings', e);

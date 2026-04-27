@@ -252,43 +252,60 @@ class SecurityController {
     }
 
     /**
-     * GET /api/security/owners/search?q=DNI
-     * Buscar propietarios por DNI (para validar en modales de visita/delivery manual)
-     * Usa PropertyOwners + Properties (schema correcto)
+     * GET /api/security/owners/search?q=...
+     * Buscar propietarios/inmuebles para visita/delivery manual.
+     * - Filtra SIEMPRE por tenant del vigilante
+     * - Permite buscar por: DNI propietario, nombre propietario, nickname/slug/nombre de inmueble
      */
     static async searchOwnersByDni(req, res) {
         try {
             const tenantId = req.user.tenantId;
             const { q } = req.query;
 
-            if (!q || q.trim().length < 5) {
-                return res.status(400).json({ 
-                    error: 'Ingrese al menos 5 caracteres (ej: DNI completo)' 
-                });
+            const term = String(q || '').trim();
+            if (!term || term.length < 2) {
+                return res.status(400).json({ error: 'Ingrese al menos 2 caracteres' });
             }
-            const dniClean = q.trim().replace(/\D/g, '');
-            if (!dniClean || dniClean.length > 15) {
-                return res.status(400).json({ 
-                    error: 'El DNI debe contener solo números (máx. 15 dígitos)' 
-                });
-            }
+            const isNumeric = /^\d+$/.test(term);
+            const dniClean = term.replace(/\D/g, '').slice(0, 15);
+            const like = `%${term}%`;
 
             const pool = await connectDB();
-            const dni = dniClean;
+            const reqDb = pool.request().input('tenantId', sql.UniqueIdentifier, tenantId);
+            if (isNumeric && dniClean.length >= 3) reqDb.input('dni', sql.NVarChar, dniClean);
+            reqDb.input('like', sql.NVarChar, like);
 
-            const result = await pool.request()
-                .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, dni)
-                .query(`
-                    SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
-                           p.id as property_id, p.name as property_name, p.building
-                    FROM Users u
-                    INNER JOIN PropertyOwners po ON u.id = po.user_id
-                    INNER JOIN Properties p ON po.property_id = p.id
-                    WHERE p.tenant_id = @tenantId
-                    AND u.dni = @dni
-                    ORDER BY po.is_primary_owner DESC
-                `);
+            const result = await reqDb.query(`
+                SELECT TOP 25
+                       u.id,
+                       u.first_name,
+                       u.last_name,
+                       u.dni,
+                       u.email,
+                       u.phone,
+                       p.id as property_id,
+                       p.name as property_name,
+                       p.building,
+                       p.slug as property_slug,
+                       p.nickname as property_nickname,
+                       po.is_primary_owner
+                FROM Users u
+                INNER JOIN PropertyOwners po ON u.id = po.user_id
+                INNER JOIN Properties p ON po.property_id = p.id
+                WHERE p.tenant_id = @tenantId
+                  AND (
+                        (u.dni = @dni)
+                     OR (u.first_name + ' ' + ISNULL(u.last_name, '') LIKE @like)
+                     OR (ISNULL(u.email, '') LIKE @like)
+                     OR (ISNULL(p.nickname, '') LIKE @like)
+                     OR (ISNULL(p.slug, '') LIKE @like)
+                     OR (ISNULL(p.name, '') LIKE @like)
+                  )
+                ORDER BY
+                    CASE WHEN u.dni = @dni THEN 0 ELSE 1 END,
+                    po.is_primary_owner DESC,
+                    p.name ASC
+            `);
 
             return res.json({ 
                 success: true, 
@@ -732,14 +749,14 @@ class SecurityController {
             } = req.body;
 
             // Validaciones
-            if (!owner_dni || !visitor_first_name || !visitor_last_name || !visitor_dni || !visit_date) {
+            if ((!owner_dni && !propertyIdParam) || !visitor_first_name || !visitor_last_name || !visitor_dni || !visit_date) {
                 return res.status(400).json({ 
-                    error: 'Faltan campos requeridos: owner_dni, visitor_first_name, visitor_last_name, visitor_dni, visit_date' 
+                    error: 'Faltan campos requeridos: owner_dni o property_id, visitor_first_name, visitor_last_name, visitor_dni, visit_date' 
                 });
             }
-            const ownerDniTrimmed = String(owner_dni).trim().replace(/\D/g, '');
+            const ownerDniTrimmed = owner_dni ? String(owner_dni).trim().replace(/\D/g, '') : null;
             const visitorDniTrimmed = String(visitor_dni).trim().replace(/\D/g, '');
-            if (!/^\d{1,15}$/.test(ownerDniTrimmed) || !/^\d{1,15}$/.test(visitorDniTrimmed)) {
+            if ((ownerDniTrimmed && !/^\d{1,15}$/.test(ownerDniTrimmed)) || !/^\d{1,15}$/.test(visitorDniTrimmed)) {
                 return res.status(400).json({ 
                     error: 'El DNI del propietario y del visitante deben contener solo números (máx. 15 dígitos)' 
                 });
@@ -753,39 +770,58 @@ class SecurityController {
 
             const pool = await connectDB();
 
-            // Buscar propietario por DNI (schema: PropertyOwners + Properties)
-            const ownerResult = await pool.request()
-                .input('tenantId', sql.UniqueIdentifier, tenantId)
-                .input('dni', sql.NVarChar, ownerDniTrimmed)
-                .query(`
-                    SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
-                           p.id as property_id, p.name as property_name
-                    FROM Users u
-                    INNER JOIN PropertyOwners po ON u.id = po.user_id
-                    INNER JOIN Properties p ON po.property_id = p.id
-                    WHERE p.tenant_id = @tenantId
-                    AND u.dni = @dni
-                    ORDER BY po.is_primary_owner DESC
-                `);
+            let owner = null;
+            if (ownerDniTrimmed) {
+                // Buscar propietario por DNI (schema: PropertyOwners + Properties)
+                const ownerResult = await pool.request()
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
+                    .input('dni', sql.NVarChar, ownerDniTrimmed)
+                    .query(`
+                        SELECT u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
+                               p.id as property_id, p.name as property_name
+                        FROM Users u
+                        INNER JOIN PropertyOwners po ON u.id = po.user_id
+                        INNER JOIN Properties p ON po.property_id = p.id
+                        WHERE p.tenant_id = @tenantId
+                        AND u.dni = @dni
+                        ORDER BY po.is_primary_owner DESC
+                    `);
 
-            if (ownerResult.recordset.length === 0) {
-                return res.status(404).json({ 
-                    error: 'No se encontró propietario con ese DNI' 
-                });
-            }
-
-            let owner = ownerResult.recordset[0];
-            const properties = ownerResult.recordset;
-            if (propertyIdParam) {
-                const matched = properties.find(p => String(p.property_id) === String(propertyIdParam));
-                if (!matched) {
-                    return res.status(400).json({ error: 'El inmueble seleccionado no pertenece al propietario' });
+                if (ownerResult.recordset.length === 0) {
+                    return res.status(404).json({ error: 'No se encontró propietario con ese DNI' });
                 }
-                owner = matched;
-            } else if (properties.length > 1) {
-                return res.status(400).json({ 
-                    error: 'El propietario tiene varios inmuebles. Seleccione el inmueble correspondiente.' 
-                });
+
+                owner = ownerResult.recordset[0];
+                const properties = ownerResult.recordset;
+                if (propertyIdParam) {
+                    const matched = properties.find(p => String(p.property_id) === String(propertyIdParam));
+                    if (!matched) {
+                        return res.status(400).json({ error: 'El inmueble seleccionado no pertenece al propietario' });
+                    }
+                    owner = matched;
+                } else if (properties.length > 1) {
+                    return res.status(400).json({ error: 'El propietario tiene varios inmuebles. Seleccione el inmueble correspondiente.' });
+                }
+            } else {
+                // Sin DNI: asociar directamente al inmueble (nickname/slug) seleccionando property_id.
+                const ownerByProp = await pool.request()
+                    .input('tenantId', sql.UniqueIdentifier, tenantId)
+                    .input('propertyId', sql.UniqueIdentifier, propertyIdParam)
+                    .query(`
+                        SELECT TOP 1
+                               u.id, u.first_name, u.last_name, u.dni, u.email, u.phone,
+                               p.id as property_id, p.name as property_name
+                        FROM Properties p
+                        INNER JOIN PropertyOwners po ON po.property_id = p.id
+                        INNER JOIN Users u ON u.id = po.user_id
+                        WHERE p.tenant_id = @tenantId
+                          AND p.id = @propertyId
+                        ORDER BY po.is_primary_owner DESC, po.percentage_ownership DESC
+                    `);
+                if (ownerByProp.recordset.length === 0) {
+                    return res.status(404).json({ error: 'No se encontró propietario para ese inmueble en este condominio' });
+                }
+                owner = ownerByProp.recordset[0];
             }
 
             // Crear o buscar visitante (mismo flujo que propietario)
@@ -829,7 +865,7 @@ class SecurityController {
                 entityId: pass.id,
                 metadata: { 
                     visitor_name: `${visitor_first_name} ${visitor_last_name}`,
-                    owner_dni,
+                    owner_dni: ownerDniTrimmed || owner?.dni || null,
                     visit_date,
                     visit_time,
                     created_by: 'security_guard'

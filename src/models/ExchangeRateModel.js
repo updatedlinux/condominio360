@@ -98,7 +98,7 @@ class ExchangeRateModel {
                             eur_rate = @eur,
                             change_percentage_usd = @changeUsd,
                             change_percentage_eur = @changeEur,
-                            updated_at = SYSDATETIME()
+                            updated_at = SYSUTCDATETIME()
                         WHERE rate_date = @date
                     `);
             } else {
@@ -110,8 +110,10 @@ class ExchangeRateModel {
                     .input('changeUsd', sql.Decimal(5, 2), data.changePercentageUsd || 0)
                     .input('changeEur', sql.Decimal(5, 2), data.changePercentageEur || 0)
                     .query(`
-                        INSERT INTO ExchangeRates (rate_date, usd_rate, eur_rate, change_percentage_usd, change_percentage_eur)
-                        VALUES (@date, @usd, @eur, @changeUsd, @changeEur)
+                        INSERT INTO ExchangeRates
+                            (rate_date, usd_rate, eur_rate, change_percentage_usd, change_percentage_eur, created_at, updated_at)
+                        VALUES
+                            (@date, @usd, @eur, @changeUsd, @changeEur, SYSUTCDATETIME(), SYSUTCDATETIME())
                     `);
             }
             

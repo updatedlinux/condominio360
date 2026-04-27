@@ -224,17 +224,17 @@
             <div class="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
                 <form id="manualVisitForm" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI del Propietario *</label>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Propietario o Inmueble *</label>
                         <div class="flex gap-2">
-                            <input type="text" id="mv-owner-dni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
+                            <input type="text" id="mv-owner-dni" required maxlength="60"
                                 class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Solo números, máx. 15 dígitos"
-                                oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
+                                placeholder="DNI, nombre del propietario, nickname o slug del inmueble">
                             <button type="button" onclick="searchOwnerByDNI()"
                                 class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                                 <span class="material-icons-round">search</span>
                             </button>
                         </div>
+                        <div id="mv-owner-suggest" class="mt-2 hidden border border-gray-200 rounded-xl bg-white shadow-sm max-h-56 overflow-y-auto"></div>
                         <p id="mv-owner-info" class="mt-2 text-sm text-green-600 hidden"></p>
                         <div id="mv-property-wrap" class="mt-2 hidden">
                             <label class="block text-sm font-medium text-[#3C4043] mb-1">Inmueble *</label>
@@ -330,17 +330,17 @@
             <div class="p-4 sm:p-6 overflow-y-auto max-h-[60vh]">
                 <form id="manualDeliveryForm" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI del Propietario *</label>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Propietario o Inmueble *</label>
                         <div class="flex gap-2">
-                            <input type="text" id="md-owner-dni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
+                            <input type="text" id="md-owner-dni" required maxlength="60"
                                 class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="Solo números, máx. 15 dígitos"
-                                oninput="this.value = this.value.replace(/\D/g, '').slice(0, 15)">
+                                placeholder="DNI, nombre del propietario, nickname o slug del inmueble">
                             <button type="button" onclick="searchOwnerByDNIDelivery()"
                                 class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                                 <span class="material-icons-round">search</span>
                             </button>
                         </div>
+                        <div id="md-owner-suggest" class="mt-2 hidden border border-gray-200 rounded-xl bg-white shadow-sm max-h-56 overflow-y-auto"></div>
                         <p id="md-owner-info" class="mt-2 text-sm text-green-600 hidden"></p>
                         <div id="md-property-wrap" class="mt-2 hidden">
                             <label class="block text-sm font-medium text-[#3C4043] mb-1">Inmueble *</label>
@@ -1454,10 +1454,72 @@
             return cleaned;
         }
 
+        function debounce(fn, waitMs) {
+            let t = null;
+            return function (...args) {
+                if (t) clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), waitMs);
+            };
+        }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t == null ? '' : String(t);
+            return d.innerHTML;
+        }
+
+        function showOwnerSuggestions(containerId, records, onPick) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            if (!records || records.length === 0) {
+                el.classList.add('hidden');
+                el.innerHTML = '';
+                return;
+            }
+            el.classList.remove('hidden');
+            el.innerHTML = records.map((r) => {
+                const ownerName = [r.first_name, r.last_name].filter(Boolean).join(' ') || 'Propietario';
+                const propLabel = r.property_nickname || r.property_name || '';
+                const sub = [
+                    r.dni ? `DNI: ${r.dni}` : null,
+                    r.property_slug ? `Slug: ${r.property_slug}` : null
+                ].filter(Boolean).join(' • ');
+                return `
+                    <button type="button"
+                        class="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-start gap-3"
+                        data-owner-id="${r.id}"
+                        data-owner-dni="${r.dni || ''}"
+                        data-property-id="${r.property_id}"
+                        data-property-name="${escapeHtml(propLabel)}">
+                        <span class="material-icons-round text-slate-500 mt-0.5">person</span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-medium text-slate-800 truncate">${escapeHtml(ownerName)} — ${escapeHtml(propLabel)}</span>
+                            <span class="block text-xs text-slate-500 truncate">${escapeHtml(sub)}</span>
+                        </span>
+                    </button>
+                `;
+            }).join('');
+            el.querySelectorAll('button[data-property-id]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const pick = {
+                        ownerId: btn.getAttribute('data-owner-id'),
+                        ownerDni: btn.getAttribute('data-owner-dni'),
+                        propertyId: btn.getAttribute('data-property-id'),
+                        propertyName: btn.getAttribute('data-property-name')
+                    };
+                    onPick(pick);
+                    el.classList.add('hidden');
+                    el.innerHTML = '';
+                });
+            });
+        }
+
         async function searchOwnerByDNI() {
             const raw = document.getElementById('mv-owner-dni').value.trim();
-            const dni = validateDni(raw, 'DNI del propietario');
-            if (dni === null) return;
+            if (!raw || raw.length < 2) {
+                showToast('Ingrese al menos 2 caracteres', 'error');
+                return;
+            }
             
             const infoEl = document.getElementById('mv-owner-info');
             infoEl.textContent = 'Buscando...';
@@ -1465,26 +1527,65 @@
             infoEl.className = 'mt-2 text-sm text-gray-600';
             
             try {
-                const response = await fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(dni)}`);
+                const response = await fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(raw)}`);
                 const data = await response.json();
                 
                 const records = data.data || [];
-                const ownerName = records[0] ? [records[0].first_name, records[0].last_name].filter(Boolean).join(' ') || 'Propietario' : '';
+                if (!records || records.length === 0) {
+                    selectedOwnerVisit = null;
+                    document.getElementById('mv-property-wrap')?.classList.add('hidden');
+                    infoEl.textContent = '✗ No encontrado';
+                    infoEl.className = 'mt-2 text-sm text-red-600';
+                    showOwnerSuggestions('mv-owner-suggest', [], () => {});
+                    return;
+                }
+
+                // Si hay múltiples coincidencias, mostrar sugerencias y no “adivinar”.
+                if (records.length > 1) {
+                    infoEl.textContent = 'Seleccione un resultado...';
+                    infoEl.className = 'mt-2 text-sm text-slate-600';
+                    showOwnerSuggestions('mv-owner-suggest', records, (pick) => {
+                        const ownerName = (() => {
+                            const row = records.find((x) => String(x.property_id) === String(pick.propertyId) && String(x.id) === String(pick.ownerId)) || records[0];
+                            return [row.first_name, row.last_name].filter(Boolean).join(' ') || 'Propietario';
+                        })();
+                        selectedOwnerVisit = {
+                            id: pick.ownerId,
+                            dni: pick.ownerDni || '',
+                            properties: [{ id: pick.propertyId, name: pick.propertyName }]
+                        };
+                        document.getElementById('mv-property-wrap')?.classList.add('hidden');
+                        const propSelect = document.getElementById('mv-property-select');
+                        if (propSelect) propSelect.value = pick.propertyId;
+                        // Set input to chosen label to give feedback.
+                        document.getElementById('mv-owner-dni').value = (pick.ownerDni || '').trim() ? pick.ownerDni : `${ownerName} - ${pick.propertyName}`;
+                        infoEl.textContent = `✓ ${ownerName} - ${pick.propertyName}`;
+                        infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
+                    });
+                    return;
+                }
+                showOwnerSuggestions('mv-owner-suggest', [], () => {});
+
+                const ownerName = [records[0].first_name, records[0].last_name].filter(Boolean).join(' ') || 'Propietario';
                 
                 if (records.length > 0) {
-                    selectedOwnerVisit = { id: records[0].id, dni: records[0].dni, properties: records.map(r => ({ id: r.property_id, name: r.property_name })) };
+                    selectedOwnerVisit = {
+                        id: records[0].id,
+                        dni: records[0].dni,
+                        properties: records.map(r => ({ id: r.property_id, name: r.property_nickname || r.property_name }))
+                    };
                     const propWrap = document.getElementById('mv-property-wrap');
                     const propSelect = document.getElementById('mv-property-select');
                     if (records.length === 1) {
                         propWrap.classList.add('hidden');
-                        infoEl.textContent = `✓ ${ownerName} - ${records[0].property_name}`;
+                        infoEl.textContent = `✓ ${ownerName} - ${(records[0].property_nickname || records[0].property_name)}`;
                         infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
                         if (propSelect) propSelect.value = records[0].property_id;
                     } else {
                         propWrap.classList.remove('hidden');
                         if (propSelect) {
                             propSelect.innerHTML = '<option value="">Seleccione el inmueble</option>' + records.map(r => 
-                                `<option value="${r.property_id}">${r.property_name}</option>`).join('');
+                                `<option value="${r.property_id}">${escapeHtml(r.property_nickname || r.property_name)}</option>`).join('');
                             propSelect.required = true;
                         }
                         infoEl.textContent = `✓ ${ownerName} - Seleccione inmueble`;
@@ -1502,35 +1603,84 @@
             }
         }
 
+        const debouncedOwnerSearchVisit = debounce(() => {
+            // Solo sugerencias; el click “lupa” sigue funcionando.
+            const raw = document.getElementById('mv-owner-dni')?.value?.trim() || '';
+            if (raw.length < 2) {
+                showOwnerSuggestions('mv-owner-suggest', [], () => {});
+                return;
+            }
+            fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(raw)}`)
+                .then(r => r.json())
+                .then(d => showOwnerSuggestions('mv-owner-suggest', d.data || [], () => {}))
+                .catch(() => {});
+        }, 250);
+
+        document.getElementById('mv-owner-dni')?.addEventListener('input', debouncedOwnerSearchVisit);
+
         async function searchOwnerByDNIDelivery() {
             const raw = document.getElementById('md-owner-dni').value.trim();
-            const dni = validateDni(raw, 'DNI del propietario');
-            if (dni === null) return;
+            if (!raw || raw.length < 2) {
+                showToast('Ingrese al menos 2 caracteres', 'error');
+                return;
+            }
             
             const infoEl = document.getElementById('md-owner-info');
             infoEl.textContent = 'Buscando...';
             infoEl.classList.remove('hidden');
             
             try {
-                const response = await fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(dni)}`);
+                const response = await fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(raw)}`);
                 const data = await response.json();
                 const records = data.data || [];
+                if (!records || records.length === 0) {
+                    selectedOwnerDelivery = null;
+                    document.getElementById('md-property-wrap')?.classList.add('hidden');
+                    infoEl.textContent = '✗ No encontrado';
+                    infoEl.className = 'mt-2 text-sm text-red-600';
+                    showOwnerSuggestions('md-owner-suggest', [], () => {});
+                    return;
+                }
+                if (records.length > 1) {
+                    infoEl.textContent = 'Seleccione un resultado...';
+                    infoEl.className = 'mt-2 text-sm text-slate-600';
+                    showOwnerSuggestions('md-owner-suggest', records, (pick) => {
+                        const ownerName = (() => {
+                            const row = records.find((x) => String(x.property_id) === String(pick.propertyId) && String(x.id) === String(pick.ownerId)) || records[0];
+                            return [row.first_name, row.last_name].filter(Boolean).join(' ') || 'Propietario';
+                        })();
+                        selectedOwnerDelivery = {
+                            id: pick.ownerId,
+                            dni: pick.ownerDni || '',
+                            properties: [{ id: pick.propertyId, name: pick.propertyName }]
+                        };
+                        document.getElementById('md-property-wrap')?.classList.add('hidden');
+                        const propSelect = document.getElementById('md-property-select');
+                        if (propSelect) propSelect.value = pick.propertyId;
+                        document.getElementById('md-owner-dni').value = (pick.ownerDni || '').trim() ? pick.ownerDni : `${ownerName} - ${pick.propertyName}`;
+                        infoEl.textContent = `✓ ${ownerName} - ${pick.propertyName}`;
+                        infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
+                    });
+                    return;
+                }
+                showOwnerSuggestions('md-owner-suggest', [], () => {});
+
                 const ownerName = records[0] ? [records[0].first_name, records[0].last_name].filter(Boolean).join(' ') || 'Propietario' : '';
                 
                 if (records.length > 0) {
-                    selectedOwnerDelivery = { id: records[0].id, dni: records[0].dni, properties: records.map(r => ({ id: r.property_id, name: r.property_name })) };
+                    selectedOwnerDelivery = { id: records[0].id, dni: records[0].dni, properties: records.map(r => ({ id: r.property_id, name: r.property_nickname || r.property_name })) };
                     const propWrap = document.getElementById('md-property-wrap');
                     const propSelect = document.getElementById('md-property-select');
                     if (records.length === 1) {
                         propWrap.classList.add('hidden');
-                        infoEl.textContent = `✓ ${ownerName} - ${records[0].property_name}`;
+                        infoEl.textContent = `✓ ${ownerName} - ${(records[0].property_nickname || records[0].property_name)}`;
                         infoEl.className = 'mt-2 text-sm text-green-600 font-medium';
                         if (propSelect) propSelect.value = records[0].property_id;
                     } else {
                         propWrap.classList.remove('hidden');
                         if (propSelect) {
                             propSelect.innerHTML = '<option value="">Seleccione el inmueble</option>' + records.map(r => 
-                                `<option value="${r.property_id}">${r.property_name}</option>`).join('');
+                                `<option value="${r.property_id}">${escapeHtml(r.property_nickname || r.property_name)}</option>`).join('');
                             propSelect.required = true;
                         }
                         infoEl.textContent = `✓ ${ownerName} - Seleccione inmueble`;
@@ -1547,6 +1697,20 @@
                 infoEl.className = 'mt-2 text-sm text-red-600';
             }
         }
+
+        const debouncedOwnerSearchDelivery = debounce(() => {
+            const raw = document.getElementById('md-owner-dni')?.value?.trim() || '';
+            if (raw.length < 2) {
+                showOwnerSuggestions('md-owner-suggest', [], () => {});
+                return;
+            }
+            fetchWithAuth(`/api/security/owners/search?q=${encodeURIComponent(raw)}`)
+                .then(r => r.json())
+                .then(d => showOwnerSuggestions('md-owner-suggest', d.data || [], () => {}))
+                .catch(() => {});
+        }, 250);
+
+        document.getElementById('md-owner-dni')?.addEventListener('input', debouncedOwnerSearchDelivery);
 
         async function submitManualVisit() {
             const ownerDniRaw = document.getElementById('mv-owner-dni').value.trim();
@@ -1615,11 +1779,13 @@
 
         async function submitManualDelivery() {
             const ownerDniRaw = document.getElementById('md-owner-dni').value.trim();
-            const ownerDni = validateDni(ownerDniRaw, 'DNI del propietario');
-            if (ownerDni === null) return;
+            // Ahora puede ser DNI o búsqueda por inmueble; si no es numérico, se exige seleccionar inmueble.
+            const isNumeric = /^\d+$/.test(ownerDniRaw.trim());
+            const ownerDni = isNumeric ? validateDni(ownerDniRaw, 'DNI del propietario') : null;
+            if (isNumeric && ownerDni === null) return;
 
             const formData = {
-                owner_dni: ownerDni,
+                ...(ownerDni ? { owner_dni: ownerDni } : {}),
                 name: document.getElementById('md-name').value.trim(),
                 company: document.getElementById('md-company').value.trim(),
                 expected_date: document.getElementById('md-expected-date').value,
@@ -1634,7 +1800,17 @@
                 formData.property_id = propId;
             }
 
-            if (!formData.owner_dni || !formData.name || !formData.company || !formData.expected_date) {
+            // Si no hay DNI, se debe seleccionar inmueble para asociar el delivery.
+            if (!formData.owner_dni) {
+                const propId = document.getElementById('md-property-select')?.value;
+                if (!propId) {
+                    showToast('Seleccione el inmueble del propietario', 'error');
+                    return;
+                }
+                formData.property_id = propId;
+            }
+
+            if (!formData.company || !formData.expected_date) {
                 showToast('Complete todos los campos requeridos', 'error');
                 return;
             }

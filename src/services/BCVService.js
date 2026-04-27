@@ -9,6 +9,13 @@ const API_USD = 'https://ve.dolarapi.com/v1/dolares/oficial';
 const API_EUR = 'https://ve.dolarapi.com/v1/euros/oficial';
 
 class BCVService {
+    constructor() {
+        // Metadatos para observabilidad (no persistentes).
+        this._lastApiCheckAtUtc = null;
+        this._lastApiOkAtUtc = null;
+        this._lastApiError = null;
+        this._lastApiStatus = null; // 'ok' | 'error'
+    }
     /**
      * Reservado por compatibilidad; ya no hay caché de clave API.
      */
@@ -23,7 +30,20 @@ class BCVService {
         const m = isoOrDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (m) return `${m[1]}-${m[2]}-${m[3]}`;
         const d = new Date(isoOrDate);
-        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+        if (!isNaN(d.getTime())) {
+            // Evitar desfases por UTC: tomar la fecha efectiva en America/Caracas.
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Caracas',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(d);
+            const y = parts.find((p) => p.type === 'year')?.value;
+            const mo = parts.find((p) => p.type === 'month')?.value;
+            const da = parts.find((p) => p.type === 'day')?.value;
+            if (y && mo && da) return `${y}-${mo}-${da}`;
+            return d.toISOString().slice(0, 10);
+        }
         return null;
     }
 
@@ -45,6 +65,9 @@ class BCVService {
      */
     async fetchFromAPI() {
         try {
+            this._lastApiCheckAtUtc = new Date().toISOString();
+            this._lastApiStatus = null;
+            this._lastApiError = null;
             console.log('🔄 Consultando API BCV (ve.dolarapi.com)...');
 
             const [usdRes, eurRes] = await Promise.all([
@@ -60,6 +83,8 @@ class BCVService {
 
             if (usdRes.status !== 200 || !usdRes.data || eurRes.status !== 200 || !eurRes.data) {
                 console.error('❌ Respuesta inválida de la API BCV');
+                this._lastApiStatus = 'error';
+                this._lastApiError = 'Respuesta inválida de la API';
                 return null;
             }
 
@@ -94,9 +119,14 @@ class BCVService {
                 rawData: { usd: u, eur: e }
             };
 
+            this._lastApiStatus = 'ok';
+            this._lastApiOkAtUtc = new Date().toISOString();
             return rateData;
         } catch (error) {
             console.error('❌ Error al consultar API BCV:', error.message);
+            this._lastApiCheckAtUtc = this._lastApiCheckAtUtc || new Date().toISOString();
+            this._lastApiStatus = 'error';
+            this._lastApiError = error?.message || 'Error desconocido';
             if (error.code === 'ECONNABORTED') {
                 console.error('⏰ Timeout al consultar la API BCV');
             } else if (error.response) {
@@ -156,6 +186,9 @@ class BCVService {
      */
     async needsUpdate() {
         try {
+            this._lastApiCheckAtUtc = new Date().toISOString();
+            this._lastApiStatus = null;
+            this._lastApiError = null;
             const response = await axios.get(API_USD, {
                 timeout: 10000,
                 headers: { Accept: 'application/json', 'User-Agent': 'Condominio360/1.0' }
@@ -175,8 +208,19 @@ class BCVService {
             return !exists;
         } catch (error) {
             console.error('❌ Error al verificar necesidad de actualización:', error.message);
+            this._lastApiStatus = 'error';
+            this._lastApiError = error?.message || 'Error desconocido';
             return true;
         }
+    }
+
+    getApiStatusMeta() {
+        return {
+            lastApiCheckAtUtc: this._lastApiCheckAtUtc,
+            lastApiOkAtUtc: this._lastApiOkAtUtc,
+            lastApiStatus: this._lastApiStatus,
+            lastApiError: this._lastApiError
+        };
     }
 
     /**
@@ -186,7 +230,12 @@ class BCVService {
         const needsUpdate = await this.needsUpdate();
         if (needsUpdate) {
             console.log('📅 Nueva tasa disponible en API, actualizando...');
-            return await this.fetchAndSave();
+            const saved = await this.fetchAndSave();
+            if (saved) return saved;
+            // Si la API falla (caída/intermitente), mantener referencia de BD y reintentar en próximos ticks.
+            const latest = await this.getLatestRate();
+            console.warn('⚠️ No se pudo actualizar desde API. Se mantiene la tasa en BD si existe.');
+            return latest;
         }
         const latest = await this.getLatestRate();
         if (latest) {
