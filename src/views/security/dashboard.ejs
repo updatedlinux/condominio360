@@ -1740,9 +1740,11 @@
         async function submitManualVisit() {
             const ownerDniRaw = document.getElementById('mv-owner-dni').value.trim();
             const visitorDniRaw = document.getElementById('mv-visitor-dni').value.trim();
-            const ownerDni = validateDni(ownerDniRaw, 'DNI del propietario');
+            // Puede ser DNI o búsqueda por inmueble; si no es numérico, se exige inmueble seleccionado (property_id).
+            const isNumeric = /^\d+$/.test(ownerDniRaw.trim());
+            const ownerDni = isNumeric ? validateDni(ownerDniRaw, 'DNI del propietario') : null;
             const visitorDni = validateDni(visitorDniRaw, 'DNI del visitante');
-            if (ownerDni === null || visitorDni === null) return;
+            if ((isNumeric && ownerDni === null) || visitorDni === null) return;
 
             const phoneRaw = document.getElementById('mv-visitor-phone').value.trim();
             const visitorPhone = phoneRaw ? phoneRaw.replace(/\D/g, '') : null;
@@ -1752,7 +1754,7 @@
             }
 
             const formData = {
-                owner_dni: ownerDni,
+                ...(ownerDni ? { owner_dni: ownerDni } : {}),
                 visitor_first_name: document.getElementById('mv-visitor-firstname').value.trim(),
                 visitor_last_name: document.getElementById('mv-visitor-lastname').value.trim(),
                 visitor_dni: visitorDni,
@@ -1762,16 +1764,24 @@
                 vehicle_plate: document.getElementById('mv-vehicle-plate').value.trim(),
                 notes: document.getElementById('mv-notes').value.trim()
             };
-            if (selectedOwnerVisit && selectedOwnerVisit.properties.length > 1) {
-                const propId = document.getElementById('mv-property-select')?.value;
-                if (!propId) {
-                    showToast('Seleccione el inmueble del propietario', 'error');
-                    return;
+            // Si se seleccionó un resultado por AJAX, ya tenemos el inmueble.
+            if (!formData.owner_dni) {
+                if (selectedOwnerVisit?.properties?.length === 1) {
+                    formData.property_id = selectedOwnerVisit.properties[0].id;
+                } else if (selectedOwnerVisit?.properties?.length > 1) {
+                    const propId = document.getElementById('mv-property-select')?.value;
+                    if (!propId) {
+                        showToast('Seleccione el inmueble del propietario', 'error');
+                        return;
+                    }
+                    formData.property_id = propId;
+                } else {
+                    const propId = document.getElementById('mv-property-select')?.value;
+                    if (propId) formData.property_id = propId;
                 }
-                formData.property_id = propId;
             }
 
-            if (!formData.owner_dni || !formData.visitor_first_name || !formData.visitor_last_name || 
+            if ((!formData.owner_dni && !formData.property_id) || !formData.visitor_first_name || !formData.visitor_last_name || 
                 !formData.visitor_dni || !formData.visit_date) {
                 showToast('Complete todos los campos requeridos', 'error');
                 return;
@@ -1816,23 +1826,29 @@
                 expected_date: document.getElementById('md-expected-date').value,
                 notes: document.getElementById('md-notes').value.trim()
             };
-            if (selectedOwnerDelivery && selectedOwnerDelivery.properties.length > 1) {
-                const propId = document.getElementById('md-property-select')?.value;
-                if (!propId) {
-                    showToast('Seleccione el inmueble del propietario', 'error');
-                    return;
+            if (!formData.owner_dni) {
+                if (selectedOwnerDelivery?.properties?.length === 1) {
+                    formData.property_id = selectedOwnerDelivery.properties[0].id;
+                } else if (selectedOwnerDelivery?.properties?.length > 1) {
+                    const propId = document.getElementById('md-property-select')?.value;
+                    if (!propId) {
+                        showToast('Seleccione el inmueble del propietario', 'error');
+                        return;
+                    }
+                    formData.property_id = propId;
                 }
-                formData.property_id = propId;
             }
 
             // Si no hay DNI, se debe seleccionar inmueble para asociar el delivery.
             if (!formData.owner_dni) {
-                const propId = document.getElementById('md-property-select')?.value;
-                if (!propId) {
-                    showToast('Seleccione el inmueble del propietario', 'error');
-                    return;
+                if (!formData.property_id) {
+                    const propId = document.getElementById('md-property-select')?.value;
+                    if (!propId) {
+                        showToast('Seleccione el inmueble del propietario', 'error');
+                        return;
+                    }
+                    formData.property_id = propId;
                 }
-                formData.property_id = propId;
             }
 
             if (!formData.company || !formData.expected_date) {
