@@ -2743,7 +2743,7 @@
                         <span class="text-gray-700">$${parseFloat(inv.total_usd).toFixed(2)} USD</span>
                         <span class="text-gray-600">Bs. ${parseFloat(inv.total_ves).toLocaleString('es-VE')}</span>
                         <span class="px-2 py-1 rounded text-xs ${inv.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${inv.status}</span>
-                        <button onclick="recalculateSaaSInvoice('${inv.id}')" class="text-xs text-[var(--md-sys-color-primary)] hover:underline" title="Recalcular VES (tasa BCV actual)">Recalcular</button>
+                        ${inv.status === 'PENDING' ? `<button onclick="recalculateSaaSInvoice('${inv.id}')" class="text-xs text-[var(--md-sys-color-primary)] hover:underline" title="Recalcular VES (tasa BCV actual)">Recalcular</button>` : ''}
                         ${inv.status === 'PENDING' ? `<button onclick="deleteSaaSInvoice('${inv.id}', '${(inv.tenant_name || '').replace(/'/g, "\\'")}')" class="text-xs text-red-600 hover:underline" title="Eliminar factura">Eliminar</button>` : ''}
                     </div>
                 </div>

@@ -298,36 +298,61 @@ class SaaSInvoicePdfService {
 
         const inkColor = '#1E3A8A';
 
+        const rand = this._seedRandom(invoice && invoice.id ? String(invoice.id) : 'seed-default');
+
         doc.save();
         doc.translate(stampX + stampW / 2, stampY + stampH / 2);
-        doc.rotate(-7);
+        doc.rotate(-7 + (rand() - 0.5) * 2);
 
         const outerX = -stampW / 2 + 4;
         const outerY = -stampH / 2 + 4;
         const outerW = stampW - 8;
         const outerH = stampH - 8;
 
-        doc.lineWidth(2.4).strokeColor(inkColor).opacity(0.92);
-        doc.roundedRect(outerX, outerY, outerW, outerH, 6).stroke();
+        this._drawWornBorder(doc, outerX, outerY, outerW, outerH, 6, {
+            color: inkColor,
+            baseOpacity: 0.88,
+            segments: 36,
+            wobble: 0.7,
+            rand
+        });
+        this._drawWornBorder(doc, outerX + 4, outerY + 4, outerW - 8, outerH - 8, 4, {
+            color: inkColor,
+            baseOpacity: 0.75,
+            segments: 28,
+            wobble: 0.5,
+            rand,
+            lineWidth: 0.6
+        });
 
-        doc.lineWidth(0.8).strokeColor(inkColor).opacity(0.88);
-        doc.roundedRect(outerX + 4, outerY + 4, outerW - 8, outerH - 8, 4).stroke();
+        this._drawInkText(doc, 'PAGADO', -stampW / 2, -24, {
+            width: stampW, fontSize: 34, color: inkColor, rand
+        });
 
-        doc.opacity(0.95);
-        doc.fillColor(inkColor).font('Helvetica-Bold').fontSize(34)
-            .text('PAGADO', -stampW / 2, -24, { width: stampW, align: 'center', lineBreak: false });
+        doc.save();
+        doc.lineWidth(0.6).strokeColor(inkColor);
+        const divX1 = outerX + 18;
+        const divX2 = outerX + outerW - 18;
+        let cursor = divX1;
+        while (cursor < divX2) {
+            const seg = 4 + rand() * 8;
+            const gap = rand() < 0.18 ? 2 + rand() * 3 : 0;
+            const x2 = Math.min(cursor + seg, divX2);
+            const yOff = (rand() - 0.5) * 0.6;
+            doc.opacity(0.55 + rand() * 0.3);
+            doc.moveTo(cursor, 10 + yOff).lineTo(x2, 10 + yOff).stroke();
+            cursor = x2 + gap;
+        }
+        doc.restore();
 
-        doc.lineWidth(0.6).strokeColor(inkColor).opacity(0.7);
-        doc.moveTo(outerX + 18, 10).lineTo(outerX + outerW - 18, 10).stroke();
+        this._drawInkText(doc, 'Confirmado por Arsys Intela', -stampW / 2, 14, {
+            width: stampW, fontSize: 8.5, color: inkColor, rand, jitter: 0.4
+        });
+        this._drawInkText(doc, 'RIF J-502314547', -stampW / 2, 27, {
+            width: stampW, fontSize: 8, color: inkColor, rand, jitter: 0.4
+        });
 
-        doc.opacity(0.95).fillColor(inkColor).font('Helvetica-Bold').fontSize(8.5)
-            .text('Confirmado por Arsys Intela', -stampW / 2, 14, {
-                width: stampW, align: 'center', lineBreak: false
-            });
-        doc.opacity(0.9).fillColor(inkColor).font('Helvetica-Bold').fontSize(8)
-            .text('RIF J-502314547', -stampW / 2, 27, {
-                width: stampW, align: 'center', lineBreak: false
-            });
+        this._drawInkSplatter(doc, outerX, outerY, outerW, outerH, inkColor, rand);
 
         doc.opacity(1);
         doc.restore();
@@ -419,6 +444,191 @@ class SaaSInvoicePdfService {
                 startX, footerY,
                 { width: pageWidth - 80, align: 'center', lineBreak: false }
             );
+    }
+
+    static _seedRandom(seedStr) {
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            h ^= seedStr.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        let state = h >>> 0;
+        return function () {
+            state ^= state << 13; state >>>= 0;
+            state ^= state >>> 17;
+            state ^= state << 5;  state >>>= 0;
+            return ((state >>> 0) % 1000000) / 1000000;
+        };
+    }
+
+    static _drawWornBorder(doc, x, y, w, h, r, opts = {}) {
+        const {
+            color = '#1E3A8A',
+            baseOpacity = 0.85,
+            segments = 32,
+            wobble = 0.6,
+            rand = Math.random,
+            lineWidth
+        } = opts;
+
+        const pts = [];
+        const top = [{ x: x + r, y }, { x: x + w - r, y }];
+        const right = [{ x: x + w, y: y + r }, { x: x + w, y: y + h - r }];
+        const bottom = [{ x: x + w - r, y: y + h }, { x: x + r, y: y + h }];
+        const left = [{ x, y: y + h - r }, { x, y: y + r }];
+
+        const sample = (a, b, n) => {
+            for (let i = 0; i < n; i++) {
+                const t = i / n;
+                pts.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+            }
+        };
+
+        const arc = (cx, cy, startAng, endAng, n) => {
+            for (let i = 0; i < n; i++) {
+                const t = i / n;
+                const ang = startAng + (endAng - startAng) * t;
+                pts.push({ x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r });
+            }
+        };
+
+        const perSide = Math.max(4, Math.floor(segments / 4));
+        sample(top[0], top[1], perSide);
+        arc(x + w - r, y + r, -Math.PI / 2, 0, Math.max(3, Math.floor(perSide / 3)));
+        sample(right[0], right[1], perSide);
+        arc(x + w - r, y + h - r, 0, Math.PI / 2, Math.max(3, Math.floor(perSide / 3)));
+        sample(bottom[0], bottom[1], perSide);
+        arc(x + r, y + h - r, Math.PI / 2, Math.PI, Math.max(3, Math.floor(perSide / 3)));
+        sample(left[0], left[1], perSide);
+        arc(x + r, y + r, Math.PI, Math.PI * 1.5, Math.max(3, Math.floor(perSide / 3)));
+
+        doc.save();
+        doc.strokeColor(color);
+
+        for (let i = 0; i < pts.length; i++) {
+            const a = pts[i];
+            const b = pts[(i + 1) % pts.length];
+
+            if (rand() < 0.16) continue;
+
+            const jitterAx = (rand() - 0.5) * wobble * 2;
+            const jitterAy = (rand() - 0.5) * wobble * 2;
+            const jitterBx = (rand() - 0.5) * wobble * 2;
+            const jitterBy = (rand() - 0.5) * wobble * 2;
+
+            doc.lineWidth(lineWidth != null ? lineWidth : (1.6 + rand() * 1.6));
+            doc.opacity(Math.max(0.18, Math.min(1, baseOpacity * (0.55 + rand() * 0.7))));
+
+            doc.moveTo(a.x + jitterAx, a.y + jitterAy)
+                .lineTo(b.x + jitterBx, b.y + jitterBy)
+                .stroke();
+        }
+
+        for (let i = 0; i < 14; i++) {
+            const idx = Math.floor(rand() * pts.length);
+            const p = pts[idx];
+            doc.fillColor(color).opacity(0.25 + rand() * 0.4);
+            const rr = 0.4 + rand() * 1.2;
+            doc.circle(p.x + (rand() - 0.5) * 1.5, p.y + (rand() - 0.5) * 1.5, rr).fill();
+        }
+
+        doc.restore();
+    }
+
+    static _drawInkText(doc, text, x, y, opts = {}) {
+        const {
+            width = 200,
+            fontSize = 12,
+            color = '#1E3A8A',
+            rand = Math.random,
+            jitter = 0.7
+        } = opts;
+
+        doc.save();
+        doc.font('Helvetica-Bold').fontSize(fontSize).fillColor(color);
+
+        doc.opacity(0.18);
+        doc.text(text, x + (rand() - 0.5) * jitter * 1.4, y + (rand() - 0.5) * jitter * 1.4,
+            { width, align: 'center', lineBreak: false });
+
+        doc.opacity(0.35);
+        doc.text(text, x + (rand() - 0.5) * jitter, y + (rand() - 0.5) * jitter,
+            { width, align: 'center', lineBreak: false });
+
+        doc.opacity(0.92);
+        doc.text(text, x, y,
+            { width, align: 'center', lineBreak: false });
+
+        doc.opacity(0.55);
+        doc.text(text, x + jitter * 0.4, y + jitter * 0.3,
+            { width, align: 'center', lineBreak: false });
+
+        doc.restore();
+    }
+
+    static _drawInkSplatter(doc, x, y, w, h, color, rand) {
+        doc.save();
+        doc.fillColor(color);
+
+        const drops = 14 + Math.floor(rand() * 10);
+        for (let i = 0; i < drops; i++) {
+            const edgePick = rand();
+            let px, py;
+            if (edgePick < 0.25) {
+                px = x - 4 - rand() * 18;
+                py = y + rand() * h;
+            } else if (edgePick < 0.5) {
+                px = x + w + 4 + rand() * 18;
+                py = y + rand() * h;
+            } else if (edgePick < 0.75) {
+                px = x + rand() * w;
+                py = y - 4 - rand() * 14;
+            } else {
+                px = x + rand() * w;
+                py = y + h + 4 + rand() * 14;
+            }
+            const r = 0.3 + rand() * 1.6;
+            doc.opacity(0.2 + rand() * 0.5);
+            doc.circle(px, py, r).fill();
+
+            if (rand() < 0.45) {
+                const tail = 2 + rand() * 5;
+                const ang = rand() * Math.PI * 2;
+                doc.opacity(0.18 + rand() * 0.25);
+                doc.circle(px + Math.cos(ang) * tail, py + Math.sin(ang) * tail, r * 0.4).fill();
+            }
+        }
+
+        const interior = 18 + Math.floor(rand() * 16);
+        for (let i = 0; i < interior; i++) {
+            const px = x + 4 + rand() * (w - 8);
+            const py = y + 4 + rand() * (h - 8);
+            const r = 0.2 + rand() * 0.7;
+            doc.opacity(0.06 + rand() * 0.18);
+            doc.circle(px, py, r).fill();
+        }
+
+        for (let i = 0; i < 6; i++) {
+            const startEdge = rand() < 0.5 ? 'top' : 'side';
+            let sx, sy, ex, ey;
+            if (startEdge === 'top') {
+                sx = x + 10 + rand() * (w - 20);
+                sy = y + 1;
+                ex = sx + (rand() - 0.5) * 2;
+                ey = sy + 6 + rand() * 14;
+            } else {
+                const left = rand() < 0.5;
+                sx = left ? x + 1 : x + w - 1;
+                sy = y + 10 + rand() * (h - 20);
+                ex = sx + (left ? -1 : 1) * (4 + rand() * 10);
+                ey = sy + (rand() - 0.5) * 3;
+            }
+            doc.opacity(0.12 + rand() * 0.18);
+            doc.lineWidth(0.4 + rand() * 0.5).strokeColor(color);
+            doc.moveTo(sx, sy).lineTo(ex, ey).stroke();
+        }
+
+        doc.restore();
     }
 }
 
