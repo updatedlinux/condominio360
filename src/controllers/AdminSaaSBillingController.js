@@ -354,6 +354,78 @@ class AdminSaaSBillingController {
     }
 
     /**
+     * POST /api/admin/saas-billing/invoices/:id/adjust-paid-rate
+     * Ajustar la tasa BCV y monto en bolívares de una factura ya PAGADA
+     * usando la tasa registrada en BD para una fecha específica.
+     * Body: { rate_date: 'YYYY-MM-DD' }
+     */
+    static async adjustPaidRate(req, res) {
+        try {
+            const { id } = req.params;
+            const rateDate = req.body && req.body.rate_date ? String(req.body.rate_date).trim() : '';
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(rateDate)) {
+                return res.status(400).json({ error: 'Fecha inválida. Usa el formato YYYY-MM-DD' });
+            }
+
+            const result = await SaaSBillingModel.adjustPaidInvoiceRate(id, rateDate);
+            if (result.reason === 'NOT_FOUND') {
+                return res.status(404).json({ error: 'Factura no encontrada' });
+            }
+            if (result.reason === 'NOT_PAID') {
+                return res.status(400).json({ error: 'Solo se puede ajustar la tasa de facturas en estado PAGADA' });
+            }
+            if (result.reason === 'NO_RATE_FOR_DATE') {
+                return res.status(404).json({ error: `No hay tasa BCV registrada en BD para la fecha ${rateDate}` });
+            }
+
+            const { previous, applied } = result;
+            const diffVes = (applied.total_ves - previous.total_ves);
+            const diffStr = (diffVes >= 0 ? '+' : '') + diffVes.toFixed(2);
+            await AdminController.logAudit(req, 'UPDATE', 'SAAS_INVOICE', id,
+                `Ajustó tasa BCV de factura pagada a ${rateDate} (${applied.bcv_rate} Bs/USD). ` +
+                `Bs. anterior: ${previous.total_ves}, nuevo: ${applied.total_ves} (Δ ${diffStr})`,
+                null);
+
+            res.json({
+                success: true,
+                data: result.invoice,
+                previous,
+                applied,
+                message: `Tasa actualizada a Bs. ${applied.bcv_rate} (${rateDate}). Total ajustado a Bs. ${applied.total_ves.toLocaleString('es-VE')}.`
+            });
+        } catch (error) {
+            console.error('Adjust paid rate error:', error);
+            res.status(500).json({ error: 'Error al ajustar tasa de factura pagada' });
+        }
+    }
+
+    /**
+     * GET /api/admin/saas-billing/invoices/:id/payment-pdf
+     * Descargar comprobante PDF de pago confirmado (solo facturas PAID)
+     */
+    static async downloadPaidInvoicePdf(req, res) {
+        try {
+            const invoice = await SaaSBillingModel.getInvoiceWithItems(req.params.id);
+            if (!invoice) {
+                return res.status(404).json({ error: 'Factura no encontrada' });
+            }
+            if (invoice.status !== 'PAID') {
+                return res.status(400).json({ error: 'El comprobante PDF solo está disponible para facturas pagadas' });
+            }
+            const SaaSInvoicePdfService = require('../services/SaaSInvoicePdfService');
+            const paymentReport = await SaaSBillingModel.getLatestPaymentReport(invoice.id);
+            SaaSInvoicePdfService.streamPaidInvoice(res, invoice, paymentReport);
+        } catch (error) {
+            console.error('Download paid invoice PDF (admin) error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Error al generar el comprobante PDF' });
+            } else {
+                res.end();
+            }
+        }
+    }
+
+    /**
      * GET /api/admin/saas-billing/tenants-available
      * Listar tenants activos para generar facturas
      */

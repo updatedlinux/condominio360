@@ -321,6 +321,14 @@
                             </div>
                             <p class="text-sm text-blue-700 mt-1">Condominio360 verificará tu comprobante y te notificará.</p>
                         </div>
+                        ` : inv.status === 'PAID' ? `
+                        <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
+                            <button type="button" onclick="downloadSaasInvoicePdf('${inv.id}')" class="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium flex items-center justify-center gap-2">
+                                <span class="material-icons-round">download</span>
+                                Descargar comprobante PDF
+                            </button>
+                            <p class="text-xs text-[#9AA0A6] mt-2 text-center">Incluye el sello "PAGADO" y la firma del CEO de Arsys Intela.</p>
+                        </div>
                         ` : ''}
                     </div>
                 `;
@@ -433,6 +441,39 @@
         }
         function closeReportPaymentModal() {
             document.getElementById('report-payment-modal').classList.add('hidden');
+        }
+
+        async function downloadSaasInvoicePdf(invoiceId) {
+            try {
+                showPageToast('Generando comprobante PDF...', 'info');
+                const res = await fetch(`/api/tenant-admin/saas-invoices/${invoiceId}/payment-pdf`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    let msg = 'No se pudo generar el comprobante';
+                    try {
+                        const data = await res.json();
+                        if (data && data.error) msg = data.error;
+                    } catch (_) { /* respuesta binaria */ }
+                    showPageToast(msg, 'error');
+                    return;
+                }
+                const blob = await res.blob();
+                const disposition = res.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="?([^";]+)"?/i);
+                const filename = (match && match[1]) || `Comprobante-Condominio360-${invoiceId.slice(0, 8)}.pdf`;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                showPageToast('Comprobante descargado', 'success');
+            } catch (e) {
+                showPageToast('Error al descargar el comprobante', 'error');
+            }
         }
 
         function logout() {

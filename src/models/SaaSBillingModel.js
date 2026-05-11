@@ -370,6 +370,81 @@ class SaaSBillingModel {
         return out;
     }
 
+    /**
+     * Ajustar la tasa BCV y el monto en bolívares de una factura ya PAGADA,
+     * usando la tasa registrada en ExchangeRates para una fecha específica.
+     * Útil cuando el superadmin confirmó el cobro con una fecha incorrecta
+     * y el condominio pagó a la tasa de otro día.
+     *
+     * @param {string} invoiceId
+     * @param {string} rateDate - YYYY-MM-DD
+     * @returns {Promise<{invoice: Object|null, previous: Object|null, applied: Object|null, reason?: string}>}
+     */
+    static async adjustPaidInvoiceRate(invoiceId, rateDate) {
+        const pool = await connectDB();
+
+        const ExchangeRateModel = require('./ExchangeRateModel');
+        const rateRow = await ExchangeRateModel.getByDate(rateDate);
+        if (!rateRow || !rateRow.usd_rate) {
+            return { invoice: null, previous: null, applied: null, reason: 'NO_RATE_FOR_DATE' };
+        }
+
+        const cur = await pool.request()
+            .input('id', sql.UniqueIdentifier, invoiceId)
+            .query(`
+                SELECT id, status, total_usd, total_ves, bcv_rate, bcv_rate_date, paid_amount_ves
+                FROM SaaSInvoices
+                WHERE id = @id
+            `);
+        const invoice = cur.recordset[0];
+        if (!invoice) {
+            return { invoice: null, previous: null, applied: null, reason: 'NOT_FOUND' };
+        }
+        if (invoice.status !== 'PAID') {
+            return { invoice: null, previous: invoice, applied: null, reason: 'NOT_PAID' };
+        }
+
+        const usd = parseFloat(invoice.total_usd) || 0;
+        const newRate = parseFloat(rateRow.usd_rate);
+        const newTotalVes = Math.round(usd * newRate * 100) / 100;
+        const normalizedRateDate = rateRow.rate_date
+            ? new Date(rateRow.rate_date).toISOString().split('T')[0]
+            : rateDate;
+
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, invoiceId)
+            .input('total_ves', sql.Decimal(18, 2), newTotalVes)
+            .input('paid_amount_ves', sql.Decimal(18, 2), newTotalVes)
+            .input('bcv_rate', sql.Decimal(12, 4), newRate)
+            .input('bcv_rate_date', sql.Date, normalizedRateDate)
+            .query(`
+                UPDATE SaaSInvoices
+                SET total_ves = @total_ves,
+                    paid_amount_ves = @paid_amount_ves,
+                    bcv_rate = @bcv_rate,
+                    bcv_rate_date = @bcv_rate_date,
+                    updated_at = SYSDATETIME()
+                WHERE id = @id AND status = N'PAID'
+            `);
+
+        const updated = await this.getInvoiceWithItems(invoiceId);
+        return {
+            invoice: updated,
+            previous: {
+                bcv_rate: parseFloat(invoice.bcv_rate),
+                bcv_rate_date: invoice.bcv_rate_date,
+                total_ves: parseFloat(invoice.total_ves),
+                paid_amount_ves: parseFloat(invoice.paid_amount_ves)
+            },
+            applied: {
+                bcv_rate: newRate,
+                bcv_rate_date: normalizedRateDate,
+                total_ves: newTotalVes,
+                paid_amount_ves: newTotalVes
+            }
+        };
+    }
+
     static async existsForPeriod(tenantId, month, year) {
         const pool = await connectDB();
         const r = await pool.request()

@@ -145,6 +145,7 @@ router.get('/saas-invoices/summary', TenantAdminSaaSBillingController.summary);
 router.get('/saas-invoices/payment-config', TenantAdminSaaSBillingController.getPaymentConfig);
 router.get('/saas-invoices/banks', TenantAdminSaaSBillingController.getBanks);
 router.get('/saas-invoices/:id', TenantAdminSaaSBillingController.getById);
+router.get('/saas-invoices/:id/payment-pdf', TenantAdminSaaSBillingController.downloadPaidInvoicePdf);
 router.post('/saas-invoices/:id/report-payment', (req, res, next) => {
     uploadPaymentReceipt.single('receipt')(req, res, (err) => {
         if (err) return res.status(400).json({ error: err.message || 'Error al subir archivo' });

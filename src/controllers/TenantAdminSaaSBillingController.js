@@ -106,6 +106,33 @@ class TenantAdminSaaSBillingController {
     }
 
     /**
+     * GET /api/tenant-admin/saas-invoices/:id/payment-pdf
+     * Descargar comprobante PDF de pago confirmado (solo facturas PAID del propio tenant)
+     */
+    static async downloadPaidInvoicePdf(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const invoice = await SaaSBillingModel.getInvoiceWithItems(req.params.id);
+            if (!invoice || String(invoice.tenant_id) !== String(tenantId)) {
+                return res.status(404).json({ error: 'Factura no encontrada' });
+            }
+            if (invoice.status !== 'PAID') {
+                return res.status(400).json({ error: 'El comprobante PDF solo está disponible cuando Condominio360 ha confirmado el pago' });
+            }
+            const SaaSInvoicePdfService = require('../services/SaaSInvoicePdfService');
+            const paymentReport = await SaaSBillingModel.getLatestPaymentReport(invoice.id);
+            SaaSInvoicePdfService.streamPaidInvoice(res, invoice, paymentReport);
+        } catch (error) {
+            console.error('Download paid invoice PDF (tenant) error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Error al generar el comprobante PDF' });
+            } else {
+                res.end();
+            }
+        }
+    }
+
+    /**
      * POST /api/tenant-admin/saas-invoices/:id/report-payment
      * Reportar pago de factura SaaS (junta reporta a superadmin)
      */
