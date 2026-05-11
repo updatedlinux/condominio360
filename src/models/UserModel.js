@@ -715,6 +715,8 @@ class UserModel {
                     u.dni,
                     u.is_active,
                     u.created_at AS usuario_creado,
+                    upd.last_approved_at AS ultima_actualizacion_aprobada,
+                    ISNULL(upd.approved_count, 0) AS actualizaciones_aprobadas,
                     p.id AS property_id,
                     p.name AS inmueble,
                     COALESCE(b.name, p.building) AS edificio,
@@ -723,6 +725,14 @@ class UserModel {
                 FROM Users u
                 INNER JOIN TenantUsers tu
                     ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                LEFT JOIN (
+                    SELECT user_id,
+                           MAX(reviewed_at) AS last_approved_at,
+                           COUNT(*)         AS approved_count
+                    FROM DataUpdateRequests
+                    WHERE status = N'APPROVED'
+                    GROUP BY user_id
+                ) upd ON upd.user_id = u.id
                 LEFT JOIN PropertyOwners po ON u.id = po.user_id
                 LEFT JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
                 LEFT JOIN Buildings b ON p.building_id = b.id
