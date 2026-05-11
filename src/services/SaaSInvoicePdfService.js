@@ -5,7 +5,7 @@ const SVGtoPDF = require('svg-to-pdfkit');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'public', 'assets', 'images');
 const CONDO_LOGO_BLACK_SVG = path.join(ASSETS_DIR, 'CONDOMINIO360-blacklogo.svg');
-const INTELA_LOGO_SVG = path.join(ASSETS_DIR, 'svgMAIN-intelalogo.svg');
+const INTELA_LOGO_PNG = path.join(ASSETS_DIR, 'png', 'main-intelawhite.png');
 const FIRMA_PNG = path.join(ASSETS_DIR, 'Firma-JM.png');
 
 const MONTH_NAMES_ES = [
@@ -13,23 +13,17 @@ const MONTH_NAMES_ES = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-let intelaRasterCache = null;
-function getIntelaRasterPngBuffer() {
-    if (intelaRasterCache !== undefined && intelaRasterCache !== null) {
-        return intelaRasterCache;
-    }
+let intelaPngCache = null;
+function getIntelaPngBuffer() {
+    if (intelaPngCache !== null) return intelaPngCache || null;
     try {
-        const svg = fs.readFileSync(INTELA_LOGO_SVG, 'utf8');
-        const m = svg.match(/xlink:href="data:image\/png;base64,([^"]+)"/);
-        if (m && m[1]) {
-            intelaRasterCache = Buffer.from(m[1], 'base64');
-            return intelaRasterCache;
-        }
+        intelaPngCache = fs.readFileSync(INTELA_LOGO_PNG);
+        return intelaPngCache;
     } catch (e) {
-        console.error('No se pudo extraer raster del logo Arsys Intela:', e.message);
+        console.error('No se pudo cargar logo Arsys Intela:', e.message);
+        intelaPngCache = false;
+        return null;
     }
-    intelaRasterCache = false;
-    return null;
 }
 
 let condoLogoSvgCache = null;
@@ -117,7 +111,7 @@ class SaaSInvoicePdfService {
         const innerHeight = headerHeight - 36;
 
         const condoSvg = getCondoLogoSvg();
-        const intelaPng = getIntelaRasterPngBuffer();
+        const intelaPng = getIntelaPngBuffer();
 
         const condoMaxW = 200;
         const condoX = padX;
@@ -314,7 +308,7 @@ class SaaSInvoicePdfService {
         doc.fillColor(greenText).font('Helvetica-Bold').fontSize(38)
             .text('PAGADO', -stampW / 2, -22, { width: stampW, align: 'center' });
         doc.font('Helvetica-Bold').fontSize(9).fillColor(greenStroke)
-            .text('Confirmado por Condominio360', -stampW / 2, 22, { width: stampW, align: 'center' });
+            .text('Confirmado por Arsys Intela', -stampW / 2, 22, { width: stampW, align: 'center' });
         doc.restore();
 
         const sideX = stampX + stampW + 24;
@@ -345,31 +339,39 @@ class SaaSInvoicePdfService {
     static _drawSignature(doc) {
         const startX = 40;
         const pageWidth = doc.page.width;
-        const sigBoxW = 280;
+        const sigBoxW = 360;
         const sigBoxX = pageWidth - 40 - sigBoxW;
 
+        const firmaW = 260;
+        const firmaH = 100;
+
         let firmaY = doc.y;
-        const minBottom = doc.page.height - 130;
+        const minBottom = doc.page.height - 200;
         if (firmaY < minBottom) firmaY = minBottom;
 
         const firmaPath = FIRMA_PNG;
         let firmaPlaced = false;
         if (fs.existsSync(firmaPath)) {
             try {
-                doc.image(firmaPath, sigBoxX + (sigBoxW - 160) / 2, firmaY - 8, {
-                    fit: [160, 60],
-                    align: 'center'
-                });
+                const fx = sigBoxX + (sigBoxW - firmaW) / 2;
+                const fy = firmaY - 14;
+                doc.save();
+                doc.opacity(0.85);
+                doc.image(firmaPath, fx,         fy,         { fit: [firmaW, firmaH], align: 'center' });
+                doc.image(firmaPath, fx + 0.6,   fy,         { fit: [firmaW, firmaH], align: 'center' });
+                doc.image(firmaPath, fx,         fy + 0.6,   { fit: [firmaW, firmaH], align: 'center' });
+                doc.image(firmaPath, fx + 0.6,   fy + 0.6,   { fit: [firmaW, firmaH], align: 'center' });
+                doc.restore();
                 firmaPlaced = true;
             } catch (e) {
                 firmaPlaced = false;
             }
         }
 
-        const lineY = firmaY + (firmaPlaced ? 56 : 30);
+        const lineY = firmaY + (firmaPlaced ? firmaH - 4 : 36);
         doc.save();
-        doc.strokeColor('#111827').lineWidth(0.7);
-        doc.moveTo(sigBoxX + 10, lineY).lineTo(sigBoxX + sigBoxW - 10, lineY).stroke();
+        doc.strokeColor('#111827').lineWidth(0.8);
+        doc.moveTo(sigBoxX + 20, lineY).lineTo(sigBoxX + sigBoxW - 20, lineY).stroke();
         doc.restore();
 
         doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10)
@@ -377,8 +379,18 @@ class SaaSInvoicePdfService {
         doc.fillColor('#6B7280').font('Helvetica').fontSize(9)
             .text('CEO — Arsys Intela', sigBoxX, lineY + 22, { width: sigBoxW, align: 'center' });
 
+        const footerY = doc.page.height - 48;
+        doc.save();
+        doc.strokeColor('#E5E7EB').lineWidth(0.5);
+        doc.moveTo(startX, footerY - 10).lineTo(pageWidth - startX, footerY - 10).stroke();
+        doc.restore();
+
         doc.fillColor('#9CA3AF').font('Helvetica').fontSize(8)
-            .text('Documento generado electrónicamente por la plataforma Condominio360.', startX, doc.page.height - 60, { width: pageWidth - 80, align: 'center' });
+            .text(
+                'Documento generado electrónicamente por la plataforma Condominio360.   |   ©2022 Arsys Technology 1122 C.A — RIF J-502314547',
+                startX, footerY,
+                { width: pageWidth - 80, align: 'center' }
+            );
     }
 }
 

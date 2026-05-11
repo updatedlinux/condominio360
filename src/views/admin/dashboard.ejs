@@ -3240,6 +3240,8 @@
                         const s = String(inv.bcv_rate_date || '').split('T')[0];
                         return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : todayStr;
                     })();
+                    const pr = inv.payment_report || {};
+                    const escAttr = (v) => String(v == null ? '' : v).replace(/"/g, '&quot;');
                     reportSection = `
                         <div class="mt-4 pt-4 border-t border-gray-100">
                             <div class="bg-emerald-50 rounded-lg p-4 flex items-center gap-2">
@@ -3260,6 +3262,63 @@
                                         Recalcular con esa tasa
                                     </button>
                                 </div>
+                            </div>
+
+                            <div class="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm font-medium text-gray-900">Editar datos del recibo</p>
+                                    <button type="button" onclick="toggleSaaSEditPaid()" id="saas-edit-paid-toggle" class="text-xs text-[var(--md-sys-color-primary)] hover:underline">Mostrar</button>
+                                </div>
+                                <p class="text-xs text-gray-500 mb-3">Ajusta manualmente el costo en USD (recalcula bolívares con la tasa de la factura) y los datos del comprobante bancario. Se actualizará también el Balance Financiero.</p>
+                                <form id="saas-edit-paid-form" class="space-y-3 hidden" onsubmit="event.preventDefault(); submitSaaSEditPaid('${inv.id}')">
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Mes del período</label>
+                                            <select id="saas-edit-period-month" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `<option value="${m}" ${m === inv.period_month ? 'selected' : ''}>${m.toString().padStart(2,'0')} — ${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m-1]}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Año del período</label>
+                                            <input type="number" min="2024" max="2099" id="saas-edit-period-year" value="${inv.period_year}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Total USD</label>
+                                            <input type="number" step="0.01" min="0" id="saas-edit-total-usd" value="${parseFloat(inv.total_usd || 0).toFixed(2)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Banco emisor</label>
+                                            <input type="text" id="saas-edit-banco" value="${escAttr(pr.banco_emisor)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Referencia</label>
+                                            <input type="text" id="saas-edit-ref" value="${escAttr(pr.ref_transferencia)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-500 mb-1">Fecha de transferencia</label>
+                                            <input type="text" id="saas-edit-fecha" value="${escAttr(pr.fecha_transferencia)}" placeholder="DD/MM/AAAA" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Monto abonado (Bs)</label>
+                                        <input type="number" step="0.01" min="0" id="saas-edit-monto" value="${parseFloat(pr.monto_abonado_ves || inv.paid_amount_ves || 0).toFixed(2)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Comentario</label>
+                                        <textarea id="saas-edit-comentario" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">${escAttr(pr.comentario)}</textarea>
+                                    </div>
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" onclick="toggleSaaSEditPaid()" class="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Cancelar</button>
+                                        <button type="submit" class="px-4 py-2 text-sm rounded-lg bg-[var(--md-sys-color-primary)] text-white font-medium hover:opacity-90 flex items-center gap-2">
+                                            <span class="material-symbols-rounded text-base">save</span>
+                                            Guardar cambios
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
 
                             <div class="mt-3">
@@ -3386,6 +3445,59 @@
                 }
             } catch (e) {
                 showSnackbar('Error de conexión al ajustar tasa', 'error');
+            }
+        }
+        function toggleSaaSEditPaid() {
+            const form = document.getElementById('saas-edit-paid-form');
+            const btn = document.getElementById('saas-edit-paid-toggle');
+            if (!form || !btn) return;
+            const hidden = form.classList.contains('hidden');
+            if (hidden) {
+                form.classList.remove('hidden');
+                btn.textContent = 'Ocultar';
+            } else {
+                form.classList.add('hidden');
+                btn.textContent = 'Mostrar';
+            }
+        }
+        async function submitSaaSEditPaid(invoiceId) {
+            const totalUsd = parseFloat(document.getElementById('saas-edit-total-usd').value);
+            const periodMonth = parseInt(document.getElementById('saas-edit-period-month').value, 10);
+            const periodYear = parseInt(document.getElementById('saas-edit-period-year').value, 10);
+            const banco = document.getElementById('saas-edit-banco').value.trim();
+            const ref = document.getElementById('saas-edit-ref').value.trim();
+            const fecha = document.getElementById('saas-edit-fecha').value.trim();
+            const monto = parseFloat(document.getElementById('saas-edit-monto').value);
+            const comentario = document.getElementById('saas-edit-comentario').value.trim();
+
+            const body = {};
+            if (Number.isFinite(totalUsd) && totalUsd >= 0) body.total_usd = totalUsd;
+            if (Number.isInteger(periodMonth) && periodMonth >= 1 && periodMonth <= 12) body.period_month = periodMonth;
+            if (Number.isInteger(periodYear) && periodYear >= 2000 && periodYear <= 2100) body.period_year = periodYear;
+            const pr = {};
+            if (banco) pr.banco_emisor = banco;
+            if (ref) pr.ref_transferencia = ref;
+            if (fecha) pr.fecha_transferencia = fecha;
+            if (Number.isFinite(monto) && monto >= 0) pr.monto_abonado_ves = monto;
+            pr.comentario = comentario;
+            if (Object.keys(pr).length > 0) body.payment_report = pr;
+
+            try {
+                const res = await fetch(`/api/admin/saas-billing/invoices/${invoiceId}/paid-details`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    showSnackbar(json.message || 'Recibo actualizado', 'success');
+                    await openSaaSInvoiceDetail(invoiceId);
+                    loadSaaSBilling();
+                } else {
+                    showSnackbar(json.error || 'Error al actualizar el recibo', 'error');
+                }
+            } catch (e) {
+                showSnackbar('Error de conexión', 'error');
             }
         }
         async function downloadSaasInvoicePdfAdmin(invoiceId) {

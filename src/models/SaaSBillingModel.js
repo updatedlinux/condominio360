@@ -445,6 +445,168 @@ class SaaSBillingModel {
         };
     }
 
+    /**
+     * Permite al superadmin editar datos de una factura ya PAGADA:
+     *  - total_usd (recalcula total_ves y paid_amount_ves usando la tasa BCV actual de la factura)
+     *  - actualiza la descripción del item BASE para reflejar el ajuste manual
+     *  - datos del último SaaSPaymentReport (banco, fecha, referencia, monto abonado, comentario)
+     *
+     * @param {string} invoiceId
+     * @param {Object} payload
+     * @param {number} [payload.total_usd]
+     * @param {Object} [payload.payment_report]
+     * @returns {Promise<{invoice: Object|null, reason?: string}>}
+     */
+    static async updatePaidInvoiceDetails(invoiceId, payload = {}) {
+        const pool = await connectDB();
+        const inv = await this.getInvoiceWithItems(invoiceId);
+        if (!inv) return { invoice: null, reason: 'NOT_FOUND' };
+        if (inv.status !== 'PAID') return { invoice: null, reason: 'NOT_PAID' };
+
+        let newMonth = null;
+        let newYear = null;
+        if (payload.period_month != null && payload.period_month !== '') {
+            newMonth = parseInt(payload.period_month, 10);
+            if (!Number.isInteger(newMonth) || newMonth < 1 || newMonth > 12) {
+                return { invoice: null, reason: 'INVALID_MONTH' };
+            }
+        }
+        if (payload.period_year != null && payload.period_year !== '') {
+            newYear = parseInt(payload.period_year, 10);
+            if (!Number.isInteger(newYear) || newYear < 2000 || newYear > 2100) {
+                return { invoice: null, reason: 'INVALID_YEAR' };
+            }
+        }
+        const finalMonth = newMonth != null ? newMonth : inv.period_month;
+        const finalYear = newYear != null ? newYear : inv.period_year;
+        const periodChanged = finalMonth !== inv.period_month || finalYear !== inv.period_year;
+        if (periodChanged) {
+            const dup = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, inv.tenant_id)
+                .input('month', sql.Int, finalMonth)
+                .input('year', sql.Int, finalYear)
+                .input('id', sql.UniqueIdentifier, invoiceId)
+                .query(`
+                    SELECT TOP 1 id FROM SaaSInvoices
+                    WHERE tenant_id = @tenant_id
+                      AND period_month = @month
+                      AND period_year = @year
+                      AND id <> @id
+                `);
+            if (dup.recordset.length > 0) {
+                return { invoice: null, reason: 'PERIOD_DUPLICATE' };
+            }
+        }
+
+        const updates = [];
+        const tx = pool.transaction();
+        await tx.begin();
+        try {
+            if (periodChanged) {
+                await tx.request()
+                    .input('id', sql.UniqueIdentifier, invoiceId)
+                    .input('period_month', sql.Int, finalMonth)
+                    .input('period_year', sql.Int, finalYear)
+                    .query(`
+                        UPDATE SaaSInvoices
+                        SET period_month = @period_month,
+                            period_year = @period_year,
+                            updated_at = SYSDATETIME()
+                        WHERE id = @id AND status = N'PAID'
+                    `);
+                updates.push(`período: ${inv.period_month}/${inv.period_year} → ${finalMonth}/${finalYear}`);
+            }
+
+            if (payload.total_usd != null && Number.isFinite(parseFloat(payload.total_usd))) {
+                const newTotalUsd = parseFloat(payload.total_usd);
+                if (newTotalUsd < 0) throw new Error('total_usd no puede ser negativo');
+                const bcvRate = parseFloat(inv.bcv_rate) || 0;
+                const newTotalVes = Math.round(newTotalUsd * bcvRate * 100) / 100;
+                await tx.request()
+                    .input('id', sql.UniqueIdentifier, invoiceId)
+                    .input('total_usd', sql.Decimal(15, 4), newTotalUsd)
+                    .input('total_ves', sql.Decimal(18, 2), newTotalVes)
+                    .input('paid_amount_ves', sql.Decimal(18, 2), newTotalVes)
+                    .query(`
+                        UPDATE SaaSInvoices
+                        SET total_usd = @total_usd,
+                            total_ves = @total_ves,
+                            paid_amount_ves = @paid_amount_ves,
+                            updated_at = SYSDATETIME()
+                        WHERE id = @id AND status = N'PAID'
+                    `);
+
+                const baseItem = (inv.items || []).find(it => String(it.item_type).toUpperCase() === 'BASE');
+                if (baseItem) {
+                    const qty = parseFloat(baseItem.quantity) || 1;
+                    const unit = qty > 0 ? (newTotalUsd / qty) : newTotalUsd;
+                    const desc = `Plataforma Condominio360 - ${qty} unidad(es) × $${unit.toFixed(2)} USD (ajuste manual)`;
+                    await tx.request()
+                        .input('id', sql.UniqueIdentifier, baseItem.id)
+                        .input('description', sql.NVarChar, desc)
+                        .input('unit_price', sql.Decimal(15, 4), unit)
+                        .input('total_usd', sql.Decimal(15, 4), newTotalUsd)
+                        .query(`
+                            UPDATE SaaSInvoiceItems
+                            SET description = @description,
+                                unit_price_usd = @unit_price,
+                                total_usd = @total_usd
+                            WHERE id = @id
+                        `);
+                }
+                updates.push(`total USD: ${parseFloat(inv.total_usd)} → ${newTotalUsd}`);
+            }
+
+            const r = payload.payment_report || null;
+            if (r && typeof r === 'object') {
+                const latest = await this.getLatestPaymentReport(invoiceId);
+                if (latest && latest.status === 'CONFIRMED') {
+                    const sets = [];
+                    const req = tx.request().input('id', sql.UniqueIdentifier, latest.id);
+                    if (typeof r.banco_emisor === 'string') {
+                        sets.push('banco_emisor = @banco_emisor');
+                        req.input('banco_emisor', sql.NVarChar, r.banco_emisor.trim());
+                    }
+                    if (typeof r.fecha_transferencia === 'string') {
+                        sets.push('fecha_transferencia = @fecha_transferencia');
+                        req.input('fecha_transferencia', sql.NVarChar, r.fecha_transferencia.trim());
+                    }
+                    if (typeof r.ref_transferencia === 'string') {
+                        sets.push('ref_transferencia = @ref_transferencia');
+                        req.input('ref_transferencia', sql.NVarChar, r.ref_transferencia.trim());
+                    }
+                    if (r.monto_abonado_ves != null && Number.isFinite(parseFloat(r.monto_abonado_ves))) {
+                        sets.push('monto_abonado_ves = @monto_abonado_ves');
+                        req.input('monto_abonado_ves', sql.Decimal(15, 2), parseFloat(r.monto_abonado_ves));
+                    }
+                    if (r.comentario !== undefined) {
+                        sets.push('comentario = @comentario');
+                        req.input('comentario', sql.NVarChar, r.comentario ? String(r.comentario).trim() : null);
+                    }
+                    if (sets.length > 0) {
+                        sets.push('updated_at = SYSDATETIME()');
+                        await req.query(`UPDATE SaaSPaymentReports SET ${sets.join(', ')} WHERE id = @id`);
+                        updates.push('datos del reporte de pago');
+                    }
+                    if (r.monto_abonado_ves != null && Number.isFinite(parseFloat(r.monto_abonado_ves))) {
+                        await tx.request()
+                            .input('id', sql.UniqueIdentifier, invoiceId)
+                            .input('paid_amount_ves', sql.Decimal(18, 2), parseFloat(r.monto_abonado_ves))
+                            .query(`UPDATE SaaSInvoices SET paid_amount_ves = @paid_amount_ves, updated_at = SYSDATETIME() WHERE id = @id AND status = N'PAID'`);
+                    }
+                }
+            }
+
+            await tx.commit();
+        } catch (err) {
+            try { await tx.rollback(); } catch (_) { /* noop */ }
+            throw err;
+        }
+
+        const updated = await this.getInvoiceWithItems(invoiceId);
+        return { invoice: updated, changes: updates };
+    }
+
     static async existsForPeriod(tenantId, month, year) {
         const pool = await connectDB();
         const r = await pool.request()

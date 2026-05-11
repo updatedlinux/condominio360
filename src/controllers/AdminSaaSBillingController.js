@@ -69,7 +69,7 @@ class AdminSaaSBillingController {
             if (!invoice) {
                 return res.status(404).json({ error: 'Factura no encontrada' });
             }
-            if (invoice.status === 'PENDING') {
+            if (invoice.status === 'PENDING' || invoice.status === 'PAID') {
                 invoice.payment_report = await SaaSBillingModel.getLatestPaymentReport(invoice.id);
             }
             res.json({ success: true, data: invoice });
@@ -396,6 +396,71 @@ class AdminSaaSBillingController {
         } catch (error) {
             console.error('Adjust paid rate error:', error);
             res.status(500).json({ error: 'Error al ajustar tasa de factura pagada' });
+        }
+    }
+
+    /**
+     * PATCH /api/admin/saas-billing/invoices/:id/paid-details
+     * Permite al superadmin ajustar manualmente datos de una factura ya PAGADA:
+     *  - total_usd (recalcula bolívares con la tasa actual de la factura)
+     *  - payment_report: { banco_emisor, fecha_transferencia, ref_transferencia, monto_abonado_ves, comentario }
+     */
+    static async updatePaidDetails(req, res) {
+        try {
+            const { id } = req.params;
+            const body = req.body || {};
+            const payload = {};
+            if (body.total_usd !== undefined && body.total_usd !== null && body.total_usd !== '') {
+                const v = parseFloat(body.total_usd);
+                if (!Number.isFinite(v) || v < 0) {
+                    return res.status(400).json({ error: 'Monto USD inválido' });
+                }
+                payload.total_usd = v;
+            }
+            if (body.period_month !== undefined && body.period_month !== null && body.period_month !== '') {
+                payload.period_month = body.period_month;
+            }
+            if (body.period_year !== undefined && body.period_year !== null && body.period_year !== '') {
+                payload.period_year = body.period_year;
+            }
+            if (body.payment_report && typeof body.payment_report === 'object') {
+                payload.payment_report = body.payment_report;
+            }
+            if (Object.keys(payload).length === 0) {
+                return res.status(400).json({ error: 'Nada que actualizar' });
+            }
+
+            const result = await SaaSBillingModel.updatePaidInvoiceDetails(id, payload);
+            if (result.reason === 'NOT_FOUND') {
+                return res.status(404).json({ error: 'Factura no encontrada' });
+            }
+            if (result.reason === 'NOT_PAID') {
+                return res.status(400).json({ error: 'Solo se pueden editar facturas en estado PAGADA' });
+            }
+            if (result.reason === 'INVALID_MONTH') {
+                return res.status(400).json({ error: 'Mes inválido (debe ser entre 1 y 12)' });
+            }
+            if (result.reason === 'INVALID_YEAR') {
+                return res.status(400).json({ error: 'Año inválido' });
+            }
+            if (result.reason === 'PERIOD_DUPLICATE') {
+                return res.status(409).json({ error: 'Ya existe una factura para ese condominio en el período seleccionado. Elimina o cambia esa factura antes de mover esta.' });
+            }
+
+            const summary = (result.changes && result.changes.length > 0)
+                ? result.changes.join('; ')
+                : 'sin cambios';
+            await AdminController.logAudit(req, 'UPDATE', 'SAAS_INVOICE', id,
+                `Editó factura pagada (ajuste manual): ${summary}`, null);
+
+            res.json({
+                success: true,
+                data: result.invoice,
+                message: 'Recibo actualizado correctamente'
+            });
+        } catch (error) {
+            console.error('Update paid details error:', error);
+            res.status(500).json({ error: error.message || 'Error al actualizar recibo' });
         }
     }
 

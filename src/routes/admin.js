@@ -98,6 +98,7 @@ router.post('/saas-billing/invoices/:id/recalculate', AdminSaaSBillingController
 router.post('/saas-billing/invoices/:id/confirm-payment', AdminSaaSBillingController.confirmPayment);
 router.post('/saas-billing/invoices/:id/reject-payment', AdminSaaSBillingController.rejectPayment);
 router.post('/saas-billing/invoices/:id/adjust-paid-rate', AdminSaaSBillingController.adjustPaidRate);
+router.patch('/saas-billing/invoices/:id/paid-details', AdminSaaSBillingController.updatePaidDetails);
 router.get('/saas-billing/invoices/:id/payment-pdf', AdminSaaSBillingController.downloadPaidInvoicePdf);
 router.delete('/saas-billing/invoices/:id', AdminSaaSBillingController.deleteInvoice);
 router.get('/saas-billing/tenants-available', AdminSaaSBillingController.getTenantsForBilling);
