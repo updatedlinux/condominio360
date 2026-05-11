@@ -681,7 +681,7 @@ class AdminController {
             transactionStarted = true;
 
             const dummyPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-            const userDni = `ADMIN-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+            const userDni = `ADMIN-${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}`;
 
             const userResult = await transaction.request()
                 .input('first_name', sql.NVarChar, display_name)
