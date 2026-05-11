@@ -589,10 +589,19 @@ class SaaSBillingModel {
                         updates.push('datos del reporte de pago');
                     }
                     if (r.monto_abonado_ves != null && Number.isFinite(parseFloat(r.monto_abonado_ves))) {
+                        const newMonto = parseFloat(r.monto_abonado_ves);
                         await tx.request()
                             .input('id', sql.UniqueIdentifier, invoiceId)
-                            .input('paid_amount_ves', sql.Decimal(18, 2), parseFloat(r.monto_abonado_ves))
-                            .query(`UPDATE SaaSInvoices SET paid_amount_ves = @paid_amount_ves, updated_at = SYSDATETIME() WHERE id = @id AND status = N'PAID'`);
+                            .input('paid_amount_ves', sql.Decimal(18, 2), newMonto)
+                            .input('total_ves', sql.Decimal(18, 2), newMonto)
+                            .query(`
+                                UPDATE SaaSInvoices
+                                SET paid_amount_ves = @paid_amount_ves,
+                                    total_ves = @total_ves,
+                                    updated_at = SYSDATETIME()
+                                WHERE id = @id AND status = N'PAID'
+                            `);
+                        updates.push(`monto abonado/total Bs.: ${newMonto}`);
                     }
                 }
             }

@@ -81,7 +81,10 @@ class SaaSInvoicePdfService {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Cache-Control', 'no-store');
 
-        const doc = new PDFDocument({ size: 'A4', margin: 40 });
+        const doc = new PDFDocument({
+            size: 'A4',
+            margins: { top: 40, left: 40, right: 40, bottom: 8 }
+        });
         doc.on('error', (err) => {
             console.error('PDFDocument error:', err);
             try { res.end(); } catch (_) { /* noop */ }
@@ -290,25 +293,43 @@ class SaaSInvoicePdfService {
         const startX = 40;
         const stampX = startX;
         const stampY = doc.y;
-        const stampW = 220;
-        const stampH = 90;
+        const stampW = 230;
+        const stampH = 110;
 
-        const greenStroke = '#059669';
-        const greenFill = '#ECFDF5';
-        const greenText = '#047857';
-
-        doc.save();
-        doc.lineWidth(3).strokeColor(greenStroke).fillColor(greenFill);
-        doc.roundedRect(stampX, stampY, stampW, stampH, 12).fillAndStroke(greenFill, greenStroke);
-        doc.restore();
+        const inkColor = '#1E3A8A';
 
         doc.save();
         doc.translate(stampX + stampW / 2, stampY + stampH / 2);
-        doc.rotate(-6);
-        doc.fillColor(greenText).font('Helvetica-Bold').fontSize(38)
-            .text('PAGADO', -stampW / 2, -22, { width: stampW, align: 'center' });
-        doc.font('Helvetica-Bold').fontSize(9).fillColor(greenStroke)
-            .text('Confirmado por Arsys Intela', -stampW / 2, 22, { width: stampW, align: 'center' });
+        doc.rotate(-7);
+
+        const outerX = -stampW / 2 + 4;
+        const outerY = -stampH / 2 + 4;
+        const outerW = stampW - 8;
+        const outerH = stampH - 8;
+
+        doc.lineWidth(2.4).strokeColor(inkColor).opacity(0.92);
+        doc.roundedRect(outerX, outerY, outerW, outerH, 6).stroke();
+
+        doc.lineWidth(0.8).strokeColor(inkColor).opacity(0.88);
+        doc.roundedRect(outerX + 4, outerY + 4, outerW - 8, outerH - 8, 4).stroke();
+
+        doc.opacity(0.95);
+        doc.fillColor(inkColor).font('Helvetica-Bold').fontSize(34)
+            .text('PAGADO', -stampW / 2, -24, { width: stampW, align: 'center', lineBreak: false });
+
+        doc.lineWidth(0.6).strokeColor(inkColor).opacity(0.7);
+        doc.moveTo(outerX + 18, 10).lineTo(outerX + outerW - 18, 10).stroke();
+
+        doc.opacity(0.95).fillColor(inkColor).font('Helvetica-Bold').fontSize(8.5)
+            .text('Confirmado por Arsys Intela', -stampW / 2, 14, {
+                width: stampW, align: 'center', lineBreak: false
+            });
+        doc.opacity(0.9).fillColor(inkColor).font('Helvetica-Bold').fontSize(8)
+            .text('RIF J-502314547', -stampW / 2, 27, {
+                width: stampW, align: 'center', lineBreak: false
+            });
+
+        doc.opacity(1);
         doc.restore();
 
         const sideX = stampX + stampW + 24;
@@ -339,22 +360,25 @@ class SaaSInvoicePdfService {
     static _drawSignature(doc) {
         const startX = 40;
         const pageWidth = doc.page.width;
-        const sigBoxW = 360;
+        const pageHeight = doc.page.height;
+        const sigBoxW = 320;
         const sigBoxX = pageWidth - 40 - sigBoxW;
 
-        const firmaW = 260;
-        const firmaH = 100;
+        const firmaW = 190;
+        const firmaH = 66;
 
-        let firmaY = doc.y;
-        const minBottom = doc.page.height - 200;
-        if (firmaY < minBottom) firmaY = minBottom;
+        const footerHeight = 28;
+        const footerGap = 10;
+        const labelsHeight = 32;
+        const blockBottom = pageHeight - footerHeight - footerGap;
+        const firmaTop = blockBottom - labelsHeight - firmaH + 6;
 
         const firmaPath = FIRMA_PNG;
         let firmaPlaced = false;
         if (fs.existsSync(firmaPath)) {
             try {
                 const fx = sigBoxX + (sigBoxW - firmaW) / 2;
-                const fy = firmaY - 14;
+                const fy = firmaTop;
                 doc.save();
                 doc.opacity(0.85);
                 doc.image(firmaPath, fx,         fy,         { fit: [firmaW, firmaH], align: 'center' });
@@ -368,28 +392,32 @@ class SaaSInvoicePdfService {
             }
         }
 
-        const lineY = firmaY + (firmaPlaced ? firmaH - 4 : 36);
+        const lineY = firmaTop + (firmaPlaced ? firmaH - 6 : 28);
         doc.save();
         doc.strokeColor('#111827').lineWidth(0.8);
-        doc.moveTo(sigBoxX + 20, lineY).lineTo(sigBoxX + sigBoxW - 20, lineY).stroke();
+        doc.moveTo(sigBoxX + 24, lineY).lineTo(sigBoxX + sigBoxW - 24, lineY).stroke();
         doc.restore();
 
         doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10)
-            .text('JONATHAN ALEXANDER MELÉNDEZ DURÁN', sigBoxX, lineY + 6, { width: sigBoxW, align: 'center' });
+            .text('JONATHAN ALEXANDER MELÉNDEZ DURÁN', sigBoxX, lineY + 4, {
+                width: sigBoxW, align: 'center', lineBreak: false
+            });
         doc.fillColor('#6B7280').font('Helvetica').fontSize(9)
-            .text('CEO — Arsys Intela', sigBoxX, lineY + 22, { width: sigBoxW, align: 'center' });
+            .text('CEO — Arsys Intela', sigBoxX, lineY + 17, {
+                width: sigBoxW, align: 'center', lineBreak: false
+            });
 
-        const footerY = doc.page.height - 48;
+        const footerY = pageHeight - footerHeight;
         doc.save();
         doc.strokeColor('#E5E7EB').lineWidth(0.5);
-        doc.moveTo(startX, footerY - 10).lineTo(pageWidth - startX, footerY - 10).stroke();
+        doc.moveTo(startX, footerY - 8).lineTo(pageWidth - startX, footerY - 8).stroke();
         doc.restore();
 
         doc.fillColor('#9CA3AF').font('Helvetica').fontSize(8)
             .text(
                 'Documento generado electrónicamente por la plataforma Condominio360.   |   ©2022 Arsys Technology 1122 C.A — RIF J-502314547',
                 startX, footerY,
-                { width: pageWidth - 80, align: 'center' }
+                { width: pageWidth - 80, align: 'center', lineBreak: false }
             );
     }
 }
