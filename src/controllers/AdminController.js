@@ -11,6 +11,7 @@ const EmailService = require('../services/EmailService');
 const AuthService = require('../services/AuthService');
 const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
 const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailService');
+const crypto = require('crypto');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -624,6 +625,155 @@ class AdminController {
             }
             
             res.status(500).json({ error: 'Error en el proceso de onboarding' });
+        }
+    }
+
+    /**
+     * POST /api/admin/tenants/:id/admins
+     * Administrador de junta adicional: crea Users (relaciones) + TenantAdmins (login), igual que onboarding.
+     */
+    static async createTenantAdmin(req, res) {
+        const { id: tenantId } = req.params;
+        const body = req.body || {};
+        const display_name = (body.display_name || body.username || '').trim();
+        const email = (body.email || '').trim().toLowerCase();
+        const password = body.password;
+        const phoneRaw = body.phone;
+        const phone = phoneRaw != null && String(phoneRaw).trim() !== '' ? String(phoneRaw).trim() : null;
+
+        if (!display_name || !email || !password) {
+            return res.status(400).json({ error: 'Nombre de usuario, email y contraseña son requeridos' });
+        }
+        if (String(password).length < 6) {
+            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+        }
+
+        const pool = await connectDB();
+        let transaction;
+        let transactionStarted = false;
+
+        try {
+            const tenantResult = await pool.request()
+                .input('id', sql.UniqueIdentifier, tenantId)
+                .query('SELECT id, name FROM Tenants WHERE id = @id');
+
+            if (tenantResult.recordset.length === 0) {
+                return res.status(404).json({ error: 'Condominio no encontrado' });
+            }
+            const tenant = tenantResult.recordset[0];
+
+            const dupUser = await pool.request()
+                .input('email', sql.NVarChar, email)
+                .query('SELECT 1 FROM Users WHERE LOWER(LTRIM(RTRIM(email))) = @email');
+            if (dupUser.recordset.length > 0) {
+                return res.status(409).json({ error: 'El email ya está registrado en el sistema. Usa otro correo.' });
+            }
+
+            const dupTa = await pool.request()
+                .input('email', sql.NVarChar, email)
+                .query('SELECT 1 FROM TenantAdmins WHERE LOWER(LTRIM(RTRIM(email))) = @email');
+            if (dupTa.recordset.length > 0) {
+                return res.status(409).json({ error: 'El email ya está asignado a un administrador de junta.' });
+            }
+
+            transaction = pool.transaction();
+            await transaction.begin();
+            transactionStarted = true;
+
+            const dummyPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+            const userDni = `ADMIN-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+
+            const userResult = await transaction.request()
+                .input('first_name', sql.NVarChar, display_name)
+                .input('last_name', sql.NVarChar, 'Admin')
+                .input('email', sql.NVarChar, email)
+                .input('dni', sql.NVarChar, userDni)
+                .input('phone', sql.NVarChar, phone)
+                .input('password_hash', sql.NVarChar, dummyPassword)
+                .query(`
+                    INSERT INTO Users (first_name, last_name, email, dni, phone, password_hash, is_active, registration_status)
+                    OUTPUT INSERTED.*
+                    VALUES (@first_name, @last_name, @email, @dni, @phone, @password_hash, 1, 'ACTIVE')
+                `);
+
+            const user = userResult.recordset[0];
+            const password_hash = await bcrypt.hash(password, 10);
+
+            const taResult = await transaction.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenant.id)
+                .input('user_id', sql.UniqueIdentifier, user.id)
+                .input('email', sql.NVarChar, email)
+                .input('password_hash', sql.NVarChar, password_hash)
+                .input('first_name', sql.NVarChar, display_name)
+                .input('last_name', sql.NVarChar, 'Admin')
+                .input('phone', sql.NVarChar, phone)
+                .input('role', sql.NVarChar, 'ADMIN')
+                .input('created_by', sql.UniqueIdentifier, req.user.userId)
+                .query(`
+                    INSERT INTO TenantAdmins
+                        (tenant_id, user_id, email, password_hash, first_name, last_name, phone, role, is_active, created_by, must_change_password)
+                    OUTPUT INSERTED.*
+                    VALUES
+                        (@tenant_id, @user_id, @email, @password_hash, @first_name, @last_name, @phone, @role, 1, @created_by, 1)
+                `);
+
+            const tenantAdmin = taResult.recordset[0];
+            await transaction.commit();
+            transactionStarted = false;
+
+            let welcomeSent = false;
+            try {
+                const loginUrl = `${process.env.APP_URL || 'http://localhost:3000'}/login`;
+                await EmailService.sendWelcomeAdmin(email, {
+                    displayName: display_name,
+                    tenantName: tenant.name,
+                    email,
+                    password,
+                    loginUrl,
+                    tenantId: tenant.id
+                });
+                welcomeSent = true;
+            } catch (emailErr) {
+                console.error('Error enviando email de bienvenida (admin adicional):', emailErr);
+            }
+
+            await AdminController.logAudit(
+                req,
+                'CREATE',
+                'TENANT_ADMIN',
+                tenantAdmin.id,
+                `Creó administrador de junta adicional: ${email}`,
+                tenant.id
+            );
+
+            const { password_hash: _ph, ...safeAdmin } = tenantAdmin;
+            res.status(201).json({
+                success: true,
+                message: 'Administrador creado correctamente',
+                data: {
+                    admin: safeAdmin,
+                    welcome_sent: welcomeSent
+                }
+            });
+        } catch (error) {
+            if (transactionStarted && transaction) {
+                try {
+                    await transaction.rollback();
+                } catch (rollbackError) {
+                    console.error('Rollback error (createTenantAdmin):', rollbackError);
+                }
+            }
+            console.error('Create tenant admin error:', error);
+            const msg = (error.message || '').toLowerCase();
+            if (msg.includes('unique key') || msg.includes('duplicate key')) {
+                if (msg.includes('email')) {
+                    return res.status(409).json({ error: 'El email ya está en uso. Usa otro correo.' });
+                }
+                if (msg.includes('dni')) {
+                    return res.status(409).json({ error: 'No se pudo generar un identificador único. Intenta de nuevo.' });
+                }
+            }
+            res.status(500).json({ error: 'Error al crear administrador de junta' });
         }
     }
 

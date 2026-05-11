@@ -101,6 +101,9 @@
     <%- include('../partials/panels-footer') %>
     </div></div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
@@ -126,7 +129,7 @@
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    alert(err.error || 'Error al exportar');
+                    showPageToast(err.error || 'Error al exportar', 'error');
                     return;
                 }
                 const blob = await res.blob();
@@ -143,7 +146,7 @@
                 URL.revokeObjectURL(a.href);
             } catch (e) {
                 console.error(e);
-                alert('Error al descargar Excel');
+                showPageToast('Error al descargar Excel', 'error');
             }
         }
 

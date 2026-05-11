@@ -106,7 +106,6 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- Modal: Request Detail -->
     <div id="detail-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
@@ -129,45 +128,15 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let currentFilter = 'all';
         let currentPage = 1;
         let requestTypes = [];
         let currentApprovalAction = null;
-
-        // Toast Notification System
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            
-            const toast = document.createElement('div');
-            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ${
-                type === 'success' 
-                    ? 'bg-green-50 border border-green-200 text-green-800' 
-                    : 'bg-red-50 border border-red-200 text-red-800'
-            }`;
-            
-            const icon = type === 'success' ? 'check_circle' : 'error';
-            
-            toast.innerHTML = `
-                <span class="material-icons-round ${type === 'success' ? 'text-green-600' : 'text-red-600'}">${icon}</span>
-                <span class="text-sm font-medium">${message}</span>
-                <button onclick="this.parentElement.remove()" class="ml-2 ${type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}">
-                    <span class="material-icons-round text-sm">close</span>
-                </button>
-            `;
-            
-            container.appendChild(toast);
-            
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-            });
-            
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
@@ -537,10 +506,11 @@
                     loadRequests(currentPage);
                     loadStats();
                 } else {
-                    alert(data.error || 'Error al actualizar estado');
+                    showPageToast(data.error || 'Error al actualizar estado', 'error');
                 }
             } catch (e) {
                 console.error('Error updating status:', e);
+                showPageToast('Error al actualizar estado', 'error');
             }
         }
 
@@ -619,13 +589,13 @@
                     closeDetailModal();
                     loadRequests(currentPage);
                     loadStats();
-                    showToast(currentApprovalAction === 'APPROVED' ? 'Solicitud aprobada exitosamente' : 'Solicitud rechazada');
+                    showPageToast(currentApprovalAction === 'APPROVED' ? 'Solicitud aprobada exitosamente' : 'Solicitud rechazada', 'success');
                 } else {
-                    alert(data.error || 'Error al actualizar estado');
+                    showPageToast(data.error || 'Error al actualizar estado', 'error');
                 }
             } catch (e) {
                 console.error('Error updating status:', e);
-                alert('Error al actualizar estado');
+                showPageToast('Error al actualizar estado', 'error');
             }
         }
 
@@ -648,10 +618,11 @@
                     loadRequests(currentPage);
                     loadStats();
                 } else {
-                    alert(data.error || 'Error al actualizar estado');
+                    showPageToast(data.error || 'Error al actualizar estado', 'error');
                 }
             } catch (e) {
                 console.error('Error updating status:', e);
+                showPageToast('Error al actualizar estado', 'error');
             }
         }
 

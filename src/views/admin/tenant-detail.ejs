@@ -688,6 +688,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = localStorage.getItem('token');
         const tenantId = '<%= tenant.id %>';
@@ -735,25 +738,54 @@
                 });
 
                 if (res.ok) {
-                    window.location.reload();
+                    showPageToast('Cambios guardados correctamente', 'success');
+                    setTimeout(() => window.location.reload(), 700);
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al actualizar');
+                    showPageToast(err.error || 'Error al actualizar', 'error');
                 }
             } catch (error) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
         });
 
         function addAdmin(tenantId) {
+            document.getElementById('admin-form').reset();
             openModal('admin-modal');
         }
 
         document.getElementById('admin-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            // Implementar creación de admin adicional
-            alert('Funcionalidad: Crear administrador adicional para este tenant');
-            closeModal('admin-modal');
+            const display_name = document.getElementById('admin-name').value.trim();
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const phone = document.getElementById('admin-phone').value.trim();
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/admins`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ display_name, email, password, phone: phone || undefined })
+                });
+                const j = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(j.error || 'Error al crear administrador');
+                }
+                closeModal('admin-modal');
+                document.getElementById('admin-form').reset();
+                showPageToast(j.message || 'Administrador creado correctamente', 'success');
+                setTimeout(() => window.location.reload(), 900);
+            } catch (err) {
+                showPageToast(err.message || 'Error de conexión', 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
         });
 
         function viewProperties(tenantId) {
@@ -812,9 +844,10 @@
                 const j = await res.json();
                 if (!res.ok) throw new Error(j.error || 'Error al guardar');
                 closeModal('whatsapp-messaging-modal');
-                window.location.reload();
+                showPageToast('Configuración de WhatsApp guardada', 'success');
+                setTimeout(() => window.location.reload(), 700);
             } catch (e) {
-                alert(e.message || 'Error');
+                showPageToast(e.message || 'Error al guardar', 'error');
             }
         }
 
@@ -838,7 +871,7 @@
         async function saveBillingMode() {
             const mode = document.getElementById('selected-billing-mode').value;
             if (!mode) {
-                alert('Selecciona un modo de facturación');
+                showPageToast('Selecciona un modo de facturación', 'info');
                 return;
             }
 
@@ -861,13 +894,14 @@
                 });
 
                 if (res.ok) {
-                    window.location.reload();
+                    showPageToast('Modo de facturación actualizado', 'success');
+                    setTimeout(() => window.location.reload(), 700);
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al cambiar el modo de facturación');
+                    showPageToast(err.error || 'Error al cambiar el modo de facturación', 'error');
                 }
             } catch (error) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
         }
 
@@ -1052,19 +1086,19 @@
                     closeModal('building-form-modal');
                     await loadBuildings();
                     renderBuildingsList();
+                    showPageToast(id ? 'Edificio actualizado' : 'Edificio creado', 'success');
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al guardar el edificio');
+                    showPageToast(err.error || 'Error al guardar el edificio', 'error');
                 }
             } catch (error) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
         });
 
         async function deleteBuilding(id) {
-            if (!confirm('¿Eliminar este edificio? Los inmuebles asociados quedarán sin edificio asignado.')) {
-                return;
-            }
+            const ok = await openConfirmModal('¿Eliminar este edificio? Los inmuebles asociados quedarán sin edificio asignado.');
+            if (!ok) return;
 
             try {
                 const res = await fetch(`/api/admin/buildings/${id}`, {
@@ -1075,12 +1109,13 @@
                 if (res.ok) {
                     await loadBuildings();
                     renderBuildingsList();
+                    showPageToast('Edificio eliminado', 'success');
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al eliminar el edificio');
+                    showPageToast(err.error || 'Error al eliminar el edificio', 'error');
                 }
             } catch (error) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
         }
 
@@ -1125,9 +1160,8 @@
                 ? '¿Cambiar a Múltiples Edificios? Deberá crear al menos un edificio y asignar los inmuebles.'
                 : '¿Cambiar a Edificio Único? Todos los inmuebles se asociarán al edificio principal.';
 
-            if (!confirm(confirmMsg)) {
-                return;
-            }
+            const confirmed = await openConfirmModal(confirmMsg);
+            if (!confirmed) return;
 
             try {
                 const res = await fetch(`/api/admin/tenants/${tenantId}`, {
@@ -1140,23 +1174,22 @@
                 });
 
                 if (res.ok) {
-                    window.location.reload();
+                    showPageToast('Tipo de conjunto actualizado', 'success');
+                    setTimeout(() => window.location.reload(), 700);
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al cambiar el tipo de conjunto');
+                    showPageToast(err.error || 'Error al cambiar el tipo de conjunto', 'error');
                 }
             } catch (error) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
         }
 
         async function toggleTenantStatus(id, currentStatus) {
             const newStatus = !currentStatus;
             const action = newStatus ? 'activar' : 'suspender';
-            
-            if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este condominio?`)) {
-                return;
-            }
+            const ok = await openConfirmModal(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este condominio?`);
+            if (!ok) return;
 
             try {
                 const res = await fetch(`/api/admin/tenants/${id}/toggle-status`, {
@@ -1169,13 +1202,14 @@
                 });
 
                 if (res.ok) {
-                    window.location.reload();
+                    showPageToast(newStatus ? 'Condominio activado' : 'Condominio suspendido', 'success');
+                    setTimeout(() => window.location.reload(), 700);
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al cambiar el estado');
+                    showPageToast(err.error || 'Error al cambiar el estado', 'error');
                 }
             } catch (error) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
         }
 

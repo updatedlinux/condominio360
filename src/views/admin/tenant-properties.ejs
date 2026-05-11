@@ -524,6 +524,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = localStorage.getItem('token');
         const tenantId = '<%= tenant?.id %>';
@@ -543,7 +546,7 @@
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    alert(err.error || 'Error al exportar');
+                    showPageToast(err.error || 'Error al exportar', 'error');
                     return;
                 }
                 const blob = await res.blob();
@@ -560,7 +563,7 @@
                 URL.revokeObjectURL(a.href);
             } catch (e) {
                 console.error(e);
-                alert('Error al descargar Excel');
+                showPageToast('Error al descargar Excel', 'error');
             }
         }
 
@@ -818,12 +821,14 @@
                 if (res.ok) {
                     closePropertyModal();
                     loadProperties();
+                    showPageToast(id ? 'Inmueble actualizado' : 'Inmueble creado', 'success');
                 } else {
                     const err = await res.json();
-                    alert(err.error || 'Error al guardar');
+                    showPageToast(err.error || 'Error al guardar', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
+                showPageToast('Error de conexión', 'error');
             }
         }
 
@@ -965,7 +970,7 @@ Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López,bcc_apto201`;
         function parseAndPreviewCSV(text) {
             const lines = text.trim().split('\n');
             if (lines.length < 2) {
-                alert('El archivo CSV está vacío o no tiene el formato correcto');
+                showPageToast('El archivo CSV está vacío o no tiene el formato correcto', 'error');
                 return;
             }
 

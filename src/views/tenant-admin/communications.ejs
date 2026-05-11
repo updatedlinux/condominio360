@@ -145,6 +145,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         const MAX_LEN = 250;
@@ -372,14 +375,14 @@
                     document.getElementById('msg-modal').classList.remove('hidden');
                     document.getElementById('msg-modal').classList.add('flex');
                 } catch (e) {
-                    alert(e.message || 'Error al cargar mensaje');
+                    showPageToast(e.message || 'Error al cargar mensaje', 'error');
                 }
             })();
         }
 
         async function saveDraft() {
             const msg = document.getElementById('msg-content').value.trim();
-            if (!msg) { alert('Escribe un mensaje'); return; }
+            if (!msg) { showPageToast('Escribe un mensaje', 'info'); return; }
             const id = document.getElementById('msg-id').value;
             try {
                 const body = { message: msg, status: 'DRAFT', sendWhatsapp: getSendWhatsappFlag() };
@@ -392,19 +395,19 @@
                 });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || 'Error');
-                showToast('Borrador guardado', 'success');
+                showPageToast('Borrador guardado', 'success');
                 closeModal();
                 loadNotifications();
             } catch (e) {
-                showToast(e.message || 'Error', 'error');
+                showPageToast(e.message || 'Error', 'error');
             }
         }
 
         async function scheduleSend() {
             const msg = document.getElementById('msg-content').value.trim();
-            if (!msg) { alert('Escribe un mensaje'); return; }
+            if (!msg) { showPageToast('Escribe un mensaje', 'info'); return; }
             const scheduledAt = document.getElementById('msg-scheduled-at').value;
-            if (!scheduledAt) { alert('Selecciona fecha y hora para programar'); return; }
+            if (!scheduledAt) { showPageToast('Selecciona fecha y hora para programar', 'info'); return; }
             const id = document.getElementById('msg-id').value;
             try {
                 const body = {
@@ -422,17 +425,17 @@
                 });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || 'Error');
-                showToast('Mensaje programado', 'success');
+                showPageToast('Mensaje programado', 'success');
                 closeModal();
                 loadNotifications();
             } catch (e) {
-                showToast(e.message || 'Error', 'error');
+                showPageToast(e.message || 'Error', 'error');
             }
         }
 
         async function sendNow() {
             const msg = document.getElementById('msg-content').value.trim();
-            if (!msg) { alert('Escribe un mensaje'); return; }
+            if (!msg) { showPageToast('Escribe un mensaje', 'info'); return; }
             const id = document.getElementById('msg-id').value;
             try {
                 if (id) {
@@ -455,16 +458,17 @@
                     const d = await r.json();
                     if (!r.ok) throw new Error(d.error || 'Error');
                 }
-                showToast('Mensaje enviado', 'success');
+                showPageToast('Mensaje enviado', 'success');
                 closeModal();
                 loadNotifications();
             } catch (e) {
-                showToast(e.message || 'Error', 'error');
+                showPageToast(e.message || 'Error', 'error');
             }
         }
 
         async function sendMsgNow(id) {
-            if (!confirm('¿Enviar este mensaje ahora?')) return;
+            const ok = await openConfirmModal('¿Enviar este mensaje ahora?', { okLabel: 'Enviar' });
+            if (!ok) return;
             try {
                 const r = await fetch(`/api/tenant-admin/in-app-notifications/${id}/send`, {
                     method: 'POST',
@@ -472,15 +476,16 @@
                 });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || 'Error');
-                showToast('Mensaje enviado', 'success');
+                showPageToast('Mensaje enviado', 'success');
                 loadNotifications();
             } catch (e) {
-                showToast(e.message || 'Error', 'error');
+                showPageToast(e.message || 'Error', 'error');
             }
         }
 
         async function deleteMsg(id) {
-            if (!confirm('¿Eliminar este mensaje?')) return;
+            const ok = await openConfirmModal('¿Eliminar este mensaje?', { okLabel: 'Eliminar', destructive: true });
+            if (!ok) return;
             try {
                 const r = await fetch(`/api/tenant-admin/in-app-notifications/${id}`, {
                     method: 'DELETE',
@@ -488,10 +493,10 @@
                 });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || 'Error');
-                showToast('Mensaje eliminado', 'success');
+                showPageToast('Mensaje eliminado', 'success');
                 loadNotifications();
             } catch (e) {
-                showToast(e.message || 'Error', 'error');
+                showPageToast(e.message || 'Error', 'error');
             }
         }
 
@@ -504,22 +509,6 @@
                 scheduleSend();
             }
         };
-
-        function showToast(msg, type) {
-            const t = document.getElementById('toast') || (() => {
-                const div = document.createElement('div');
-                div.id = 'toast';
-                div.className = 'fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white';
-                document.body.appendChild(div);
-                return div;
-            })();
-            const el = document.getElementById('toast');
-            if (!el) return;
-            el.textContent = msg;
-            el.className = 'fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white ' + (type === 'error' ? 'bg-red-500' : 'bg-[#f97316]');
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 3000);
-        }
 
         document.addEventListener('DOMContentLoaded', () => {
             loadTenantInfo();

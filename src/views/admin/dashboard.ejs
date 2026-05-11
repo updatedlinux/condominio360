@@ -1836,11 +1836,8 @@
         </div>
     </div>
 
-    <!-- Snackbar -->
-    <div id="snackbar" class="md-snackbar">
-        <span id="snackbar-message">Mensaje</span>
-        <button onclick="hideSnackbar()" class="text-[var(--md-sys-color-primary)] font-medium uppercase text-sm">Cerrar</button>
-    </div>
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
 
     <script>
         // Global State
@@ -4107,28 +4104,13 @@
             window.location.href = `/admin/tenants/${id}`;
         }
 
-        // Snackbar
+        // Notificaciones (mismo toast que el resto del panel)
         function showSnackbar(message, type = 'info') {
-            const snackbar = document.getElementById('snackbar');
-            document.getElementById('snackbar-message').textContent = message;
-            
-            if (type === 'error') {
-                snackbar.style.background = '#ba1a1a';
-            } else if (type === 'success') {
-                snackbar.style.background = '#006c4c';
-            } else if (type === 'warning') {
-                snackbar.style.background = '#b45309';
-            } else {
-                snackbar.style.background = 'var(--md-sys-color-on-surface)';
-            }
-            
-            snackbar.classList.add('active');
-            setTimeout(hideSnackbar, 5000);
+            const variant = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            showPageToast(message, variant);
         }
 
-        function hideSnackbar() {
-            document.getElementById('snackbar').classList.remove('active');
-        }
+        function hideSnackbar() {}
 
         function escapeHtml(s) {
             if (s == null) return '';

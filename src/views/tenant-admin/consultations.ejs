@@ -186,6 +186,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let currentFilter = 'all';
@@ -371,7 +374,7 @@
                                                 <span class="material-icons-round">close</span>
                                             </button>
                                         ` : `
-                                            <button onclick="showToast('No se puede cerrar anticipadamente. La consulta ya tiene votos.', 'warning')" class="p-2 text-gray-400 cursor-not-allowed" title="No se puede cerrar - tiene votos">
+                                            <button onclick="showPageToast('No se puede cerrar anticipadamente. La consulta ya tiene votos.', 'info')" class="p-2 text-gray-400 cursor-not-allowed" title="No se puede cerrar - tiene votos">
                                                 <span class="material-icons-round">lock</span>
                                             </button>
                                         `}
@@ -523,7 +526,7 @@
             if (!title || !startDate || !endDate) {
                 isSubmittingConsultation = false;
                 setSaveButtonState(false);
-                showToast('Título, fecha de inicio y fecha de cierre son requeridos', 'error');
+                showPageToast('Título, fecha de inicio y fecha de cierre son requeridos', 'error');
                 return;
             }
 
@@ -546,14 +549,14 @@
             
             // Compare timestamps
             if (start.getTime() < tomorrow.getTime()) {
-                showToast('La fecha de inicio debe ser al menos 1 día después de hoy', 'error');
+                showPageToast('La fecha de inicio debe ser al menos 1 día después de hoy', 'error');
                 isSubmittingConsultation = false;
                 setSaveButtonState(false);
                 return;
             }
 
             if (end.getTime() <= start.getTime()) {
-                showToast('La fecha de cierre debe ser posterior a la fecha de inicio', 'error');
+                showPageToast('La fecha de cierre debe ser posterior a la fecha de inicio', 'error');
                 isSubmittingConsultation = false;
                 setSaveButtonState(false);
                 return;
@@ -573,7 +576,7 @@
             });
 
             if (questions.length === 0) {
-                showToast('Debes agregar al menos una pregunta con 2 opciones', 'error');
+                showPageToast('Debes agregar al menos una pregunta con 2 opciones', 'error');
                 isSubmittingConsultation = false;
                 setSaveButtonState(false);
                 return;
@@ -603,13 +606,13 @@
                     closeModal();
                     loadConsultations();
                     loadStats();
-                    showToast('Consulta creada exitosamente. Se enviarán notificaciones a los propietarios.', 'success');
+                    showPageToast('Consulta creada exitosamente. Se enviarán notificaciones a los propietarios.', 'success');
                 } else {
-                    showToast(result.error || 'Error al crear consulta', 'error');
+                    showPageToast(result.error || 'Error al crear consulta', 'error');
                 }
             } catch (e) {
                 console.error('Error saving:', e);
-                showToast('Error al guardar consulta', 'error');
+                showPageToast('Error al guardar consulta', 'error');
             } finally {
                 isSubmittingConsultation = false;
                 setSaveButtonState(false);
@@ -1067,7 +1070,8 @@
 
         // Close consultation
         async function closeConsultation(id) {
-            if (!confirm('¿Cerrar esta consulta anticipadamente? Solo se permite si no tiene votos.')) return;
+            const ok = await openConfirmModal('¿Cerrar esta consulta anticipadamente? Solo se permite si no tiene votos.', { okLabel: 'Cerrar consulta', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/tenant-admin/consultations/${id}/close`, {
                     method: 'POST',
@@ -1077,63 +1081,20 @@
                 if (data.success) {
                     loadConsultations();
                     loadStats();
+                    showPageToast('Consulta cerrada', 'success');
                 } else {
-                    showToast(data.error || 'Error al cerrar consulta', 'error');
+                    showPageToast(data.error || 'Error al cerrar consulta', 'error');
                 }
             } catch (e) {
                 console.error('Error closing:', e);
+                showPageToast('Error de conexión', 'error');
             }
-        }
-
-        // Toast notification system
-        function showToast(message, type = 'success') {
-            const colors = {
-                success: 'bg-green-600',
-                error: 'bg-red-600',
-                warning: 'bg-yellow-600',
-                info: 'bg-blue-600'
-            };
-            
-            const icons = {
-                success: 'check_circle',
-                error: 'error',
-                warning: 'warning',
-                info: 'info'
-            };
-            
-            const toast = document.createElement('div');
-            toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0`;
-            toast.innerHTML = `
-                <span class="material-icons-round">${icons[type]}</span>
-                <span>${message}</span>
-            `;
-            
-            // Create container if doesn't exist
-            let container = document.getElementById('toast-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'toast-container';
-                container.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2';
-                document.body.appendChild(container);
-            }
-            
-            container.appendChild(toast);
-            
-            // Animate in
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-10', 'opacity-0');
-            });
-            
-            // Remove after delay
-            setTimeout(() => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
         }
 
         // Delete
         async function deleteConsultation(id) {
-            if (!confirm('¿Eliminar esta consulta permanentemente?')) return;
+            const ok = await openConfirmModal('¿Eliminar esta consulta permanentemente?', { okLabel: 'Eliminar', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/tenant-admin/consultations/${id}`, {
                     method: 'DELETE',
@@ -1143,9 +1104,13 @@
                 if (data.success) {
                     loadConsultations();
                     loadStats();
+                    showPageToast('Consulta eliminada', 'success');
+                } else {
+                    showPageToast(data.error || 'No se pudo eliminar', 'error');
                 }
             } catch (e) {
                 console.error('Error deleting:', e);
+                showPageToast('Error de conexión', 'error');
             }
         }
 

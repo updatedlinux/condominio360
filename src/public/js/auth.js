@@ -252,11 +252,15 @@ async function selectProperty(propertyId) {
 
             window.location.href = redirectUrl || '/dashboard';
         } else {
-            alert('Error al seleccionar propiedad: ' + (data.error || 'Unknown'));
+            if (typeof showPageToast === 'function') {
+                showPageToast('Error al seleccionar propiedad: ' + (data.error || 'Unknown'), 'error');
+            }
         }
     } catch (error) {
         console.error('Select property error:', error);
-        alert('Error de conexión');
+        if (typeof showPageToast === 'function') {
+            showPageToast('Error de conexión', 'error');
+        }
     }
 }
 
@@ -332,11 +336,15 @@ async function selectTenant(tenantId) {
                 window.location.href = '/dashboard';
             }
         } else {
-            alert('Error al seleccionar condominio: ' + (data.error || 'Unknown'));
+            if (typeof showPageToast === 'function') {
+                showPageToast('Error al seleccionar condominio: ' + (data.error || 'Unknown'), 'error');
+            }
             window.location.href = '/login';
         }
     } catch (error) {
         console.error('Select tenant error:', error);
-        alert('Error de conexión');
+        if (typeof showPageToast === 'function') {
+            showPageToast('Error de conexión', 'error');
+        }
     }
 }

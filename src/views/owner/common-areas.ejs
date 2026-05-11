@@ -228,6 +228,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = localStorage.getItem('token');
         let currentTab = 'areas';
@@ -515,7 +518,7 @@
             const notes = document.getElementById('reserve-notes').value;
 
             if (!areaId || !date || !startTime || !endTime) {
-                alert('Completa todos los campos requeridos');
+                showPageToast('Completa todos los campos requeridos', 'info');
                 return;
             }
 
@@ -537,22 +540,23 @@
                     else switchTab('reservations');
                     const isPendingApproval = selectedArea && selectedArea.requires_approval;
                     if (isPendingApproval) {
-                        showToast(data.message, 'info');
+                        showPageToast(data.message, 'info');
                     } else {
-                        showToast(data.message, 'success');
+                        showPageToast(data.message, 'success');
                     }
                 } else {
-                    alert(data.error || 'Error al reservar');
+                    showPageToast(data.error || 'Error al reservar', 'error');
                 }
             } catch (e) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
             btn.disabled = false;
             btn.textContent = 'Reservar';
         }
 
         async function cancelReservation(id) {
-            if (!confirm('¿Cancelar esta reserva?')) return;
+            const ok = await openConfirmModal('¿Cancelar esta reserva?', { okLabel: 'Sí, cancelar', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/owner/common-areas/reservations/${id}/cancel`, {
                     method: 'POST',
@@ -561,22 +565,13 @@
                 const data = await res.json();
                 if (data.success) {
                     loadReservations();
-                    alert('Reserva cancelada');
+                    showPageToast('Reserva cancelada', 'success');
                 } else {
-                    alert(data.error || 'Error al cancelar');
+                    showPageToast(data.error || 'Error al cancelar', 'error');
                 }
             } catch (e) {
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
             }
-        }
-
-        function showToast(message, type) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-6 py-4 rounded-xl shadow-lg text-white text-sm font-medium max-w-md text-center transition-all';
-            toast.style.background = type === 'info' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            toast.innerHTML = `<span class="material-icons-round align-middle mr-2">${type === 'info' ? 'hourglass_top' : 'check_circle'}</span>${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 5000);
         }
 
         document.addEventListener('DOMContentLoaded', () => loadAreas());

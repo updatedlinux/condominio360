@@ -99,6 +99,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = localStorage.getItem('token');
         const flowData = JSON.parse(localStorage.getItem('nicknameFlow') || '{}');
@@ -193,7 +196,7 @@
                 document.getElementById('form-step').classList.add('hidden');
                 document.getElementById('success-step').classList.remove('hidden');
             } catch (err) {
-                alert(err.message || 'Error al enviar solicitud');
+                showPageToast(err.message || 'Error al enviar solicitud', 'error');
                 btn.disabled = false;
             } finally {
                 spinner.classList.add('hidden');

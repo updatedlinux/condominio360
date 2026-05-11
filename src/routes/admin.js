@@ -57,6 +57,7 @@ router.put('/tenants/:id/whatsapp-messaging', AdminController.updateTenantWhatsA
 router.delete('/tenants/:id', AdminController.deleteTenant);
 router.post('/tenants/:id/toggle-status', AdminController.toggleTenantStatus);
 router.post('/tenants/:id/billing-mode', AdminController.updateBillingMode);
+router.post('/tenants/:id/admins', AdminController.createTenantAdmin);
 
 // ==================== ONBOARDING WIZARD ====================
 router.post('/onboarding', AdminController.onboardTenant);

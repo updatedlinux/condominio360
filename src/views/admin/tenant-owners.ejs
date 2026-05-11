@@ -612,11 +612,8 @@
         </div>
     </div>
 
-    <!-- Toasts globales (éxito / error / info) -->
-    <div id="page-toast" class="fixed bottom-6 left-1/2 z-[100] hidden max-w-md w-[min(100%-2rem,28rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3 pointer-events-auto bg-white border-slate-200 text-slate-800" role="status">
-        <span id="page-toast-icon" class="material-symbols-rounded text-xl shrink-0 mt-0.5 text-emerald-600">check_circle</span>
-        <p id="page-toast-text" class="text-sm leading-snug pt-0.5 flex-1"></p>
-    </div>
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
 
     <script>
         const token = localStorage.getItem('token');
@@ -633,35 +630,6 @@
         let csvData = [];
         let pendingConfirmAction = null;
         let pendingWelcomeBatchId = null;
-        let pageToastTimer = null;
-
-        function showPageToast(message, variant = 'success') {
-            const el = document.getElementById('page-toast');
-            const text = document.getElementById('page-toast-text');
-            const icon = document.getElementById('page-toast-icon');
-            if (!el || !text || !icon) return;
-            clearTimeout(pageToastTimer);
-            text.textContent = message || '';
-            const base =
-                'fixed bottom-6 left-1/2 z-[100] max-w-md w-[min(100%-2rem,28rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3 pointer-events-auto';
-            if (variant === 'error') {
-                el.className = base + ' bg-white border-red-200 text-red-950';
-                icon.textContent = 'error';
-                icon.className = 'material-symbols-rounded text-xl shrink-0 mt-0.5 text-red-600';
-            } else if (variant === 'info') {
-                el.className = base + ' bg-white border-slate-200 text-slate-800';
-                icon.textContent = 'info';
-                icon.className = 'material-symbols-rounded text-xl shrink-0 mt-0.5 text-slate-600';
-            } else {
-                el.className = base + ' bg-white border-emerald-200 text-emerald-950';
-                icon.textContent = 'check_circle';
-                icon.className = 'material-symbols-rounded text-xl shrink-0 mt-0.5 text-emerald-600';
-            }
-            el.classList.remove('hidden');
-            pageToastTimer = setTimeout(function () {
-                el.classList.add('hidden');
-            }, 4800);
-        }
 
         async function exportOwnersExcel() {
             try {

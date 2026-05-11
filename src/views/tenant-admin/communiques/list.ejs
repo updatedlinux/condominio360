@@ -189,6 +189,9 @@
         </div>
     </div>
 
+    <%- include('../../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let currentPage = 1;
@@ -354,15 +357,15 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showToast('Comunicado publicado exitosamente', 'success');
+                    showPageToast('Comunicado publicado exitosamente', 'success');
                     closeUploadModal();
                     loadCommuniques();
                 } else {
-                    showToast('Error: ' + (data.error || 'No se pudo publicar'), 'error');
+                    showPageToast('Error: ' + (data.error || 'No se pudo publicar'), 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Error al publicar comunicado', 'error');
+                showPageToast('Error al publicar comunicado', 'error');
             }
         });
 
@@ -408,7 +411,8 @@
         }
 
         async function deleteCommunique(id) {
-            if (!confirm('¿Estás seguro de eliminar este comunicado?')) return;
+            const ok = await openConfirmModal('¿Estás seguro de eliminar este comunicado?', { okLabel: 'Eliminar', destructive: true });
+            if (!ok) return;
             
             try {
                 const response = await fetch(`/api/tenant-admin/communiques/${id}`, {
@@ -418,40 +422,20 @@
                 
                 if (response.ok) {
                     loadCommuniques();
+                    showPageToast('Comunicado eliminado', 'success');
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showPageToast(err.error || 'No se pudo eliminar', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
+                showPageToast('Error de conexión', 'error');
             }
         }
 
         function logout() {
             localStorage.clear();
             window.location.href = '/login';
-        }
-        // Toast notification
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-            const icon = type === 'success' ? 'check_circle' : 'error';
-            
-            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 transform transition-all duration-300 translate-y-20 opacity-0`;
-            toast.innerHTML = `
-                <span class="material-icons-round">${icon}</span>
-                <span class="font-medium">${message}</span>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // Animate in
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-20', 'opacity-0');
-            });
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
         }
     </script>
 </body>

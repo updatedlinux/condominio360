@@ -107,6 +107,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         if (!token) {
@@ -341,7 +344,7 @@
                     const data = await res.json();
                     if (data.success) saasBanksCache = data.data || [];
                 } catch (e) {
-                    alert('Error al cargar bancos');
+                    showPageToast('Error al cargar bancos', 'error');
                     return;
                 }
             }
@@ -397,7 +400,7 @@
                 const fileInput = document.getElementById('report-receipt');
 
                 if (!banco || !fecha || !ref) {
-                    alert('Complete los campos obligatorios');
+                    showPageToast('Complete los campos obligatorios', 'info');
                     return;
                 }
 
@@ -419,11 +422,12 @@
                         closeReportPaymentModal();
                         closeInvoiceDetail();
                         loadData();
+                        showPageToast('Reporte de pago enviado', 'success');
                     } else {
-                        alert(data.error || 'Error al enviar reporte');
+                        showPageToast(data.error || 'Error al enviar reporte', 'error');
                     }
                 } catch (err) {
-                    alert('Error al enviar reporte');
+                    showPageToast('Error al enviar reporte', 'error');
                 }
             });
         }

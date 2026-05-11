@@ -73,13 +73,8 @@
 
     </div></div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
-        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
-            <span id="toast-icon" class="material-icons-round"></span>
-            <span id="toast-message" class="font-medium"></span>
-        </div>
-    </div>
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
 
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -94,7 +89,7 @@
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    alert(err.error || 'Error al exportar');
+                    showPageToast(err.error || 'Error al exportar', 'error');
                     return;
                 }
                 const blob = await res.blob();
@@ -111,7 +106,7 @@
                 URL.revokeObjectURL(a.href);
             } catch (e) {
                 console.error(e);
-                alert('Error al descargar Excel');
+                showPageToast('Error al descargar Excel', 'error');
             }
         }
 
@@ -120,39 +115,6 @@
             localStorage.removeItem('user');
             localStorage.removeItem('tenant');
             window.location.href = '/login';
-        }
-
-        // Toast notification function
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastContent = document.getElementById('toast-content');
-            const toastIcon = document.getElementById('toast-icon');
-            const toastMessage = document.getElementById('toast-message');
-
-            // Set content
-            toastMessage.textContent = message;
-            
-            // Set styles based on type
-            if (type === 'success') {
-                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white';
-                toastIcon.textContent = 'check_circle';
-            } else if (type === 'error') {
-                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
-                toastIcon.textContent = 'error';
-            } else if (type === 'warning') {
-                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-amber-500 text-white';
-                toastIcon.textContent = 'warning';
-            }
-
-            // Show toast
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            // Hide after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
         }
 
         document.addEventListener('DOMContentLoaded', () => {

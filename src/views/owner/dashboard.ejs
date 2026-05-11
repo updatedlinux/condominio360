@@ -358,6 +358,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -515,11 +518,11 @@
                     if (data.property) localStorage.setItem('selectedProperty', JSON.stringify(data.property));
                     window.location.reload();
                 } else {
-                    alert(data.error || 'Error al cambiar de inmueble');
+                    showPageToast(data.error || 'Error al cambiar de inmueble', 'error');
                 }
             } catch (e) {
                 console.error('Switch property error:', e);
-                alert('Error al cambiar de inmueble');
+                showPageToast('Error al cambiar de inmueble', 'error');
             }
         }
 

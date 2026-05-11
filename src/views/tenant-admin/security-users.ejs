@@ -120,13 +120,8 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
-        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
-            <span id="toast-icon" class="material-icons-round"></span>
-            <span id="toast-message" class="font-medium"></span>
-        </div>
-    </div>
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
 
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -138,31 +133,6 @@
             localStorage.removeItem('user');
             localStorage.removeItem('tenant');
             window.location.href = '/login';
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastContent = document.getElementById('toast-content');
-            const toastIcon = document.getElementById('toast-icon');
-            const toastMessage = document.getElementById('toast-message');
-
-            toastMessage.textContent = message;
-            
-            if (type === 'success') {
-                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white';
-                toastIcon.textContent = 'check_circle';
-            } else if (type === 'error') {
-                toastContent.className = 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
-                toastIcon.textContent = 'error';
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
         }
 
         function openModal() {
@@ -186,11 +156,11 @@
                 if (data.success) {
                     renderUsers(data.users);
                 } else {
-                    showToast(data.error || 'Error al cargar usuarios', 'error');
+                    showPageToast(data.error || 'Error al cargar usuarios', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Error al cargar usuarios', 'error');
+                showPageToast('Error al cargar usuarios', 'error');
             }
         }
 
@@ -266,29 +236,33 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Usuario creado exitosamente');
+                    showPageToast('Usuario creado exitosamente', 'success');
                     closeModal();
                     loadUsers();
                 } else {
-                    showToast(data.error || 'Error al crear usuario', 'error');
+                    showPageToast(data.error || 'Error al crear usuario', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Error al crear usuario', 'error');
+                showPageToast('Error al crear usuario', 'error');
             }
         });
 
         // Password modal
         let currentUserId = null;
 
-        function openPasswordModal(id, name) {
+        async function openPasswordModal(id, name) {
             currentUserId = id;
-            const newPassword = prompt(`Ingrese nueva contraseña para ${name}:`);
-            if (newPassword && newPassword.length >= 6) {
-                updatePassword(id, newPassword);
-            } else if (newPassword) {
-                showToast('La contraseña debe tener al menos 6 caracteres', 'error');
+            const newPassword = await openPromptModal(`Nueva contraseña para ${name} (mínimo 6 caracteres):`, {
+                placeholder: 'Contraseña',
+                okLabel: 'Guardar'
+            });
+            if (newPassword === null) return;
+            if (newPassword.length < 6) {
+                showPageToast('La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
             }
+            await updatePassword(id, newPassword);
         }
 
         async function updatePassword(id, password) {
@@ -305,13 +279,13 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Contraseña actualizada exitosamente');
+                    showPageToast('Contraseña actualizada exitosamente', 'success');
                 } else {
-                    showToast(data.error || 'Error al actualizar contraseña', 'error');
+                    showPageToast(data.error || 'Error al actualizar contraseña', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Error al actualizar contraseña', 'error');
+                showPageToast('Error al actualizar contraseña', 'error');
             }
         }
 

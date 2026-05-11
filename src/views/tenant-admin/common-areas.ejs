@@ -223,6 +223,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let currentTab = 'areas';
@@ -480,7 +483,7 @@
             };
 
             if (!data.name) {
-                alert('El nombre es requerido');
+                showPageToast('El nombre es requerido', 'info');
                 return;
             }
 
@@ -503,11 +506,11 @@
                     loadAreas();
                     loadStats();
                 } else {
-                    alert(result.error || 'Error al guardar');
+                    showPageToast(result.error || 'Error al guardar', 'error');
                 }
             } catch (e) {
                 console.error('Error saving area:', e);
-                alert('Error al guardar área');
+                showPageToast('Error al guardar área', 'error');
             }
         }
 
@@ -549,12 +552,13 @@
                 document.getElementById('area-modal-title').textContent = 'Editar Área';
             } catch (e) {
                 console.error('Error loading area for edit:', e);
-                alert('Error al cargar el área');
+                showPageToast('Error al cargar el área', 'error');
             }
         }
 
         async function deleteArea(id) {
-            if (!confirm('¿Desactivar esta área común?')) return;
+            const ok = await openConfirmModal('¿Desactivar esta área común?', { okLabel: 'Desactivar', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/tenant-admin/common-areas/${id}`, {
                     method: 'DELETE',
@@ -564,9 +568,13 @@
                 if (data.success) {
                     loadAreas();
                     loadStats();
+                    showPageToast('Área desactivada', 'success');
+                } else {
+                    showPageToast(data.error || 'No se pudo desactivar', 'error');
                 }
             } catch (e) {
                 console.error('Error deleting area:', e);
+                showPageToast('Error de conexión', 'error');
             }
         }
 
@@ -605,12 +613,12 @@
                     loadReservations();
                     loadStats();
                 } else {
-                    alert(data.error || 'Error al aprobar');
+                    showPageToast(data.error || 'Error al aprobar', 'error');
                     loadReservations();
                 }
             } catch (e) {
                 console.error('Error approving:', e);
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
                 loadReservations();
             } finally {
                 processingReservationIds.delete(id);
@@ -619,7 +627,7 @@
 
         async function rejectReservation(id, btn) {
             if (processingReservationIds.has(id)) return;
-            const reason = prompt('Motivo del rechazo (opcional):');
+            const reason = await openPromptModal('Motivo del rechazo (opcional):', { placeholder: 'Opcional', okLabel: 'Rechazar', destructive: false });
             if (reason === null) return;
             processingReservationIds.add(id);
             setReservationLoading(id, true);
@@ -637,12 +645,12 @@
                     loadReservations();
                     loadStats();
                 } else {
-                    alert(data.error || 'Error al rechazar');
+                    showPageToast(data.error || 'Error al rechazar', 'error');
                     loadReservations();
                 }
             } catch (e) {
                 console.error('Error rejecting:', e);
-                alert('Error de conexión');
+                showPageToast('Error de conexión', 'error');
                 loadReservations();
             } finally {
                 processingReservationIds.delete(id);

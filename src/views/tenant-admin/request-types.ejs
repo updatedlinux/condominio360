@@ -274,6 +274,9 @@
         </div>
     </div>
 
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
+
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let formFields = [];
@@ -529,7 +532,7 @@
             const name = document.getElementById('type-name').value;
             
             if (!name) {
-                alert('El nombre es requerido');
+                showPageToast('El nombre es requerido', 'info');
                 return;
             }
 
@@ -583,12 +586,13 @@
                 if (result.success) {
                     closeModal();
                     loadTypes();
+                    showPageToast('Tipo de solicitud guardado', 'success');
                 } else {
-                    alert(result.error || 'Error al guardar');
+                    showPageToast(result.error || 'Error al guardar', 'error');
                 }
             } catch (e) {
                 console.error('Error saving:', e);
-                alert('Error al guardar tipo de solicitud');
+                showPageToast('Error al guardar tipo de solicitud', 'error');
             }
         }
 
@@ -661,7 +665,8 @@
 
         // Delete
         async function deleteType(id) {
-            if (!confirm('¿Eliminar este tipo de solicitud?')) return;
+            const ok = await openConfirmModal('¿Eliminar este tipo de solicitud?', { okLabel: 'Eliminar', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/tenant-admin/request-types/${id}`, {
                     method: 'DELETE',
@@ -670,9 +675,13 @@
                 const data = await res.json();
                 if (data.success) {
                     loadTypes();
+                    showPageToast('Tipo eliminado', 'success');
+                } else {
+                    showPageToast(data.error || 'No se pudo eliminar', 'error');
                 }
             } catch (e) {
                 console.error('Error deleting:', e);
+                showPageToast('Error de conexión', 'error');
             }
         }
 

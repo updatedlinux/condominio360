@@ -165,36 +165,13 @@
         </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
-        <div id="toast-content" class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg">
-            <span id="toast-icon" class="material-icons-round"></span>
-            <span id="toast-message" class="font-medium"></span>
-        </div>
-    </div>
+    <%- include('../partials/page-notifications') %>
+    <script src="/js/page-notifications.js"></script>
 
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
         document.getElementById('header-tenant').textContent = tenant.name || 'Condominio';
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastContent = document.getElementById('toast-content');
-            const toastIcon = document.getElementById('toast-icon');
-            const toastMessage = document.getElementById('toast-message');
-            toastMessage.textContent = message;
-            toastContent.className = type === 'success' 
-                ? 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-green-600 text-white'
-                : 'flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg bg-red-600 text-white';
-            toastIcon.textContent = type === 'success' ? 'check_circle' : 'error';
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
 
         let propertySearchTimeout = null;
         let selectedProperty = null;
@@ -384,7 +361,7 @@
 
         async function startNFCScanForCard() {
             if (!('NDEFReader' in window)) {
-                showToast('Web NFC no disponible. Use Chrome en Android con HTTPS.', 'error');
+                showPageToast('Web NFC no disponible. Use Chrome en Android con HTTPS.', 'error');
                 return;
             }
             try {
@@ -402,13 +379,13 @@
                             document.getElementById('card_uid').value = uid;
                             document.getElementById('card_uid').placeholder = 'UID capturado';
                             if (nfcAbortController) nfcAbortController.abort();
-                            showToast('Tarjeta detectada');
+                            showPageToast('Tarjeta detectada');
                         }
                     }
                 });
             } catch (err) {
                 document.getElementById('card_uid').placeholder = 'Escanee con WebNFC';
-                showToast(err.name === 'NotAllowedError' ? 'Permiso NFC denegado' : (err.message || 'Error al escanear'), 'error');
+                showPageToast(err.name === 'NotAllowedError' ? 'Permiso NFC denegado' : (err.message || 'Error al escanear'), 'error');
             }
         }
 
@@ -546,7 +523,7 @@
             const card_name = document.getElementById('card_name').value.trim() || null;
 
             if (!property_id || !card_uid) {
-                showToast('Complete los campos requeridos', 'error');
+                showPageToast('Complete los campos requeridos', 'error');
                 return;
             }
 
@@ -569,16 +546,16 @@
 
                 if (data.success) {
                     const isAlreadyRegistered = data.message === 'Tarjeta ya registrada';
-                    showToast(data.message || 'Tarjeta registrada exitosamente', isAlreadyRegistered ? 'error' : 'success');
+                    showPageToast(data.message || 'Tarjeta registrada exitosamente', isAlreadyRegistered ? 'error' : 'success');
                     if (!isAlreadyRegistered) {
                         closeCreateModal();
                         loadCards();
                     }
                 } else {
-                    showToast(data.error || 'Error al registrar', 'error');
+                    showPageToast(data.error || 'Error al registrar', 'error');
                 }
             } catch (err) {
-                showToast('Error de conexión', 'error');
+                showPageToast('Error de conexión', 'error');
             } finally {
                 submitBtn.disabled = false;
                 cancelBtn.disabled = false;
@@ -588,7 +565,8 @@
         });
 
         async function blockCard(id) {
-            if (!confirm('¿Bloquear esta tarjeta? No podrá usarse para acceso.')) return;
+            const ok = await openConfirmModal('¿Bloquear esta tarjeta? No podrá usarse para acceso.', { okLabel: 'Bloquear', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/tenant-admin/nfc/cards/${id}/block`, {
                     method: 'POST',
@@ -597,11 +575,11 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('Tarjeta bloqueada');
+                    showPageToast('Tarjeta bloqueada');
                     loadCards();
-                } else showToast(data.error || 'Error', 'error');
+                } else showPageToast(data.error || 'Error', 'error');
             } catch (err) {
-                showToast('Error', 'error');
+                showPageToast('Error', 'error');
             }
         }
 
@@ -613,16 +591,17 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('Tarjeta desbloqueada');
+                    showPageToast('Tarjeta desbloqueada');
                     loadCards();
-                } else showToast(data.error || 'Error', 'error');
+                } else showPageToast(data.error || 'Error', 'error');
             } catch (err) {
-                showToast('Error', 'error');
+                showPageToast('Error', 'error');
             }
         }
 
         async function deleteCard(id, label) {
-            if (!confirm(`¿Eliminar la tarjeta "${label}"? Esta acción no se puede deshacer.`)) return;
+            const ok = await openConfirmModal(`¿Eliminar la tarjeta "${label}"? Esta acción no se puede deshacer.`, { okLabel: 'Eliminar', destructive: true });
+            if (!ok) return;
             try {
                 const res = await fetch(`/api/tenant-admin/nfc/cards/${id}`, {
                     method: 'DELETE',
@@ -630,11 +609,11 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('Tarjeta eliminada');
+                    showPageToast('Tarjeta eliminada');
                     loadCards();
-                } else showToast(data.error || 'Error', 'error');
+                } else showPageToast(data.error || 'Error', 'error');
             } catch (err) {
-                showToast('Error', 'error');
+                showPageToast('Error', 'error');
             }
         }
 

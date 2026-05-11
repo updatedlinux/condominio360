@@ -1,0 +1,25 @@
+<%# Toast + modal de confirmación; usar con /js/page-notifications.js %>
+<div id="c360-toast" class="fixed bottom-6 left-1/2 z-[200] hidden max-w-md w-[min(100%-2rem,28rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3 pointer-events-auto bg-white border-slate-200 text-slate-800" role="status" aria-live="polite">
+    <span id="c360-toast-glyph" class="text-lg shrink-0 mt-0.5 w-7 text-center font-bold text-emerald-600" aria-hidden="true"></span>
+    <p id="c360-toast-text" class="text-sm leading-snug pt-0.5 flex-1"></p>
+</div>
+<div id="c360-confirm" class="fixed inset-0 z-[210] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm" aria-hidden="true">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <p id="c360-confirm-text" class="text-slate-700 text-sm leading-relaxed mb-6"></p>
+        <div class="flex flex-wrap gap-3 justify-end">
+            <button type="button" id="c360-confirm-cancel" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+            <button type="button" id="c360-confirm-ok" class="px-4 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/25">Continuar</button>
+        </div>
+    </div>
+</div>
+
+<div id="c360-prompt" class="fixed inset-0 z-[215] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm" aria-hidden="true">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <p id="c360-prompt-label" class="text-slate-700 text-sm leading-relaxed mb-3"></p>
+        <textarea id="c360-prompt-input" rows="3" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-y min-h-[5rem]" placeholder=""></textarea>
+        <div class="flex flex-wrap gap-3 justify-end mt-5">
+            <button type="button" id="c360-prompt-cancel" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+            <button type="button" id="c360-prompt-ok" class="px-4 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/25">Aceptar</button>
+        </div>
+    </div>
+</div>

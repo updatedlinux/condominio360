@@ -107,7 +107,9 @@ function openChatwootHelp() {
         }
         if (attempts >= 80) {
             clearInterval(id);
-            alert('El chat de ayuda está cargando. Espere unos segundos e intente de nuevo.');
+            if (typeof showPageToast === 'function') {
+                showPageToast('El chat de ayuda está cargando. Espere unos segundos e intente de nuevo.', 'info');
+            }
         }
     }, 125);
 }
