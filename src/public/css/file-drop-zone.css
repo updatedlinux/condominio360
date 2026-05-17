@@ -1,0 +1,5 @@
+[data-file-drop].file-drop-zone--dragover,
+.file-drop-zone--dragover {
+    border-color: #f97316 !important;
+    background: rgba(249, 115, 22, 0.06);
+}

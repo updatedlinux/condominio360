@@ -151,7 +151,7 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-[#3C4043] mb-2">Archivo * (DOCX o PDF)</label>
-                        <div class="border-2 border-dashed border-[#E5E5E5] rounded-lg p-6 text-center hover:border-[#f97316] transition cursor-pointer" onclick="document.getElementById('file-input').click()">
+                        <div data-file-drop data-file-drop-for="file-input" class="border-2 border-dashed border-[#E5E5E5] rounded-lg p-6 text-center hover:border-[#f97316] transition cursor-pointer">
                             <input type="file" id="file-input" name="file" accept=".docx,.pdf" required class="hidden" onchange="handleFileSelect(this)">
                             <span class="material-icons-round text-4xl text-[#9AA0A6] mb-2">cloud_upload</span>
                             <p class="text-sm text-[#5F6368]" id="file-name">Arrastra o haz clic para subir</p>

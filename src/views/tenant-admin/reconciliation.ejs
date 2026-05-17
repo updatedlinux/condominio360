@@ -68,7 +68,7 @@
                     </div>
                 </div>
 
-                <div id="drop-zone" class="drop-zone border-2 border-[#E5E5E5] rounded-xl p-8 text-center cursor-pointer hover:bg-[#FAFAFA]">
+                <div id="drop-zone" data-file-drop data-file-drop-for="recon-file" data-file-drop-active-class="dragging" class="drop-zone border-2 border-[#E5E5E5] rounded-xl p-8 text-center cursor-pointer hover:bg-[#FAFAFA]">
                     <input type="file" id="recon-file" class="hidden" accept=".pdf,.xlsx,.xls,.csv">
                     <span class="material-icons-round text-4xl text-[#9AA0A6]">picture_as_pdf</span>
                     <p class="mt-2 text-sm text-[#5F6368]">Arrastra el PDF del estado de cuenta aquí o <span class="text-[#f97316] font-medium">haz click para seleccionar</span></p>
@@ -356,24 +356,10 @@ async function loadImports() {
     }
 }
 
-// Drop zone
-const dropZone = document.getElementById('drop-zone');
+// Drop zone (drag & drop: /js/file-drop-zone.js)
 const fileInput = document.getElementById('recon-file');
-dropZone.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => {
     if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
-});
-;['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, e => {
-    e.preventDefault(); e.stopPropagation();
-    dropZone.classList.add('dragging');
-}));
-;['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => {
-    e.preventDefault(); e.stopPropagation();
-    dropZone.classList.remove('dragging');
-}));
-dropZone.addEventListener('drop', e => {
-    const f = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) handleFile(f);
 });
 
 function handleFile(f) {
