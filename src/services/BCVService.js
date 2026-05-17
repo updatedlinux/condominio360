@@ -1,7 +1,7 @@
 const axios = require('axios');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const {
-    getHistoricoFetchTargets,
+    resolveHistoricoTargets,
     getMinimumRequiredRateDate,
     toHistoricoPath,
     normalizeRateDate,
@@ -114,17 +114,25 @@ class BCVService {
      * @param {Date} [referenceDate]
      * @returns {Promise<Object|null>}
      */
-    async fetchFiscalFromHistorico(referenceDate = new Date()) {
-        const targets = getHistoricoFetchTargets(referenceDate);
+    async fetchFiscalFromHistorico(referenceDate = new Date(), options = {}) {
+        const latest = await ExchangeRateModel.getLatest();
+        const stored = latest ? normalizeRateDate(latest.rate_date) : null;
+        const minRequired = getMinimumRequiredRateDate(referenceDate);
+        const targets = resolveHistoricoTargets(referenceDate, stored, options);
         this._lastFetchTargets = targets;
 
         if (targets.length === 0) {
-            console.log('📅 Fin de semana (hora Vzla): no hay publicación BCV; se mantiene la última tasa.');
+            if (stored && isRateDateAdequate(stored, minRequired)) {
+                console.log(`📅 Tasa vigente en BD (${stored}) para fiscal ${minRequired}; sin consulta histórica.`);
+            } else {
+                console.log(`📅 Sin objetivos histórico y sin tasa >= ${minRequired} en BD.`);
+            }
             this._lastFetchMode = null;
             return null;
         }
 
-        console.log(`🔍 Objetivos histórico BCV: ${targets.join(' → ')}`);
+        const mode = !stored || !isRateDateAdequate(stored, minRequired) ? 'catch-up' : 'publicación';
+        console.log(`🔍 Histórico BCV (${mode}): ${targets.join(' → ')}`);
 
         for (const target of targets) {
             try {
@@ -224,28 +232,14 @@ class BCVService {
      * @param {Date} [referenceDate]
      * @returns {Promise<Object|null>}
      */
-    async fetchAndSave(referenceDate = new Date()) {
+    async fetchAndSave(referenceDate = new Date(), options = {}) {
         this._lastApiCheckAtUtc = new Date().toISOString();
 
-        let rateData = await this.fetchFiscalFromHistorico(referenceDate);
+        let rateData = await this.fetchFiscalFromHistorico(referenceDate, options);
 
         if (!rateData) {
-            const parts = getCaracasParts(referenceDate);
-            const targets = getHistoricoFetchTargets(referenceDate);
             const minRequired = getMinimumRequiredRateDate(referenceDate);
             const latest = await ExchangeRateModel.getLatest();
-
-            if (targets.length === 0 && latest) {
-                console.log(`✅ Fin de semana: usando última tasa (${normalizeRateDate(latest.rate_date)})`);
-                return {
-                    date: normalizeRateDate(latest.rate_date),
-                    usd: parseFloat(latest.usd_rate),
-                    eur: parseFloat(latest.eur_rate),
-                    changePercentageUsd: latest.change_percentage_usd,
-                    changePercentageEur: latest.change_percentage_eur,
-                    source: 'database_weekend'
-                };
-            }
 
             if (latest && isRateDateAdequate(latest.rate_date, minRequired)) {
                 console.log(`✅ Ya hay tasa adecuada en BD (${normalizeRateDate(latest.rate_date)} >= ${minRequired})`);
@@ -259,8 +253,14 @@ class BCVService {
                 };
             }
 
-            console.log('⚠️ Histórico vacío; intentando fallback endpoint oficial...');
+            console.log('⚠️ Histórico sin resultados; intentando fallback endpoint oficial...');
             rateData = await this.fetchFromAPI();
+            if (rateData && !isRateDateAdequate(rateData.date, minRequired)) {
+                console.warn(
+                    `⚠️ Fallback oficial (${rateData.date}) no cubre el día fiscal ${minRequired}; no se guarda.`
+                );
+                rateData = null;
+            }
         } else {
             this._lastApiStatus = 'ok';
             this._lastApiOkAtUtc = new Date().toISOString();
@@ -336,18 +336,23 @@ class BCVService {
             lastFetchMode: this._lastFetchMode,
             lastFetchTargets: this._lastFetchTargets,
             minimumRequiredDate: getMinimumRequiredRateDate(),
-            historicoTargets: getHistoricoFetchTargets()
+            historicoTargets: resolveHistoricoTargets(new Date(), null)
         };
     }
 
-    async updateIfNeeded(referenceDate = new Date()) {
+    async updateIfNeeded(referenceDate = new Date(), options = {}) {
         const needsUpdate = await this.needsUpdate(referenceDate);
         if (needsUpdate) {
             console.log('📅 Actualizando tasa fiscal BCV (histórico día hábil siguiente)...');
-            const saved = await this.fetchAndSave(referenceDate);
-            if (saved && !saved.source?.startsWith('database')) return saved;
+            const saved = await this.fetchAndSave(referenceDate, options);
+            if (saved) {
+                const minRequired = getMinimumRequiredRateDate(referenceDate);
+                if (!saved.source?.startsWith('database') || isRateDateAdequate(saved.date, minRequired)) {
+                    return saved;
+                }
+            }
             const latest = await this.getLatestRate();
-            console.warn('⚠️ No se pudo actualizar desde API. Se mantiene la tasa en BD si existe.');
+            console.warn('⚠️ No se pudo obtener tasa fiscal adecuada; se mantiene la de BD si existe.');
             return latest;
         }
         const latest = await this.getLatestRate();

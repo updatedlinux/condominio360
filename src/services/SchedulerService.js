@@ -179,7 +179,7 @@ class SchedulerService {
             });
             console.log(`🌐 Consultando histórico BCV (día hábil siguiente) a las ${venezuelaTime} (GMT-4)...`);
 
-            const result = await BCVService.fetchAndSave();
+            const result = await BCVService.fetchAndSave(new Date(), { forcePublish: true });
             if (result) {
                 console.log(`✅ Tasa BCV actualizada: ${result.date} | USD: ${result.usd} | EUR: ${result.eur}`);
             } else {

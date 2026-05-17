@@ -85,14 +85,38 @@ function nextBusinessDayAfter(ymd) {
 }
 
 /**
- * Fechas a consultar en el API histórico al publicar (~6 PM hora Venezuela).
- * - Lun–Jue: día hábil siguiente.
- * - Vie: lunes (+3), martes (+4), miércoles (+5) como hasta 3 intentos.
- * - Sáb/Dom: sin publicación (se usa la última tasa guardada).
+ * Hasta `maxAttempts` días hábiles consecutivos desde startYmd (salta sáb/dom).
+ * @param {string} startYmd
+ * @param {number} [maxAttempts]
+ * @returns {string[]}
+ */
+function getBusinessDaysFrom(startYmd, maxAttempts = 3) {
+    const result = [];
+    let cur = startYmd;
+
+    while (isWeekendYmd(cur)) {
+        cur = addDaysYmd(cur, 1);
+    }
+
+    while (result.length < maxAttempts) {
+        if (!isWeekendYmd(cur)) {
+            result.push(cur);
+        }
+        cur = addDaysYmd(cur, 1);
+        while (isWeekendYmd(cur)) {
+            cur = addDaysYmd(cur, 1);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Objetivos al publicar un día laboral ~6 PM (no aplica en catch-up de fin de semana).
  * @param {Date} [referenceDate]
  * @returns {string[]}
  */
-function getHistoricoFetchTargets(referenceDate = new Date()) {
+function getScheduledPublishTargets(referenceDate = new Date()) {
     const c = getCaracasParts(referenceDate);
     const today = toYmd(c);
 
@@ -105,6 +129,42 @@ function getHistoricoFetchTargets(referenceDate = new Date()) {
     }
 
     return [nextBusinessDayAfter(today)];
+}
+
+/**
+ * Decide qué fechas consultar en el API histórico.
+ * - Si falta tasa en BD: catch-up desde el día fiscal mínimo (también sáb/dom).
+ * - Si es día laboral después de las 6 PM y ya hay tasa del día: publicación del siguiente hábil.
+ * @param {Date} [referenceDate]
+ * @param {string|null} [storedRateDate] YYYY-MM-DD en BD
+ * @param {{ forcePublish?: boolean }} [options]
+ * @returns {string[]}
+ */
+function resolveHistoricoTargets(referenceDate = new Date(), storedRateDate = null, options = {}) {
+    const minRequired = getMinimumRequiredRateDate(referenceDate);
+    const stored = storedRateDate ? normalizeRateDate(storedRateDate) : null;
+    const needsCatchUp = !stored || !isRateDateAdequate(stored, minRequired);
+
+    if (needsCatchUp) {
+        return getBusinessDaysFrom(minRequired, 3);
+    }
+
+    const c = getCaracasParts(referenceDate);
+    const isWeekend = c.dayOfWeek === 0 || c.dayOfWeek === 6;
+    if (isWeekend) {
+        return [];
+    }
+
+    if (options.forcePublish || c.hour >= 18) {
+        return getScheduledPublishTargets(referenceDate);
+    }
+
+    return [];
+}
+
+/** @deprecated Usar resolveHistoricoTargets */
+function getHistoricoFetchTargets(referenceDate = new Date()) {
+    return getScheduledPublishTargets(referenceDate);
 }
 
 /**
@@ -167,7 +227,10 @@ module.exports = {
     addDaysYmd,
     isWeekendYmd,
     nextBusinessDayAfter,
+    getBusinessDaysFrom,
+    getScheduledPublishTargets,
     getHistoricoFetchTargets,
+    resolveHistoricoTargets,
     getMinimumRequiredRateDate,
     toHistoricoPath,
     normalizeRateDate,
