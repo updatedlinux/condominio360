@@ -30,9 +30,19 @@
     var OK_DANGER_CLASS =
         'px-4 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/25';
 
+    function portalToBody(id) {
+        var el = document.getElementById(id);
+        if (el && el.parentNode !== document.body) {
+            document.body.appendChild(el);
+        }
+    }
+
     function wire() {
         if (wired) return;
         wired = true;
+        portalToBody(IDS.toast);
+        portalToBody(IDS.confirm);
+        portalToBody(IDS.prompt);
         document.getElementById(IDS.confirmOk)?.addEventListener('click', function () {
             closeConfirm(true);
         });
@@ -63,18 +73,16 @@
         if (!el || !text || !glyph) return;
         clearTimeout(pageToastTimer);
         text.textContent = message || '';
-        var base =
-            'fixed bottom-6 left-1/2 z-[200] max-w-md w-[min(100%-2rem,28rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 rounded-xl border shadow-lg px-4 py-3 flex items-start gap-3 pointer-events-auto';
+        var variantClass =
+            variant === 'error' ? 'c360-toast--error' : variant === 'info' ? 'c360-toast--info' : 'c360-toast--success';
+        el.className = 'c360-toast ' + variantClass;
         if (variant === 'error') {
-            el.className = base + ' bg-white border-red-200 text-red-950';
             glyph.textContent = '✕';
             glyph.className = 'text-lg shrink-0 mt-0.5 w-7 text-center font-bold text-red-600';
         } else if (variant === 'info') {
-            el.className = base + ' bg-white border-slate-200 text-slate-800';
             glyph.textContent = 'ⓘ';
             glyph.className = 'text-lg shrink-0 mt-0.5 w-7 text-center font-semibold text-slate-600';
         } else {
-            el.className = base + ' bg-white border-emerald-200 text-emerald-950';
             glyph.textContent = '✓';
             glyph.className = 'text-lg shrink-0 mt-0.5 w-7 text-center font-bold text-emerald-600';
         }
@@ -183,7 +191,19 @@
         });
     }
 
+    function initPageNotifications() {
+        wire();
+    }
+
     global.showPageToast = showPageToast;
+    global.showSnackbar = showPageToast;
     global.openConfirmModal = openConfirmModal;
     global.openPromptModal = openPromptModal;
+    global.initPageNotifications = initPageNotifications;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPageNotifications);
+    } else {
+        initPageNotifications();
+    }
 })(typeof window !== 'undefined' ? window : this);

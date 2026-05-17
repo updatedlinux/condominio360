@@ -31,7 +31,8 @@ class OwnersExportService {
      * @param {Array<Object>} rows  Filas devueltas por UserModel.findOwnersForExport
      * @returns {ExcelJS.Workbook}
      */
-    static buildWorkbook(rows) {
+    static buildWorkbook(rows, options = {}) {
+        const dniHeader = options.dniColumnHeader || 'DNI / Documento';
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'Condominio360';
         workbook.created = new Date();
@@ -45,7 +46,7 @@ class OwnersExportService {
             { header: 'Apellido', key: 'last_name', width: 18 },
             { header: 'Email', key: 'email', width: 28 },
             { header: 'Teléfono', key: 'phone', width: 16 },
-            { header: 'DNI / Documento', key: 'dni', width: 16 },
+            { header: dniHeader, key: 'dni', width: 16 },
             { header: 'Usuario activo', key: 'is_active', width: 12 },
             { header: 'Registrado el', key: 'registrado_el', width: 18 },
             { header: 'Datos actualizados', key: 'datos_actualizados', width: 18 },
@@ -132,8 +133,8 @@ class OwnersExportService {
     /**
      * Envía el Excel como respuesta HTTP.
      */
-    static async streamWorkbook(res, rows, filename) {
-        const workbook = this.buildWorkbook(rows);
+    static async streamWorkbook(res, rows, filename, options = {}) {
+        const workbook = this.buildWorkbook(rows, options);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
         await workbook.xlsx.write(res);

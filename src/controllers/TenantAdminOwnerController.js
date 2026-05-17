@@ -48,7 +48,9 @@ class TenantAdminOwnerController {
             const rows = await UserModel.findOwnersForExport(tenantId);
             const safeName = (tenant?.name || 'condominio').replace(/[^\w\s-]/g, '').slice(0, 40);
             const filename = `propietarios-${safeName}.xlsx`;
-            await OwnersExportService.streamWorkbook(res, rows, filename);
+            await OwnersExportService.streamWorkbook(res, rows, filename, {
+                dniColumnHeader: 'Cédula de ID'
+            });
         } catch (error) {
             console.error('Export owners (tenant admin) error:', error);
             res.status(500).json({ success: false, error: 'Error al exportar propietarios' });

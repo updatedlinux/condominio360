@@ -200,7 +200,7 @@
                     owner || '—',
                     r.owner_email ? escapeHtml(r.owner_email) : '',
                     r.owner_phone ? escapeHtml(r.owner_phone) : '',
-                    r.owner_dni ? `DNI ${escapeHtml(r.owner_dni)}` : ''
+                    r.owner_dni ? `Cédula de ID ${escapeHtml(r.owner_dni)}` : ''
                 ].filter(Boolean).join('<br>');
                 const passExtra = r.pass_alias ? `<span class="text-[#9AA0A6]"> (${escapeHtml(r.pass_alias)})</span>` : '';
                 return `<tr class="hover:bg-[#FAFAFA] align-top">
@@ -243,7 +243,7 @@
                     <td class="px-3 py-3 font-mono text-xs">${r.tracking_number ? escapeHtml(r.tracking_number) : '—'}</td>
                     <td class="px-3 py-3 whitespace-nowrap">${fmtDateOnly(r.expected_date)}</td>
                     <td class="px-3 py-3">${prop}</td>
-                    <td class="px-3 py-3 text-xs leading-relaxed">${owner || '—'}${r.owner_email ? '<br>' + escapeHtml(r.owner_email) : ''}${r.owner_phone ? '<br>' + escapeHtml(r.owner_phone) : ''}${r.owner_dni ? '<br>DNI ' + escapeHtml(r.owner_dni) : ''}</td>
+                    <td class="px-3 py-3 text-xs leading-relaxed">${owner || '—'}${r.owner_email ? '<br>' + escapeHtml(r.owner_email) : ''}${r.owner_phone ? '<br>' + escapeHtml(r.owner_phone) : ''}${r.owner_dni ? '<br>Cédula de ID ' + escapeHtml(r.owner_dni) : ''}</td>
                     <td class="px-3 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#fff7ed] text-[#c2410c]">${deliveryStatusLabel(r.status)}</span></td>
                     <td class="px-3 py-3 text-xs whitespace-nowrap">${r.announced_at ? fmtDateTime(r.announced_at) : '—'}</td>
                     <td class="px-3 py-3 text-xs whitespace-nowrap">${r.arrival_time ? fmtDateTime(r.arrival_time) : '—'}</td>

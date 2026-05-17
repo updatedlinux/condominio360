@@ -381,7 +381,7 @@
                                 <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">${o.percentage_ownership || 100}%</span>
                             </div>
                         </div>
-                        ${o.dni ? `<p class="text-sm text-[#5F6368] mb-1">DNI: ${o.dni}</p>` : ''}
+                        ${o.dni ? `<p class="text-sm text-[#5F6368] mb-1">Cédula de ID: ${o.dni}</p>` : ''}
                         <p class="text-sm text-[#5F6368]">${o.email || 'Sin email'}</p>
                         ${o.phone ? `<p class="text-sm text-[#9AA0A6]">${o.phone}</p>` : ''}
                     </div>
@@ -477,7 +477,7 @@
                         </div>
                         ${getStatusBadge(status)}
                     </div>
-                    <p class="text-sm text-[#5F6368] mb-1">DNI: ${v.visitor_dni}</p>
+                    <p class="text-sm text-[#5F6368] mb-1">Cédula de ID: ${v.visitor_dni}</p>
                     ${v.entry_time ? `
                         <p class="text-sm text-green-600">
                             <span class="material-icons-round text-sm align-middle">login</span>

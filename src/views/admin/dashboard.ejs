@@ -380,30 +380,7 @@
             color: var(--md-sys-color-on-secondary-container);
         }
         
-        /* Snackbar */
-        .md-snackbar {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--md-sys-color-on-surface);
-            color: var(--md-sys-color-surface);
-            padding: 14px 24px;
-            border-radius: var(--md-radius-small);
-            font-size: 14px;
-            box-shadow: var(--md-elevation-3);
-            z-index: 200;
-            opacity: 0;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 24px;
-        }
-        
-        .md-snackbar.active {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
+        /* Toasts: ver /css/page-notifications.css + showPageToast / showSnackbar */
 
         /* Modal picker de condominios debe quedar encima del modal Resumen (z-50) */
         #saas-tenant-picker-modal {
@@ -4410,13 +4387,7 @@
             window.location.href = `/admin/tenants/${id}`;
         }
 
-        // Notificaciones (mismo toast que el resto del panel)
-        function showSnackbar(message, type = 'info') {
-            const variant = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
-            showPageToast(message, variant);
-        }
-
-        function hideSnackbar() {}
+        // Notificaciones: showSnackbar / showPageToast (page-notifications.js)
 
         function escapeHtml(s) {
             if (s == null) return '';
