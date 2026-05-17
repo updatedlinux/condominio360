@@ -8,6 +8,12 @@ const EmailService = require('../services/EmailService');
 const ReserveFundModel = require('../models/ReserveFundModel');
 const ReserveFundService = require('../services/ReserveFundService');
 const BillingRateFreezeService = require('../services/BillingRateFreezeService');
+const {
+    itemToUsd,
+    itemToVes,
+    sumPreliminaryTotals,
+    allocateVesByWeight
+} = require('../utils/currencyConversion');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -543,7 +549,7 @@ class TenantAdminBillingController {
                 total_ves: TenantAdminBillingController._recalcPreliminaryTotals(preliminary.items || [], rateToday).totalVes,
                 items: (preliminary.items || []).map(it => {
                     const base = parseFloat(it.base_amount) || 0;
-                    const convVes = it.currency === 'USD' ? base * rateToday : base;
+                    const convVes = itemToVes(base, it.currency, rateToday);
                     return { ...it, converted_amount_ves: convVes };
                 })
             } : null;
@@ -746,13 +752,8 @@ class TenantAdminBillingController {
                 let itemUsd;
                 let itemVes;
 
-                if (item.currency === 'USD') {
-                    itemUsd = item.amount;
-                    itemVes = item.amount * exchangeRate;
-                } else {
-                    itemVes = item.amount;
-                    itemUsd = item.amount / exchangeRate;
-                }
+                itemUsd = itemToUsd(item.amount, item.currency, exchangeRate);
+                itemVes = itemToVes(item.amount, item.currency, exchangeRate);
 
                 let attachment_path = null;
                 let attachment_mime = null;
@@ -918,7 +919,7 @@ class TenantAdminBillingController {
 
                 // Agregar items desglosados (recalculados con tasa actual)
                 for (const item of preliminary.items) {
-                    const itemConvVes = item.currency === 'USD' ? item.base_amount * exchangeRate : item.base_amount;
+                    const itemConvVes = itemToVes(item.base_amount, item.currency, exchangeRate);
                     const assignedItemAmount = itemConvVes * (prop.proportion / totalProportion);
                     
                     await BillingModel.addInvoiceItem({
@@ -1034,7 +1035,7 @@ class TenantAdminBillingController {
 
             // Agregar items desglosados (recalculados con tasa actual)
             for (const item of preliminary.items) {
-                const itemConvVes = item.currency === 'USD' ? item.base_amount * exchangeRate : item.base_amount;
+                const itemConvVes = itemToVes(item.base_amount, item.currency, exchangeRate);
                 await BillingModel.addInvoiceItem({
                     invoice_id: invoice.id,
                     item_type: item.item_type,
@@ -1452,15 +1453,19 @@ class TenantAdminBillingController {
             if (invoice.items && rateCurrent) {
                 const itemsRecalc = invoice.items.map(it => {
                     const base = parseFloat(it.base_amount) || 0;
-                    const convVes = it.currency === 'USD' ? base * rateCurrent : base;
+                    const convVes = itemToVes(base, it.currency, rateCurrent);
                     return { ...it, _convVes: convVes };
                 });
-                const sumConvVes = itemsRecalc.reduce((s, it) => s + it._convVes, 0);
+                const convList = itemsRecalc.map((it) => it._convVes);
                 const totalVes = parseFloat(invoice.assigned_amount_ves) || 0;
-                invoice.items = itemsRecalc.map(it => {
-                    const assignedVes = sumConvVes > 0 ? Math.round(totalVes * (it._convVes / sumConvVes) * 100) / 100 : it._convVes;
+                const allocated = allocateVesByWeight(totalVes, convList);
+                invoice.items = itemsRecalc.map((it, idx) => {
                     const { _convVes, ...rest } = it;
-                    return { ...rest, assigned_amount_ves: assignedVes, converted_amount_ves: it._convVes };
+                    return {
+                        ...rest,
+                        assigned_amount_ves: allocated[idx],
+                        converted_amount_ves: _convVes
+                    };
                 });
                 if (invoice.items.length === 1) invoice.items[0].assigned_amount_ves = totalVes;
             }
@@ -1993,19 +1998,7 @@ class TenantAdminBillingController {
      * @returns {{ totalUsd: number, totalVes: number }}
      */
     static _recalcPreliminaryTotals(items, rate) {
-        let totalUsd = 0;
-        let totalVes = 0;
-        for (const item of items || []) {
-            const base = parseFloat(item.base_amount) || 0;
-            if (item.currency === 'USD') {
-                totalUsd += base;
-                totalVes += base * rate;
-            } else {
-                totalVes += base;
-                totalUsd += rate > 0 ? base / rate : 0;
-            }
-        }
-        return { totalUsd, totalVes };
+        return sumPreliminaryTotals(items, rate);
     }
 }
 

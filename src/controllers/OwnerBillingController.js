@@ -1,6 +1,7 @@
 const BillingModel = require('../models/BillingModel');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const BillingRateFreezeService = require('../services/BillingRateFreezeService');
+const { itemToVes, allocateVesByWeight } = require('../utils/currencyConversion');
 const { sql, connectDB } = require('../config/database');
 const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
 
@@ -206,15 +207,19 @@ class OwnerBillingController {
             if (invoice.items && rateCurrent) {
                 const itemsRecalc = invoice.items.map(it => {
                     const base = parseFloat(it.base_amount) || 0;
-                    const convVes = it.currency === 'USD' ? base * rateCurrent : base;
+                    const convVes = itemToVes(base, it.currency, rateCurrent);
                     return { ...it, _convVes: convVes };
                 });
-                const sumConvVes = itemsRecalc.reduce((s, it) => s + it._convVes, 0);
+                const convList = itemsRecalc.map((it) => it._convVes);
                 const totalVes = parseFloat(invoice.assigned_amount_ves) || 0;
-                invoice.items = itemsRecalc.map((it, i) => {
-                    const assignedVes = sumConvVes > 0 ? Math.round(totalVes * (it._convVes / sumConvVes) * 100) / 100 : it._convVes;
+                const allocated = allocateVesByWeight(totalVes, convList);
+                invoice.items = itemsRecalc.map((it, idx) => {
                     const { _convVes, ...rest } = it;
-                    return { ...rest, assigned_amount_ves: assignedVes, converted_amount_ves: it._convVes };
+                    return {
+                        ...rest,
+                        assigned_amount_ves: allocated[idx],
+                        converted_amount_ves: _convVes
+                    };
                 });
                 if (invoice.items.length === 1) invoice.items[0].assigned_amount_ves = totalVes;
             }

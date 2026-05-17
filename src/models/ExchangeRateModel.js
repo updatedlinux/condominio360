@@ -88,8 +88,8 @@ class ExchangeRateModel {
                 // Update existing
                 await pool.request()
                     .input('date', sql.Date, data.date)
-                    .input('usd', sql.Decimal(12, 4), data.usd)
-                    .input('eur', sql.Decimal(12, 4), data.eur)
+                    .input('usd', sql.Decimal(18, 6), data.usd)
+                    .input('eur', sql.Decimal(18, 6), data.eur)
                     .input('changeUsd', sql.Decimal(5, 2), data.changePercentageUsd || 0)
                     .input('changeEur', sql.Decimal(5, 2), data.changePercentageEur || 0)
                     .query(`
@@ -105,8 +105,8 @@ class ExchangeRateModel {
                 // Insert new
                 await pool.request()
                     .input('date', sql.Date, data.date)
-                    .input('usd', sql.Decimal(12, 4), data.usd)
-                    .input('eur', sql.Decimal(12, 4), data.eur)
+                    .input('usd', sql.Decimal(18, 6), data.usd)
+                    .input('eur', sql.Decimal(18, 6), data.eur)
                     .input('changeUsd', sql.Decimal(5, 2), data.changePercentageUsd || 0)
                     .input('changeEur', sql.Decimal(5, 2), data.changePercentageEur || 0)
                     .query(`

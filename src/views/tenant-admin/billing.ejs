@@ -887,6 +887,7 @@
     <!-- Toast Container -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
+    <script src="/js/currency-conversion.js?v=1"></script>
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let billingConfig = null;
@@ -1059,15 +1060,17 @@
             }, 4000);
         }
 
+        /** Formato de montos sin redondeo artificial (hasta 6 decimales visibles). */
         function formatCurrency(amount, currency = 'VES') {
-            if (amount === null || amount === undefined) return '-';
+            if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) return '-';
             const symbol = currency === 'USD' ? '$' : 'Bs.';
-            return `${symbol} ${Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const locale = currency === 'USD' ? 'en-US' : 'es-VE';
+            return `${symbol} ${Number(amount).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
         }
 
         function formatNumber(amount) {
-            if (amount === null || amount === undefined || isNaN(amount)) return '0,00';
-            return Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) return '0,00';
+            return Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
         }
 
         function getStatusClass(status) {
@@ -1780,23 +1783,15 @@
                 container.innerHTML = '<p class="text-center text-[#9AA0A6] py-4">Agrega items de cobro</p>';
             } else {
                 container.innerHTML = preliminaryItems.map((item, idx) => {
-                    // Calcular conversión según la moneda del item
-                    let convertedAmount;
-                    if (item.currency === 'USD') {
-                        // USD -> VES (multiplicar por tasa)
-                        convertedAmount = item.amount * currentRate;
-                        totalUsd += item.amount;
-                        totalVes += convertedAmount;
-                    } else {
-                        // VES -> USD (dividir por tasa)
-                        convertedAmount = currentRate > 0 ? item.amount / currentRate : 0;
-                        totalVes += item.amount;
-                        totalUsd += convertedAmount;
-                    }
+                    const CC = window.CurrencyConversion;
+                    const itemUsd = CC.itemToUsd(item.amount, item.currency, currentRate);
+                    const itemVes = CC.itemToVes(item.amount, item.currency, currentRate);
+                    totalUsd += itemUsd;
+                    totalVes += itemVes;
 
-                    const convertedText = item.currency === 'USD' 
-                        ? `= Bs. ${formatNumber(convertedAmount)}` 
-                        : `= $ ${formatNumber(convertedAmount)}`;
+                    const convertedText = item.currency === 'USD'
+                        ? `= Bs. ${formatNumber(itemVes)}`
+                        : `= $ ${formatNumber(itemUsd)}`;
 
                     return `
                         <div class="flex gap-2 items-start p-3 bg-[#FAFAFA] rounded-lg">
@@ -2630,7 +2625,7 @@
                 
                 const itemsHtml = (inv.items || []).map(item => {
                     const itemUsd = item.assigned_amount_ves / rate;
-                    return `<div class="flex justify-between py-2 border-b border-[#E5E5E5] last:border-0"><div><p class="text-[#3C4043]">${item.description}</p></div><div class="text-right"><p class="font-medium">${formatCurrency(item.assigned_amount_ves, 'VES')}</p><p class="text-xs text-[#9AA0A6]">$ ${itemUsd.toFixed(2)} USD</p></div></div>`;
+                    return `<div class="flex justify-between py-2 border-b border-[#E5E5E5] last:border-0"><div><p class="text-[#3C4043]">${item.description}</p></div><div class="text-right"><p class="font-medium">${formatCurrency(item.assigned_amount_ves, 'VES')}</p><p class="text-xs text-[#9AA0A6]">${formatCurrency(itemUsd, 'USD')} USD</p></div></div>`;
                 }).join('') || '<p class="text-[#9AA0A6]">Sin desglose</p>';
                 
                 document.getElementById('invoice-detail-content').innerHTML = `
@@ -2640,7 +2635,7 @@
                                 <div>
                                     <p class="text-sm text-[#5F6368]">${inv.invoice_number}</p>
                                     <h2 class="text-2xl font-bold text-[#3C4043]">${formatCurrency(inv.assigned_amount_ves, 'VES')}</h2>
-                                    <p class="text-lg text-[#5F6368]">$ ${Number(totalUsd).toFixed(2)} USD</p>
+                                    <p class="text-lg text-[#5F6368]">${formatCurrency(totalUsd, 'USD')} USD</p>
                                 </div>
                                 <span class="px-3 py-1 rounded-full text-sm ${getStatusClass(inv.status)}">${inv.status === 'PAID' ? 'Pagado' : 'Pendiente'}</span>
                             </div>
@@ -2816,18 +2811,14 @@
             let totalUsd = 0;
             let totalVes = 0;
             
+            const CC = window.CurrencyConversion;
             extraordinaryItems.forEach(item => {
-                if (item.currency === 'USD') {
-                    totalUsd += item.amount;
-                    totalVes += item.amount * currentRate;
-                } else {
-                    totalVes += item.amount;
-                    totalUsd += currentRate > 0 ? item.amount / currentRate : 0;
-                }
+                totalUsd += CC.itemToUsd(item.amount, item.currency, currentRate);
+                totalVes += CC.itemToVes(item.amount, item.currency, currentRate);
             });
             
-            document.getElementById('extra-total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
-            document.getElementById('extra-total-ves').textContent = `Bs. ${totalVes.toFixed(2)}`;
+            document.getElementById('extra-total-usd').textContent = formatCurrency(totalUsd, 'USD');
+            document.getElementById('extra-total-ves').textContent = formatCurrency(totalVes, 'VES');
         }
 
         // Submit del form de extraordinario
@@ -3112,18 +3103,14 @@
             let totalUsd = 0;
             let totalVes = 0;
             
+            const CC = window.CurrencyConversion;
             propertyInvoiceItems.forEach(item => {
-                if (item.currency === 'USD') {
-                    totalUsd += item.amount;
-                    totalVes += item.amount * currentRate;
-                } else {
-                    totalVes += item.amount;
-                    totalUsd += currentRate > 0 ? item.amount / currentRate : 0;
-                }
+                totalUsd += CC.itemToUsd(item.amount, item.currency, currentRate);
+                totalVes += CC.itemToVes(item.amount, item.currency, currentRate);
             });
             
-            document.getElementById('prop-total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
-            document.getElementById('prop-total-ves').textContent = `Bs. ${totalVes.toFixed(2)}`;
+            document.getElementById('prop-total-usd').textContent = formatCurrency(totalUsd, 'USD');
+            document.getElementById('prop-total-ves').textContent = formatCurrency(totalVes, 'VES');
         }
 
         // Submit del form

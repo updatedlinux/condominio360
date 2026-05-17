@@ -1,4 +1,5 @@
 const { sql, connectDB } = require('../config/database');
+const { usdToVes } = require('../utils/currencyConversion');
 
 const UNIT_PRICE_USD = 0.50;
 const FISCAL_SHIPPING_USD = 10;
@@ -406,7 +407,7 @@ class SaaSBillingModel {
 
         const usd = parseFloat(invoice.total_usd) || 0;
         const newRate = parseFloat(rateRow.usd_rate);
-        const newTotalVes = Math.round(usd * newRate * 100) / 100;
+        const newTotalVes = usdToVes(usd, newRate);
         const normalizedRateDate = rateRow.rate_date
             ? new Date(rateRow.rate_date).toISOString().split('T')[0]
             : rateDate;
@@ -521,7 +522,7 @@ class SaaSBillingModel {
                 const newTotalUsd = parseFloat(payload.total_usd);
                 if (newTotalUsd < 0) throw new Error('total_usd no puede ser negativo');
                 const bcvRate = parseFloat(inv.bcv_rate) || 0;
-                const newTotalVes = Math.round(newTotalUsd * bcvRate * 100) / 100;
+                const newTotalVes = usdToVes(newTotalUsd, bcvRate);
                 await tx.request()
                     .input('id', sql.UniqueIdentifier, invoiceId)
                     .input('total_usd', sql.Decimal(15, 4), newTotalUsd)

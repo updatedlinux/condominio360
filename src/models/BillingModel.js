@@ -17,7 +17,7 @@ class BillingModel {
                 .input('billing_month', sql.Int, data.billing_month)
                 .input('billing_year', sql.Int, data.billing_year)
                 .input('name', sql.NVarChar, data.name)
-                .input('exchange_rate_usd', sql.Decimal(10, 2), data.exchange_rate_usd)
+                .input('exchange_rate_usd', sql.Decimal(18, 6), data.exchange_rate_usd)
                 .input('exchange_rate_date', sql.Date, data.exchange_rate_date || null)
                 .input('rate_freeze_mode', sql.NVarChar, data.rate_freeze_mode || 'NONE')
                 .input('rate_freeze_window_days', sql.Int, data.rate_freeze_window_days ?? null)
@@ -55,9 +55,9 @@ class BillingModel {
                 .input('item_type', sql.NVarChar, data.item_type)
                 .input('description', sql.NVarChar, data.description)
                 .input('vendor_contract_id', sql.UniqueIdentifier, data.vendor_contract_id || null)
-                .input('base_amount', sql.Decimal(15, 2), data.base_amount)
+                .input('base_amount', sql.Decimal(18, 6), data.base_amount)
                 .input('currency', sql.NVarChar, data.currency)
-                .input('converted_amount_ves', sql.Decimal(15, 2), data.converted_amount_ves)
+                .input('converted_amount_ves', sql.Decimal(18, 6), data.converted_amount_ves)
                 .input('notes', sql.NVarChar, data.notes || null)
                 .input('attachment_path', sql.NVarChar, data.attachment_path || null)
                 .input('attachment_mime', sql.NVarChar, data.attachment_mime || null)
@@ -177,8 +177,8 @@ class BillingModel {
             const result = await pool.request()
                 .input('id', sql.UniqueIdentifier, id)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                .input('total_amount_usd', sql.Decimal(15, 2), totals.total_usd)
-                .input('total_amount_ves', sql.Decimal(15, 2), totals.total_ves)
+                .input('total_amount_usd', sql.Decimal(18, 6), totals.total_usd)
+                .input('total_amount_ves', sql.Decimal(18, 6), totals.total_ves)
                 .query(`
                     UPDATE BillingPreliminaries 
                     SET status = 'FINALIZED', 
@@ -206,8 +206,8 @@ class BillingModel {
             const result = await pool.request()
                 .input('id', sql.UniqueIdentifier, id)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                .input('total_amount_usd', sql.Decimal(15, 2), totals.total_usd)
-                .input('total_amount_ves', sql.Decimal(15, 2), totals.total_ves)
+                .input('total_amount_usd', sql.Decimal(18, 6), totals.total_usd)
+                .input('total_amount_ves', sql.Decimal(18, 6), totals.total_ves)
                 .query(`
                     UPDATE BillingPreliminaries 
                     SET total_amount_usd = @total_amount_usd,
@@ -237,14 +237,14 @@ class BillingModel {
                 .input('property_id', sql.UniqueIdentifier, data.property_id)
                 .input('owner_id', sql.UniqueIdentifier, data.owner_id || null)
                 .input('invoice_number', sql.NVarChar, data.invoice_number)
-                .input('total_amount_usd', sql.Decimal(15, 2), data.total_amount_usd)
-                .input('total_amount_ves', sql.Decimal(15, 2), data.total_amount_ves)
-                .input('assigned_amount_usd', sql.Decimal(15, 2), data.assigned_amount_usd)
-                .input('assigned_amount_ves', sql.Decimal(15, 2), data.assigned_amount_ves)
+                .input('total_amount_usd', sql.Decimal(18, 6), data.total_amount_usd)
+                .input('total_amount_ves', sql.Decimal(18, 6), data.total_amount_ves)
+                .input('assigned_amount_usd', sql.Decimal(18, 6), data.assigned_amount_usd)
+                .input('assigned_amount_ves', sql.Decimal(18, 6), data.assigned_amount_ves)
                 .input('proportion_type', sql.NVarChar, data.proportion_type)
                 .input('proportion_value', sql.Decimal(10, 4), data.proportion_value)
-                .input('exchange_rate_at_creation', sql.Decimal(10, 2), data.exchange_rate_at_creation)
-                .input('current_exchange_rate', sql.Decimal(10, 2), data.current_exchange_rate)
+                .input('exchange_rate_at_creation', sql.Decimal(18, 6), data.exchange_rate_at_creation)
+                .input('current_exchange_rate', sql.Decimal(18, 6), data.current_exchange_rate)
                 .query(`
                     INSERT INTO BillingInvoices (
                         tenant_id, preliminary_id, property_id, owner_id, invoice_number,
@@ -275,10 +275,10 @@ class BillingModel {
                 .input('invoice_id', sql.UniqueIdentifier, data.invoice_id)
                 .input('item_type', sql.NVarChar, data.item_type)
                 .input('description', sql.NVarChar, data.description)
-                .input('base_amount', sql.Decimal(15, 2), data.base_amount)
+                .input('base_amount', sql.Decimal(18, 6), data.base_amount)
                 .input('currency', sql.NVarChar, data.currency)
-                .input('converted_amount_ves', sql.Decimal(15, 2), data.converted_amount_ves)
-                .input('assigned_amount_ves', sql.Decimal(15, 2), data.assigned_amount_ves)
+                .input('converted_amount_ves', sql.Decimal(18, 6), data.converted_amount_ves)
+                .input('assigned_amount_ves', sql.Decimal(18, 6), data.assigned_amount_ves)
                 .input('notes', sql.NVarChar, data.notes || null)
                 .input('attachment_path', sql.NVarChar, data.attachment_path || null)
                 .input('attachment_mime', sql.NVarChar, data.attachment_mime || null)
@@ -521,8 +521,8 @@ class BillingModel {
             const pool = await connectDB();
             const result = await pool.request()
                 .input('id', sql.UniqueIdentifier, id)
-                .input('current_exchange_rate', sql.Decimal(10, 2), newRate)
-                .input('assigned_amount_ves', sql.Decimal(15, 2), newAmountVes)
+                .input('current_exchange_rate', sql.Decimal(18, 6), newRate)
+                .input('assigned_amount_ves', sql.Decimal(18, 6), newAmountVes)
                 .query(`
                     UPDATE BillingInvoices 
                     SET current_exchange_rate = @current_exchange_rate,
@@ -551,6 +551,7 @@ class BillingModel {
         try {
             const ExchangeRateModel = require('./ExchangeRateModel');
             const BillingRateFreezeService = require('../services/BillingRateFreezeService');
+            const { usdToVes, itemToVes } = require('../utils/currencyConversion');
             const latestRate = await ExchangeRateModel.getLatest();
             if (!latestRate || latestRate.usd_rate == null) {
                 return null;
@@ -582,11 +583,11 @@ class BillingModel {
             if (!BillingRateFreezeService.shouldApplyDailyRateUpdate(preliminary)) {
                 const frozenRate = BillingRateFreezeService.getFrozenRate(preliminary);
                 const usd = parseFloat(row.assigned_amount_usd) || 0;
-                return BillingModel.updateInvoiceRate(invoiceId, frozenRate, usd * frozenRate);
+                return BillingModel.updateInvoiceRate(invoiceId, frozenRate, usdToVes(usd, frozenRate));
             }
             const usd = parseFloat(row.assigned_amount_usd) || 0;
             const newRate = parseFloat(latestRate.usd_rate);
-            const newAmountVes = usd * newRate;
+            const newAmountVes = usdToVes(usd, newRate);
             return BillingModel.updateInvoiceRate(invoiceId, newRate, newAmountVes);
         } catch (error) {
             console.error('Error refreshing invoice BCV rate:', error);
@@ -607,12 +608,12 @@ class BillingModel {
                 `);
             for (const item of itemsResult.recordset) {
                 const base = parseFloat(item.base_amount) || 0;
-                const convVes = item.currency === 'USD' ? base * newRate : base;
+                const convVes = itemToVes(base, item.currency, newRate);
                 const assignedVes = convVes * (parseFloat(proportionValue) || 1);
                 await pool.request()
                     .input('id', sql.UniqueIdentifier, item.id)
-                    .input('converted_amount_ves', sql.Decimal(15, 2), convVes)
-                    .input('assigned_amount_ves', sql.Decimal(15, 2), assignedVes)
+                    .input('converted_amount_ves', sql.Decimal(18, 6), convVes)
+                    .input('assigned_amount_ves', sql.Decimal(18, 6), assignedVes)
                     .query(`
                         UPDATE BillingInvoiceItems 
                         SET converted_amount_ves = @converted_amount_ves,
@@ -638,7 +639,7 @@ class BillingModel {
                 .input('banco_emisor', sql.NVarChar, data.banco_emisor)
                 .input('fecha_transferencia', sql.NVarChar, data.fecha_transferencia)
                 .input('ref_transferencia', sql.NVarChar, data.ref_transferencia)
-                .input('monto_abonado_ves', sql.Decimal(15, 2), data.monto_abonado_ves)
+                .input('monto_abonado_ves', sql.Decimal(18, 6), data.monto_abonado_ves)
                 .input('comentario', sql.NVarChar, data.comentario || null)
                 .input('attachment_path', sql.NVarChar, data.attachment_path || null)
                 .query(`
@@ -748,7 +749,7 @@ class BillingModel {
             const result = await pool.request()
                 .input('id', sql.UniqueIdentifier, id)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                .input('paid_amount_ves', sql.Decimal(15, 2), paymentData.paid_amount_ves)
+                .input('paid_amount_ves', sql.Decimal(18, 6), paymentData.paid_amount_ves)
                 .input('payment_method', sql.NVarChar, paymentData.payment_method)
                 .input('payment_reference', sql.NVarChar, paymentData.payment_reference || null)
                 .input('payment_notes', sql.NVarChar, paymentData.payment_notes || null)
@@ -822,7 +823,7 @@ class BillingModel {
                 .input('tenant_id', sql.UniqueIdentifier, data.tenant_id)
                 .input('name', sql.NVarChar, data.name)
                 .input('description', sql.NVarChar, data.description || null)
-                .input('default_amount', sql.Decimal(15, 2), data.default_amount || null)
+                .input('default_amount', sql.Decimal(18, 6), data.default_amount || null)
                 .input('default_currency', sql.NVarChar, data.default_currency || 'VES')
                 .input('category', sql.NVarChar, data.category || null)
                 .query(`

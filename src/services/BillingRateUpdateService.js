@@ -1,6 +1,7 @@
 const BillingModel = require('../models/BillingModel');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const BillingRateFreezeService = require('./BillingRateFreezeService');
+const { usdToVes } = require('../utils/currencyConversion');
 const BCVService = require('./BCVService');
 
 /**
@@ -125,7 +126,7 @@ class BillingRateUpdateService {
 
                     // Calcular nuevo monto VES basado en el monto USD original
                     // El monto USD no cambia, solo se recalcula el VES
-                    const newAmountVes = invoice.assigned_amount_usd * newRate;
+                    const newAmountVes = usdToVes(invoice.assigned_amount_usd, newRate);
 
                     // Actualizar recibo
                     await BillingModel.updateInvoiceRate(invoice.id, newRate, newAmountVes);

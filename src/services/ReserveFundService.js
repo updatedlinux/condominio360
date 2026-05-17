@@ -1,5 +1,6 @@
 const ReserveFundModel = require('../models/ReserveFundModel');
 const VendorContractModel = require('../models/VendorContractModel');
+const { itemToUsd, itemToVes, usdToVes } = require('../utils/currencyConversion');
 
 const NATURE_LABELS = {
     ORDINARY_RESERVE: 'Fondo de reserva ordinario',
@@ -22,15 +23,6 @@ class ReserveFundService {
         return String(desc || '').trim().replace(/\s+/g, ' ').toLowerCase();
     }
 
-    /** Monto expresado en USD (base única para el % del fondo). */
-    static toUsd(amount, currency, exchangeRate) {
-        const n = Number(amount || 0);
-        const rate = Number(exchangeRate || 0);
-        if (currency === 'USD') return n;
-        if (rate <= 0) return 0;
-        return n / rate;
-    }
-
     static itemType(item) {
         return String(item.item_type || item.type || 'ORDINARY').toUpperCase();
     }
@@ -40,9 +32,6 @@ class ReserveFundService {
         return ReserveFundService.normalizeId(id);
     }
 
-    /**
-     * Índices para vincular ítems del preliminar con contratos del fondo.
-     */
     static buildContractLookup(fund, contracts) {
         const contractIds = new Set(
             (fund.contract_ids || []).map((id) => ReserveFundService.normalizeId(id)).filter(Boolean)
@@ -70,9 +59,6 @@ class ReserveFundService {
         return { contractIds, byDescription, byAmountKey };
     }
 
-    /**
-     * Resuelve el contrato de un ítem ordinario (id explícito, descripción o monto+moneda).
-     */
     static resolveContractId(item, lookup) {
         const explicit = ReserveFundService.contractId(item);
         if (explicit && lookup.contractIds.has(explicit)) {
@@ -92,9 +78,6 @@ class ReserveFundService {
         return null;
     }
 
-    /**
-     * Base en USD: ítems del preliminar convertidos a USD con la tasa BCV.
-     */
     static calculateBaseUsd(fund, exchangeRate, preliminaryItems = [], contractLookup = null) {
         const lookup = contractLookup || ReserveFundService.buildContractLookup(fund, []);
         let baseUsd = 0;
@@ -108,7 +91,7 @@ class ReserveFundService {
 
             if (itemType === 'EXTRAORDINARY') {
                 if (!fund.include_extraordinary) continue;
-                baseUsd += ReserveFundService.toUsd(amount, currency, exchangeRate);
+                baseUsd += itemToUsd(amount, currency, exchangeRate);
                 continue;
             }
 
@@ -116,16 +99,13 @@ class ReserveFundService {
                 if (lookup.contractIds.size === 0) continue;
                 const cid = ReserveFundService.resolveContractId(item, lookup);
                 if (!cid) continue;
-                baseUsd += ReserveFundService.toUsd(amount, currency, exchangeRate);
+                baseUsd += itemToUsd(amount, currency, exchangeRate);
             }
         }
 
-        return Math.round(baseUsd * 100) / 100;
+        return baseUsd;
     }
 
-    /**
-     * Genera líneas FUND para insertar en un preliminar ordinario.
-     */
     static async buildPreliminaryFundItems(tenantId, preliminaryItems, exchangeRate) {
         const funds = await ReserveFundModel.listByTenant(tenantId, { activeOnly: true });
         const contracts = await VendorContractModel.getByTenant(tenantId);
@@ -142,14 +122,14 @@ class ReserveFundService {
             );
             if (baseUsd <= 0) continue;
 
-            const fundUsd = Math.round(baseUsd * (pct / 100) * 100) / 100;
+            const fundUsd = baseUsd * (pct / 100);
             if (fundUsd <= 0) continue;
 
-            const amountVes = Math.round(fundUsd * rate * 100) / 100;
+            const amountVes = itemToVes(fundUsd, 'USD', rate);
 
             out.push({
                 item_type: 'FUND',
-                description: `${fund.name} (${pct}% sobre $ ${baseUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)`,
+                description: `${fund.name} (${pct}% sobre $ ${baseUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USD)`,
                 amount: amountVes,
                 currency: 'VES',
                 vendor_contract_id: null,
@@ -161,9 +141,6 @@ class ReserveFundService {
         return out;
     }
 
-    /**
-     * Vista previa para la UI al armar un preliminar.
-     */
     static async previewAll(tenantId, preliminaryItems, exchangeRate) {
         const funds = await ReserveFundModel.listByTenant(tenantId, { activeOnly: true });
         const contracts = await VendorContractModel.getByTenant(tenantId);
@@ -176,13 +153,13 @@ class ReserveFundService {
                 fund, rate, preliminaryItems, lookup
             );
             const pct = Number(fund.percentage || 0);
-            const fundUsd = Math.round(baseUsd * (pct / 100) * 100) / 100;
+            const fundUsd = baseUsd * (pct / 100);
             previews.push({
                 fund,
                 base_usd: baseUsd,
                 fund_usd: fundUsd,
-                base_ves: Math.round(baseUsd * rate * 100) / 100,
-                amount_ves: Math.round(fundUsd * rate * 100) / 100,
+                base_ves: usdToVes(baseUsd, rate),
+                amount_ves: usdToVes(fundUsd, rate),
                 percentage: pct
             });
         }
