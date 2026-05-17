@@ -26,17 +26,16 @@ class SchedulerService {
         });
         console.log('🕐 Hora actual Venezuela (GMT-4):', venezuelaTime);
 
-        // Tarea: Actualizar tasa BCV diariamente a las 6:00 PM (hora Venezuela)
-        // El BCV publica las tasas del día siguiente a las ~5:30 PM
-        // Cron: 0 18 * * * = minuto 0, hora 18, todos los días
+        // 6:00 PM Venezuela: publicación BCV → consultar histórico del día hábil siguiente
+        // (viernes: lunes, martes, miércoles como hasta 3 intentos)
         this.jobs.bcvUpdate = new CronJob(
-            '0 18 * * *', // 6:00 PM
+            '0 18 * * *',
             async () => {
-                const execTime = new Date().toLocaleString('es-VE', { 
+                const execTime = new Date().toLocaleString('es-VE', {
                     timeZone: this.timezone,
-                    hour12: false 
+                    hour12: false
                 });
-                console.log(`⏰ [${execTime} GMT-4] Ejecutando tarea programada: Actualización BCV`);
+                console.log(`⏰ [${execTime} GMT-4] Publicación BCV — histórico día hábil siguiente`);
                 await this.updateBCVRate();
             },
             null, // onComplete
@@ -44,17 +43,51 @@ class SchedulerService {
             this.timezone // timezone
         );
 
-        // Tarea: Verificar y actualizar si no hay tasa (el BCV publica la del día siguiente en la tarde/noche)
-        // Se ejecuta cada hora entre 6 AM y 11 PM (Venezuela) para capturar tasas publicadas tarde
+        // Verificación horaria (6 AM–11 PM): si falta la tasa del día fiscal requerido
         this.jobs.bcvCheck = new CronJob(
-            '0 6-23 * * *', // Cada hora entre 6 AM y 11 PM
+            '0 6-23 * * *',
             async () => {
-                const execTime = new Date().toLocaleString('es-VE', { 
+                const execTime = new Date().toLocaleString('es-VE', {
                     timeZone: this.timezone,
-                    hour12: false 
+                    hour12: false
                 });
-                console.log(`🔍 [${execTime} GMT-4] Verificando si se necesita actualizar tasa BCV...`);
+                console.log(`🔍 [${execTime} GMT-4] Verificando tasa fiscal BCV...`);
                 await BCVService.updateIfNeeded();
+            },
+            null,
+            true,
+            this.timezone
+        );
+
+        // Reintentos si el histórico vino vacío (p. ej. viernes → lunes feriado, tasa el martes)
+        this.jobs.bcvRetryEarly = new CronJob(
+            '0 2 * * *',
+            async () => {
+                const execTime = new Date().toLocaleString('es-VE', {
+                    timeZone: this.timezone,
+                    hour12: false
+                });
+                console.log(`🌙 [${execTime} GMT-4] Reintento BCV (2:00 AM) — histórico día hábil...`);
+                if (await BCVService.needsUpdate()) {
+                    await BCVService.fetchAndSave();
+                }
+            },
+            null,
+            true,
+            this.timezone
+        );
+
+        this.jobs.bcvRetryMorning = new CronJob(
+            '0 6 * * *',
+            async () => {
+                const execTime = new Date().toLocaleString('es-VE', {
+                    timeZone: this.timezone,
+                    hour12: false
+                });
+                console.log(`🌅 [${execTime} GMT-4] Comprobación final BCV (6:00 AM)...`);
+                if (await BCVService.needsUpdate()) {
+                    await BCVService.fetchAndSave();
+                }
             },
             null,
             true,
@@ -112,8 +145,9 @@ class SchedulerService {
         this.isRunning = true;
         console.log('✅ Scheduler Service iniciado');
         console.log('📅 Tareas programadas (Zona horaria: America/Caracas | GMT-4):');
-        console.log('   - Actualización BCV: Todos los días a las 18:00 (6:00 PM Venezuela)');
-        console.log('   - Verificación BCV: Cada hora entre 06:00 y 23:00 (6 AM - 11 PM Venezuela)');
+        console.log('   - Publicación BCV (histórico): Todos los días a las 18:00 (6:00 PM Venezuela)');
+        console.log('   - Verificación BCV: Cada hora entre 06:00 y 23:00');
+        console.log('   - Reintento BCV: 02:00 y comprobación 06:00 si el histórico vino vacío');
         console.log('   - Cierre de consultas: Cada 5 minutos');
         
         // Mostrar próxima ejecución
@@ -143,8 +177,8 @@ class SchedulerService {
                 timeZone: this.timezone,
                 hour12: false 
             });
-            console.log(`🌐 Consultando API BCV a las ${venezuelaTime} (GMT-4)...`);
-            
+            console.log(`🌐 Consultando histórico BCV (día hábil siguiente) a las ${venezuelaTime} (GMT-4)...`);
+
             const result = await BCVService.fetchAndSave();
             if (result) {
                 console.log(`✅ Tasa BCV actualizada: ${result.date} | USD: ${result.usd} | EUR: ${result.eur}`);
@@ -204,6 +238,8 @@ class SchedulerService {
             nextRuns: {
                 bcvUpdate: this.jobs.bcvUpdate?.nextDate()?.toISOString(),
                 bcvCheck: this.jobs.bcvCheck?.nextDate()?.toISOString(),
+                bcvRetryEarly: this.jobs.bcvRetryEarly?.nextDate()?.toISOString(),
+                bcvRetryMorning: this.jobs.bcvRetryMorning?.nextDate()?.toISOString(),
                 closeConsultations: this.jobs.closeConsultations?.nextDate()?.toISOString()
             }
         };

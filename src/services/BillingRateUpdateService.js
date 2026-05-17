@@ -74,8 +74,7 @@ class BillingRateUpdateService {
         console.log('🔄 Iniciando actualización de tasas para recibos pendientes...');
 
         try {
-            // Asegurar que, si la API ya publicó una nueva fecha (p. ej. lunes publicada el viernes en la tarde),
-            // el sistema la tome antes de recalcular VES en fin de semana.
+            // Tasa fiscal vía histórico (día hábil siguiente; viernes → lun/mar/mié si hay feriados).
             await BCVService.updateIfNeeded().catch(() => {});
 
             // Obtener tasa BCV más reciente (preliminares usan siempre la más reciente)

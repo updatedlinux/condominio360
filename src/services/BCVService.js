@@ -1,37 +1,42 @@
 const axios = require('axios');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
+const {
+    getHistoricoFetchTargets,
+    getMinimumRequiredRateDate,
+    toHistoricoPath,
+    normalizeRateDate,
+    isRateDateAdequate,
+    getCaracasParts
+} = require('../utils/bcvFiscalCalendar');
 
 /**
  * Tasas BCV oficiales vía ve.dolarapi.com (sin API key).
- * La variación % se calcula respecto al último registro en BD con fecha anterior a la tasa actual.
+ * La tasa fiscal se obtiene del endpoint histórico para el día hábil bancario siguiente
+ * (no del endpoint /dolares/oficial, que puede ir desfasado).
  */
 const API_USD = 'https://ve.dolarapi.com/v1/dolares/oficial';
 const API_EUR = 'https://ve.dolarapi.com/v1/euros/oficial';
+const API_HIST_USD = 'https://ve.dolarapi.com/v1/historicos/dolares/oficial';
+const API_HIST_EUR = 'https://ve.dolarapi.com/v1/historicos/euros/oficial';
 
 class BCVService {
     constructor() {
-        // Metadatos para observabilidad (no persistentes).
         this._lastApiCheckAtUtc = null;
         this._lastApiOkAtUtc = null;
         this._lastApiError = null;
-        this._lastApiStatus = null; // 'ok' | 'error'
+        this._lastApiStatus = null;
+        this._lastFetchMode = null; // 'historico' | 'oficial' | null
+        this._lastFetchTargets = null;
     }
-    /**
-     * Reservado por compatibilidad; ya no hay caché de clave API.
-     */
+
     invalidateApiKeyCache() {}
 
-    /**
-     * @param {string} isoOrDate - ISO 8601 o similar
-     * @returns {string|null} YYYY-MM-DD
-     */
     _extractEffectiveDateFromDolarApi(isoOrDate) {
         if (!isoOrDate || typeof isoOrDate !== 'string') return null;
         const m = isoOrDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (m) return `${m[1]}-${m[2]}-${m[3]}`;
         const d = new Date(isoOrDate);
         if (!isNaN(d.getTime())) {
-            // Evitar desfases por UTC: tomar la fecha efectiva en America/Caracas.
             const parts = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'America/Caracas',
                 year: 'numeric',
@@ -47,11 +52,6 @@ class BCVService {
         return null;
     }
 
-    /**
-     * @param {number} prev
-     * @param {number} next
-     * @returns {number}
-     */
     _percentChange(prev, next) {
         const p = Number(prev);
         const n = Number(next);
@@ -60,7 +60,105 @@ class BCVService {
     }
 
     /**
-     * Consulta ve.dolarapi.com (USD + EUR) y arma el objeto para guardar.
+     * @param {Object} data
+     * @returns {boolean}
+     */
+    _isHistoricoRateValid(data) {
+        if (!data || typeof data !== 'object') return false;
+        const promedio = parseFloat(data.promedio);
+        return !isNaN(promedio) && promedio > 0;
+    }
+
+    /**
+     * Consulta tasa histórica para una fecha (YYYY-MM-DD).
+     * @param {string} dateYmd
+     * @returns {Promise<{ usd: Object, eur: Object, date: string }|null>}
+     */
+    async fetchHistoricoForDate(dateYmd) {
+        const path = toHistoricoPath(dateYmd);
+        const headers = { Accept: 'application/json', 'User-Agent': 'Condominio360/1.0' };
+
+        try {
+            const [usdRes, eurRes] = await Promise.all([
+                axios.get(`${API_HIST_USD}/${path}`, { timeout: 30000, headers, validateStatus: (s) => s === 200 || s === 404 }),
+                axios.get(`${API_HIST_EUR}/${path}`, { timeout: 30000, headers, validateStatus: (s) => s === 200 || s === 404 })
+            ]);
+
+            if (usdRes.status !== 200 || eurRes.status !== 200) {
+                return null;
+            }
+            if (!this._isHistoricoRateValid(usdRes.data) || !this._isHistoricoRateValid(eurRes.data)) {
+                return null;
+            }
+
+            const date =
+                this._extractEffectiveDateFromDolarApi(usdRes.data.fecha) ||
+                this._extractEffectiveDateFromDolarApi(eurRes.data.fecha) ||
+                dateYmd;
+
+            return {
+                date,
+                usd: usdRes.data,
+                eur: eurRes.data,
+                usdRate: parseFloat(usdRes.data.promedio),
+                eurRate: parseFloat(eurRes.data.promedio)
+            };
+        } catch (error) {
+            if (error.response?.status === 404) return null;
+            throw error;
+        }
+    }
+
+    /**
+     * Busca la tasa fiscal en el API histórico según calendario venezolano.
+     * @param {Date} [referenceDate]
+     * @returns {Promise<Object|null>}
+     */
+    async fetchFiscalFromHistorico(referenceDate = new Date()) {
+        const targets = getHistoricoFetchTargets(referenceDate);
+        this._lastFetchTargets = targets;
+
+        if (targets.length === 0) {
+            console.log('📅 Fin de semana (hora Vzla): no hay publicación BCV; se mantiene la última tasa.');
+            this._lastFetchMode = null;
+            return null;
+        }
+
+        console.log(`🔍 Objetivos histórico BCV: ${targets.join(' → ')}`);
+
+        for (const target of targets) {
+            try {
+                const row = await this.fetchHistoricoForDate(target);
+                if (!row) {
+                    console.log(`   ○ ${target}: sin tasa (feriado o aún no publicada)`);
+                    continue;
+                }
+                console.log(`   ✓ ${row.date}: USD ${row.usdRate} | EUR ${row.eurRate}`);
+
+                const prev = await ExchangeRateModel.getLatestBeforeDate(row.date);
+                const changeUsd = prev ? this._percentChange(prev.usd_rate, row.usdRate) : 0;
+                const changeEur = prev ? this._percentChange(prev.eur_rate, row.eurRate) : 0;
+
+                this._lastFetchMode = 'historico';
+                return {
+                    date: row.date,
+                    usd: row.usdRate,
+                    eur: row.eurRate,
+                    changePercentageUsd: Math.round(changeUsd * 100) / 100,
+                    changePercentageEur: Math.round(changeEur * 100) / 100,
+                    rawData: { usd: row.usd, eur: row.eur, fetchTargets: targets, resolvedTarget: target }
+                };
+            } catch (err) {
+                console.warn(`   ⚠ ${target}: ${err.message}`);
+            }
+        }
+
+        console.warn('⚠️ Ningún objetivo histórico devolvió tasa; se reintentará más tarde.');
+        return null;
+    }
+
+    /**
+     * Fallback: endpoint oficial vigente (puede ir desfasado respecto al día fiscal).
      * @returns {Promise<Object|null>}
      */
     async fetchFromAPI() {
@@ -68,7 +166,7 @@ class BCVService {
             this._lastApiCheckAtUtc = new Date().toISOString();
             this._lastApiStatus = null;
             this._lastApiError = null;
-            console.log('🔄 Consultando API BCV (ve.dolarapi.com)...');
+            console.log('🔄 Consultando API BCV oficial (fallback ve.dolarapi.com)...');
 
             const [usdRes, eurRes] = await Promise.all([
                 axios.get(API_USD, {
@@ -82,130 +180,145 @@ class BCVService {
             ]);
 
             if (usdRes.status !== 200 || !usdRes.data || eurRes.status !== 200 || !eurRes.data) {
-                console.error('❌ Respuesta inválida de la API BCV');
                 this._lastApiStatus = 'error';
                 this._lastApiError = 'Respuesta inválida de la API';
                 return null;
             }
 
-            const u = usdRes.data;
-            const e = eurRes.data;
-
-            const usd = parseFloat(u.promedio);
-            const eur = parseFloat(e.promedio);
-            if (isNaN(usd) || isNaN(eur)) {
-                console.error('❌ Valores de tasa inválidos (promedio)');
-                return null;
-            }
+            const usd = parseFloat(usdRes.data.promedio);
+            const eur = parseFloat(eurRes.data.promedio);
+            if (isNaN(usd) || isNaN(eur)) return null;
 
             const date =
-                this._extractEffectiveDateFromDolarApi(u.fechaActualizacion) ||
-                this._extractEffectiveDateFromDolarApi(e.fechaActualizacion);
-            if (!date) {
-                console.error('❌ La API no devolvió fecha efectiva (fechaActualizacion).');
-                return null;
-            }
+                this._extractEffectiveDateFromDolarApi(usdRes.data.fechaActualizacion) ||
+                this._extractEffectiveDateFromDolarApi(eurRes.data.fechaActualizacion);
+            if (!date) return null;
 
             const prev = await ExchangeRateModel.getLatestBeforeDate(date);
             const changeUsd = prev ? this._percentChange(prev.usd_rate, usd) : 0;
             const changeEur = prev ? this._percentChange(prev.eur_rate, eur) : 0;
 
-            const rateData = {
+            this._lastFetchMode = 'oficial';
+            this._lastApiStatus = 'ok';
+            this._lastApiOkAtUtc = new Date().toISOString();
+
+            return {
                 date,
                 usd,
                 eur,
                 changePercentageUsd: Math.round(changeUsd * 100) / 100,
                 changePercentageEur: Math.round(changeEur * 100) / 100,
-                rawData: { usd: u, eur: e }
+                rawData: { usd: usdRes.data, eur: eurRes.data, fallback: true }
             };
-
-            this._lastApiStatus = 'ok';
-            this._lastApiOkAtUtc = new Date().toISOString();
-            return rateData;
         } catch (error) {
-            console.error('❌ Error al consultar API BCV:', error.message);
+            console.error('❌ Error API BCV oficial:', error.message);
             this._lastApiCheckAtUtc = this._lastApiCheckAtUtc || new Date().toISOString();
             this._lastApiStatus = 'error';
             this._lastApiError = error?.message || 'Error desconocido';
-            if (error.code === 'ECONNABORTED') {
-                console.error('⏰ Timeout al consultar la API BCV');
-            } else if (error.response) {
-                console.error('📡 Error HTTP:', error.response.status, error.response.statusText);
-            }
             return null;
         }
     }
 
     /**
-     * Obtiene y guarda la tasa actual desde la API
+     * Obtiene y persiste la tasa fiscal (histórico primero).
+     * @param {Date} [referenceDate]
      * @returns {Promise<Object|null>}
      */
-    async fetchAndSave() {
-        const rateData = await this.fetchFromAPI();
+    async fetchAndSave(referenceDate = new Date()) {
+        this._lastApiCheckAtUtc = new Date().toISOString();
+
+        let rateData = await this.fetchFiscalFromHistorico(referenceDate);
+
+        if (!rateData) {
+            const parts = getCaracasParts(referenceDate);
+            const targets = getHistoricoFetchTargets(referenceDate);
+            const minRequired = getMinimumRequiredRateDate(referenceDate);
+            const latest = await ExchangeRateModel.getLatest();
+
+            if (targets.length === 0 && latest) {
+                console.log(`✅ Fin de semana: usando última tasa (${normalizeRateDate(latest.rate_date)})`);
+                return {
+                    date: normalizeRateDate(latest.rate_date),
+                    usd: parseFloat(latest.usd_rate),
+                    eur: parseFloat(latest.eur_rate),
+                    changePercentageUsd: latest.change_percentage_usd,
+                    changePercentageEur: latest.change_percentage_eur,
+                    source: 'database_weekend'
+                };
+            }
+
+            if (latest && isRateDateAdequate(latest.rate_date, minRequired)) {
+                console.log(`✅ Ya hay tasa adecuada en BD (${normalizeRateDate(latest.rate_date)} >= ${minRequired})`);
+                return {
+                    date: normalizeRateDate(latest.rate_date),
+                    usd: parseFloat(latest.usd_rate),
+                    eur: parseFloat(latest.eur_rate),
+                    changePercentageUsd: latest.change_percentage_usd,
+                    changePercentageEur: latest.change_percentage_eur,
+                    source: 'database'
+                };
+            }
+
+            console.log('⚠️ Histórico vacío; intentando fallback endpoint oficial...');
+            rateData = await this.fetchFromAPI();
+        } else {
+            this._lastApiStatus = 'ok';
+            this._lastApiOkAtUtc = new Date().toISOString();
+        }
+
         if (!rateData) return null;
 
         const success = await ExchangeRateModel.upsert(rateData);
         if (success) {
-            console.log('✅ Tasa BCV guardada exitosamente:', rateData);
+            console.log(`✅ Tasa BCV guardada (fecha fiscal ${rateData.date}): USD ${rateData.usd}`);
             return rateData;
         }
         console.error('❌ Error al guardar tasa BCV');
         return null;
     }
 
-    /**
-     * @returns {Promise<Object|null>}
-     */
     async getLatestRate() {
-        let rate = await ExchangeRateModel.getLatest();
-        if (rate) {
+        const latest = await ExchangeRateModel.getLatest();
+        if (latest) {
             return {
-                date: rate.rate_date,
-                usd: rate.usd_rate,
-                eur: rate.eur_rate,
-                changePercentageUsd: rate.change_percentage_usd,
-                changePercentageEur: rate.change_percentage_eur,
+                date: normalizeRateDate(latest.rate_date),
+                usd: latest.usd_rate,
+                eur: latest.eur_rate,
+                changePercentageUsd: latest.change_percentage_usd,
+                changePercentageEur: latest.change_percentage_eur,
                 source: 'database'
             };
         }
-        console.log('⚠️ No hay tasas en DB, consultando API...');
+        console.log('⚠️ No hay tasas en DB, consultando API histórica fiscal...');
         return await this.fetchAndSave();
     }
 
-    /**
-     * @param {number} page
-     * @param {number} limit
-     * @returns {Promise<Object>}
-     */
     async getPaginatedRates(page = 1, limit = 4) {
         return await ExchangeRateModel.getPaginated(page, limit);
     }
 
     /**
-     * @returns {Promise<boolean>}
+     * ¿Falta la tasa fiscal requerida para operar hoy?
      */
-    async needsUpdate() {
+    async needsUpdate(referenceDate = new Date()) {
         try {
             this._lastApiCheckAtUtc = new Date().toISOString();
-            this._lastApiStatus = null;
-            this._lastApiError = null;
-            const response = await axios.get(API_USD, {
-                timeout: 10000,
-                headers: { Accept: 'application/json', 'User-Agent': 'Condominio360/1.0' }
-            });
-            if (response.status !== 200 || !response.data) return true;
-            const apiDate = this._extractEffectiveDateFromDolarApi(response.data.fechaActualizacion);
-            if (!apiDate) {
-                console.log('⚠️ API no devolvió fecha efectiva, forzando actualización');
+            const minRequired = getMinimumRequiredRateDate(referenceDate);
+            const latest = await ExchangeRateModel.getLatest();
+
+            if (!latest) {
+                console.log(`📅 Sin tasas en BD; se requiere al menos ${minRequired}`);
                 return true;
             }
-            const exists = await ExchangeRateModel.existsForDate(apiDate);
-            if (exists) {
-                console.log(`✅ Ya existe tasa para la fecha de la API (${apiDate})`);
-            } else {
-                console.log(`📅 API tiene tasa para ${apiDate} (no en DB), se requiere actualización`);
+
+            const stored = normalizeRateDate(latest.rate_date);
+            if (isRateDateAdequate(stored, minRequired)) {
+                console.log(`✅ Tasa en BD (${stored}) cubre el día fiscal requerido (${minRequired})`);
+                return false;
             }
-            return !exists;
+
+            console.log(`📅 Tasa en BD (${stored}) no cubre ${minRequired}; se requiere actualización`);
+            return true;
         } catch (error) {
             console.error('❌ Error al verificar necesidad de actualización:', error.message);
             this._lastApiStatus = 'error';
@@ -219,27 +332,27 @@ class BCVService {
             lastApiCheckAtUtc: this._lastApiCheckAtUtc,
             lastApiOkAtUtc: this._lastApiOkAtUtc,
             lastApiStatus: this._lastApiStatus,
-            lastApiError: this._lastApiError
+            lastApiError: this._lastApiError,
+            lastFetchMode: this._lastFetchMode,
+            lastFetchTargets: this._lastFetchTargets,
+            minimumRequiredDate: getMinimumRequiredRateDate(),
+            historicoTargets: getHistoricoFetchTargets()
         };
     }
 
-    /**
-     * @returns {Promise<Object|null>}
-     */
-    async updateIfNeeded() {
-        const needsUpdate = await this.needsUpdate();
+    async updateIfNeeded(referenceDate = new Date()) {
+        const needsUpdate = await this.needsUpdate(referenceDate);
         if (needsUpdate) {
-            console.log('📅 Nueva tasa disponible en API, actualizando...');
-            const saved = await this.fetchAndSave();
-            if (saved) return saved;
-            // Si la API falla (caída/intermitente), mantener referencia de BD y reintentar en próximos ticks.
+            console.log('📅 Actualizando tasa fiscal BCV (histórico día hábil siguiente)...');
+            const saved = await this.fetchAndSave(referenceDate);
+            if (saved && !saved.source?.startsWith('database')) return saved;
             const latest = await this.getLatestRate();
             console.warn('⚠️ No se pudo actualizar desde API. Se mantiene la tasa en BD si existe.');
             return latest;
         }
         const latest = await this.getLatestRate();
         if (latest) {
-            console.log(`✅ Ya existe tasa para ${latest.date} (USD: ${latest.usd})`);
+            console.log(`✅ Tasa fiscal vigente: ${latest.date} (USD: ${latest.usd})`);
         }
         return latest;
     }

@@ -2800,7 +2800,7 @@ class AdminController {
                     changeUsd: latest.change_percentage_usd != null ? parseFloat(latest.change_percentage_usd) : 0,
                     changeEur: latest.change_percentage_eur != null ? parseFloat(latest.change_percentage_eur) : 0,
                     updatedAt: latest.updated_at,
-                    sourceLabel: 'BCV oficial — ve.dolarapi.com',
+                    sourceLabel: 'BCV oficial — ve.dolarapi.com (histórico día hábil siguiente)',
                     apiMeta: meta
                 }
             });
