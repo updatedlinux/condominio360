@@ -39,6 +39,7 @@
 
     function wire() {
         if (wired) return;
+        if (!document.body) return;
         wired = true;
         portalToBody(IDS.toast);
         portalToBody(IDS.confirm);
@@ -70,12 +71,18 @@
         var el = document.getElementById(IDS.toast);
         var text = document.getElementById(IDS.toastText);
         var glyph = document.getElementById(IDS.toastGlyph);
-        if (!el || !text || !glyph) return;
+        if (!el || !text || !glyph) {
+            if (typeof console !== 'undefined' && console.warn) {
+                console.warn('[page-notifications] Toast no disponible:', message);
+            }
+            return;
+        }
         clearTimeout(pageToastTimer);
         text.textContent = message || '';
         var variantClass =
             variant === 'error' ? 'c360-toast--error' : variant === 'info' ? 'c360-toast--info' : 'c360-toast--success';
-        el.className = 'c360-toast ' + variantClass;
+        el.classList.remove('hidden', 'c360-toast--success', 'c360-toast--error', 'c360-toast--info');
+        el.classList.add('c360-toast', variantClass);
         if (variant === 'error') {
             glyph.textContent = '✕';
             glyph.className = 'text-lg shrink-0 mt-0.5 w-7 text-center font-bold text-red-600';
@@ -86,9 +93,11 @@
             glyph.textContent = '✓';
             glyph.className = 'text-lg shrink-0 mt-0.5 w-7 text-center font-bold text-emerald-600';
         }
-        el.classList.remove('hidden');
+        el.style.display = 'flex';
+        el.setAttribute('aria-hidden', 'false');
         pageToastTimer = setTimeout(function () {
             el.classList.add('hidden');
+            el.style.display = '';
         }, 4800);
     }
 
@@ -195,15 +204,26 @@
         wire();
     }
 
+    function runWhenReady(fn) {
+        function run() {
+            if (!document.body) {
+                requestAnimationFrame(run);
+                return;
+            }
+            fn();
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', run);
+        } else {
+            run();
+        }
+    }
+
     global.showPageToast = showPageToast;
     global.showSnackbar = showPageToast;
     global.openConfirmModal = openConfirmModal;
     global.openPromptModal = openPromptModal;
     global.initPageNotifications = initPageNotifications;
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPageNotifications);
-    } else {
-        initPageNotifications();
-    }
+    runWhenReady(initPageNotifications);
 })(typeof window !== 'undefined' ? window : this);

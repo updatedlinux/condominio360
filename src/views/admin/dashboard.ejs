@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin | Condominio360</title>
     <link href="/css/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/page-notifications.css?v=2">
     <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1850,7 +1851,7 @@
     </div>
 
     <%- include('../partials/page-notifications') %>
-    <script src="/js/page-notifications.js"></script>
+    <script src="/js/page-notifications.js?v=2"></script>
 
     <script>
         // Global State
@@ -4387,7 +4388,14 @@
             window.location.href = `/admin/tenants/${id}`;
         }
 
-        // Notificaciones: showSnackbar / showPageToast (page-notifications.js)
+        function showSnackbar(message, type) {
+            const variant = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            if (typeof window.showPageToast === 'function') {
+                window.showPageToast(message, variant);
+            } else {
+                console.warn('[toast]', message);
+            }
+        }
 
         function escapeHtml(s) {
             if (s == null) return '';
