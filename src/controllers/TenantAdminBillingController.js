@@ -5,6 +5,8 @@ const VendorContractModel = require('../models/VendorContractModel');
 const BillingModel = require('../models/BillingModel');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const EmailService = require('../services/EmailService');
+const ReserveFundModel = require('../models/ReserveFundModel');
+const ReserveFundService = require('../services/ReserveFundService');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -322,6 +324,100 @@ class TenantAdminBillingController {
         }
     }
 
+    // ==================== FONDOS DE RESERVA / AHORRO ====================
+
+    static async listReserveFunds(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const funds = await ReserveFundModel.listByTenant(tenantId);
+            res.json({ success: true, data: funds });
+        } catch (error) {
+            console.error('List reserve funds error:', error);
+            res.status(500).json({ error: 'Error al listar fondos de reserva' });
+        }
+    }
+
+    static async createReserveFund(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const { name, fund_nature, percentage, include_extraordinary, contract_ids, notes } = req.body;
+            if (!name || percentage === undefined) {
+                return res.status(400).json({ error: 'Nombre y porcentaje son requeridos' });
+            }
+            const pct = Number(percentage);
+            if (pct <= 0 || pct > 100) {
+                return res.status(400).json({ error: 'El porcentaje debe estar entre 0 y 100' });
+            }
+            const fund = await ReserveFundModel.create({
+                tenant_id: tenantId,
+                name,
+                fund_nature: fund_nature || 'ORDINARY_RESERVE',
+                percentage: pct,
+                include_extraordinary: !!include_extraordinary,
+                contract_ids: contract_ids || [],
+                notes
+            });
+            res.status(201).json({ success: true, data: fund });
+        } catch (error) {
+            console.error('Create reserve fund error:', error);
+            res.status(500).json({ error: 'Error al crear fondo de reserva' });
+        }
+    }
+
+    static async updateReserveFund(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const { id } = req.params;
+            const body = { ...req.body };
+            if (body.percentage !== undefined) {
+                const pct = Number(body.percentage);
+                if (pct <= 0 || pct > 100) {
+                    return res.status(400).json({ error: 'El porcentaje debe estar entre 0 y 100' });
+                }
+                body.percentage = pct;
+            }
+            const fund = await ReserveFundModel.update(id, tenantId, body);
+            if (!fund) return res.status(404).json({ error: 'Fondo no encontrado' });
+            res.json({ success: true, data: fund });
+        } catch (error) {
+            console.error('Update reserve fund error:', error);
+            res.status(500).json({ error: 'Error al actualizar fondo de reserva' });
+        }
+    }
+
+    static async deleteReserveFund(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            const { id } = req.params;
+            const fund = await ReserveFundModel.deactivate(id, tenantId);
+            if (!fund) return res.status(404).json({ error: 'Fondo no encontrado' });
+            res.json({ success: true, message: 'Fondo desactivado' });
+        } catch (error) {
+            console.error('Delete reserve fund error:', error);
+            res.status(500).json({ error: 'Error al desactivar fondo' });
+        }
+    }
+
+    static async previewReserveFunds(req, res) {
+        try {
+            const tenantId = req.user.tenantId;
+            let items = req.body?.items;
+            if (typeof items === 'string') {
+                try { items = JSON.parse(items); } catch (_) { items = []; }
+            }
+            const latestRate = await ExchangeRateModel.getLatest();
+            const exchangeRate = latestRate ? latestRate.usd_rate : 0;
+            if (!exchangeRate) {
+                return res.status(400).json({ error: 'No hay tasa BCV disponible' });
+            }
+            const previews = await ReserveFundService.previewAll(tenantId, items || [], exchangeRate);
+            res.json({ success: true, data: { previews, exchange_rate: exchangeRate } });
+        } catch (error) {
+            console.error('Preview reserve funds error:', error);
+            res.status(500).json({ error: 'Error al calcular fondos' });
+        }
+    }
+
     // ==================== PRELIMINARES ====================
 
     /**
@@ -519,6 +615,34 @@ class TenantAdminBillingController {
                 invoiceType = 'EXTRAORDINARY';
             }
 
+            const pool = await connectDB();
+
+            let itemsToProcess = [...items];
+            const isOrdinaryPreliminary = invoiceType === 'ORDINARY';
+
+            if (isOrdinaryPreliminary) {
+                const modeRes = await pool.request()
+                    .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                    .query('SELECT billing_mode FROM Tenants WHERE id = @tenant_id');
+                const billingMode = modeRes.recordset[0]?.billing_mode || 'FULL';
+
+                if (billingMode === 'FULL') {
+                    const autoFundIds = new Set();
+                    const fundItems = await ReserveFundService.buildPreliminaryFundItems(
+                        tenantId,
+                        itemsToProcess,
+                        exchangeRate
+                    );
+                    fundItems.forEach((fi) => {
+                        if (fi.reserve_fund_id) autoFundIds.add(String(fi.reserve_fund_id));
+                    });
+                    itemsToProcess = itemsToProcess.filter(
+                        (i) => !(i.item_type === 'FUND' && i.reserve_fund_id && autoFundIds.has(String(i.reserve_fund_id)))
+                    );
+                    itemsToProcess = [...itemsToProcess, ...fundItems];
+                }
+            }
+
             // Crear preliminar
             const preliminary = await BillingModel.createPreliminary({
                 tenant_id: tenantId,
@@ -534,8 +658,8 @@ class TenantAdminBillingController {
             let totalUsd = 0;
             let totalVes = 0;
 
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
+            for (let i = 0; i < itemsToProcess.length; i++) {
+                const item = itemsToProcess[i];
                 let itemUsd;
                 let itemVes;
 
@@ -565,7 +689,8 @@ class TenantAdminBillingController {
                     converted_amount_ves: itemVes,
                     notes: item.notes,
                     attachment_path,
-                    attachment_mime
+                    attachment_mime,
+                    reserve_fund_id: item.reserve_fund_id || null
                 });
 
                 totalUsd += itemUsd;

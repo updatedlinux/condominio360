@@ -320,6 +320,13 @@ router.post('/billing/invoices/:id/reject-payment', TenantAdminBillingController
 router.get('/billing/templates', TenantAdminBillingController.listTemplates);
 router.post('/billing/templates', TenantAdminBillingController.createTemplate);
 
+// Fondos de reserva (solo Modo Completo)
+router.get('/billing/reserve-funds', requireFullBillingMode, TenantAdminBillingController.listReserveFunds);
+router.post('/billing/reserve-funds/preview', requireFullBillingMode, TenantAdminBillingController.previewReserveFunds);
+router.post('/billing/reserve-funds', requireFullBillingMode, TenantAdminBillingController.createReserveFund);
+router.put('/billing/reserve-funds/:id', requireFullBillingMode, TenantAdminBillingController.updateReserveFund);
+router.delete('/billing/reserve-funds/:id', requireFullBillingMode, TenantAdminBillingController.deleteReserveFund);
+
 // Estadísticas
 router.get('/billing/stats', TenantAdminBillingController.getStats);
 

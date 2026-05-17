@@ -49,10 +49,19 @@ class BillingModel {
                 .input('notes', sql.NVarChar, data.notes || null)
                 .input('attachment_path', sql.NVarChar, data.attachment_path || null)
                 .input('attachment_mime', sql.NVarChar, data.attachment_mime || null)
+                .input('reserve_fund_id', sql.UniqueIdentifier, data.reserve_fund_id || null)
                 .query(`
-                    INSERT INTO BillingPreliminaryItems (preliminary_id, item_type, description, vendor_contract_id, base_amount, currency, converted_amount_ves, notes, attachment_path, attachment_mime)
+                    INSERT INTO BillingPreliminaryItems (
+                        preliminary_id, item_type, description, vendor_contract_id,
+                        base_amount, currency, converted_amount_ves, notes,
+                        attachment_path, attachment_mime, reserve_fund_id
+                    )
                     OUTPUT INSERTED.*
-                    VALUES (@preliminary_id, @item_type, @description, @vendor_contract_id, @base_amount, @currency, @converted_amount_ves, @notes, @attachment_path, @attachment_mime)
+                    VALUES (
+                        @preliminary_id, @item_type, @description, @vendor_contract_id,
+                        @base_amount, @currency, @converted_amount_ves, @notes,
+                        @attachment_path, @attachment_mime, @reserve_fund_id
+                    )
                 `);
             return result.recordset[0];
         } catch (error) {
