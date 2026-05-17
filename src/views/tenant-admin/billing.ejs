@@ -887,12 +887,12 @@
     <!-- Toast Container -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
-    <script src="/js/billing-reserve-funds.js"></script>
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         let billingConfig = null;
         let currentTab = 'preliminaries';
-        let preliminaryItems = [];
+        /** var global: usado también por billing-reserve-funds.js */
+        var preliminaryItems = [];
         let currentRate = 0;
         let currentRateDate = null;  // Fecha efectiva de la tasa (según API), no la de extracción
         let pendingMissingAttachmentsCallback = null;
@@ -3232,5 +3232,6 @@
             }
         });
     </script>
+    <script src="/js/billing-reserve-funds.js?v=3"></script>
 </body>
 </html>

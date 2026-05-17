@@ -156,8 +156,9 @@
 
     window.syncReserveFundPreliminaryItems = async function () {
         if (!billingConfig || billingConfig.billing_mode !== 'FULL') return;
-        preliminaryItems = preliminaryItems.filter(i => !i._autoReserveFund);
-        const payload = preliminaryItems.map(i => ({
+        const items = window.preliminaryItems || [];
+        window.preliminaryItems = items.filter(i => !i._autoReserveFund);
+        const payload = window.preliminaryItems.map(i => ({
             item_type: i.type,
             amount: i.amount,
             currency: i.currency,
@@ -170,11 +171,16 @@
                 body: JSON.stringify({ items: payload })
             });
             const json = await res.json();
-            if (!res.ok || !json.success) return;
+            if (!res.ok || !json.success) {
+                showToast(json.error || 'No se pudo calcular el fondo de reserva', 'error');
+                return;
+            }
+            let added = 0;
             (json.data.previews || []).forEach(p => {
                 if (!p.amount_ves || p.amount_ves <= 0) return;
+                added += 1;
                 const baseUsd = Number(p.base_usd || 0);
-                preliminaryItems.push({
+                window.preliminaryItems.push({
                     type: 'FUND',
                     description: `${p.fund.name} (${p.percentage}% sobre $ ${baseUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)`,
                     amount: p.amount_ves,
@@ -183,9 +189,16 @@
                     _autoReserveFund: true
                 });
             });
+            if (added === 0) {
+                const hint = (json.data.previews || []).some(p => (p.fund.contract_ids || []).length > 0)
+                    ? 'Ningún ítem del preliminar coincide con los contratos del fondo. Verifique contratos activos y montos.'
+                    : 'Configure al menos un contrato en el fondo de reserva.';
+                showToast(hint, 'warning');
+            }
             renderPreliminaryItems();
         } catch (e) {
             console.error('syncReserveFundPreliminaryItems', e);
+            showToast('Error al calcular fondos de reserva', 'error');
         }
     };
 
