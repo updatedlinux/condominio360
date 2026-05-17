@@ -198,14 +198,37 @@ function toHistoricoPath(ymd) {
 }
 
 /**
+ * Día civil YYYY-MM-DD de una tasa BCV (columna SQL DATE).
+ * No usar zona horaria local: DATE en SQL = medianoche UTC de ese día.
  * @param {string|Date} rateDate
  * @returns {string}
  */
 function normalizeRateDate(rateDate) {
     if (!rateDate) return '';
-    if (typeof rateDate === 'string') return rateDate.slice(0, 10);
-    if (rateDate instanceof Date) return rateDate.toISOString().slice(0, 10);
-    return String(rateDate).slice(0, 10);
+    if (typeof rateDate === 'string') {
+        const m = rateDate.match(/^(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : '';
+    }
+    if (rateDate instanceof Date && !isNaN(rateDate.getTime())) {
+        const y = rateDate.getUTCFullYear();
+        const mo = String(rateDate.getUTCMonth() + 1).padStart(2, '0');
+        const da = String(rateDate.getUTCDate()).padStart(2, '0');
+        return `${y}-${mo}-${da}`;
+    }
+    const m = String(rateDate).match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '';
+}
+
+/**
+ * Presentación dd/mm/yyyy para UI (fecha efectiva almacenada).
+ * @param {string|Date} rateDate
+ * @returns {string|null}
+ */
+function formatRateDateDisplay(rateDate) {
+    const ymd = normalizeRateDate(rateDate);
+    if (!ymd) return null;
+    const [y, m, d] = ymd.split('-');
+    return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
 }
 
 /**
@@ -234,5 +257,6 @@ module.exports = {
     getMinimumRequiredRateDate,
     toHistoricoPath,
     normalizeRateDate,
+    formatRateDateDisplay,
     isRateDateAdequate
 };

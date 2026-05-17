@@ -2,6 +2,7 @@ const BillingModel = require('../models/BillingModel');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const BillingRateFreezeService = require('../services/BillingRateFreezeService');
 const { itemToVes, allocateVesByWeight } = require('../utils/currencyConversion');
+const { formatRateDateDisplay } = require('../utils/bcvFiscalCalendar');
 const { sql, connectDB } = require('../config/database');
 const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
 
@@ -11,19 +12,9 @@ const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
  */
 class OwnerBillingController {
 
-    /** Formatea fecha efectiva de tasa (evita desfase por timezone) */
+    /** Formatea fecha efectiva de tasa (día civil almacenado, sin desfase por timezone) */
     static _formatRateDate(val) {
-        if (!val) return null;
-        let s;
-        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
-            s = val.split('T')[0].substring(0, 10);
-        } else if (val instanceof Date) {
-            s = val.toISOString().split('T')[0];
-        } else if (val && typeof val === 'object' && val.toISOString) {
-            s = val.toISOString().split('T')[0];
-        } else return null;
-        const [y, m, d] = s.split('-');
-        return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+        return formatRateDateDisplay(val);
     }
 
     /**

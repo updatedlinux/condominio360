@@ -13,10 +13,16 @@ class ExchangeRateModel {
             const pool = await connectDB();
             const result = await pool.request()
                 .query(`
-                    SELECT TOP 1 * FROM ExchangeRates
+                    SELECT TOP 1 *,
+                        CONVERT(varchar(10), rate_date, 23) AS rate_date_ymd
+                    FROM ExchangeRates
                     ORDER BY rate_date DESC
                 `);
-            return result.recordset[0] || null;
+            const row = result.recordset[0];
+            if (row && row.rate_date_ymd) {
+                row.rate_date = row.rate_date_ymd;
+            }
+            return row || null;
         } catch (error) {
             console.error('Error getting latest exchange rate:', error);
             return null;

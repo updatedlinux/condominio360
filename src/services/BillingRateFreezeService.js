@@ -1,4 +1,5 @@
 const ExchangeRateModel = require('../models/ExchangeRateModel');
+const { formatRateDateDisplay, normalizeRateDate } = require('../utils/bcvFiscalCalendar');
 
 const VENEZUELA_TZ = 'America/Caracas';
 const BCV_UPDATE_HOUR = 18;
@@ -24,11 +25,7 @@ class BillingRateFreezeService {
     }
 
     static formatRateDate(d) {
-        if (!d) return null;
-        const s = String(d).split('T')[0];
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-        const [y, m, da] = s.split('-');
-        return `${da}/${m}/${y}`;
+        return formatRateDateDisplay(d);
     }
 
     /**
@@ -122,9 +119,8 @@ class BillingRateFreezeService {
     static async getBcvRateContext() {
         const latest = await ExchangeRateModel.getLatest();
         const rate = latest ? parseFloat(latest.usd_rate) : 0;
-        const rateDateStr = latest?.rate_date
-            ? BillingRateFreezeService.formatRateDate(latest.rate_date)
-            : null;
+        const rateDateYmd = latest?.rate_date ? normalizeRateDate(latest.rate_date) : '';
+        const rateDateStr = rateDateYmd ? formatRateDateDisplay(rateDateYmd) : null;
         const { hour } = BillingRateFreezeService.getVenezuelaDateParts();
         const isAfter6Pm = hour >= BCV_UPDATE_HOUR;
 
@@ -146,7 +142,7 @@ class BillingRateFreezeService {
 
         return {
             rate,
-            rate_date: latest?.rate_date || null,
+            rate_date: rateDateYmd || null,
             rate_date_formatted: rateDateStr,
             is_after_6pm: isAfter6Pm,
             venezuela_hour: hour,

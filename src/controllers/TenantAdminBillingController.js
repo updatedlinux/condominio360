@@ -14,6 +14,7 @@ const {
     sumPreliminaryTotals,
     allocateVesByWeight
 } = require('../utils/currencyConversion');
+const { normalizeRateDate, formatRateDateDisplay } = require('../utils/bcvFiscalCalendar');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -71,7 +72,8 @@ class TenantAdminBillingController {
 
     static _preliminaryExchangeRateDate(latestRate) {
         if (!latestRate?.rate_date) return null;
-        return new Date(latestRate.rate_date).toISOString().split('T')[0];
+        const ymd = normalizeRateDate(latestRate.rate_date);
+        return ymd || null;
     }
 
     static _preliminaryFromInvoiceRow(inv) {
@@ -1977,17 +1979,7 @@ class TenantAdminBillingController {
 
     /** Formatea fecha efectiva de tasa (evita desfase por timezone) */
     static _formatRateDate(val) {
-        if (!val) return null;
-        let s;
-        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
-            s = val.split('T')[0].substring(0, 10);
-        } else if (val instanceof Date) {
-            s = val.toISOString().split('T')[0];
-        } else if (val && typeof val === 'object' && val.toISOString) {
-            s = val.toISOString().split('T')[0];
-        } else return null;
-        const [y, m, d] = s.split('-');
-        return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+        return formatRateDateDisplay(val);
     }
 
     /**
