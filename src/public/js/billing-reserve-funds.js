@@ -160,7 +160,8 @@
         const payload = preliminaryItems.map(i => ({
             item_type: i.type,
             amount: i.amount,
-            currency: i.currency
+            currency: i.currency,
+            vendor_contract_id: i.contract_id || null
         }));
         try {
             const res = await fetch('/api/tenant-admin/billing/reserve-funds/preview', {
@@ -172,9 +173,10 @@
             if (!res.ok || !json.success) return;
             (json.data.previews || []).forEach(p => {
                 if (!p.amount_ves || p.amount_ves <= 0) return;
+                const baseUsd = Number(p.base_usd || 0);
                 preliminaryItems.push({
                     type: 'FUND',
-                    description: `${p.fund.name} (${p.percentage}% — base Bs. ${Number(p.base_ves).toLocaleString('es-VE', { minimumFractionDigits: 2 })})`,
+                    description: `${p.fund.name} (${p.percentage}% sobre $ ${baseUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)`,
                     amount: p.amount_ves,
                     currency: 'VES',
                     reserve_fund_id: p.fund.id,

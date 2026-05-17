@@ -1,5 +1,4 @@
 const ReserveFundModel = require('../models/ReserveFundModel');
-const VendorContractModel = require('../models/VendorContractModel');
 
 const NATURE_LABELS = {
     ORDINARY_RESERVE: 'Fondo de reserva ordinario',
@@ -13,38 +12,55 @@ class ReserveFundService {
         return NATURE_LABELS[code] || code;
     }
 
-    static toVes(amount, currency, exchangeRate) {
+    /** Monto expresado en USD (base única para el % del fondo). */
+    static toUsd(amount, currency, exchangeRate) {
         const n = Number(amount || 0);
-        if (currency === 'USD') return n * Number(exchangeRate || 0);
-        return n;
+        const rate = Number(exchangeRate || 0);
+        if (currency === 'USD') return n;
+        if (rate <= 0) return 0;
+        return n / rate;
+    }
+
+    static itemType(item) {
+        return String(item.item_type || item.type || 'ORDINARY').toUpperCase();
+    }
+
+    static contractId(item) {
+        const id = item.vendor_contract_id || item.contract_id;
+        return id != null ? String(id) : null;
     }
 
     /**
-     * Calcula la base en VES para un fondo según contratos seleccionados y opcionalmente ítems extraordinarios del preliminar.
+     * Base en USD: suma de ítems del preliminar (no de BD), convertidos a USD con la tasa BCV.
+     * - Ordinarios: solo si su contrato está seleccionado en el fondo.
+     * - Extraordinarios: solo si include_extraordinary.
      */
-    static async calculateBaseVes(tenantId, fund, exchangeRate, preliminaryItems = []) {
+    static calculateBaseUsd(fund, exchangeRate, preliminaryItems = []) {
         const contractIds = new Set((fund.contract_ids || []).map(String));
-        let baseVes = 0;
+        let baseUsd = 0;
 
-        if (contractIds.size > 0) {
-            const contracts = await VendorContractModel.getByTenant(tenantId);
-            for (const c of contracts) {
-                if (!contractIds.has(String(c.id))) continue;
-                if (c.status !== 'ACTIVE') continue;
-                baseVes += this.toVes(c.amount, c.currency, exchangeRate);
+        for (const item of preliminaryItems) {
+            const itemType = this.itemType(item);
+            if (itemType === 'FUND' || itemType === 'ADJUSTMENT') continue;
+
+            const amount = item.amount ?? item.base_amount;
+            const currency = item.currency || 'VES';
+
+            if (itemType === 'EXTRAORDINARY') {
+                if (!fund.include_extraordinary) continue;
+                baseUsd += this.toUsd(amount, currency, exchangeRate);
+                continue;
+            }
+
+            if (itemType === 'ORDINARY') {
+                if (contractIds.size === 0) continue;
+                const cid = this.contractId(item);
+                if (!cid || !contractIds.has(cid)) continue;
+                baseUsd += this.toUsd(amount, currency, exchangeRate);
             }
         }
 
-        if (fund.include_extraordinary) {
-            for (const item of preliminaryItems) {
-                if (item.item_type !== 'EXTRAORDINARY' && item.type !== 'EXTRAORDINARY') continue;
-                const amount = item.amount ?? item.base_amount;
-                const currency = item.currency || 'VES';
-                baseVes += this.toVes(amount, currency, exchangeRate);
-            }
-        }
-
-        return Math.round(baseVes * 100) / 100;
+        return Math.round(baseUsd * 100) / 100;
     }
 
     /**
@@ -53,26 +69,28 @@ class ReserveFundService {
     static async buildPreliminaryFundItems(tenantId, preliminaryItems, exchangeRate) {
         const funds = await ReserveFundModel.listByTenant(tenantId, { activeOnly: true });
         const out = [];
+        const rate = Number(exchangeRate || 0);
 
         for (const fund of funds) {
             const pct = Number(fund.percentage || 0);
             if (pct <= 0) continue;
 
-            const baseVes = await this.calculateBaseVes(tenantId, fund, exchangeRate, preliminaryItems);
-            if (baseVes <= 0 && (fund.contract_ids || []).length > 0) continue;
+            const baseUsd = this.calculateBaseUsd(fund, rate, preliminaryItems);
+            if (baseUsd <= 0) continue;
 
-            const amountVes = Math.round(baseVes * (pct / 100) * 100) / 100;
-            if (amountVes <= 0) continue;
+            const fundUsd = Math.round(baseUsd * (pct / 100) * 100) / 100;
+            if (fundUsd <= 0) continue;
 
-            const nature = this.natureLabel(fund.fund_nature);
+            const amountVes = Math.round(fundUsd * rate * 100) / 100;
+
             out.push({
                 item_type: 'FUND',
-                description: `${fund.name} — ${nature} (${pct}% sobre base Bs. ${baseVes.toLocaleString('es-VE', { minimumFractionDigits: 2 })})`,
+                description: `${fund.name} (${pct}% sobre $ ${baseUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)`,
                 amount: amountVes,
                 currency: 'VES',
                 vendor_contract_id: null,
                 reserve_fund_id: fund.id,
-                notes: `Base: Bs. ${baseVes}; ${pct}%`
+                notes: `Base: $ ${baseUsd} USD; ${pct}%`
             });
         }
 
@@ -84,15 +102,19 @@ class ReserveFundService {
      */
     static async previewAll(tenantId, preliminaryItems, exchangeRate) {
         const funds = await ReserveFundModel.listByTenant(tenantId, { activeOnly: true });
+        const rate = Number(exchangeRate || 0);
         const previews = [];
 
         for (const fund of funds) {
-            const baseVes = await this.calculateBaseVes(tenantId, fund, exchangeRate, preliminaryItems);
+            const baseUsd = this.calculateBaseUsd(fund, rate, preliminaryItems);
             const pct = Number(fund.percentage || 0);
+            const fundUsd = Math.round(baseUsd * (pct / 100) * 100) / 100;
             previews.push({
                 fund,
-                base_ves: baseVes,
-                amount_ves: Math.round(baseVes * (pct / 100) * 100) / 100,
+                base_usd: baseUsd,
+                fund_usd: fundUsd,
+                base_ves: Math.round(baseUsd * rate * 100) / 100,
+                amount_ves: Math.round(fundUsd * rate * 100) / 100,
                 percentage: pct
             });
         }
