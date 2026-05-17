@@ -60,7 +60,7 @@ class ConsultationNotificationService {
         });
 
         const targetInfo = consultation.target_building 
-            ? `para el edificio ${consultation.target_building}` 
+            ? `para el edificio/calle ${consultation.target_building}` 
             : 'para todo el conjunto residencial';
 
         const subject = `Nueva Consulta: ${consultation.title}`;

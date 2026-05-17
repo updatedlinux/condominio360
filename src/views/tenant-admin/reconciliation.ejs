@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Conciliación bancaria - Panel de Junta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%);
+            border-right: 3px solid #f97316;
+        }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); }
+        .modal { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .tab-btn { transition: all 0.2s; }
+        .tab-btn.active { color: #f97316; border-color: #f97316; }
+        .badge-conf { background: #DCFCE7; color: #166534; }
+        .badge-sug { background: #FEF3C7; color: #92400E; }
+        .badge-no { background: #FEE2E2; color: #991B1B; }
+        .drop-zone { transition: all 0.2s; border-style: dashed; }
+        .drop-zone.dragging { background: rgba(249,115,22,0.08); border-color: #f97316; }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+<%- include('../partials/page-notifications') %>
+<div class="flex h-screen overflow-hidden">
+    <%- include('partials/sidebar', { activePage: 'reconciliation' }) %>
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <header class="bg-white border-b border-[#E5E5E5] px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-medium text-[#3C4043]">Conciliación bancaria</h1>
+                    <p class="text-sm text-[#5F6368] mt-1">Importa el estado de cuenta de tu banco y concilia automáticamente los pagos reportados por propietarios</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- Bloque: subir extracto -->
+            <section class="bg-white rounded-xl border border-[#E5E5E5] p-6">
+                <h2 class="text-lg font-medium text-[#3C4043] mb-4 flex items-center gap-2">
+                    <span class="material-icons-round text-[#f97316]">cloud_upload</span>
+                    Importar estado de cuenta
+                </h2>
+
+                <div id="no-banks-warning" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-amber-800 text-sm">
+                    No hay bancos habilitados por el SuperAdmin para conciliación. Contacta a Condominio360.
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Banco</label>
+                        <select id="recon-bank-select" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+                            <option value="">Selecciona un banco…</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Cuenta destino (opcional)</label>
+                        <select id="recon-account-select" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+                            <option value="">Sin asociar a cuenta…</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="drop-zone" class="drop-zone border-2 border-[#E5E5E5] rounded-xl p-8 text-center cursor-pointer hover:bg-[#FAFAFA]">
+                    <input type="file" id="recon-file" class="hidden" accept=".pdf,.xlsx,.xls,.csv">
+                    <span class="material-icons-round text-4xl text-[#9AA0A6]">picture_as_pdf</span>
+                    <p class="mt-2 text-sm text-[#5F6368]">Arrastra el PDF del estado de cuenta aquí o <span class="text-[#f97316] font-medium">haz click para seleccionar</span></p>
+                    <p class="text-xs text-[#9AA0A6] mt-1">PDF (máx 20MB)</p>
+                    <p id="selected-file-name" class="mt-3 text-sm text-[#3C4043] font-medium hidden"></p>
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <button id="btn-process" disabled class="px-5 py-2 rounded-lg bg-[#f97316] text-white text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2">
+                        <span class="material-icons-round text-sm">play_arrow</span>
+                        Procesar conciliación
+                    </button>
+                </div>
+            </section>
+
+            <!-- Bloque: cuentas bancarias del tenant -->
+            <section class="bg-white rounded-xl border border-[#E5E5E5] p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-medium text-[#3C4043] flex items-center gap-2">
+                        <span class="material-icons-round text-[#f97316]">account_balance</span>
+                        Cuentas bancarias del condominio
+                    </h2>
+                    <button onclick="openAccountModal()" class="px-4 py-2 rounded-lg border border-[#E5E5E5] text-sm text-[#3C4043] hover:bg-[#FAFAFA] flex items-center gap-2">
+                        <span class="material-icons-round text-sm">add</span>
+                        Agregar cuenta
+                    </button>
+                </div>
+                <div id="accounts-list" class="space-y-2">
+                    <p class="text-sm text-[#5F6368]">Cargando…</p>
+                </div>
+            </section>
+
+            <!-- Bloque: historial de importaciones -->
+            <section class="bg-white rounded-xl border border-[#E5E5E5] p-6">
+                <h2 class="text-lg font-medium text-[#3C4043] mb-4 flex items-center gap-2">
+                    <span class="material-icons-round text-[#f97316]">history</span>
+                    Historial de conciliaciones
+                </h2>
+                <div id="imports-list">
+                    <p class="text-sm text-[#5F6368]">Cargando…</p>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- Modal de resultados de conciliación -->
+<div id="results-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-[#E5E5E5]">
+            <div>
+                <h2 class="text-xl font-semibold text-[#3C4043]">Resultados de conciliación</h2>
+                <p id="results-subtitle" class="text-sm text-[#5F6368] mt-1"></p>
+            </div>
+            <button onclick="closeResultsModal()" class="text-[#5F6368] hover:text-[#3C4043]">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+
+        <div class="px-5 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-[#E5E5E5]">
+            <div class="bg-emerald-50 rounded-lg p-3">
+                <p class="text-xs text-emerald-700">Confirmados</p>
+                <p id="stat-matched" class="text-xl font-bold text-emerald-700">0</p>
+            </div>
+            <div class="bg-amber-50 rounded-lg p-3">
+                <p class="text-xs text-amber-700">Sugerencias</p>
+                <p id="stat-suggested" class="text-xl font-bold text-amber-700">0</p>
+            </div>
+            <div class="bg-rose-50 rounded-lg p-3">
+                <p class="text-xs text-rose-700">Mov. sin match</p>
+                <p id="stat-unmatched-mov" class="text-xl font-bold text-rose-700">0</p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3">
+                <p class="text-xs text-slate-700">Reportes sin match</p>
+                <p id="stat-unmatched-rep" class="text-xl font-bold text-slate-700">0</p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3">
+                <p class="text-xs text-slate-700">Total créditos extracto</p>
+                <p id="stat-total-credits" class="text-xl font-bold text-slate-700">0</p>
+            </div>
+        </div>
+
+        <div class="border-b border-[#E5E5E5] flex gap-2 px-5">
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#5F6368]" data-tab="matched">✅ Confirmados</button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#5F6368]" data-tab="suggested">🟡 Sugerencias</button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#5F6368]" data-tab="unmatched-mov">❌ Mov. sin match</button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-[#5F6368]" data-tab="unmatched-rep">⏳ Reportes pendientes</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5">
+            <div id="tab-matched" class="tab-pane"></div>
+            <div id="tab-suggested" class="tab-pane hidden"></div>
+            <div id="tab-unmatched-mov" class="tab-pane hidden"></div>
+            <div id="tab-unmatched-rep" class="tab-pane hidden"></div>
+        </div>
+
+        <div class="px-5 py-4 border-t border-[#E5E5E5] flex items-center justify-between">
+            <p id="results-warnings" class="text-xs text-amber-700"></p>
+            <div class="flex gap-2">
+                <button onclick="rerunMatching()" class="px-4 py-2 rounded-lg border border-[#E5E5E5] text-sm">Recalcular matches</button>
+                <button onclick="closeResultsModal()" class="px-4 py-2 rounded-lg bg-[#3C4043] text-white text-sm">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de nueva cuenta -->
+<div id="account-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-[#E5E5E5]">
+            <h3 class="text-lg font-semibold">Cuenta bancaria del condominio</h3>
+            <button onclick="closeAccountModal()" class="text-[#5F6368]"><span class="material-icons-round">close</span></button>
+        </div>
+        <div class="p-5 space-y-3">
+            <input type="hidden" id="acc-id">
+            <div>
+                <label class="block text-sm text-[#5F6368] mb-1">Banco</label>
+                <select id="acc-bank" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm"></select>
+            </div>
+            <div>
+                <label class="block text-sm text-[#5F6368] mb-1">Tipo de cuenta</label>
+                <select id="acc-type" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+                    <option value="CORRIENTE">Corriente</option>
+                    <option value="AHORROS">Ahorros</option>
+                    <option value="PAGO_MOVIL">Pago móvil</option>
+                    <option value="FINTECH">Fintech (Ubii, etc.)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-[#5F6368] mb-1">Titular</label>
+                <input id="acc-holder" type="text" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm text-[#5F6368] mb-1">Cédula/RIF titular</label>
+                    <input id="acc-dni" type="text" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-[#5F6368] mb-1">Número de cuenta</label>
+                    <input id="acc-number" type="text" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm text-[#5F6368] mb-1">Teléfono (pago móvil)</label>
+                <input id="acc-phone" type="text" class="w-full border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm">
+            </div>
+            <label class="flex items-center gap-2 text-sm text-[#3C4043]">
+                <input id="acc-default" type="checkbox" class="rounded">
+                Marcar como cuenta predeterminada
+            </label>
+        </div>
+        <div class="p-5 border-t border-[#E5E5E5] flex justify-end gap-2">
+            <button onclick="closeAccountModal()" class="px-4 py-2 rounded-lg border border-[#E5E5E5] text-sm">Cancelar</button>
+            <button onclick="saveAccount()" class="px-4 py-2 rounded-lg bg-[#f97316] text-white text-sm">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/page-notifications.js"></script>
+<script>
+const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+const tenant = JSON.parse(localStorage.getItem('tenant') || '{}');
+const headers = { 'Authorization': `Bearer ${token}` };
+let banks = [];
+let accounts = [];
+let imports = [];
+let currentResult = null;
+let currentImportId = null;
+let selectedFile = null;
+
+function fmtVes(n) {
+    return Number(n || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDate(d) {
+    if (!d) return '—';
+    const s = String(d).split('T')[0];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const [y, m, da] = s.split('-');
+    return `${da}/${m}/${y}`;
+}
+function ownerName(r) {
+    return `${r.owner_first_name || ''} ${r.owner_last_name || ''}`.trim() || '—';
+}
+
+async function loadBanks() {
+    try {
+        const res = await fetch('/api/tenant-admin/reconciliation/banks', { headers });
+        const json = await res.json();
+        banks = json.data || [];
+        const sel = document.getElementById('recon-bank-select');
+        sel.innerHTML = '<option value="">Selecciona un banco…</option>'
+            + banks.map(b => `<option value="${b.id}" data-code="${b.code}">${b.name}</option>`).join('');
+        document.getElementById('no-banks-warning').classList.toggle('hidden', banks.length > 0);
+
+        const accBank = document.getElementById('acc-bank');
+        accBank.innerHTML = banks.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    } catch (e) {
+        showPageToast('Error al cargar bancos', 'error');
+    }
+}
+
+async function loadAccounts() {
+    try {
+        const res = await fetch('/api/tenant-admin/bank-accounts', { headers });
+        const json = await res.json();
+        accounts = json.data || [];
+        const el = document.getElementById('accounts-list');
+        if (accounts.length === 0) {
+            el.innerHTML = '<p class="text-sm text-[#5F6368]">Aún no has registrado cuentas bancarias del condominio.</p>';
+        } else {
+            el.innerHTML = accounts.map(a => `
+                <div class="flex items-center justify-between border border-[#E5E5E5] rounded-lg p-3">
+                    <div>
+                        <p class="text-sm font-medium text-[#3C4043]">
+                            ${a.bank_name}
+                            <span class="text-xs ml-2 px-2 py-0.5 bg-slate-100 rounded">${a.account_type}</span>
+                            ${a.is_default ? '<span class="text-xs ml-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded">Predeterminada</span>' : ''}
+                        </p>
+                        <p class="text-xs text-[#5F6368]">${a.account_holder}${a.account_holder_dni ? ' • ' + a.account_holder_dni : ''} • ${a.account_number || a.mobile_phone || ''}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openAccountModal('${a.id}')" class="text-xs text-[#5F6368] hover:text-[#3C4043]">Editar</button>
+                        <button onclick="deleteAccount('${a.id}')" class="text-xs text-rose-600 hover:underline">Desactivar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const accSel = document.getElementById('recon-account-select');
+        accSel.innerHTML = '<option value="">Sin asociar a cuenta…</option>'
+            + accounts.map(a => `<option value="${a.id}">${a.bank_name} — ${a.account_number || a.mobile_phone || a.account_holder}</option>`).join('');
+    } catch (e) {
+        showPageToast('Error al cargar cuentas', 'error');
+    }
+}
+
+async function loadImports() {
+    try {
+        const res = await fetch('/api/tenant-admin/reconciliation/imports', { headers });
+        const json = await res.json();
+        imports = json.data || [];
+        const el = document.getElementById('imports-list');
+        if (imports.length === 0) {
+            el.innerHTML = '<p class="text-sm text-[#5F6368]">Aún no has procesado ningún estado de cuenta.</p>';
+            return;
+        }
+        el.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-xs text-[#5F6368] border-b border-[#E5E5E5]">
+                        <tr>
+                            <th class="text-left py-2 pr-3">Importado</th>
+                            <th class="text-left py-2 pr-3">Banco</th>
+                            <th class="text-left py-2 pr-3">Archivo</th>
+                            <th class="text-left py-2 pr-3">Período</th>
+                            <th class="text-right py-2 pr-3">Créditos / Débitos</th>
+                            <th class="text-right py-2 pr-3">✅ / 🟡 / ❌</th>
+                            <th class="py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${imports.map(i => `
+                            <tr class="border-b border-[#F5F5F5]">
+                                <td class="py-2 pr-3">${fmtDate(i.imported_at)}</td>
+                                <td class="py-2 pr-3">${i.bank_name}</td>
+                                <td class="py-2 pr-3 text-xs">${i.source_file_name}</td>
+                                <td class="py-2 pr-3">${fmtDate(i.period_from)} → ${fmtDate(i.period_to)}</td>
+                                <td class="py-2 pr-3 text-right">${i.total_credits_count} / ${i.total_debits_count}</td>
+                                <td class="py-2 pr-3 text-right">
+                                    <span class="text-emerald-600">${i.matched_count}</span>
+                                    / <span class="text-amber-600">${i.suggested_count}</span>
+                                    / <span class="text-rose-600">${i.unmatched_count}</span>
+                                </td>
+                                <td class="py-2 text-right">
+                                    <button onclick="openImport('${i.id}')" class="text-xs text-[#f97316] hover:underline">Ver resultados</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (e) {
+        showPageToast('Error al cargar historial', 'error');
+    }
+}
+
+// Drop zone
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('recon-file');
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
+});
+;['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation();
+    dropZone.classList.add('dragging');
+}));
+;['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation();
+    dropZone.classList.remove('dragging');
+}));
+dropZone.addEventListener('drop', e => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleFile(f);
+});
+
+function handleFile(f) {
+    selectedFile = f;
+    document.getElementById('selected-file-name').textContent = `${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
+    document.getElementById('selected-file-name').classList.remove('hidden');
+    document.getElementById('btn-process').disabled = !(selectedFile && document.getElementById('recon-bank-select').value);
+}
+
+document.getElementById('recon-bank-select').addEventListener('change', () => {
+    document.getElementById('btn-process').disabled = !(selectedFile && document.getElementById('recon-bank-select').value);
+});
+
+document.getElementById('btn-process').addEventListener('click', async () => {
+    if (!selectedFile) return;
+    const bankId = document.getElementById('recon-bank-select').value;
+    const accountId = document.getElementById('recon-account-select').value;
+    if (!bankId) return;
+    const btn = document.getElementById('btn-process');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-icons-round text-sm animate-spin">refresh</span> Procesando…';
+    try {
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        fd.append('bank_id', bankId);
+        if (accountId) fd.append('tenant_bank_account_id', accountId);
+        const res = await fetch('/api/tenant-admin/reconciliation/imports', {
+            method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        currentResult = json.data;
+        currentImportId = json.data.importId;
+        renderResults(json.data);
+        document.getElementById('results-modal').classList.remove('hidden');
+        document.getElementById('results-modal').classList.add('flex');
+        await loadImports();
+        showPageToast('Conciliación procesada', 'success');
+    } catch (e) {
+        showPageToast(e.message || 'Error al procesar', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-icons-round text-sm">play_arrow</span> Procesar conciliación';
+    }
+});
+
+async function openImport(importId) {
+    try {
+        const res = await fetch(`/api/tenant-admin/reconciliation/imports/${importId}`, { headers });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        currentResult = json.data;
+        currentImportId = importId;
+        renderResults(json.data);
+        document.getElementById('results-modal').classList.remove('hidden');
+        document.getElementById('results-modal').classList.add('flex');
+    } catch (e) {
+        showPageToast(e.message || 'Error', 'error');
+    }
+}
+
+function renderResults(data) {
+    const t = data.totals || {};
+    document.getElementById('stat-matched').textContent = t.matched || 0;
+    document.getElementById('stat-suggested').textContent = t.suggested || 0;
+    document.getElementById('stat-unmatched-mov').textContent = t.unmatched || 0;
+    document.getElementById('stat-unmatched-rep').textContent = (data.unmatchedReports || []).length;
+    document.getElementById('stat-total-credits').textContent = t.credits || 0;
+
+    let subtitle = '';
+    if (data.bankName || data.import) {
+        const i = data.import || {};
+        subtitle = `${data.bankName || i.bank_name || ''} • ${fmtDate(data.periodFrom || i.period_from)} → ${fmtDate(data.periodTo || i.period_to)}`;
+    }
+    document.getElementById('results-subtitle').textContent = subtitle;
+
+    document.getElementById('results-warnings').textContent =
+        (data.warnings || []).length ? `${(data.warnings).length} advertencia(s) al parsear el extracto` : '';
+
+    document.getElementById('tab-matched').innerHTML = renderMatchedTable(data.matched || []);
+    document.getElementById('tab-suggested').innerHTML = renderSuggestedTable(data.suggested || []);
+    document.getElementById('tab-unmatched-mov').innerHTML = renderUnmatchedMovTable(data.unmatchedMovements || []);
+    document.getElementById('tab-unmatched-rep').innerHTML = renderUnmatchedRepTable(data.unmatchedReports || []);
+    switchResultsTab('matched');
+}
+
+function renderMatchedTable(rows) {
+    if (rows.length === 0) return '<p class="text-sm text-[#5F6368]">Sin matches automáticos confirmados.</p>';
+    return `
+        <table class="w-full text-sm">
+            <thead class="text-xs text-[#5F6368] border-b">
+                <tr>
+                    <th class="text-left py-2 pr-3">Fecha</th>
+                    <th class="text-left py-2 pr-3">Referencia</th>
+                    <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Propietario</th>
+                    <th class="text-left py-2 pr-3">Inmueble</th>
+                    <th class="text-right py-2 pr-3">Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(r => `
+                    <tr class="border-b border-[#F5F5F5]">
+                        <td class="py-2 pr-3">${fmtDate(r.movement_date)}</td>
+                        <td class="py-2 pr-3 font-mono text-xs">${r.reference || '—'}</td>
+                        <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.amount_ves)}</td>
+                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">DNI ${r.owner_dni || '—'}</span></td>
+                        <td class="py-2 pr-3">${r.building_name || ''} ${r.property_name || ''}</td>
+                        <td class="py-2 pr-3 text-right"><span class="badge-conf px-2 py-1 rounded text-xs font-medium">${r.match_score || 100}</span></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderSuggestedTable(rows) {
+    if (rows.length === 0) return '<p class="text-sm text-[#5F6368]">Sin sugerencias.</p>';
+    return `
+        <table class="w-full text-sm">
+            <thead class="text-xs text-[#5F6368] border-b">
+                <tr>
+                    <th class="text-left py-2 pr-3">Fecha</th>
+                    <th class="text-left py-2 pr-3">Ref. extracto</th>
+                    <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Propietario sugerido</th>
+                    <th class="text-left py-2 pr-3">Ref. reporte</th>
+                    <th class="text-right py-2 pr-3">Score</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(r => `
+                    <tr class="border-b border-[#F5F5F5]">
+                        <td class="py-2 pr-3">${fmtDate(r.movement_date)}</td>
+                        <td class="py-2 pr-3 font-mono text-xs">${r.reference || '—'}</td>
+                        <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.amount_ves)}</td>
+                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">${r.property_name || ''}</span></td>
+                        <td class="py-2 pr-3 font-mono text-xs">${r.ref_transferencia || '—'}</td>
+                        <td class="py-2 pr-3 text-right"><span class="badge-sug px-2 py-1 rounded text-xs font-medium">${Math.round(r.match_score)}</span></td>
+                        <td class="py-2 pr-3 text-right whitespace-nowrap">
+                            <button onclick="confirmSuggestion('${r.id}', '${r.payment_report_id}')" class="text-xs text-emerald-700 hover:underline">Confirmar</button>
+                            <button onclick="rejectMatch('${r.id}')" class="text-xs text-rose-600 hover:underline ml-2">Rechazar</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderUnmatchedMovTable(rows) {
+    if (rows.length === 0) return '<p class="text-sm text-[#5F6368]">Todos los créditos del extracto fueron emparejados.</p>';
+    return `
+        <table class="w-full text-sm">
+            <thead class="text-xs text-[#5F6368] border-b">
+                <tr>
+                    <th class="text-left py-2 pr-3">Fecha</th>
+                    <th class="text-left py-2 pr-3">Referencia</th>
+                    <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(r => `
+                    <tr class="border-b border-[#F5F5F5]">
+                        <td class="py-2 pr-3">${fmtDate(r.movement_date)}</td>
+                        <td class="py-2 pr-3 font-mono text-xs">${r.reference || '—'}</td>
+                        <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.amount_ves)}</td>
+                        <td class="py-2 pr-3 text-xs text-[#5F6368]">${(r.description || '').slice(0, 80)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderUnmatchedRepTable(rows) {
+    if (rows.length === 0) return '<p class="text-sm text-[#5F6368]">No hay reportes de pago pendientes sin conciliar.</p>';
+    return `
+        <table class="w-full text-sm">
+            <thead class="text-xs text-[#5F6368] border-b">
+                <tr>
+                    <th class="text-left py-2 pr-3">Fecha</th>
+                    <th class="text-left py-2 pr-3">Ref.</th>
+                    <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Propietario</th>
+                    <th class="text-left py-2 pr-3">Inmueble</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(r => `
+                    <tr class="border-b border-[#F5F5F5]">
+                        <td class="py-2 pr-3">${r.fecha_transferencia || '—'}</td>
+                        <td class="py-2 pr-3 font-mono text-xs">${r.ref_transferencia || '—'}</td>
+                        <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.monto_abonado_ves)}</td>
+                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">DNI ${r.owner_dni || '—'}</span></td>
+                        <td class="py-2 pr-3">${r.building_name || ''} ${r.property_name || ''}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchResultsTab(b.dataset.tab)));
+function switchResultsTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === name);
+        b.classList.toggle('border-transparent', b.dataset.tab !== name);
+        b.classList.toggle('text-[#5F6368]', b.dataset.tab !== name);
+    });
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+    const target = document.getElementById('tab-' + name);
+    if (target) target.classList.remove('hidden');
+}
+
+function closeResultsModal() {
+    document.getElementById('results-modal').classList.add('hidden');
+    document.getElementById('results-modal').classList.remove('flex');
+}
+
+async function rerunMatching() {
+    if (!currentImportId) return;
+    try {
+        const res = await fetch(`/api/tenant-admin/reconciliation/imports/${currentImportId}/rerun`, {
+            method: 'POST', headers
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        currentResult = json.data;
+        renderResults(json.data);
+        await loadImports();
+        showPageToast('Matches recalculados', 'success');
+    } catch (e) {
+        showPageToast(e.message || 'Error', 'error');
+    }
+}
+
+async function confirmSuggestion(movementId, paymentReportId) {
+    const ok = await openConfirmModal({
+        title: 'Confirmar match',
+        message: 'Se vinculará el movimiento al reporte y se marcará el recibo como PAGADO. ¿Continuar?',
+        confirmLabel: 'Confirmar'
+    });
+    if (!ok) return;
+    try {
+        const res = await fetch(`/api/tenant-admin/reconciliation/movements/${movementId}/confirm`, {
+            method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_report_id: paymentReportId })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        await rerunMatching();
+        showPageToast('Match confirmado', 'success');
+    } catch (e) {
+        showPageToast(e.message || 'Error', 'error');
+    }
+}
+
+async function rejectMatch(movementId) {
+    try {
+        const res = await fetch(`/api/tenant-admin/reconciliation/movements/${movementId}/reject`, {
+            method: 'POST', headers
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        await rerunMatching();
+        showPageToast('Match rechazado', 'success');
+    } catch (e) {
+        showPageToast(e.message || 'Error', 'error');
+    }
+}
+
+// Cuentas bancarias modal
+function openAccountModal(id) {
+    document.getElementById('acc-id').value = id || '';
+    if (id) {
+        const a = accounts.find(x => x.id === id);
+        if (a) {
+            document.getElementById('acc-bank').value = a.bank_id;
+            document.getElementById('acc-type').value = a.account_type;
+            document.getElementById('acc-holder').value = a.account_holder || '';
+            document.getElementById('acc-dni').value = a.account_holder_dni || '';
+            document.getElementById('acc-number').value = a.account_number || '';
+            document.getElementById('acc-phone').value = a.mobile_phone || '';
+            document.getElementById('acc-default').checked = !!a.is_default;
+        }
+    } else {
+        ['acc-holder', 'acc-dni', 'acc-number', 'acc-phone'].forEach(k => document.getElementById(k).value = '');
+        document.getElementById('acc-default').checked = false;
+    }
+    document.getElementById('account-modal').classList.remove('hidden');
+    document.getElementById('account-modal').classList.add('flex');
+}
+function closeAccountModal() {
+    document.getElementById('account-modal').classList.add('hidden');
+    document.getElementById('account-modal').classList.remove('flex');
+}
+async function saveAccount() {
+    const id = document.getElementById('acc-id').value;
+    const body = {
+        bank_id: document.getElementById('acc-bank').value,
+        account_type: document.getElementById('acc-type').value,
+        account_holder: document.getElementById('acc-holder').value,
+        account_holder_dni: document.getElementById('acc-dni').value,
+        account_number: document.getElementById('acc-number').value,
+        mobile_phone: document.getElementById('acc-phone').value,
+        is_default: document.getElementById('acc-default').checked
+    };
+    if (!body.bank_id || !body.account_holder) {
+        showPageToast('Banco y titular son obligatorios', 'error');
+        return;
+    }
+    try {
+        const url = id ? `/api/tenant-admin/bank-accounts/${id}` : '/api/tenant-admin/bank-accounts';
+        const res = await fetch(url, {
+            method: id ? 'PUT' : 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        closeAccountModal();
+        await loadAccounts();
+        showPageToast(id ? 'Cuenta actualizada' : 'Cuenta creada', 'success');
+    } catch (e) {
+        showPageToast(e.message || 'Error', 'error');
+    }
+}
+async function deleteAccount(id) {
+    const ok = await openConfirmModal({
+        title: 'Desactivar cuenta',
+        message: '¿Estás seguro de desactivar esta cuenta? No se podrá usar en futuras conciliaciones.',
+        confirmLabel: 'Desactivar'
+    });
+    if (!ok) return;
+    try {
+        const res = await fetch(`/api/tenant-admin/bank-accounts/${id}`, { method: 'DELETE', headers });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Error');
+        await loadAccounts();
+        showPageToast('Cuenta desactivada', 'success');
+    } catch (e) {
+        showPageToast(e.message || 'Error', 'error');
+    }
+}
+
+(async () => {
+    await loadBanks();
+    await loadAccounts();
+    await loadImports();
+})();
+</script>
+</body>
+</html>

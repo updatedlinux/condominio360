@@ -5,6 +5,8 @@
  * - CSV de Propietarios: dni, first_name, last_name, email, phone, unit_name, percentage_ownership, is_primary
  */
 
+const { normalizePropertyType, normalizePropertyTypeOrDefault, getAcceptedTypesHint } = require('./propertyType');
+
 class CSVParser {
     /**
      * Parse CSV string to array of objects
@@ -101,7 +103,6 @@ class CSVParser {
         const errors = [];
 
         const requiredFields = ['name', 'type'];
-        const validTypes = ['Apartment', 'House', 'Store', 'Lot', 'Office', 'Parking', 'Storage'];
 
         records.forEach((record, index) => {
             const lineNum = index + 2; // +2 because of header and 0-indexing
@@ -114,9 +115,9 @@ class CSVParser {
                 }
             }
 
-            // Validate type
-            if (record.type && !validTypes.includes(record.type)) {
-                recordErrors.push(`Tipo '${record.type}' no válido. Usar: ${validTypes.join(', ')}`);
+            const normalizedType = record.type ? normalizePropertyType(record.type) : null;
+            if (record.type && !normalizedType) {
+                recordErrors.push(`Tipo '${record.type}' no válido. ${getAcceptedTypesHint()}`);
             }
 
             // Parse numeric fields
@@ -136,7 +137,7 @@ class CSVParser {
             } else {
                 valid.push({
                     name: record.name.trim(),
-                    type: record.type.trim(),
+                    type: normalizedType || normalizePropertyTypeOrDefault(record.type),
                     building: record.building?.trim() || null,
                     floor: record.floor?.trim() || null,
                     area_sqm: area_sqm,
@@ -258,7 +259,7 @@ class CSVParser {
             if (!units.has(unitName)) {
                 units.set(unitName, {
                     name: unitName,
-                    type: record.unit_type?.trim() || 'Apartment',
+                    type: normalizePropertyTypeOrDefault(record.unit_type),
                     building: record.building?.trim() || null,
                     floor: record.floor?.trim() || null,
                     area_sqm: record.area_sqm ? parseFloat(record.area_sqm) : null,

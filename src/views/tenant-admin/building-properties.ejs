@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
-    <title>Inmuebles del Edificio - <%= tenant?.name || 'Condominio' %></title>
+    <title>Inmuebles del Edificio/Calle - <%= tenant?.name || 'Condominio' %></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -27,7 +27,7 @@
             <header class="bg-white shadow-sm sticky top-0 z-40">
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div>
-                        <h1 class="text-2xl font-medium text-[#3C4043]">Inmuebles del Edificio</h1>
+                        <h1 class="text-2xl font-medium text-[#3C4043]">Inmuebles del Edificio/Calle</h1>
                         <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
                     </div>
                 </div>
@@ -74,7 +74,7 @@
                         <span class="material-icons-round text-4xl text-[#9AA0A6]">home</span>
                     </div>
                     <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay inmuebles</h3>
-                    <p class="text-[#5F6368]">Este edificio no tiene inmuebles registrados</p>
+                    <p class="text-[#5F6368]">Este edificio/calle no tiene inmuebles registrados</p>
                 </div>
             </main>
             <%- include('../partials/panels-footer') %>
@@ -106,7 +106,7 @@
                     );
                     
                     if (building) {
-                        const name = building.name || building.NAME || building.Name || 'Edificio';
+                        const name = building.name || building.NAME || building.Name || 'Edificio/Calle';
                         const code = building.code || building.CODE || building.Code;
                         const floors = building.floors || building.FLOORS || building.Floors;
                         

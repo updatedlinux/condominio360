@@ -102,8 +102,8 @@
                                 <!-- Recibo por Edificio (solo multiedificio) -->
                                 <button id="btn-extraordinary" onclick="createExtraordinaryInvoice()" class="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-1 text-sm hidden">
                                     <span class="material-icons-round text-sm">apartment</span>
-                                    <span class="hidden sm:inline">Por Edificio</span>
-                                    <span class="sm:hidden">Edificio</span>
+                                    <span class="hidden sm:inline">Por Edificio/Calle</span>
+                                    <span class="sm:hidden">Edif./Calle</span>
                                 </button>
                                 <!-- Recibo por Inmueble (siempre visible) -->
                                 <button onclick="openPropertyInvoiceModal()" class="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1 text-sm">
@@ -377,18 +377,18 @@
     <div id="extraordinary-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center">
         <div class="bg-white rounded-xl w-full max-w-4xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-[#3C4043]">Recibo Extraordinario por Edificio</h3>
+                <h3 class="text-lg font-medium text-[#3C4043]">Recibo Extraordinario por Edificio/Calle</h3>
                 <button onclick="closeModal('extraordinary-modal')" class="text-[#5F6368] hover:text-[#3C4043]">
                     <span class="material-icons-round">close</span>
                 </button>
             </div>
             <form id="extraordinary-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Edificio *</label>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-1">Edificio/Calle *</label>
                     <select id="extra-building" required class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg">
-                        <option value="">Seleccionar edificio...</option>
+                        <option value="">Seleccionar edificio/calle...</option>
                     </select>
-                    <p class="text-xs text-[#9AA0A6] mt-1">Los items de este recibo solo aplicarán a los inmuebles de este edificio</p>
+                    <p class="text-xs text-[#9AA0A6] mt-1">Los items de este recibo solo aplicarán a los inmuebles de este edificio/calle</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -462,7 +462,7 @@
                 <div>
                     <label class="block text-sm font-medium text-[#5F6368] mb-1">Buscar Inmueble *</label>
                     <div class="relative">
-                        <input type="text" id="prop-search" placeholder="Escriba nombre, número o edificio del inmueble..." 
+                        <input type="text" id="prop-search" placeholder="Escriba nombre, número o edificio/calle del inmueble..." 
                             class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg pr-10"
                             autocomplete="off">
                         <span class="material-icons-round absolute right-3 top-2.5 text-[#9AA0A6]">search</span>
@@ -1132,7 +1132,7 @@
                 case 'EXTRAORDINARY_PROPERTY':
                     return { text: 'Por Inmueble', class: 'bg-purple-100 text-purple-800 border-purple-200', icon: 'home' };
                 case 'EXTRAORDINARY_BUILDING':
-                    return { text: 'Por Edificio', class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'apartment' };
+                    return { text: 'Por Edificio/Calle', class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'apartment' };
                 case 'EXTRAORDINARY':
                     return { text: 'Extraordinario', class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'star' };
                 default:
@@ -2507,7 +2507,7 @@
             
             // Llenar select de edificios
             const select = document.getElementById('extra-building');
-            select.innerHTML = '<option value="">Seleccionar edificio...</option>';
+            select.innerHTML = '<option value="">Seleccionar edificio/calle...</option>';
             
             if (window.tenantBuildings) {
                 window.tenantBuildings.forEach(b => {
@@ -2633,7 +2633,7 @@
             const year = parseInt(document.getElementById('extra-year').value);
             
             if (!building) {
-                showToast('Debe seleccionar un edificio', 'error');
+                showToast('Debe seleccionar un edificio/calle', 'error');
                 return;
             }
             
@@ -2677,7 +2677,7 @@
                         attachments: extraordinaryItems.map(i => i._attachmentFile || null)
                     });
                     if (result.success) {
-                        showToast('Recibo extraordinario creado. Generando recibos para el edificio...');
+                        showToast('Recibo extraordinario creado. Generando recibos para el edificio/calle...');
                         closeModal('extraordinary-modal');
                         await generateInvoicesForBuilding(result.data.id, building);
                         loadPreliminaries();
@@ -2710,7 +2710,7 @@
                 
                 const data = await res.json();
                 if (data.success) {
-                    showToast(`${data.data.invoices_count} recibos generados para el edificio`);
+                    showToast(`${data.data.invoices_count} recibos generados para el edificio/calle`);
                     loadPreliminaries();
                     loadStats();
                 } else {
@@ -2791,7 +2791,7 @@
         function renderPropertySearchResults(properties) {
             const container = document.getElementById('prop-search-results');
             container.innerHTML = properties.map(p => {
-                const buildingName = p.building_name || p.building || 'Sin edificio';
+                const buildingName = p.building_name || p.building || 'Sin edificio/calle';
                 return `
                 <div class="p-3 hover:bg-[#FAFAFA] cursor-pointer border-b border-[#E5E5E5] last:border-0" 
                     onclick="selectProperty('${p.id}', '${p.name}', '${buildingName}')">

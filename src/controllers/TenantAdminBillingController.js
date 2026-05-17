@@ -668,7 +668,7 @@ class TenantAdminBillingController {
             console.log(`[Billing] Inmuebles encontrados: ${properties.length}`);
             
             if (properties.length === 0) {
-                return res.status(400).json({ error: buildingName ? `No hay inmuebles en el edificio ${buildingName}` : 'No hay inmuebles para generar recibos' });
+                return res.status(400).json({ error: buildingName ? `No hay inmuebles en el edificio/calle ${buildingName}` : 'No hay inmuebles para generar recibos' });
             }
 
             // Calcular proporciones
@@ -1178,7 +1178,7 @@ class TenantAdminBillingController {
                 { header: 'Nº Recibo', key: 'num', width: 16 },
                 { header: 'Preliminar', key: 'prelim', width: 28 },
                 { header: 'Inmueble', key: 'prop', width: 22 },
-                { header: 'Edificio', key: 'edif', width: 18 },
+                { header: 'Edificio/Calle', key: 'edif', width: 18 },
                 { header: 'Propietario', key: 'owner', width: 26 },
                 { header: 'Email', key: 'email', width: 28 },
                 { header: 'Estado', key: 'estado', width: 12 },
@@ -1604,7 +1604,7 @@ class TenantAdminBillingController {
             const sheetInmuebles = workbook.addWorksheet('Inmuebles y cobro', { properties: { tabColor: { argb: 'FF6366F1' } } });
             sheetInmuebles.columns = [
                 { header: 'Inmueble', key: 'inmueble', width: 20 },
-                { header: 'Edificio', key: 'edificio', width: 16 },
+                { header: 'Edificio/Calle', key: 'edificio', width: 16 },
                 { header: 'Piso', key: 'piso', width: 8 },
                 { header: 'Área m²', key: 'area', width: 10 },
                 { header: 'Alícuota', key: 'alicuota', width: 10 },
@@ -1653,7 +1653,7 @@ class TenantAdminBillingController {
             sheetRecibos.columns = [
                 { header: 'Nº Recibo', key: 'recibo', width: 14 },
                 { header: 'Inmueble', key: 'inmueble', width: 18 },
-                { header: 'Edificio', key: 'edificio', width: 15 },
+                { header: 'Edificio/Calle', key: 'edificio', width: 15 },
                 { header: 'Propietario', key: 'propietario', width: 25 },
                 { header: 'Alicuota', key: 'alicuota', width: 12 },
                 { header: 'Monto USD', key: 'usd', width: 14 },

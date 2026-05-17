@@ -150,4 +150,12 @@ router.get('/balance-financiero', (req, res) => {
     });
 });
 
+router.get('/reconciliation', (req, res) => {
+    res.render('tenant-admin/reconciliation', {
+        title: 'Conciliación bancaria',
+        layout: false,
+        tenant: req.tenant || { name: 'Condominio' }
+    });
+});
+
 module.exports = router;

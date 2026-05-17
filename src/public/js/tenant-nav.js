@@ -23,7 +23,7 @@
         { path: '/tenant-admin/communiques', icon: 'mail', label: 'Comunicados', id: 'communiques' },
         { path: '/tenant-admin/common-areas', icon: 'sports_tennis', label: 'Áreas Comunes', id: 'common-areas' },
         { divider: true, label: 'Gestión de Unidades' },
-        { path: '/tenant-admin/buildings', icon: 'apartment', label: 'Edificios', id: 'buildings' },
+        { path: '/tenant-admin/buildings', icon: 'apartment', label: 'Edificios/Calles', id: 'buildings' },
         { path: '/tenant-admin/properties', icon: 'home_work', label: 'Inmuebles', id: 'properties' },
         { path: '/tenant-admin/owners', icon: 'people', label: 'Propietarios', id: 'owners' },
     ];

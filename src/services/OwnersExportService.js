@@ -52,7 +52,7 @@ class OwnersExportService {
             { header: 'Última actualización', key: 'ultima_actualizacion', width: 20 },
             { header: '# actualizaciones', key: 'num_actualizaciones', width: 16 },
             { header: 'Inmueble', key: 'inmueble', width: 22 },
-            { header: 'Edificio', key: 'edificio', width: 18 },
+            { header: 'Edificio/Calle', key: 'edificio', width: 18 },
             { header: 'Principal', key: 'is_primary_owner', width: 10 },
             { header: '% participación', key: 'porcentaje_participacion', width: 14 },
             { header: 'ID propietario', key: 'user_id', width: 38 },

@@ -288,9 +288,9 @@
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Tipo de Conjunto</p>
-                                    <p class="font-semibold text-slate-900 mt-0.5"><%= tenant.building_type === 'MULTIPLE' ? 'Múltiples Edificios' : 'Edificio Único' %></p>
+                                    <p class="font-semibold text-slate-900 mt-0.5"><%= tenant.building_type === 'MULTIPLE' ? 'Múltiples Edificios/Calles' : 'Edificio/Calle único' %></p>
                                     <span class="inline-block mt-2 px-2.5 py-1 rounded-lg text-xs font-semibold <%= tenant.building_type === 'MULTIPLE' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700' %>">
-                                        <%= tenant.building_type === 'MULTIPLE' ? 'MULTI-EDIFICIO' : 'MONO-EDIFICIO' %>
+                                        <%= tenant.building_type === 'MULTIPLE' ? 'MULTI-EDIFICIO/CALLE' : 'MONO-EDIFICIO/CALLE' %>
                                     </span>
                                 </div>
                             </div>
@@ -319,7 +319,7 @@
                         <div class="flex-1 flex items-center justify-center pt-6 mt-6 border-t border-slate-100">
                             <button onclick="manageBuildings()" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">
                                 <span class="material-symbols-rounded text-lg">apartment</span>
-                                Gestionar Edificios
+                                Gestionar Edificios/Calles
                             </button>
                         </div>
                     </div>
@@ -385,8 +385,8 @@
                     <div class="md-card p-6 border border-slate-100 shadow-sm overflow-hidden">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                             <div>
-                                <h2 class="text-lg font-bold text-slate-900">Edificios</h2>
-                                <p class="text-sm text-slate-500 mt-0.5">Configuración del tipo de conjunto y edificios</p>
+                                <h2 class="text-lg font-bold text-slate-900">Edificios/Calles</h2>
+                                <p class="text-sm text-slate-500 mt-0.5">Configuración del tipo de conjunto y edificios ó calles</p>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="changeBuildingType()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 font-semibold hover:bg-orange-100 transition text-sm">
@@ -395,7 +395,7 @@
                                 </button>
                                 <button onclick="addBuilding()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/25 text-sm">
                                     <span class="material-symbols-rounded text-lg">add</span>
-                                    Agregar Edificio
+                                    Agregar Edificio/Calle
                                 </button>
                             </div>
                         </div>
@@ -404,13 +404,13 @@
                         <div class="rounded-xl p-4 mb-5 <%= tenant.building_type === 'MULTIPLE' ? 'bg-orange-50 border border-orange-100' : 'bg-emerald-50 border border-emerald-100' %>">
                             <div class="flex flex-wrap items-center gap-3">
                                 <span class="px-3 py-1.5 rounded-lg text-sm font-bold <%= tenant.building_type === 'MULTIPLE' ? 'bg-orange-500 text-white' : 'bg-emerald-500 text-white' %>" id="current-building-type">
-                                    <%= tenant.building_type === 'MULTIPLE' ? 'MULTI-EDIFICIO' : 'MONO-EDIFICIO' %>
+                                    <%= tenant.building_type === 'MULTIPLE' ? 'MULTI-EDIFICIO/CALLE' : 'MONO-EDIFICIO/CALLE' %>
                                 </span>
                                 <p class="text-sm text-slate-600">
                                     <% if (tenant.building_type === 'MULTIPLE') { %>
-                                        Los inmuebles deben estar asociados a un edificio específico.
+                                        Los inmuebles deben estar asociados a un edificio ó calle específico.
                                     <% } else { %>
-                                        Todos los inmuebles pertenecen al edificio principal.
+                                        Todos los inmuebles pertenecen al edificio/calle principal.
                                     <% } %>
                                 </p>
                             </div>
@@ -420,7 +420,7 @@
                         <div class="rounded-xl border border-slate-200 overflow-hidden">
                             <button type="button" id="buildings-toggle" onclick="toggleBuildingsList()" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition text-left">
                                 <span class="font-semibold text-slate-700">
-                                    <span id="buildings-summary">Listado de edificios</span>
+                                    <span id="buildings-summary">Listado de edificios/calles</span>
                                     <span id="buildings-count" class="ml-2 text-slate-500 font-normal">(cargando...)</span>
                                 </span>
                                 <span id="buildings-chevron" class="material-symbols-rounded text-slate-500 transition-transform">expand_more</span>
@@ -439,7 +439,7 @@
                                     <tbody id="buildings-table-body" class="divide-y divide-slate-100">
                                         <tr>
                                             <td colspan="5" class="py-12 text-center text-slate-400">
-                                                Cargando edificios...
+                                                Cargando edificios/calles...
                                             </td>
                                         </tr>
                                     </tbody>
@@ -574,7 +574,7 @@
     <div id="buildings-modal" class="modal-overlay">
         <div class="modal-content p-6" style="max-width: 700px;">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold">Gestionar Edificios</h2>
+                <h2 class="text-xl font-bold">Gestionar Edificios/Calles</h2>
                 <button onclick="closeModal('buildings-modal')" class="p-2 hover:bg-gray-100 rounded-full">
                     <span class="material-symbols-rounded">close</span>
                 </button>
@@ -594,7 +594,7 @@
     <div id="building-form-modal" class="modal-overlay">
         <div class="modal-content p-6">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold" id="building-form-title">Agregar Edificio</h2>
+                <h2 class="text-xl font-bold" id="building-form-title">Agregar Edificio/Calle</h2>
                 <button onclick="closeModal('building-form-modal')" class="p-2 hover:bg-gray-100 rounded-full">
                     <span class="material-symbols-rounded">close</span>
                 </button>
@@ -602,10 +602,10 @@
             <form id="building-form" class="space-y-4">
                 <input type="hidden" id="building-id">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Edificio *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Edificio/Calle *</label>
                     <input type="text" id="building-name" required
                         class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        placeholder="Ej: Torre A, Edificio Principal">
+                        placeholder="Ej: Torre A, Calle 1, Edificio Principal">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Código (opcional)</label>
@@ -631,7 +631,7 @@
                         Cancelar
                     </button>
                     <button type="submit" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
-                        Guardar Edificio
+                        Guardar Edificio/Calle
                     </button>
                 </div>
             </form>
@@ -653,8 +653,8 @@
                     <div class="flex items-start gap-3">
                         <span class="material-symbols-rounded text-3xl text-gray-400 building-type-icon" id="icon-SINGLE">radio_button_unchecked</span>
                         <div>
-                            <p class="font-medium text-gray-900">Edificio Único</p>
-                            <p class="text-sm text-gray-500">Todos los inmuebles pertenecen a un solo edificio. Ideal para condominios pequeños o casas en fila.</p>
+                            <p class="font-medium text-gray-900">Edificio/Calle único</p>
+                            <p class="text-sm text-gray-500">Todos los inmuebles pertenecen a un solo edificio ó calle. Ideal para condominios pequeños o casas en fila.</p>
                         </div>
                     </div>
                 </div>
@@ -663,8 +663,8 @@
                     <div class="flex items-start gap-3">
                         <span class="material-symbols-rounded text-3xl text-gray-400 building-type-icon" id="icon-MULTIPLE">radio_button_unchecked</span>
                         <div>
-                            <p class="font-medium text-gray-900">Múltiples Edificios</p>
-                            <p class="text-sm text-gray-500">Los inmuebles están distribuidos en varios edificios o torres. Cada inmueble debe estar asociado a un edificio.</p>
+                            <p class="font-medium text-gray-900">Múltiples Edificios/Calles</p>
+                            <p class="text-sm text-gray-500">Los inmuebles están distribuidos en varios edificios, calles o torres. Cada inmueble debe estar asociado a un edificio ó calle.</p>
                         </div>
                     </div>
                 </div>
@@ -673,7 +673,7 @@
                 <div class="flex items-start gap-2">
                     <span class="material-symbols-rounded text-amber-600">warning</span>
                     <p class="text-sm text-amber-800">
-                        <strong>Atención:</strong> Cambiar el tipo de conjunto puede afectar la organización de los inmuebles existentes. Asegúrese de que todos los inmuebles tengan asignado un edificio correcto.
+                        <strong>Atención:</strong> Cambiar el tipo de conjunto puede afectar la organización de los inmuebles existentes. Asegúrese de que todos los inmuebles tengan asignado un edificio/calle correcto.
                     </p>
                 </div>
             </div>
@@ -952,7 +952,7 @@
             const countEl = document.getElementById('buildings-count');
             if (!countEl) return;
             const n = buildings.length;
-            countEl.textContent = n === 0 ? '(ninguno)' : `(${n} edificio${n !== 1 ? 's' : ''})`;
+            countEl.textContent = n === 0 ? '(ninguno)' : `(${n} edificio/calle${n !== 1 ? 's' : ''})`;
         }
 
         function toggleBuildingsList() {
@@ -970,8 +970,8 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="5" class="py-8 text-center text-slate-400">
-                            No hay edificios registrados
-                            ${currentBuildingType === 'MULTIPLE' ? '<br><button onclick="addBuilding()" class="text-orange-600 font-semibold hover:underline mt-2">Agregar el primer edificio</button>' : ''}
+                            No hay edificios/calles registrados
+                            ${currentBuildingType === 'MULTIPLE' ? '<br><button onclick="addBuilding()" class="text-orange-600 font-semibold hover:underline mt-2">Agregar el primer edificio/calle</button>' : ''}
                         </td>
                     </tr>
                 `;
@@ -1015,7 +1015,7 @@
                 container.innerHTML = `
                     <div class="text-center py-8 text-gray-400">
                         <span class="material-symbols-rounded text-4xl mb-2">apartment</span>
-                        <p>No hay edificios registrados</p>
+                        <p>No hay edificios/calles registrados</p>
                     </div>
                 `;
                 return;
@@ -1038,7 +1038,7 @@
         }
 
         function addBuilding() {
-            document.getElementById('building-form-title').textContent = 'Agregar Edificio';
+            document.getElementById('building-form-title').textContent = 'Agregar Edificio/Calle';
             document.getElementById('building-form').reset();
             document.getElementById('building-id').value = '';
             openModal('building-form-modal');
@@ -1048,7 +1048,7 @@
             const building = buildings.find(b => b.id === id);
             if (!building) return;
 
-            document.getElementById('building-form-title').textContent = 'Editar Edificio';
+            document.getElementById('building-form-title').textContent = 'Editar Edificio/Calle';
             document.getElementById('building-id').value = building.id;
             document.getElementById('building-name').value = building.name;
             document.getElementById('building-code').value = building.code || '';
@@ -1086,10 +1086,10 @@
                     closeModal('building-form-modal');
                     await loadBuildings();
                     renderBuildingsList();
-                    showPageToast(id ? 'Edificio actualizado' : 'Edificio creado', 'success');
+                    showPageToast(id ? 'Edificio/calle actualizado' : 'Edificio/calle creado', 'success');
                 } else {
                     const err = await res.json();
-                    showPageToast(err.error || 'Error al guardar el edificio', 'error');
+                    showPageToast(err.error || 'Error al guardar el edificio/calle', 'error');
                 }
             } catch (error) {
                 showPageToast('Error de conexión', 'error');
@@ -1097,7 +1097,7 @@
         });
 
         async function deleteBuilding(id) {
-            const ok = await openConfirmModal('¿Eliminar este edificio? Los inmuebles asociados quedarán sin edificio asignado.');
+            const ok = await openConfirmModal('¿Eliminar este edificio/calle? Los inmuebles asociados quedarán sin edificio/calle asignado.');
             if (!ok) return;
 
             try {
@@ -1109,10 +1109,10 @@
                 if (res.ok) {
                     await loadBuildings();
                     renderBuildingsList();
-                    showPageToast('Edificio eliminado', 'success');
+                    showPageToast('Edificio/calle eliminado', 'success');
                 } else {
                     const err = await res.json();
-                    showPageToast(err.error || 'Error al eliminar el edificio', 'error');
+                    showPageToast(err.error || 'Error al eliminar el edificio/calle', 'error');
                 }
             } catch (error) {
                 showPageToast('Error de conexión', 'error');
@@ -1157,8 +1157,8 @@
             }
 
             const confirmMsg = selectedNewBuildingType === 'MULTIPLE' 
-                ? '¿Cambiar a Múltiples Edificios? Deberá crear al menos un edificio y asignar los inmuebles.'
-                : '¿Cambiar a Edificio Único? Todos los inmuebles se asociarán al edificio principal.';
+                ? '¿Cambiar a múltiples edificios/calles? Deberá crear al menos uno y asignar los inmuebles.'
+                : '¿Cambiar a edificio/calle único? Todos los inmuebles se asociarán al edificio/calle principal.';
 
             const confirmed = await openConfirmModal(confirmMsg);
             if (!confirmed) return;

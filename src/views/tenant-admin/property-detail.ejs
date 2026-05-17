@@ -338,7 +338,7 @@
             };
             
             document.getElementById('prop-name').textContent = property.name || 'Inmueble';
-            document.getElementById('prop-details').textContent = property.building_name || 'Edificio Principal';
+            document.getElementById('prop-details').textContent = property.building_name || 'Edificio/Calle principal';
             document.getElementById('prop-type').textContent = typeMap[property.type] || property.type || 'Apartamento';
             document.getElementById('prop-floor').textContent = property.floor || '-';
             document.getElementById('prop-area').textContent = property.area_sqm ? `${property.area_sqm} m²` : 'N/A';
@@ -352,7 +352,7 @@
                 document.getElementById('prop-alicuota').className = 'font-medium text-gray-500';
             }
             
-            document.getElementById('header-subtitle').textContent = `${property.building_name || 'Edificio'} - ${property.name || 'Inmueble'}`;
+            document.getElementById('header-subtitle').textContent = `${property.building_name || 'Edificio/Calle'} - ${property.name || 'Inmueble'}`;
         }
 
         function renderOwners(owners) {

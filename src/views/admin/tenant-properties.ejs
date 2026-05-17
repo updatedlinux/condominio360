@@ -200,7 +200,7 @@
                 <div>
                     <p class="text-sm text-slate-500">Tipo de Conjunto</p>
                     <p class="font-semibold text-slate-900" id="info-building-type">
-                        <%= tenant?.building_type === 'MULTIPLE' ? 'Múltiples Edificios' : 'Único Edificio' %>
+                        <%= tenant?.building_type === 'MULTIPLE' ? 'Múltiples Edificios/Calles' : 'Único Edificio/Calle' %>
                     </p>
                     <% if (!tenant?.building_type) { %>
                     <button onclick="configureTenantType()" class="text-xs text-orange-600 font-semibold hover:underline mt-1">Configurar →</button>
@@ -211,7 +211,7 @@
                     <p class="font-bold text-slate-900 text-2xl" id="stat-total-properties">-</p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Total Edificios</p>
+                    <p class="text-sm text-slate-500">Total Edificios/Calles</p>
                     <p class="font-bold text-slate-900 text-2xl" id="stat-total-buildings">-</p>
                 </div>
             </div>
@@ -239,7 +239,7 @@
                 <thead class="bg-slate-50">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Unidad</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Edificio</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Edificio/Calle</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Piso</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Área (m²)</th>
                         <% if (tenant?.billing_type === 'ALICUOTA') { %>
@@ -283,10 +283,10 @@
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-2">Edificio</label>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Edificio/Calle</label>
                     <select id="prop-building" 
                         class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                        <option value="">Seleccionar edificio...</option>
+                        <option value="">Seleccionar edificio/calle...</option>
                     </select>
                 </div>
                 
@@ -368,14 +368,14 @@
                             <p class="font-medium text-slate-900" id="config-billing-type">-</p>
                         </div>
                         <div>
-                            <p class="text-xs text-slate-400 uppercase">Tipo de Edificio</p>
+                            <p class="text-xs text-slate-400 uppercase">Tipo de Edificio/Calle</p>
                             <p class="font-medium text-slate-900" id="config-building-type">-</p>
                         </div>
                     </div>
                     <div id="config-alert" class="hidden mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <div class="flex items-start gap-2">
                             <span class="material-symbols-rounded text-amber-600 text-sm">warning</span>
-                            <p class="text-sm text-amber-800">Debe configurar el tipo de facturación y edificio antes de cargar inmuebles.</p>
+                            <p class="text-sm text-amber-800">Debe configurar el tipo de facturación y edificio/calle antes de cargar inmuebles.</p>
                         </div>
                     </div>
                 </div>
@@ -526,6 +526,7 @@
 
     <%- include('../partials/page-notifications') %>
     <script src="/js/page-notifications.js"></script>
+    <script src="/js/property-type.js"></script>
 
     <script>
         const token = localStorage.getItem('token');
@@ -656,7 +657,7 @@
 
         function renderBuildingOptions() {
             const select = document.getElementById('prop-building');
-            select.innerHTML = '<option value="">Seleccionar edificio...</option>' +
+            select.innerHTML = '<option value="">Seleccionar edificio/calle...</option>' +
                 buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
         }
 
@@ -783,6 +784,7 @@
                 document.getElementById('prop-alicuota').value = prop.alicuota || '';
             }
             document.getElementById('prop-nickname').value = prop.nickname || '';
+            document.getElementById('prop-type').value = PropertyTypeUtils.propertyTypeToSelectValue(prop.type);
             
             document.getElementById('property-modal').classList.remove('hidden');
             document.getElementById('property-modal').classList.add('flex');
@@ -889,7 +891,7 @@
             }
             
             if (hasBuildingType) {
-                buildingTypeEl.textContent = serverBuildingType === 'MULTIPLE' ? 'Múltiples (requiere edificio)' : 'Único (sin edificio)';
+                buildingTypeEl.textContent = serverBuildingType === 'MULTIPLE' ? 'Múltiples (requiere edificio/calle)' : 'Único (sin edificio/calle)';
             } else {
                 buildingTypeEl.textContent = 'No configurado';
             }
@@ -904,7 +906,7 @@
             const alicuotaField = hasBillingType && serverBillingType === 'ALICUOTA' ? ',alicuota' : '';
             const optionalFields = ',observaciones,nickname';
             
-            formatDisplay.innerHTML = `${baseFields}<span class="text-yellow-400">${buildingField}</span><span class="text-cyan-400">${alicuotaField}</span>${optionalFields}`;
+            formatDisplay.innerHTML = `${baseFields}<span class="text-yellow-400">${buildingField}</span><span class="text-cyan-400">${alicuotaField}</span>${optionalFields}<br><span class="text-slate-400 text-xs">tipo: CASA, APARTAMENTO, House, Apartment, etc.</span>`;
         }
 
         function openBulkConfigModal() {
@@ -943,7 +945,7 @@ Apartamento 1A,APARTAMENTO,Torre B,1,101,Propietario: Roberto Díaz,`;
                 filename = 'ejemplo_inmuebles_facturacion_fija_edificio_unico.csv';
                 content = `nombre,tipo,piso,numero,observaciones,nickname
 Apartamento 1A,APARTAMENTO,1,101,Propietario: Juan Pérez,bcc_apto101
-Apartamento 1B,APARTAMENTO,1,102,Propietario: María García,
+Casa 15,CASA,0,15,Propietario: Ana Ruiz,ch_casa15
 Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López,bcc_apto201`;
             }
 
@@ -990,12 +992,19 @@ Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López,bcc_apto201`;
 
                 // Validations
                 if (!row.nombre) errors.push(`Fila ${i + 1}: Falta el nombre del inmueble`);
-                if (!row.tipo) errors.push(`Fila ${i + 1}: Falta el tipo`);
+                if (!row.tipo) {
+                    errors.push(`Fila ${i + 1}: Falta el tipo`);
+                } else {
+                    row.tipoNormalized = PropertyTypeUtils.normalizePropertyType(row.tipo);
+                    if (!row.tipoNormalized) {
+                        errors.push(`Fila ${i + 1}: Tipo "${row.tipo}" no reconocido (use CASA, APARTAMENTO, House, Apartment, etc.)`);
+                    }
+                }
                 if (!row.piso) errors.push(`Fila ${i + 1}: Falta el piso`);
                 if (!row.numero) errors.push(`Fila ${i + 1}: Falta el número`);
                 
                 if (serverBuildingType === 'MULTIPLE' && !row.edificio) {
-                    errors.push(`Fila ${i + 1}: Falta el edificio (requerido para multi-edificio)`);
+                    errors.push(`Fila ${i + 1}: Falta el edificio/calle (requerido para multi-edificio/calle)`);
                 }
                 if (serverBillingType === 'ALICUOTA') {
                     if (!row.alicuota) {
@@ -1028,19 +1037,30 @@ Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López,bcc_apto201`;
             document.getElementById('preview-record-count').textContent = `${csvUploadData.length} registros`;
             
             // Headers
-            const displayHeaders = ['nombre', 'tipo', 'piso', 'numero'];
-            if (serverBuildingType === 'MULTIPLE') displayHeaders.push('edificio');
-            if (serverBillingType === 'ALICUOTA') displayHeaders.push('alicuota');
-            displayHeaders.push('nickname');
+            const displayColumns = [
+                { key: 'nombre', label: 'nombre' },
+                { key: 'tipo', label: 'tipo' },
+                { key: 'piso', label: 'piso' },
+                { key: 'numero', label: 'numero' }
+            ];
+            if (serverBuildingType === 'MULTIPLE') displayColumns.push({ key: 'edificio', label: 'Edificio/Calle' });
+            if (serverBillingType === 'ALICUOTA') displayColumns.push({ key: 'alicuota', label: 'alicuota' });
+            displayColumns.push({ key: 'nickname', label: 'nickname' });
             
-            document.getElementById('preview-header').innerHTML = displayHeaders.map(h => 
-                `<th class="px-4 py-3 text-left font-medium text-slate-600">${h}</th>`
+            document.getElementById('preview-header').innerHTML = displayColumns.map(col => 
+                `<th class="px-4 py-3 text-left font-medium text-slate-600">${col.label}</th>`
             ).join('');
 
             // Body
             document.getElementById('preview-body').innerHTML = csvUploadData.map(row => 
                 `<tr class="hover:bg-slate-50">` +
-                displayHeaders.map(h => `<td class="px-4 py-3 text-slate-900">${row[h] || '-'}</td>`).join('') +
+                displayColumns.map(col => {
+                    let val = row[col.key] || '-';
+                    if (col.key === 'tipo' && row.tipoNormalized) {
+                        val = `${row.tipo} → ${PropertyTypeUtils.getPropertyTypeLabel(row.tipoNormalized)}`;
+                    }
+                    return `<td class="px-4 py-3 text-slate-900">${val}</td>`;
+                }).join('') +
                 `</tr>`
             ).join('');
 
@@ -1095,14 +1115,14 @@ Apartamento 2A,APARTAMENTO,2,201,Propietario: Carlos López,bcc_apto201`;
                             buildingId = building.id;
                         } else {
                             results.errors++;
-                            results.errorDetails.push(`${row.nombre}: Edificio "${row.edificio}" no encontrado`);
+                            results.errorDetails.push(`${row.nombre}: Edificio/calle "${row.edificio}" no encontrado`);
                             continue;
                         }
                     }
 
                     const data = {
                         name: row.nombre,
-                        type: row.tipo,
+                        type: row.tipoNormalized || PropertyTypeUtils.normalizePropertyTypeOrDefault(row.tipo),
                         building_id: buildingId,
                         floor: row.piso,
                         area_sqm: null,

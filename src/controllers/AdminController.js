@@ -14,6 +14,7 @@ const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailS
 const OwnersExportService = require('../services/OwnersExportService');
 const crypto = require('crypto');
 const { sql, connectDB } = require('../config/database');
+const { normalizePropertyTypeOrDefault } = require('../utils/propertyType');
 
 /**
  * AdminController
@@ -440,12 +441,12 @@ class AdminController {
 
             // Validar building_type
             if (!building_type || !['SINGLE', 'MULTIPLE'].includes(building_type)) {
-                return res.status(400).json({ error: 'Tipo de edificio inválido. Use SINGLE o MULTIPLE' });
+                return res.status(400).json({ error: 'Tipo de edificio/calle inválido. Use SINGLE o MULTIPLE' });
             }
 
             // Si es MULTIPLE, validar que hay edificios
             if (building_type === 'MULTIPLE' && (!buildings || buildings.length === 0)) {
-                return res.status(400).json({ error: 'Debe especificar al menos un edificio para conjuntos multi-edificio' });
+                return res.status(400).json({ error: 'Debe especificar al menos un edificio/calle para conjuntos multi-edificio/calle' });
             }
 
             // Pre-validación: verificar slug y email ANTES de abrir transacción (evita crear datos parciales)
@@ -1048,9 +1049,9 @@ class AdminController {
             PROPERTY_UPDATED: 'Actualizó unidad inmobiliaria',
             PROPERTY_DELETED: 'Eliminó unidad inmobiliaria',
             OWNER_ADDED: 'Asignó propietario a unidad',
-            BUILDING_CREATED: 'Creó edificio',
-            BUILDING_UPDATED: 'Actualizó edificio',
-            BUILDING_DELETED: 'Eliminó edificio',
+            BUILDING_CREATED: 'Creó edificio/calle',
+            BUILDING_UPDATED: 'Actualizó edificio/calle',
+            BUILDING_DELETED: 'Eliminó edificio/calle',
             COMMON_AREA_CREATED: 'Creó área común',
             COMMON_AREA_UPDATED: 'Actualizó área común',
             COMMON_AREA_DEACTIVATED: 'Desactivó área común',
@@ -1224,7 +1225,7 @@ class AdminController {
             });
         } catch (error) {
             console.error('Get buildings error:', error);
-            res.status(500).json({ error: 'Error al obtener edificios' });
+            res.status(500).json({ error: 'Error al obtener edificios/calles' });
         }
     }
 
@@ -1238,7 +1239,7 @@ class AdminController {
             const { name, code, floors, address_suffix } = req.body;
 
             if (!name) {
-                return res.status(400).json({ error: 'El nombre del edificio es requerido' });
+                return res.status(400).json({ error: 'El nombre del edificio/calle es requerido' });
             }
 
             const pool = await connectDB();
@@ -1263,7 +1264,7 @@ class AdminController {
             });
         } catch (error) {
             console.error('Create building error:', error);
-            res.status(500).json({ error: 'Error al crear edificio' });
+            res.status(500).json({ error: 'Error al crear edificio/calle' });
         }
     }
 
@@ -1296,7 +1297,7 @@ class AdminController {
                 `);
 
             if (result.recordset.length === 0) {
-                return res.status(404).json({ error: 'Edificio no encontrado' });
+                return res.status(404).json({ error: 'Edificio/calle no encontrado' });
             }
 
             const building = result.recordset[0];
@@ -1308,7 +1309,7 @@ class AdminController {
             });
         } catch (error) {
             console.error('Update building error:', error);
-            res.status(500).json({ error: 'Error al actualizar edificio' });
+            res.status(500).json({ error: 'Error al actualizar edificio/calle' });
         }
     }
 
@@ -1328,7 +1329,7 @@ class AdminController {
 
             if (propertyCheck.recordset[0].count > 0) {
                 return res.status(400).json({ 
-                    error: 'No se puede eliminar un edificio con inmuebles asociados. Desasocie los inmuebles primero.' 
+                    error: 'No se puede eliminar un edificio/calle con inmuebles asociados. Desasocie los inmuebles primero.' 
                 });
             }
 
@@ -1348,7 +1349,7 @@ class AdminController {
             res.json({ success: true });
         } catch (error) {
             console.error('Delete building error:', error);
-            res.status(500).json({ error: 'Error al eliminar edificio' });
+            res.status(500).json({ error: 'Error al eliminar edificio/calle' });
         }
     }
 
@@ -1455,7 +1456,7 @@ class AdminController {
             // If multi-building and no building_id, try to find default
             let finalBuildingId = building_id;
             if (tenant?.building_type === 'MULTIPLE' && !building_id) {
-                return res.status(400).json({ error: 'Debe seleccionar un edificio para este inmueble' });
+                return res.status(400).json({ error: 'Debe seleccionar un edificio/calle para este inmueble' });
             }
             if (tenant?.building_type === 'SINGLE' && !building_id) {
                 const buildingResult = await pool.request()
@@ -1471,7 +1472,7 @@ class AdminController {
                 .input('building_id', sql.UniqueIdentifier, finalBuildingId)
                 .input('name', sql.NVarChar, name)
                 .input('slug', sql.NVarChar, slug)
-                .input('type', sql.NVarChar, type || 'APARTAMENTO')
+                .input('type', sql.NVarChar, normalizePropertyTypeOrDefault(type))
                 .input('floor', sql.NVarChar, floor || null)
                 .input('alicuota', sql.Decimal(10, 4), alicuota || null)
                 .input('area_sqm', sql.Decimal(10, 2), area_sqm || null)
@@ -1536,7 +1537,10 @@ class AdminController {
             if (floor !== undefined) { updates.push('floor = @floor'); req2.input('floor', sql.NVarChar, floor || null); }
             if (alicuota !== undefined) { updates.push('alicuota = @alicuota'); req2.input('alicuota', sql.Decimal(10, 4), alicuota === '' || alicuota === null ? null : alicuota); }
             if (area_sqm !== undefined) { updates.push('area_sqm = @area_sqm'); req2.input('area_sqm', sql.Decimal(10, 2), area_sqm === '' || area_sqm === null ? null : area_sqm); }
-            if (type) { updates.push('type = @type'); req2.input('type', sql.NVarChar, type); }
+            if (type !== undefined && type !== null && String(type).trim() !== '') {
+                updates.push('type = @type');
+                req2.input('type', sql.NVarChar, normalizePropertyTypeOrDefault(type));
+            }
             if (nicknameNorm !== undefined) { updates.push('nickname = @nickname'); req2.input('nickname', sql.NVarChar, nicknameNorm); }
             if (nicknameHash !== undefined) { updates.push('nickname_password_hash = @nickname_password_hash'); req2.input('nickname_password_hash', sql.NVarChar, nicknameHash); }
             updates.push('updated_at = SYSDATETIME()');
@@ -2825,8 +2829,8 @@ class AdminController {
                 { header: 'Unidad', key: 'name', width: 22 },
                 { header: 'Slug', key: 'slug', width: 18 },
                 { header: 'Tipo', key: 'type', width: 14 },
-                { header: 'Edificio', key: 'edificio', width: 22 },
-                { header: 'Código edificio', key: 'edificio_codigo', width: 14 },
+                { header: 'Edificio/Calle', key: 'edificio', width: 22 },
+                { header: 'Código edificio/calle', key: 'edificio_codigo', width: 14 },
                 { header: 'Piso', key: 'piso', width: 10 },
                 { header: 'Área (m²)', key: 'area_m2', width: 12 },
                 { header: 'Alícuota (%)', key: 'alicuota', width: 12 },

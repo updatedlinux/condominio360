@@ -4,6 +4,7 @@ const BuildingModel = require('../models/BuildingModel');
 const UserModel = require('../models/UserModel');
 const TenantModel = require('../models/TenantModel');
 const AuditService = require('../services/AuditService');
+const { normalizePropertyTypeOrDefault } = require('../utils/propertyType');
 
 /**
  * Controller para gestión de Propiedades/Inmuebles
@@ -29,14 +30,14 @@ class PropertyController {
             if (building_id) {
                 const building = await BuildingModel.findById(building_id);
                 if (!building || building.tenant_id !== tenantId) {
-                    return res.status(400).json({ success: false, error: 'Edificio no válido' });
+                    return res.status(400).json({ success: false, error: 'Edificio/calle no válido' });
                 }
             }
 
             const property = await PropertyModel.create({
                 tenant_id: tenantId,
                 name,
-                type: type || 'Apartment',
+                type: normalizePropertyTypeOrDefault(type),
                 building_id,
                 floor,
                 area_sqm,
@@ -84,14 +85,14 @@ class PropertyController {
             if (building_id) {
                 const building = await BuildingModel.findById(building_id);
                 if (!building || building.tenant_id !== tenantId) {
-                    return res.status(400).json({ success: false, error: 'Edificio no válido' });
+                    return res.status(400).json({ success: false, error: 'Edificio/calle no válido' });
                 }
             }
 
             const propsToCreate = properties.map(p => ({
                 tenant_id: tenantId,
                 name: p.name,
-                type: p.type || 'Apartment',
+                type: normalizePropertyTypeOrDefault(p.type),
                 building_id: p.building_id || building_id,
                 floor: p.floor,
                 area_sqm: p.area_sqm,
@@ -164,7 +165,11 @@ class PropertyController {
     static async update(req, res) {
         try {
             const { id } = req.params;
-            const property = await PropertyModel.update(id, req.body);
+            const updateData = { ...req.body };
+            if (updateData.type !== undefined) {
+                updateData.type = normalizePropertyTypeOrDefault(updateData.type);
+            }
+            const property = await PropertyModel.update(id, updateData);
 
             if (!property) {
                 return res.status(404).json({ success: false, error: 'Propiedad no encontrada' });
@@ -317,8 +322,8 @@ class PropertyController {
                 { header: 'Unidad', key: 'name', width: 22 },
                 { header: 'Slug', key: 'slug', width: 18 },
                 { header: 'Tipo', key: 'type', width: 14 },
-                { header: 'Edificio', key: 'edificio', width: 22 },
-                { header: 'Código edificio', key: 'edificio_codigo', width: 14 },
+                { header: 'Edificio/Calle', key: 'edificio', width: 22 },
+                { header: 'Código edificio/calle', key: 'edificio_codigo', width: 14 },
                 { header: 'Piso', key: 'piso', width: 10 },
                 { header: 'Área (m²)', key: 'area_m2', width: 12 },
                 { header: 'Alícuota (%)', key: 'alicuota', width: 12 },

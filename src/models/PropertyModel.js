@@ -1,4 +1,5 @@
 const { sql, connectDB } = require('../config/database');
+const { normalizePropertyTypeOrDefault } = require('../utils/propertyType');
 
 /**
  * Modelo para Unidades Inmobiliarias (Properties)
@@ -15,7 +16,7 @@ class PropertyModel {
         const result = await pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenant_id)
             .input('name', sql.NVarChar, name)
-            .input('type', sql.NVarChar, type || 'Apartment')
+            .input('type', sql.NVarChar, normalizePropertyTypeOrDefault(type))
             .input('building_id', sql.UniqueIdentifier, building_id)
             .input('floor', sql.NVarChar, floor)
             .input('area_sqm', sql.Decimal(10, 2), area_sqm)
@@ -62,7 +63,7 @@ class PropertyModel {
         }
         if (type !== undefined) {
             updates.push('type = @type');
-            inputs.push({ name: 'type', type: sql.NVarChar, value: type });
+            inputs.push({ name: 'type', type: sql.NVarChar, value: normalizePropertyTypeOrDefault(type) });
         }
         if (building_id !== undefined) {
             updates.push('building_id = @building_id');

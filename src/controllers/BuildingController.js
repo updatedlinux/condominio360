@@ -51,7 +51,7 @@ class BuildingController {
             res.status(201).json({ success: true, building });
         } catch (error) {
             console.error('Error creating building:', error);
-            res.status(500).json({ success: false, error: 'Error al crear edificio' });
+            res.status(500).json({ success: false, error: 'Error al crear edificio/calle' });
         }
     }
 
@@ -67,7 +67,7 @@ class BuildingController {
             res.json({ success: true, buildings });
         } catch (error) {
             console.error('Error listing buildings:', error);
-            res.status(500).json({ success: false, error: 'Error al listar edificios' });
+            res.status(500).json({ success: false, error: 'Error al listar edificios/calles' });
         }
     }
 
@@ -81,7 +81,7 @@ class BuildingController {
             const building = await BuildingModel.update(id, req.body);
             
             if (!building) {
-                return res.status(404).json({ success: false, error: 'Edificio no encontrado' });
+                return res.status(404).json({ success: false, error: 'Edificio/calle no encontrado' });
             }
 
             await AuditService.log({
@@ -95,7 +95,7 @@ class BuildingController {
             res.json({ success: true, building });
         } catch (error) {
             console.error('Error updating building:', error);
-            res.status(500).json({ success: false, error: 'Error al actualizar edificio' });
+            res.status(500).json({ success: false, error: 'Error al actualizar edificio/calle' });
         }
     }
 
@@ -109,7 +109,7 @@ class BuildingController {
             const building = await BuildingModel.findById(id);
             
             if (!building) {
-                return res.status(404).json({ success: false, error: 'Edificio no encontrado' });
+                return res.status(404).json({ success: false, error: 'Edificio/calle no encontrado' });
             }
 
             await BuildingModel.delete(id);
@@ -122,10 +122,10 @@ class BuildingController {
                 entityId: id
             });
 
-            res.json({ success: true, message: 'Edificio eliminado' });
+            res.json({ success: true, message: 'Edificio/calle eliminado' });
         } catch (error) {
             console.error('Error deleting building:', error);
-            res.status(500).json({ success: false, error: 'Error al eliminar edificio' });
+            res.status(500).json({ success: false, error: 'Error al eliminar edificio/calle' });
         }
     }
 
@@ -154,7 +154,7 @@ class BuildingController {
             });
         } catch (error) {
             console.error('Error listing buildings:', error);
-            res.status(500).json({ success: false, error: 'Error al listar edificios' });
+            res.status(500).json({ success: false, error: 'Error al listar edificios/calles' });
         }
     }
 
@@ -170,7 +170,7 @@ class BuildingController {
             // Verificar que el edificio pertenece al tenant
             const building = await BuildingModel.findById(id);
             if (!building || building.tenant_id !== tenantId) {
-                return res.status(404).json({ success: false, error: 'Edificio no encontrado' });
+                return res.status(404).json({ success: false, error: 'Edificio/calle no encontrado' });
             }
 
             const properties = await PropertyModel.findByBuilding(id);

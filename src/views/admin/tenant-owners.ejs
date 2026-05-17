@@ -239,7 +239,7 @@
                 </select>
                 <select id="building-filter" onchange="applyFilters()" 
                     class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                    <option value="">Todos los edificios</option>
+                    <option value="">Todos los edificios/calles</option>
                 </select>
             </div>
         </div>
@@ -782,7 +782,7 @@
 
         function populateFilters() {
             const buildingFilter = document.getElementById('building-filter');
-            buildingFilter.innerHTML = '<option value="">Todos los edificios</option>' +
+            buildingFilter.innerHTML = '<option value="">Todos los edificios/calles</option>' +
                 buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
         }
 

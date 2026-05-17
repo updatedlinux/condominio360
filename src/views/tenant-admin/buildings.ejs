@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
-    <title>Edificios - <%= tenant?.name || 'Condominio' %></title>
+    <title>Edificios/Calles - <%= tenant?.name || 'Condominio' %></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -28,7 +28,7 @@
                 <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div>
-                            <h1 class="text-2xl font-medium text-[#3C4043]">Edificios</h1>
+                            <h1 class="text-2xl font-medium text-[#3C4043]">Edificios/Calles</h1>
                             <p class="text-sm text-[#5F6368]" id="header-tenant">Cargando...</p>
                         </div>
                     </div>
@@ -40,7 +40,7 @@
         <div id="info-card" class="card p-6 mb-6 hidden">
             <div class="flex items-center gap-3">
                 <span class="material-icons-round text-[#f97316]">info</span>
-                <p class="text-[#5F6368]">Este conjunto residencial cuenta con <span id="building-count" class="font-medium"></span> edificios</p>
+                <p class="text-[#5F6368]">Este conjunto residencial cuenta con <span id="building-count" class="font-medium"></span> edificios/calles</p>
             </div>
         </div>
 
@@ -48,7 +48,7 @@
         <div id="single-building-notice" class="card p-6 mb-6 hidden">
             <div class="flex items-center gap-3">
                 <span class="material-icons-round text-blue-600">info</span>
-                <p class="text-[#5F6368]">Este es un conjunto de <strong>único edificio</strong>. Todos los inmuebles pertenecen al mismo edificio.</p>
+                <p class="text-[#5F6368]">Este es un conjunto de <strong>único edificio/calle</strong>. Todos los inmuebles pertenecen al mismo edificio ó calle.</p>
             </div>
         </div>
 
@@ -62,8 +62,8 @@
             <div class="w-24 h-24 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span class="material-icons-round text-4xl text-[#9AA0A6]">apartment</span>
             </div>
-            <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay edificios configurados</h3>
-            <p class="text-[#5F6368]">Contacta al administrador para configurar los edificios del conjunto</p>
+            <h3 class="text-xl font-medium text-[#3C4043] mb-2">No hay edificios/calles configurados</h3>
+            <p class="text-[#5F6368]">Contacta al administrador para configurar los edificios ó calles del conjunto</p>
         </div>
     </main>
     <%- include('../partials/panels-footer') %>
@@ -172,7 +172,7 @@
         function viewBuilding(id) {
             if (!id || id === 'undefined') {
                 console.error('Invalid building ID:', id);
-                showPageToast('Error: ID de edificio no válido', 'error');
+                showPageToast('Error: ID de edificio/calle no válido', 'error');
                 return;
             }
             window.location.href = `/tenant-admin/buildings/${id}/properties`;

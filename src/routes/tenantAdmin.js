@@ -14,6 +14,9 @@ const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
 const { conditionalPreliminaryUpload } = require('../middleware/uploadBillingPreliminaryItems');
 const TenantAdminBalanceController = require('../controllers/TenantAdminBalanceController');
 const TenantAdminReportsController = require('../controllers/TenantAdminReportsController');
+const TenantAdminBankAccountController = require('../controllers/TenantAdminBankAccountController');
+const TenantAdminReconciliationController = require('../controllers/TenantAdminReconciliationController');
+const uploadBankStatement = require('../middleware/uploadBankStatement');
 
 // Middleware to ensure user is Tenant Admin
 const verifyTenantAdmin = (req, res, next) => {
@@ -155,6 +158,28 @@ router.post('/saas-invoices/:id/report-payment', (req, res, next) => {
 
 // ==================== BALANCE FINANCIERO ====================
 router.get('/balance/financial-summary', TenantAdminBalanceController.getFinancialSummary);
+
+// ==================== CUENTAS BANCARIAS DEL TENANT ====================
+router.get('/bank-accounts/banks', TenantAdminBankAccountController.listBanks);
+router.get('/bank-accounts', TenantAdminBankAccountController.list);
+router.post('/bank-accounts', TenantAdminBankAccountController.create);
+router.put('/bank-accounts/:id', TenantAdminBankAccountController.update);
+router.delete('/bank-accounts/:id', TenantAdminBankAccountController.deactivate);
+
+// ==================== CONCILIACIÓN BANCARIA ====================
+router.get('/reconciliation/banks', TenantAdminReconciliationController.listActiveBanks);
+router.get('/reconciliation/imports', TenantAdminReconciliationController.listImports);
+router.get('/reconciliation/imports/:id', TenantAdminReconciliationController.getImportResults);
+router.post('/reconciliation/imports/:id/rerun', TenantAdminReconciliationController.rerun);
+router.post('/reconciliation/movements/:movementId/confirm', TenantAdminReconciliationController.confirmSuggestion);
+router.post('/reconciliation/movements/:movementId/reject', TenantAdminReconciliationController.rejectMatch);
+router.post('/reconciliation/movements/:movementId/link', TenantAdminReconciliationController.linkManually);
+router.post('/reconciliation/imports', (req, res, next) => {
+    uploadBankStatement.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ success: false, error: err.message || 'Error al subir archivo' });
+        next();
+    });
+}, TenantAdminReconciliationController.createImport);
 
 // ==================== FACTURACIÓN ====================
 const ExchangeRateModel = require('../models/ExchangeRateModel');

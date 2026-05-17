@@ -3,6 +3,7 @@ const router = express.Router();
 const AdminController = require('../controllers/AdminController');
 const AdminDataUpdateController = require('../controllers/AdminDataUpdateController');
 const AdminSaaSBillingController = require('../controllers/AdminSaaSBillingController');
+const AdminBankController = require('../controllers/AdminBankController');
 const { conditionalSaaSFiscalUpload } = require('../middleware/uploadSaaSFiscalInvoice');
 const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
@@ -102,6 +103,11 @@ router.patch('/saas-billing/invoices/:id/paid-details', AdminSaaSBillingControll
 router.get('/saas-billing/invoices/:id/payment-pdf', AdminSaaSBillingController.downloadPaidInvoicePdf);
 router.delete('/saas-billing/invoices/:id', AdminSaaSBillingController.deleteInvoice);
 router.get('/saas-billing/tenants-available', AdminSaaSBillingController.getTenantsForBilling);
+
+// ==================== CONCILIACIÓN BANCARIA (catálogo de bancos) ====================
+router.get('/reconciliation/banks', AdminBankController.list);
+router.patch('/reconciliation/banks/:id/active', AdminBankController.toggleActive);
+router.patch('/reconciliation/banks/:id/notes', AdminBankController.updateNotes);
 
 // ==================== BALANCE FINANCIERO ====================
 router.get('/balance/exchange-rates', AdminBalanceController.getExchangeRates);

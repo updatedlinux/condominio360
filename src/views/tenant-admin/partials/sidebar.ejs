@@ -76,11 +76,15 @@
                 <span class="material-icons-round mr-3 <%= activePage === 'balance-financiero' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">account_balance</span>
                 Balance Financiero
             </a>
+            <a href="/tenant-admin/reconciliation" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'reconciliation' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <span class="material-icons-round mr-3 <%= activePage === 'reconciliation' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">fact_check</span>
+                Conciliación bancaria
+            </a>
             <div class="pt-4 mt-4 border-t border-[#E5E5E5]">
                 <p class="px-3 text-xs font-medium text-[#9AA0A6] uppercase mb-2">Gestión de Unidades</p>
                 <a href="/tenant-admin/buildings" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'buildings' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
                     <span class="material-icons-round mr-3 <%= activePage === 'buildings' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">apartment</span>
-                    Edificios
+                    Edificios/Calles
                 </a>
                 <a href="/tenant-admin/properties" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'properties' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
                     <span class="material-icons-round mr-3 <%= activePage === 'properties' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">home_work</span>

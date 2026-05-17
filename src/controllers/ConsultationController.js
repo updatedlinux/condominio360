@@ -241,7 +241,7 @@ class ConsultationController {
             
             if (!eligiblePropertyIds.includes(property_id)) {
                 return res.status(403).json({ 
-                    error: 'Este inmueble no es elegible para esta consulta (diferente edificio)' 
+                    error: 'Este inmueble no es elegible para esta consulta (diferente edificio/calle)' 
                 });
             }
 
