@@ -2932,6 +2932,53 @@ class AdminController {
             });
         }
     }
+
+    /**
+     * GET /api/admin/tenants/:id/portal-features
+     */
+    static async getTenantPortalFeatures(req, res) {
+        try {
+            const { id } = req.params;
+            const data = await TenantModel.getPortalFeatureFlags(id);
+            if (!data) {
+                return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
+            }
+            res.json({ success: true, data });
+        } catch (error) {
+            console.error('getTenantPortalFeatures error:', error);
+            res.status(500).json({ success: false, error: 'Error al cargar funcionalidades' });
+        }
+    }
+
+    /**
+     * PUT /api/admin/tenants/:id/portal-features
+     * body: { visitsEnabled, deliveriesEnabled }
+     */
+    static async updateTenantPortalFeatures(req, res) {
+        try {
+            const { id } = req.params;
+            const { visitsEnabled, deliveriesEnabled } = req.body || {};
+            const data = await TenantModel.updatePortalFeatureFlags(id, {
+                visitsEnabled,
+                deliveriesEnabled
+            });
+            await AdminController.logAudit(
+                req,
+                'UPDATE',
+                'TENANT',
+                id,
+                `Portería: visitas=${visitsEnabled ? 1 : 0}, deliveries=${deliveriesEnabled ? 1 : 0}`,
+                id
+            );
+            res.json({ success: true, data });
+        } catch (error) {
+            console.error('updateTenantPortalFeatures error:', error);
+            res.status(400).json({
+                success: false,
+                error: error.message || 'Error al guardar funcionalidades'
+            });
+        }
+    }
 }
 
 module.exports = AdminController;

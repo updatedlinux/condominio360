@@ -365,17 +365,18 @@
                         <div class="border-t border-[#E5E5E5] pt-4 mt-4">
                             <h4 class="font-medium text-[#3C4043] mb-3">Información de Tasas</h4>
                             <div class="space-y-2 text-sm">
+                                ${ri.freeze_label ? `<p class="text-xs text-indigo-800 bg-indigo-50 border border-indigo-100 rounded px-2 py-1">${escapeHtml(ri.freeze_label)}</p>` : ''}
                                 ${ri.rate_preliminary != null ? `
                                 <div class="flex justify-between py-1">
-                                    <span class="text-[#5F6368]">Tasa del preliminar${ri.rate_preliminary_date ? ` (${rateDateStr(ri.rate_preliminary_date)})` : ''}</span>
+                                    <span class="text-[#5F6368]">Monto a pagar (tasa${ri.rate_preliminary_date ? ` ${rateDateStr(ri.rate_preliminary_date)}` : ''})</span>
                                     <span class="font-medium">${Number(ri.rate_preliminary).toLocaleString('es-VE', {minimumFractionDigits:2,maximumFractionDigits:2})} VES/USD · ${formatCurrency(ri.contravalue_preliminary_ves)}</span>
                                 </div>` : ''}
-                                ${ri.rate_today != null ? `
+                                ${ri.show_rate_differential && ri.rate_today != null ? `
                                 <div class="flex justify-between py-1">
-                                    <span class="text-[#5F6368]">Tasa del día${ri.rate_today_date ? ` (${rateDateStr(ri.rate_today_date)})` : ''}</span>
+                                    <span class="text-[#5F6368]">Referencia hoy${ri.rate_today_date ? ` (${rateDateStr(ri.rate_today_date)})` : ''}</span>
                                     <span class="font-medium">${Number(ri.rate_today).toLocaleString('es-VE', {minimumFractionDigits:2,maximumFractionDigits:2})} VES/USD · ${formatCurrency(ri.contravalue_today_ves)}</span>
                                 </div>` : ''}
-                                ${ri.spread_pct != null && ri.spread_pct !== 0 ? `
+                                ${ri.show_rate_differential && ri.spread_pct != null && ri.spread_pct !== 0 ? `
                                 <div class="flex justify-between py-2 mt-2 rounded px-2 ${ri.spread_pct > 0 ? 'bg-amber-50' : 'bg-green-50'}">
                                     <span class="font-medium">Diferencial cambiario (vs preliminar)</span>
                                     <span class="font-semibold ${ri.spread_pct > 0 ? 'text-amber-700' : 'text-green-700'}">
@@ -671,5 +672,6 @@
             window.location.href = '/login';
         }
     </script>
+    <script src="/js/owner-portal-features.js"></script>
 </body>
 </html>

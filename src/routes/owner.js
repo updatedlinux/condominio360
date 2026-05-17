@@ -6,6 +6,10 @@ const OwnerCommuniqueController = require('../controllers/OwnerCommuniqueControl
 const OwnerCommonAreaController = require('../controllers/OwnerCommonAreaController');
 const DeliveryController = require('../controllers/DeliveryController');
 const { authenticate, requireOwner, requirePropertyAccess } = require('../middleware/auth');
+const {
+    requireVisitsAnnouncements,
+    requireDeliveriesAnnouncements
+} = require('../middleware/requireTenantFeature');
 const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
 
 /**
@@ -28,6 +32,21 @@ router.use(authenticate, requireOwner);
 // ==================== PROPIEDADES (switch de inmuebles) ====================
 router.get('/properties', OwnerController.getProperties);
 
+// ==================== FUNCIONALIDADES DEL CONDOMINIO ====================
+router.get('/portal-features', async (req, res) => {
+    try {
+        const TenantModel = require('../models/TenantModel');
+        const data = await TenantModel.getPortalFeatureFlags(req.user.tenantId);
+        if (!data) {
+            return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
+        }
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('owner portal-features error:', error);
+        res.status(500).json({ success: false, error: 'Error al cargar funcionalidades' });
+    }
+});
+
 // ==================== DASHBOARD ====================
 router.get('/dashboard', OwnerController.getDashboard);
 router.get('/activity', OwnerController.getActivity);
@@ -38,8 +57,8 @@ router.post('/profile/update-request', require('../controllers/OwnerProfileContr
 router.get('/in-app-notifications', require('../controllers/InAppNotificationController').getForOwner);
 
 // ==================== DELIVERIES ====================
-router.get('/deliveries', DeliveryController.getByUser);
-router.post('/deliveries', DeliveryController.create);
+router.get('/deliveries', requireDeliveriesAnnouncements, DeliveryController.getByUser);
+router.post('/deliveries', requireDeliveriesAnnouncements, DeliveryController.create);
 
 // ==================== SOLICITUDES ====================
 router.get('/requests/types', OwnerController.getRequestTypes);
@@ -66,11 +85,11 @@ router.get('/common-areas/:id/slots', OwnerCommonAreaController.getAvailableSlot
 router.get('/common-areas/:id', OwnerCommonAreaController.getAreaDetail);
 
 // ==================== VISITAS ====================
-router.get('/visitors', OwnerController.getVisitors);
-router.patch('/visitors/:passId/toggle', OwnerController.toggleFrequentVisitor);
-router.post('/visitors', OwnerController.createVisitor);
-router.get('/visits/upcoming', OwnerController.getUpcomingVisits);
-router.get('/visits/history', OwnerController.getVisitsHistory);
+router.get('/visitors', requireVisitsAnnouncements, OwnerController.getVisitors);
+router.patch('/visitors/:passId/toggle', requireVisitsAnnouncements, OwnerController.toggleFrequentVisitor);
+router.post('/visitors', requireVisitsAnnouncements, OwnerController.createVisitor);
+router.get('/visits/upcoming', requireVisitsAnnouncements, OwnerController.getUpcomingVisits);
+router.get('/visits/history', requireVisitsAnnouncements, OwnerController.getVisitsHistory);
 
 // ==================== ACCESOS VEHICULARES (NFC) ====================
 router.get('/vehicle-access', OwnerController.getVehicleAccess);

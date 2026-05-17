@@ -1,6 +1,6 @@
 const BillingModel = require('../models/BillingModel');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
-const { connectDB, sql } = require('../config/database');
+const BillingRateFreezeService = require('./BillingRateFreezeService');
 const BCVService = require('./BCVService');
 
 /**
@@ -105,6 +105,18 @@ class BillingRateUpdateService {
 
             for (const invoice of pendingInvoices) {
                 try {
+                    const preliminary = {
+                        rate_freeze_mode: invoice.rate_freeze_mode,
+                        rate_freeze_window_days: invoice.rate_freeze_window_days,
+                        rate_unpaid_migrate_after_month: invoice.rate_unpaid_migrate_after_month,
+                        created_at: invoice.preliminary_created_at,
+                        exchange_rate_usd: invoice.preliminary_exchange_rate
+                    };
+                    if (!BillingRateFreezeService.shouldApplyDailyRateUpdate(preliminary)) {
+                        skippedCount++;
+                        continue;
+                    }
+
                     // Solo actualizar si la tasa cambió
                     if (Math.abs(invoice.current_exchange_rate - newRate) < 0.01) {
                         skippedCount++;

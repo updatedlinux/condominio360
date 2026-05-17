@@ -55,6 +55,8 @@ router.post('/tenants', AdminController.createTenant);
 router.put('/tenants/:id', AdminController.updateTenant);
 router.get('/tenants/:id/whatsapp-messaging', AdminController.getTenantWhatsAppMessaging);
 router.put('/tenants/:id/whatsapp-messaging', AdminController.updateTenantWhatsAppMessaging);
+router.get('/tenants/:id/portal-features', AdminController.getTenantPortalFeatures);
+router.put('/tenants/:id/portal-features', AdminController.updateTenantPortalFeatures);
 router.delete('/tenants/:id', AdminController.deleteTenant);
 router.post('/tenants/:id/toggle-status', AdminController.toggleTenantStatus);
 router.post('/tenants/:id/billing-mode', AdminController.updateBillingMode);

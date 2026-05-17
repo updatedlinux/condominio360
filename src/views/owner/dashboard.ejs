@@ -199,7 +199,7 @@
                     </div>
 
                     <!-- Visitas -->
-                    <div class="card p-5 card-hover cursor-pointer" onclick="location.href='/owner/visitors'">
+                    <div class="card p-5 card-hover cursor-pointer owner-portal-visits" onclick="location.href='/owner/visitors'">
                         <div class="flex items-start justify-between">
                             <div>
                                 <p class="text-sm text-[#5F6368]">Visitas Hoy</p>
@@ -242,7 +242,7 @@
                                 </div>
                             </a>
                             
-                            <a href="/owner/visitors/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition">
+                            <a href="/owner/visitors/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition owner-portal-visits">
                                 <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
                                     <span class="material-icons-round text-green-600">person_add</span>
                                 </div>
@@ -252,7 +252,7 @@
                                 </div>
                             </a>
                             
-                            <a href="/owner/delivery/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition">
+                            <a href="/owner/delivery/new" class="flex items-center p-4 border border-[#E5E5E5] rounded-xl hover:bg-[#FAFAFA] transition owner-portal-deliveries">
                                 <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
                                     <span class="material-icons-round text-purple-600">local_shipping</span>
                                 </div>
@@ -898,5 +898,6 @@
             loadNotifications();
         });
     </script>
+    <script src="/js/owner-portal-features.js"></script>
 </body>
 </html>

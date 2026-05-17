@@ -278,6 +278,62 @@ class TenantModel {
         `);
         return TenantModel.findById(tenantId);
     }
+
+    static normalizeBitFlag(value, defaultEnabled = true) {
+        if (value === undefined || value === null) return defaultEnabled;
+        return value === true || value === 1 || value === '1';
+    }
+
+    /**
+     * Flags de módulos de portería (visitas / deliveries) para propietarios y vigilancia.
+     */
+    static async getPortalFeatureFlags(tenantId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT visits_announcements_enabled, deliveries_announcements_enabled
+                FROM Tenants WHERE id = @id
+            `);
+        const row = result.recordset[0];
+        if (!row) return null;
+        return {
+            visits_announcements_enabled: TenantModel.normalizeBitFlag(row.visits_announcements_enabled, true),
+            deliveries_announcements_enabled: TenantModel.normalizeBitFlag(row.deliveries_announcements_enabled, true)
+        };
+    }
+
+    /**
+     * SuperAdmin: activar/desactivar anuncios de visitas y deliveries.
+     * @param {Object} data - { visitsEnabled?, deliveriesEnabled? }
+     */
+    static async updatePortalFeatureFlags(tenantId, data) {
+        const pool = await connectDB();
+        const cur = await pool.request()
+            .input('id', sql.UniqueIdentifier, tenantId)
+            .query('SELECT id FROM Tenants WHERE id = @id');
+        if (!cur.recordset[0]) throw new Error('Condominio no encontrado');
+
+        const request = pool.request().input('id', sql.UniqueIdentifier, tenantId);
+        const parts = [];
+
+        if (data.visitsEnabled !== undefined) {
+            parts.push('visits_announcements_enabled = @v_en');
+            request.input('v_en', sql.Bit, data.visitsEnabled ? 1 : 0);
+        }
+        if (data.deliveriesEnabled !== undefined) {
+            parts.push('deliveries_announcements_enabled = @d_en');
+            request.input('d_en', sql.Bit, data.deliveriesEnabled ? 1 : 0);
+        }
+
+        if (parts.length === 0) {
+            return TenantModel.getPortalFeatureFlags(tenantId);
+        }
+
+        parts.push('updated_at = SYSDATETIME()');
+        await request.query(`UPDATE Tenants SET ${parts.join(', ')} WHERE id = @id`);
+        return TenantModel.getPortalFeatureFlags(tenantId);
+    }
 }
 
 module.exports = TenantModel;

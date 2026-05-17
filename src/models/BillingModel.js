@@ -18,12 +18,24 @@ class BillingModel {
                 .input('billing_year', sql.Int, data.billing_year)
                 .input('name', sql.NVarChar, data.name)
                 .input('exchange_rate_usd', sql.Decimal(10, 2), data.exchange_rate_usd)
+                .input('exchange_rate_date', sql.Date, data.exchange_rate_date || null)
+                .input('rate_freeze_mode', sql.NVarChar, data.rate_freeze_mode || 'NONE')
+                .input('rate_freeze_window_days', sql.Int, data.rate_freeze_window_days ?? null)
+                .input('rate_unpaid_migrate_after_month', sql.Bit, data.rate_unpaid_migrate_after_month ? 1 : 0)
                 .input('created_by', sql.UniqueIdentifier, data.created_by)
                 .input('invoice_type', sql.NVarChar, data.invoice_type || 'ORDINARY')
                 .query(`
-                    INSERT INTO BillingPreliminaries (tenant_id, billing_month, billing_year, name, exchange_rate_usd, created_by, invoice_type)
+                    INSERT INTO BillingPreliminaries (
+                        tenant_id, billing_month, billing_year, name,
+                        exchange_rate_usd, exchange_rate_date, rate_freeze_mode, rate_freeze_window_days,
+                        rate_unpaid_migrate_after_month, created_by, invoice_type
+                    )
                     OUTPUT INSERTED.*
-                    VALUES (@tenant_id, @billing_month, @billing_year, @name, @exchange_rate_usd, @created_by, @invoice_type)
+                    VALUES (
+                        @tenant_id, @billing_month, @billing_year, @name,
+                        @exchange_rate_usd, @exchange_rate_date, @rate_freeze_mode, @rate_freeze_window_days,
+                        @rate_unpaid_migrate_after_month, @created_by, @invoice_type
+                    )
                 `);
             return result.recordset[0];
         } catch (error) {
@@ -438,6 +450,8 @@ class BillingModel {
                     SELECT i.*, p.name as property_name, p.building, p.alicuota,
                         pr.billing_month, pr.billing_year, pr.name as preliminary_name,
                         pr.exchange_rate_usd as exchange_rate_preliminary,
+                        pr.exchange_rate_date as preliminary_exchange_rate_date,
+                        pr.rate_freeze_mode, pr.rate_freeze_window_days, pr.rate_unpaid_migrate_after_month,
                         pr.created_at as preliminary_created_at,
                         u.first_name + ' ' + u.last_name as owner_name, u.email as owner_email
                     FROM BillingInvoices i
@@ -478,9 +492,13 @@ class BillingModel {
             const pool = await connectDB();
             const result = await pool.request()
                 .query(`
-                    SELECT i.*, t.billing_mode
+                    SELECT i.*, t.billing_mode,
+                        pr.rate_freeze_mode, pr.rate_freeze_window_days, pr.rate_unpaid_migrate_after_month,
+                        pr.created_at AS preliminary_created_at,
+                        pr.exchange_rate_usd AS preliminary_exchange_rate
                     FROM BillingInvoices i
                     INNER JOIN Tenants t ON i.tenant_id = t.id
+                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     WHERE i.status = 'PENDING'
                       AND NOT EXISTS (
                           SELECT 1 FROM BillingPaymentReports r
@@ -532,6 +550,7 @@ class BillingModel {
     static async refreshInvoiceToLatestBcvRate(invoiceId, tenantId) {
         try {
             const ExchangeRateModel = require('./ExchangeRateModel');
+            const BillingRateFreezeService = require('../services/BillingRateFreezeService');
             const latestRate = await ExchangeRateModel.getLatest();
             if (!latestRate || latestRate.usd_rate == null) {
                 return null;
@@ -541,12 +560,29 @@ class BillingModel {
                 .input('id', sql.UniqueIdentifier, invoiceId)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
                 .query(`
-                    SELECT assigned_amount_usd FROM BillingInvoices
-                    WHERE id = @id AND tenant_id = @tenant_id AND status = N'PENDING'
+                    SELECT i.assigned_amount_usd,
+                        pr.rate_freeze_mode, pr.rate_freeze_window_days, pr.rate_unpaid_migrate_after_month,
+                        pr.created_at AS preliminary_created_at,
+                        pr.exchange_rate_usd AS preliminary_exchange_rate
+                    FROM BillingInvoices i
+                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    WHERE i.id = @id AND i.tenant_id = @tenant_id AND i.status = N'PENDING'
                 `);
             const row = invRes.recordset[0];
             if (!row) {
                 return null;
+            }
+            const preliminary = {
+                rate_freeze_mode: row.rate_freeze_mode,
+                rate_freeze_window_days: row.rate_freeze_window_days,
+                rate_unpaid_migrate_after_month: row.rate_unpaid_migrate_after_month,
+                created_at: row.preliminary_created_at,
+                exchange_rate_usd: row.preliminary_exchange_rate
+            };
+            if (!BillingRateFreezeService.shouldApplyDailyRateUpdate(preliminary)) {
+                const frozenRate = BillingRateFreezeService.getFrozenRate(preliminary);
+                const usd = parseFloat(row.assigned_amount_usd) || 0;
+                return BillingModel.updateInvoiceRate(invoiceId, frozenRate, usd * frozenRate);
             }
             const usd = parseFloat(row.assigned_amount_usd) || 0;
             const newRate = parseFloat(latestRate.usd_rate);

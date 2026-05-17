@@ -1,5 +1,6 @@
 const BillingModel = require('../models/BillingModel');
 const ExchangeRateModel = require('../models/ExchangeRateModel');
+const BillingRateFreezeService = require('../services/BillingRateFreezeService');
 const { sql, connectDB } = require('../config/database');
 const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
 
@@ -168,32 +169,38 @@ class OwnerBillingController {
                 return res.status(403).json({ error: 'Este recibo aún no está disponible' });
             }
 
-            // Tasa del día y comparativa para spread
             const latestRate = await ExchangeRateModel.getLatest();
-            const totalUsd = parseFloat(invoice.total_amount_usd) || (parseFloat(invoice.assigned_amount_ves) / (parseFloat(invoice.current_exchange_rate) || 1));
-            const ratePrelim = parseFloat(invoice.exchange_rate_preliminary) || 0;
-            const rateCurrent = parseFloat(invoice.current_exchange_rate) || parseFloat(invoice.exchange_rate_at_creation) || ratePrelim;
-            const rateToday = latestRate ? parseFloat(latestRate.usd_rate) : rateCurrent;
-            const rateTodayDateStr = latestRate?.rate_date ? OwnerBillingController._formatRateDate(latestRate.rate_date) : null;
+            const preliminary = {
+                exchange_rate_usd: invoice.exchange_rate_preliminary,
+                exchange_rate_date: invoice.preliminary_exchange_rate_date,
+                rate_freeze_mode: invoice.rate_freeze_mode,
+                rate_freeze_window_days: invoice.rate_freeze_window_days,
+                rate_unpaid_migrate_after_month: invoice.rate_unpaid_migrate_after_month,
+                created_at: invoice.preliminary_created_at
+            };
+            const rateCurrent = parseFloat(invoice.current_exchange_rate)
+                || parseFloat(invoice.exchange_rate_at_creation)
+                || BillingRateFreezeService.getFrozenRate(preliminary);
+            const totalUsd = parseFloat(invoice.total_amount_usd)
+                || (parseFloat(invoice.assigned_amount_ves) / (rateCurrent || 1));
 
-            // Incluir si hay reporte de pago pendiente (para ocultar botón Reportar Pago)
             const paymentReport = await BillingModel.getLatestPaymentReport(id);
             if (paymentReport && paymentReport.status === 'PENDING_CONFIRMATION') {
                 invoice.has_pending_payment_report = true;
             }
 
-            invoice.rate_info = {
-                rate_preliminary: ratePrelim,
-                rate_preliminary_date: OwnerBillingController._formatRateDate(invoice.preliminary_created_at) || (invoice.preliminary_created_at ? new Date(invoice.preliminary_created_at).toLocaleDateString('es-VE') : null),
-                rate_current: rateCurrent,
-                rate_today: rateToday,
-                rate_today_date: rateTodayDateStr,
-                contravalue_preliminary_ves: ratePrelim ? totalUsd * ratePrelim : null,
-                contravalue_current_ves: parseFloat(invoice.assigned_amount_ves),
-                contravalue_today_ves: rateToday ? totalUsd * rateToday : null,
-                total_usd: totalUsd,
-                spread_pct: ratePrelim ? ((rateToday - ratePrelim) / ratePrelim * 100) : null
-            };
+            const rateInfo = BillingRateFreezeService.buildRateInfo({
+                preliminary,
+                totalUsd,
+                latestRate,
+                pendingInvoicesCount: invoice.status === 'PENDING' ? 1 : 0,
+                allInvoicesPaid: invoice.status === 'PAID'
+            });
+            if (rateInfo) {
+                rateInfo.rate_current = rateCurrent;
+                rateInfo.contravalue_current_ves = parseFloat(invoice.assigned_amount_ves);
+            }
+            invoice.rate_info = rateInfo;
 
             // Recalcular montos de items con tasa actual para que coincidan con el total del recibo
             if (invoice.items && rateCurrent) {

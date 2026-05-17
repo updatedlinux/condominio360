@@ -7,6 +7,7 @@ const ExchangeRateModel = require('../models/ExchangeRateModel');
 const EmailService = require('../services/EmailService');
 const ReserveFundModel = require('../models/ReserveFundModel');
 const ReserveFundService = require('../services/ReserveFundService');
+const BillingRateFreezeService = require('../services/BillingRateFreezeService');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -21,6 +22,84 @@ class TenantAdminBillingController {
      * GET /api/tenant-admin/billing/config
      * Obtener configuración de facturación del tenant
      */
+    /**
+     * GET /api/tenant-admin/billing/bcv-rate-context
+     * Tasa almacenada + aviso 6 p.m. para modal de preliminar.
+     */
+    static async getBcvRateContext(req, res) {
+        try {
+            const data = await BillingRateFreezeService.getBcvRateContext();
+            if (!data.rate) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No hay tasa BCV almacenada. Intente actualizar la tasa.'
+                });
+            }
+            res.json({ success: true, data });
+        } catch (error) {
+            console.error('getBcvRateContext error:', error);
+            res.status(500).json({ success: false, error: 'Error al obtener contexto de tasa BCV' });
+        }
+    }
+
+    static _parseRateFreezeFromBody(body) {
+        const mode = BillingRateFreezeService.normalizeMode(body.rate_freeze_mode);
+        let windowDays = null;
+        if (mode === 'WINDOW') {
+            windowDays = parseInt(body.rate_freeze_window_days, 10);
+            if (![5, 10, 15].includes(windowDays)) {
+                const err = new Error('La ventana de congelamiento debe ser 5, 10 o 15 días');
+                err.statusCode = 400;
+                throw err;
+            }
+        }
+        let unpaidMigrateAfterMonth = false;
+        if (mode === 'PERMANENT') {
+            unpaidMigrateAfterMonth = body.rate_unpaid_migrate_after_month === true
+                || body.rate_unpaid_migrate_after_month === 'true'
+                || body.rate_unpaid_migrate_after_month === '1'
+                || body.rate_unpaid_migrate_after_month === 1;
+        }
+        return { mode, windowDays, unpaidMigrateAfterMonth };
+    }
+
+    static _preliminaryExchangeRateDate(latestRate) {
+        if (!latestRate?.rate_date) return null;
+        return new Date(latestRate.rate_date).toISOString().split('T')[0];
+    }
+
+    static _preliminaryFromInvoiceRow(inv) {
+        return {
+            exchange_rate_usd: inv.exchange_rate_preliminary,
+            exchange_rate_date: inv.preliminary_exchange_rate_date,
+            rate_freeze_mode: inv.rate_freeze_mode,
+            rate_freeze_window_days: inv.rate_freeze_window_days,
+            rate_unpaid_migrate_after_month: inv.rate_unpaid_migrate_after_month,
+            created_at: inv.preliminary_created_at
+        };
+    }
+
+    static _buildInvoiceRateInfo(invoice, latestRate) {
+        const preliminary = TenantAdminBillingController._preliminaryFromInvoiceRow(invoice);
+        const rateCurrent = parseFloat(invoice.current_exchange_rate)
+            || parseFloat(invoice.exchange_rate_at_creation)
+            || BillingRateFreezeService.getFrozenRate(preliminary);
+        const totalUsd = parseFloat(invoice.total_amount_usd)
+            || (parseFloat(invoice.assigned_amount_ves) / (rateCurrent || 1));
+        const pending = invoice.status === 'PENDING' ? 1 : 0;
+        const info = BillingRateFreezeService.buildRateInfo({
+            preliminary,
+            totalUsd,
+            latestRate,
+            pendingInvoicesCount: pending,
+            allInvoicesPaid: invoice.status === 'PAID'
+        });
+        if (!info) return null;
+        info.rate_current = rateCurrent;
+        info.contravalue_current_ves = parseFloat(invoice.assigned_amount_ves);
+        return info;
+    }
+
     static async getConfig(req, res) {
         try {
             const tenantId = req.user.tenantId;
@@ -498,24 +577,14 @@ class TenantAdminBillingController {
                 allInvoicesPaid = pendingInvoicesCount === 0;
             }
 
-            // rate_info: diferencial cambiario solo aplica a recibos PENDIENTES. Si todos pagaron, no hay variación.
-            if (ratePrelim) {
-                const showRateDifferential = !allInvoicesPaid && rateToday && pendingInvoicesCount > 0;
-                preliminary.rate_info = {
-                    rate_preliminary: ratePrelim,
-                    rate_preliminary_date: TenantAdminBillingController._formatRateDate(preliminary.created_at),
-                    rate_today: rateToday,
-                    rate_today_date: TenantAdminBillingController._formatRateDate(latestRate?.rate_date),
-                    contravalue_preliminary_ves: totalUsd * ratePrelim,
-                    contravalue_today_ves: rateToday ? totalUsd * rateToday : null,
-                    total_usd: totalUsd,
-                    spread_pct: showRateDifferential ? ((rateToday - ratePrelim) / ratePrelim * 100) : null,
-                    all_invoices_paid: allInvoicesPaid,
-                    total_ves_from_invoices: totalVesFromInvoices
-                };
-            } else {
-                preliminary.rate_info = null;
-            }
+            preliminary.rate_info = BillingRateFreezeService.buildRateInfo({
+                preliminary,
+                totalUsd,
+                latestRate,
+                pendingInvoicesCount,
+                allInvoicesPaid,
+                totalVesFromInvoices
+            });
 
             res.json({
                 success: true,
@@ -579,6 +648,9 @@ class TenantAdminBillingController {
                 if (body.billing_year != null && body.billing_year !== '') {
                     body.billing_year = parseInt(body.billing_year, 10);
                 }
+                if (body.rate_freeze_window_days != null && body.rate_freeze_window_days !== '') {
+                    body.rate_freeze_window_days = parseInt(body.rate_freeze_window_days, 10);
+                }
             }
 
             const { billing_month, billing_year, name, items } = body;
@@ -597,9 +669,16 @@ class TenantAdminBillingController {
                 }
             }
 
-            // Obtener tasa BCV actual
+            let rateFreeze;
+            try {
+                rateFreeze = TenantAdminBillingController._parseRateFreezeFromBody(body);
+            } catch (e) {
+                return res.status(e.statusCode || 400).json({ error: e.message });
+            }
+
             const latestRate = await ExchangeRateModel.getLatest();
             const exchangeRate = latestRate ? latestRate.usd_rate : 0;
+            const exchangeRateDate = TenantAdminBillingController._preliminaryExchangeRateDate(latestRate);
 
             if (exchangeRate === 0) {
                 return res.status(400).json({ error: 'No hay tasa BCV disponible. Intente más tarde.' });
@@ -650,6 +729,10 @@ class TenantAdminBillingController {
                 billing_year,
                 name: name || `Recibo ${billing_month}/${billing_year}`,
                 exchange_rate_usd: exchangeRate,
+                exchange_rate_date: exchangeRateDate,
+                rate_freeze_mode: rateFreeze.mode,
+                rate_freeze_window_days: rateFreeze.windowDays,
+                rate_unpaid_migrate_after_month: rateFreeze.unpaidMigrateAfterMonth,
                 created_by: userId,
                 invoice_type: invoiceType
             });
@@ -734,11 +817,9 @@ class TenantAdminBillingController {
                 return res.status(400).json({ error: 'El preliminar ya fue procesado' });
             }
 
-            // Preliminares (junta → propietarios) SIEMPRE usan la tasa más reciente al generar
-            const latestRate = await ExchangeRateModel.getLatest();
-            const exchangeRate = latestRate ? latestRate.usd_rate : 0;
+            const exchangeRate = parseFloat(preliminary.exchange_rate_usd) || 0;
             if (exchangeRate === 0) {
-                return res.status(400).json({ error: 'No hay tasa BCV disponible. Intente más tarde.' });
+                return res.status(400).json({ error: 'No hay tasa BCV en el preliminar.' });
             }
             const { totalUsd: recalcTotalUsd, totalVes: recalcTotalVes } = TenantAdminBillingController._recalcPreliminaryTotals(preliminary.items, exchangeRate);
 
@@ -912,11 +993,9 @@ class TenantAdminBillingController {
                 return res.status(400).json({ error: 'El preliminar ya fue procesado' });
             }
 
-            // Preliminares SIEMPRE usan la tasa más reciente al generar
-            const latestRate = await ExchangeRateModel.getLatest();
-            const exchangeRate = latestRate ? latestRate.usd_rate : 0;
+            const exchangeRate = parseFloat(preliminary.exchange_rate_usd) || 0;
             if (exchangeRate === 0) {
-                return res.status(400).json({ error: 'No hay tasa BCV disponible. Intente más tarde.' });
+                return res.status(400).json({ error: 'No hay tasa BCV en el preliminar.' });
             }
             const { totalUsd: recalcTotalUsd, totalVes: recalcTotalVes } = TenantAdminBillingController._recalcPreliminaryTotals(preliminary.items, exchangeRate);
 
@@ -1140,6 +1219,8 @@ class TenantAdminBillingController {
                 .query(`
                     SELECT i.*, pr.billing_month, pr.billing_year, pr.name as preliminary_name,
                            pr.exchange_rate_usd as exchange_rate_preliminary,
+                           pr.exchange_rate_date as preliminary_exchange_rate_date,
+                           pr.rate_freeze_mode, pr.rate_freeze_window_days, pr.rate_unpaid_migrate_after_month,
                            pr.created_at as preliminary_created_at
                     FROM BillingInvoices i
                     INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
@@ -1159,22 +1240,7 @@ class TenantAdminBillingController {
 
                 inv.payment_report = await BillingModel.getLatestPaymentReport(inv.id);
 
-                const ratePrelim = parseFloat(inv.exchange_rate_preliminary) || 0;
-                const rateCurrent = parseFloat(inv.current_exchange_rate) || parseFloat(inv.exchange_rate_at_creation) || ratePrelim;
-                const totalUsd = parseFloat(inv.total_amount_usd) || (parseFloat(inv.assigned_amount_ves) / (rateCurrent || 1));
-
-                inv.rate_info = {
-                    rate_preliminary: ratePrelim,
-                    rate_preliminary_date: TenantAdminBillingController._formatRateDate(inv.preliminary_created_at),
-                    rate_current: rateCurrent,
-                    rate_today: rateToday,
-                    rate_today_date: TenantAdminBillingController._formatRateDate(latestRate?.rate_date),
-                    contravalue_preliminary_ves: ratePrelim ? totalUsd * ratePrelim : null,
-                    contravalue_current_ves: parseFloat(inv.assigned_amount_ves),
-                    contravalue_today_ves: rateToday ? totalUsd * rateToday : null,
-                    total_usd: totalUsd,
-                    spread_pct: ratePrelim ? ((rateToday - ratePrelim) / ratePrelim * 100) : null
-                };
+                inv.rate_info = TenantAdminBillingController._buildInvoiceRateInfo(inv, latestRate);
             }
 
             res.json({ success: true, data: invoices });
@@ -1377,22 +1443,10 @@ class TenantAdminBillingController {
             // Tasa del día y comparativa para spread (igual que OwnerBillingController)
             const latestRate = await ExchangeRateModel.getLatest();
             const totalUsd = parseFloat(invoice.total_amount_usd) || (parseFloat(invoice.assigned_amount_ves) / (parseFloat(invoice.current_exchange_rate) || 1));
-            const ratePrelim = parseFloat(invoice.exchange_rate_preliminary) || 0;
-            const rateCurrent = parseFloat(invoice.current_exchange_rate) || parseFloat(invoice.exchange_rate_at_creation) || ratePrelim;
-            const rateToday = latestRate ? parseFloat(latestRate.usd_rate) : rateCurrent;
-
-            invoice.rate_info = {
-                rate_preliminary: ratePrelim,
-                rate_preliminary_date: TenantAdminBillingController._formatRateDate(invoice.preliminary_created_at),
-                rate_current: rateCurrent,
-                rate_today: rateToday,
-                rate_today_date: TenantAdminBillingController._formatRateDate(latestRate?.rate_date),
-                contravalue_preliminary_ves: ratePrelim ? totalUsd * ratePrelim : null,
-                contravalue_current_ves: parseFloat(invoice.assigned_amount_ves),
-                contravalue_today_ves: rateToday ? totalUsd * rateToday : null,
-                total_usd: totalUsd,
-                spread_pct: ratePrelim ? ((rateToday - ratePrelim) / ratePrelim * 100) : null
-            };
+            invoice.rate_info = TenantAdminBillingController._buildInvoiceRateInfo(invoice, latestRate);
+            const rateCurrent = invoice.rate_info?.rate_current
+                || parseFloat(invoice.current_exchange_rate)
+                || parseFloat(invoice.exchange_rate_at_creation);
 
             // Recalcular montos de items con tasa actual
             if (invoice.items && rateCurrent) {

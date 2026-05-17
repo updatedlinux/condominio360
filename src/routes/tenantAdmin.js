@@ -18,6 +18,10 @@ const TenantAdminBankAccountController = require('../controllers/TenantAdminBank
 const TenantAdminReconciliationController = require('../controllers/TenantAdminReconciliationController');
 const uploadBankStatement = require('../middleware/uploadBankStatement');
 const requireFullBillingMode = require('../middleware/requireFullBillingMode');
+const {
+    requireVisitsAnnouncements,
+    requireDeliveriesAnnouncements
+} = require('../middleware/requireTenantFeature');
 
 // Middleware to ensure user is Tenant Admin
 const verifyTenantAdmin = (req, res, next) => {
@@ -45,6 +49,20 @@ router.use(verifyTenantAdmin);
 // Dashboard stats
 router.get('/stats', TenantAdminController.getStats);
 router.get('/activity', TenantAdminController.getActivity);
+
+router.get('/portal-features', async (req, res) => {
+    try {
+        const TenantModel = require('../models/TenantModel');
+        const data = await TenantModel.getPortalFeatureFlags(req.user.tenantId);
+        if (!data) {
+            return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
+        }
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('tenant-admin portal-features error:', error);
+        res.status(500).json({ success: false, error: 'Error al cargar funcionalidades' });
+    }
+});
 
 // ==================== NOTIFICACIONES IN-APP (MENSAJES CORTOS) ====================
 const InAppNotificationController = require('../controllers/InAppNotificationController');
@@ -137,10 +155,10 @@ router.post('/security-users/:id/password', SecurityUserController.setPassword);
 router.delete('/security-users/:id', SecurityUserController.deactivate);
 
 // ==================== REPORTES (VISITAS / DELIVERIES) ====================
-router.get('/reports/visit-logs/export', TenantAdminReportsController.visitLogsExportExcel);
-router.get('/reports/visit-logs', TenantAdminReportsController.visitLogs);
-router.get('/reports/deliveries/export', TenantAdminReportsController.deliveriesExportExcel);
-router.get('/reports/deliveries', TenantAdminReportsController.deliveries);
+router.get('/reports/visit-logs/export', requireVisitsAnnouncements, TenantAdminReportsController.visitLogsExportExcel);
+router.get('/reports/visit-logs', requireVisitsAnnouncements, TenantAdminReportsController.visitLogs);
+router.get('/reports/deliveries/export', requireDeliveriesAnnouncements, TenantAdminReportsController.deliveriesExportExcel);
+router.get('/reports/deliveries', requireDeliveriesAnnouncements, TenantAdminReportsController.deliveries);
 
 // ==================== FACTURACIÓN CONDOMINIO360 (SAAS) ====================
 const TenantAdminSaaSBillingController = require('../controllers/TenantAdminSaaSBillingController');
@@ -190,6 +208,8 @@ const ExchangeRateModel = require('../models/ExchangeRateModel');
 // Configuración
 router.get('/billing/config', TenantAdminBillingController.getConfig);
 router.put('/billing/config', TenantAdminBillingController.updateConfig);
+
+router.get('/billing/bcv-rate-context', TenantAdminBillingController.getBcvRateContext);
 
 // Tasa de cambio BCV
 router.get('/billing/exchange-rate', async (req, res) => {

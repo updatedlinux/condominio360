@@ -378,6 +378,16 @@
                                 </div>
                                 <span class="material-symbols-rounded text-slate-400 ml-auto flex-shrink-0 group-hover:text-orange-500">chevron_right</span>
                             </button>
+                            <button type="button" onclick="configurePortalFeatures()" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200/80 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-indigo-700">shield</span>
+                                </div>
+                                <div class="ml-4 min-w-0">
+                                    <p class="font-semibold text-slate-900">Visitas y Deliveries</p>
+                                    <p class="text-sm text-slate-500" id="portal-features-summary">Cargando estado…</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto flex-shrink-0 group-hover:text-orange-500">chevron_right</span>
+                            </button>
                         </div>
                     </div>
 
@@ -805,6 +815,73 @@
             loadWhatsAppSettings();
         }
 
+        function portalFeaturesSummaryText(data) {
+            const v = data.visits_announcements_enabled ? 'Visitas ✓' : 'Visitas ✗';
+            const d = data.deliveries_announcements_enabled ? 'Deliveries ✓' : 'Deliveries ✗';
+            return `${v} · ${d}`;
+        }
+
+        async function refreshPortalFeaturesSummary() {
+            const el = document.getElementById('portal-features-summary');
+            if (!el) return;
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/portal-features`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const j = await res.json();
+                if (res.ok && j.data) {
+                    el.textContent = portalFeaturesSummaryText(j.data);
+                }
+            } catch (e) {
+                el.textContent = 'No disponible';
+            }
+        }
+
+        function configurePortalFeatures() {
+            openModal('portal-features-modal');
+            loadPortalFeaturesSettings();
+        }
+
+        async function loadPortalFeaturesSettings() {
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/portal-features`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error || 'Error');
+                document.getElementById('pf-visits-enabled').checked = !!j.data.visits_announcements_enabled;
+                document.getElementById('pf-deliveries-enabled').checked = !!j.data.deliveries_announcements_enabled;
+            } catch (e) {
+                showPageToast(e.message || 'Error al cargar', 'error');
+            }
+        }
+
+        async function savePortalFeaturesSettings() {
+            const body = {
+                visitsEnabled: document.getElementById('pf-visits-enabled').checked,
+                deliveriesEnabled: document.getElementById('pf-deliveries-enabled').checked
+            };
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/portal-features`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error || 'Error al guardar');
+                closeModal('portal-features-modal');
+                showPageToast('Funcionalidades de portería actualizadas', 'success');
+                refreshPortalFeaturesSummary();
+            } catch (e) {
+                showPageToast(e.message || 'Error al guardar', 'error');
+            }
+        }
+
+        refreshPortalFeaturesSummary();
+
         async function loadWhatsAppSettings() {
             const hint = document.getElementById('wa-key-hint');
             hint.textContent = 'Cargando...';
@@ -1219,6 +1296,43 @@
             window.location.href = '/';
         }
     </script>
+
+    <!-- Visitas / Deliveries por condominio — SuperAdmin -->
+    <div id="portal-features-modal" class="modal-overlay">
+        <div class="modal-content p-6" style="max-width: 520px;">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">Visitas y Deliveries</h2>
+                <button type="button" onclick="closeModal('portal-features-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <p class="text-sm text-slate-600 mb-4">Controla si propietarios y vigilancia pueden usar <strong>Anuncio de Visitas</strong> y <strong>Anuncio de Deliveries</strong>. Desactívelo si el condominio aún no cuenta con personal y equipo en portería (PC/tablet).</p>
+            <div class="space-y-4">
+                <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
+                    <input type="checkbox" id="pf-visits-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                    <span>
+                        <span class="font-medium text-slate-900 block">Anuncio de Visitas</span>
+                        <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes de visitas.</span>
+                    </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
+                    <input type="checkbox" id="pf-deliveries-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                    <span>
+                        <span class="font-medium text-slate-900 block">Anuncio de Deliveries</span>
+                        <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes de deliveries.</span>
+                    </span>
+                </label>
+            </div>
+            <div class="flex gap-3 pt-6 mt-2">
+                <button type="button" onclick="closeModal('portal-features-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" onclick="savePortalFeaturesSettings()" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- WhatsApp API (Mensajes in-app) — SuperAdmin -->
     <div id="whatsapp-messaging-modal" class="modal-overlay">

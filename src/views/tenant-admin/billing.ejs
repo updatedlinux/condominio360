@@ -324,6 +324,36 @@
                     <label class="block text-sm font-medium text-[#5F6368] mb-1">Nombre del Recibo</label>
                     <input type="text" id="prel-name" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg" placeholder="Ej: Recibo Marzo 2026">
                 </div>
+                <div id="prel-bcv-notice" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"></div>
+                <div class="border border-[#E5E5E5] rounded-lg p-4 space-y-3 bg-[#FAFAFA]">
+                    <h4 class="text-sm font-medium text-[#3C4043]">Tasa BCV y congelamiento</h4>
+                    <div>
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Modalidad</label>
+                        <select id="prel-rate-freeze-mode" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm" onchange="onPrelRateFreezeModeChange()">
+                            <option value="NONE">Sin congelar (actualización diaria del monto en Bs.)</option>
+                            <option value="PERMANENT">Congelar tasa del día de generación (permanente)</option>
+                            <option value="WINDOW">Congelar por ventana de días</option>
+                        </select>
+                    </div>
+                    <div id="prel-rate-freeze-window-wrap" class="hidden">
+                        <label class="block text-sm font-medium text-[#5F6368] mb-1">Días de congelamiento (desde la generación)</label>
+                        <select id="prel-rate-freeze-window" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                            <option value="5">5 días</option>
+                            <option value="10">10 días</option>
+                            <option value="15">15 días</option>
+                        </select>
+                        <p class="text-xs text-[#9AA0A6] mt-1">Día 0 = fecha de creación. Tras la ventana, los recibos pendientes usan la tasa del día.</p>
+                    </div>
+                    <div id="prel-rate-freeze-permanent-wrap" class="hidden">
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" id="prel-rate-unpaid-migrate" class="mt-1 rounded border-[#E5E5E5]">
+                            <span class="text-sm text-[#3C4043]">
+                                Si el recibo sigue impago tras <strong>1 mes calendario</strong> desde su generación, pasar a actualización diaria de la tasa (protección por mora).
+                                <span class="block text-xs text-[#9AA0A6] mt-1">Ej.: generado el 1 de mayo → desde el 1 de junio los pendientes usan la tasa del día.</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
                 <div class="border-t border-[#E5E5E5] pt-4">
                     <div class="flex justify-between items-center mb-3">
                         <h4 class="font-medium text-[#3C4043]">Items de Cobro</h4>
@@ -430,7 +460,29 @@
                             + Agregar Item
                         </button>
                     </div>
-                    <div id="extra-items-list" class="space-y-2"></div>
+                    
+                <div id="extra-bcv-notice" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 mb-3"></div>
+                <div class="border border-[#E5E5E5] rounded-lg p-3 space-y-2 bg-[#FAFAFA] mb-3">
+                    <p class="text-sm font-medium text-[#3C4043]">Tasa BCV</p>
+                    <select id="extra-rate-freeze-mode" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm" onchange="onPrelRateFreezeModeChange('extra')">
+                        <option value="NONE">Sin congelar</option>
+                        <option value="PERMANENT">Congelar permanente</option>
+                        <option value="WINDOW">Ventana de días</option>
+                    </select>
+                    <div id="extra-rate-freeze-window-wrap" class="hidden">
+                        <select id="extra-rate-freeze-window" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                            <option value="5">5 días</option>
+                            <option value="10">10 días</option>
+                            <option value="15">15 días</option>
+                        </select>
+                    </div>
+                    <div id="extra-rate-freeze-permanent-wrap" class="hidden">
+                        <label class="flex items-start gap-2 cursor-pointer mt-2">
+                            <input type="checkbox" id="extra-rate-unpaid-migrate" class="mt-1 rounded border-[#E5E5E5]">
+                            <span class="text-xs text-[#3C4043]">Tras 1 mes calendario impago, pasar a tasa diaria</span>
+                        </label>
+                    </div>
+                </div><div id="extra-items-list" class="space-y-2"></div>
                     <div id="extra-totals" class="mt-4 p-4 bg-[#FAFAFA] rounded-lg">
                         <div class="flex justify-between text-sm">
                             <span class="text-[#5F6368]">Total USD:</span>
@@ -524,7 +576,29 @@
                             + Agregar Item
                         </button>
                     </div>
-                    <div id="prop-items-list" class="space-y-2"></div>
+                    
+                <div id="prop-bcv-notice" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 mb-3"></div>
+                <div class="border border-[#E5E5E5] rounded-lg p-3 space-y-2 bg-[#FAFAFA] mb-3">
+                    <p class="text-sm font-medium text-[#3C4043]">Tasa BCV</p>
+                    <select id="prop-rate-freeze-mode" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm" onchange="onPrelRateFreezeModeChange('prop')">
+                        <option value="NONE">Sin congelar</option>
+                        <option value="PERMANENT">Congelar permanente</option>
+                        <option value="WINDOW">Ventana de días</option>
+                    </select>
+                    <div id="prop-rate-freeze-window-wrap" class="hidden">
+                        <select id="prop-rate-freeze-window" class="w-full px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                            <option value="5">5 días</option>
+                            <option value="10">10 días</option>
+                            <option value="15">15 días</option>
+                        </select>
+                    </div>
+                    <div id="prop-rate-freeze-permanent-wrap" class="hidden">
+                        <label class="flex items-start gap-2 cursor-pointer mt-2">
+                            <input type="checkbox" id="prop-rate-unpaid-migrate" class="mt-1 rounded border-[#E5E5E5]">
+                            <span class="text-xs text-[#3C4043]">Tras 1 mes calendario impago, pasar a tasa diaria</span>
+                        </label>
+                    </div>
+                </div><div id="prop-items-list" class="space-y-2"></div>
                     <div id="prop-totals" class="mt-4 p-4 bg-[#FAFAFA] rounded-lg">
                         <div class="flex justify-between text-sm">
                             <span class="text-[#5F6368]">Total USD:</span>
@@ -1576,16 +1650,73 @@
             showModal('config-modal');
         }
 
+        function onPrelRateFreezeModeChange(prefix = 'prel') {
+            const windowWrap = document.getElementById(`${prefix}-rate-freeze-window-wrap`);
+            const permanentWrap = document.getElementById(`${prefix}-rate-freeze-permanent-wrap`);
+            const mode = document.getElementById(`${prefix}-rate-freeze-mode`)?.value || 'NONE';
+            if (windowWrap) windowWrap.classList.toggle('hidden', mode !== 'WINDOW');
+            if (permanentWrap) permanentWrap.classList.toggle('hidden', mode !== 'PERMANENT');
+            if (mode !== 'PERMANENT') {
+                const cb = document.getElementById(`${prefix}-rate-unpaid-migrate`);
+                if (cb) cb.checked = false;
+            }
+        }
+
+        function getRateFreezeFields(prefix = 'prel') {
+            const mode = document.getElementById(`${prefix}-rate-freeze-mode`)?.value || 'NONE';
+            const out = { rate_freeze_mode: mode };
+            if (mode === 'WINDOW') {
+                out.rate_freeze_window_days = parseInt(document.getElementById(`${prefix}-rate-freeze-window`)?.value, 10);
+            }
+            if (mode === 'PERMANENT') {
+                out.rate_unpaid_migrate_after_month = document.getElementById(`${prefix}-rate-unpaid-migrate`)?.checked === true;
+            }
+            return out;
+        }
+
+        async function loadBcvRateNotice(noticeId = 'prel-bcv-notice') {
+            const el = document.getElementById(noticeId);
+            if (!el) return false;
+            try {
+                const res = await fetch('/api/tenant-admin/billing/bcv-rate-context', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const j = await res.json();
+                if (res.ok && j.data) {
+                    el.innerHTML = j.data.notice_html;
+                    el.classList.remove('hidden');
+                    if (j.data.rate) {
+                        currentRate = j.data.rate;
+                        currentRateDate = j.data.rate_date;
+                    }
+                    return true;
+                }
+                el.innerHTML = escapeHtml(j.error || 'No hay tasa BCV disponible.');
+                el.classList.remove('hidden');
+                return false;
+            } catch (e) {
+                el.classList.add('hidden');
+                return false;
+            }
+        }
+
         async function openCreatePreliminaryModal() {
             preliminaryItems = [];
-            
-            // Asegurar que tenemos tasa BCV
-            const hasRate = await ensureExchangeRate();
+            const modeEl = document.getElementById('prel-rate-freeze-mode');
+            if (modeEl) modeEl.value = 'NONE';
+            const migrateCb = document.getElementById('prel-rate-unpaid-migrate');
+            if (migrateCb) migrateCb.checked = false;
+            onPrelRateFreezeModeChange('prel');
+
+            const hasRate = await loadBcvRateNotice('prel-bcv-notice');
             if (!hasRate) {
-                showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
-                return;
+                const ok = await ensureExchangeRate();
+                if (!ok) {
+                    showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
+                    return;
+                }
             }
-            
+
             renderPreliminaryItems();
             showModal('preliminary-modal');
         }
@@ -1725,6 +1856,9 @@
             if (meta.target_property) fd.append('target_property', meta.target_property);
             if (meta.is_extraordinary) fd.append('is_extraordinary', 'true');
             if (meta.is_property_invoice) fd.append('is_property_invoice', 'true');
+            if (meta.rate_freeze_mode) fd.append('rate_freeze_mode', meta.rate_freeze_mode);
+            if (meta.rate_freeze_window_days != null) fd.append('rate_freeze_window_days', String(meta.rate_freeze_window_days));
+            if (meta.rate_unpaid_migrate_after_month) fd.append('rate_unpaid_migrate_after_month', 'true');
             (meta.attachments || []).forEach((file, i) => {
                 if (file) fd.append(`attachment_${i}`, file, file.name);
             });
@@ -1764,7 +1898,8 @@
                         billing_year: parseInt(document.getElementById('prel-year').value, 10),
                         name: document.getElementById('prel-name').value || `Recibo ${document.getElementById('prel-month').value}/${document.getElementById('prel-year').value}`,
                         items: itemsPayload,
-                        attachments: preliminaryItems.map(i => i._attachmentFile || null)
+                        attachments: preliminaryItems.map(i => i._attachmentFile || null),
+                        ...getRateFreezeFields('prel')
                     });
                     if (data.success) {
                         showToast('Preliminar creado exitosamente');
@@ -2176,9 +2311,10 @@
                     } else {
                         rateInfoHtml = `
                             <div class="border-t border-[#E5E5E5] pt-3 mt-3 space-y-1 text-sm">
+                                ${ri.freeze_label ? `<p class="text-xs text-indigo-800 bg-indigo-50 border border-indigo-100 rounded px-2 py-1 mb-2">${escapeHtml(ri.freeze_label)}</p>` : ''}
                                 <div class="flex justify-between"><span class="text-[#5F6368]">Tasa preliminar${ri.rate_preliminary_date ? ` (${ri.rate_preliminary_date})` : ''}</span><span>${Number(ri.rate_preliminary).toLocaleString('es-VE')} VES/USD · ${fmt(ri.contravalue_preliminary_ves)}</span></div>
-                                ${ri.rate_today ? `<div class="flex justify-between"><span class="text-[#5F6368]">Tasa del día${ri.rate_today_date ? ` (${ri.rate_today_date})` : ''} <span class="text-amber-600">(recibos pendientes)</span></span><span>${Number(ri.rate_today).toLocaleString('es-VE')} VES/USD · ${fmt(ri.contravalue_today_ves)}</span></div>` : ''}
-                                ${ri.spread_pct != null && ri.spread_pct !== 0 ? `
+                                ${ri.show_rate_differential && ri.rate_today ? `<div class="flex justify-between"><span class="text-[#5F6368]">Tasa del día${ri.rate_today_date ? ` (${ri.rate_today_date})` : ''} <span class="text-amber-600">(referencia)</span></span><span>${Number(ri.rate_today).toLocaleString('es-VE')} VES/USD · ${fmt(ri.contravalue_today_ves)}</span></div>` : ''}
+                                ${ri.show_rate_differential && ri.spread_pct != null && ri.spread_pct !== 0 ? `
                                 <div class="flex justify-between mt-2 py-2 rounded px-2 ${ri.spread_pct > 0 ? 'bg-amber-50' : 'bg-green-50'}">
                                     <span>Diferencial cambiario (recibos pendientes)</span>
                                     <span class="font-semibold ${ri.spread_pct > 0 ? 'text-amber-700' : 'text-green-700'}">${ri.spread_pct > 0 ? '+' : ''}${Number(ri.spread_pct).toFixed(2)}% ${ri.spread_pct > 0 ? '(pérdida)' : '(ganancia)'}</span>
@@ -2567,13 +2703,15 @@
         let extraordinaryItems = [];
 
         async function createExtraordinaryInvoice() {
-            // Asegurar que tenemos tasa BCV
-            const hasRate = await ensureExchangeRate();
-            if (!hasRate) {
+            const modeEl = document.getElementById('extra-rate-freeze-mode');
+            if (modeEl) modeEl.value = 'NONE';
+            onPrelRateFreezeModeChange('extra');
+            const hasRate = await loadBcvRateNotice('extra-bcv-notice');
+            if (!hasRate && !(await ensureExchangeRate())) {
                 showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
                 return;
             }
-            
+
             // Llenar select de edificios
             const select = document.getElementById('extra-building');
             select.innerHTML = '<option value="">Seleccionar edificio/calle...</option>';
@@ -2741,6 +2879,7 @@
                         billing_year: year,
                         name: name,
                         items: itemsPayload,
+                        ...getRateFreezeFields('extra'),
                         target_building: building,
                         is_extraordinary: true,
                         attachments: extraordinaryItems.map(i => i._attachmentFile || null)
@@ -2796,13 +2935,15 @@
         let selectedProperty = null;
 
         async function openPropertyInvoiceModal() {
-            // Asegurar que tenemos tasa BCV
-            const hasRate = await ensureExchangeRate();
-            if (!hasRate) {
+            const modeEl = document.getElementById('prop-rate-freeze-mode');
+            if (modeEl) modeEl.value = 'NONE';
+            onPrelRateFreezeModeChange('prop');
+            const hasRate = await loadBcvRateNotice('prop-bcv-notice');
+            if (!hasRate && !(await ensureExchangeRate())) {
                 showToast('No se pudo obtener la tasa de cambio BCV. Intente más tarde.', 'error');
                 return;
             }
-            
+
             // Reset form
             propertyInvoiceItems = [];
             selectedProperty = null;
@@ -3031,6 +3172,7 @@
                         billing_year: year,
                         name: name,
                         items: itemsPayload,
+                        ...getRateFreezeFields('prop'),
                         target_property: propertyId,
                         is_property_invoice: true,
                         attachments: propertyInvoiceItems.map(i => i._attachmentFile || null)

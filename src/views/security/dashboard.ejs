@@ -553,6 +553,7 @@
             return res;
         }
         
+        let portalFeatures = { visits_announcements_enabled: true, deliveries_announcements_enabled: true };
         let currentTab = 'visits';
         let selectedOwnerVisit = null;
         let selectedOwnerDelivery = null;
@@ -586,9 +587,47 @@
             document.getElementById('mv-visit-date').value = todayVE;
             document.getElementById('md-expected-date').value = todayVE;
             
-            loadTabData('visits');
-            startPolling();
+            loadPortalFeatures().then(function () {
+                applySecurityPortalTabs();
+                loadTabData(currentTab);
+                startPolling();
+            });
         });
+
+        async function loadPortalFeatures() {
+            try {
+                const res = await fetchWithAuth('/api/security/portal-features');
+                const json = await res.json();
+                if (res.ok && json.data) {
+                    portalFeatures = json.data;
+                }
+            } catch (e) {
+                console.warn('portal-features', e);
+            }
+        }
+
+        function applySecurityPortalTabs() {
+            const tabVisits = document.getElementById('tab-visits');
+            const tabDeliveries = document.getElementById('tab-deliveries');
+            const activeVisitsBtn = document.querySelector('button[onclick="showActiveVisits()"]');
+            if (!portalFeatures.visits_announcements_enabled) {
+                if (tabVisits) tabVisits.style.display = 'none';
+                if (activeVisitsBtn) activeVisitsBtn.style.display = 'none';
+            }
+            if (!portalFeatures.deliveries_announcements_enabled) {
+                if (tabDeliveries) tabDeliveries.style.display = 'none';
+            }
+            if (!portalFeatures.visits_announcements_enabled && portalFeatures.deliveries_announcements_enabled) {
+                currentTab = 'deliveries';
+            } else if (!portalFeatures.visits_announcements_enabled && !portalFeatures.deliveries_announcements_enabled) {
+                currentTab = 'moves';
+            } else {
+                currentTab = 'visits';
+            }
+            if (currentTab !== 'visits' && currentTab !== 'deliveries') {
+                switchTab(currentTab);
+            }
+        }
 
         // Polling inteligente cada 30 segundos
         function startPolling() {
@@ -686,6 +725,14 @@
         }
 
         async function loadTabData(tab) {
+            if (tab === 'visits' && !portalFeatures.visits_announcements_enabled) {
+                switchTab(portalFeatures.deliveries_announcements_enabled ? 'deliveries' : 'moves');
+                return;
+            }
+            if (tab === 'deliveries' && !portalFeatures.deliveries_announcements_enabled) {
+                switchTab(portalFeatures.visits_announcements_enabled ? 'visits' : 'moves');
+                return;
+            }
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
                 <div class="card p-12 text-center">

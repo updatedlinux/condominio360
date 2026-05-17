@@ -4,6 +4,10 @@ const SecurityController = require('../controllers/SecurityController');
 const DeliveryController = require('../controllers/DeliveryController');
 const NFCSecurityController = require('../controllers/NFCSecurityController');
 const { authenticate, requireSecurity } = require('../middleware/auth');
+const {
+    requireVisitsAnnouncements,
+    requireDeliveriesAnnouncements
+} = require('../middleware/requireTenantFeature');
 
 /**
  * Rutas del Panel de Seguridad
@@ -14,27 +18,42 @@ const { authenticate, requireSecurity } = require('../middleware/auth');
 // Aplicar middleware a todas las rutas
 router.use(authenticate, requireSecurity);
 
+// ==================== FUNCIONALIDADES DEL CONDOMINIO ====================
+router.get('/portal-features', async (req, res) => {
+    try {
+        const TenantModel = require('../models/TenantModel');
+        const data = await TenantModel.getPortalFeatureFlags(req.user.tenantId);
+        if (!data) {
+            return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
+        }
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('security portal-features error:', error);
+        res.status(500).json({ success: false, error: 'Error al cargar funcionalidades' });
+    }
+});
+
 // ==================== DASHBOARD / POLLING ====================
 router.get('/dashboard/status', SecurityController.getDashboardStatus);
-router.get('/active-visits', SecurityController.getActiveVisits);
+router.get('/active-visits', requireVisitsAnnouncements, SecurityController.getActiveVisits);
 
 // ==================== BÚSQUEDA PROPIETARIOS (para visita/delivery manual) ====================
 router.get('/owners/search', SecurityController.searchOwnersByDni);
 
 // ==================== VISITAS ====================
-router.get('/visits', SecurityController.getVisits);
-router.get('/visits/search', SecurityController.searchVisits);
-router.post('/visits/:id/entry', SecurityController.registerVisitEntry);
-router.post('/visits/:id/exit', SecurityController.registerVisitExit);
-router.post('/visits/manual', SecurityController.createManualVisit);
-router.post('/frequent-visits/:id/entry', SecurityController.registerFrequentVisitEntry);
+router.get('/visits', requireVisitsAnnouncements, SecurityController.getVisits);
+router.get('/visits/search', requireVisitsAnnouncements, SecurityController.searchVisits);
+router.post('/visits/:id/entry', requireVisitsAnnouncements, SecurityController.registerVisitEntry);
+router.post('/visits/:id/exit', requireVisitsAnnouncements, SecurityController.registerVisitExit);
+router.post('/visits/manual', requireVisitsAnnouncements, SecurityController.createManualVisit);
+router.post('/frequent-visits/:id/entry', requireVisitsAnnouncements, SecurityController.registerFrequentVisitEntry);
 
 // ==================== DELIVERIES ====================
-router.get('/deliveries', DeliveryController.getForSecurity);
-router.get('/deliveries/search', DeliveryController.searchByOwner);
-router.post('/deliveries/:id/arrive', DeliveryController.markArrived);
-router.post('/deliveries/:id/deliver', DeliveryController.markDelivered);
-router.post('/deliveries/manual', DeliveryController.createManual);
+router.get('/deliveries', requireDeliveriesAnnouncements, DeliveryController.getForSecurity);
+router.get('/deliveries/search', requireDeliveriesAnnouncements, DeliveryController.searchByOwner);
+router.post('/deliveries/:id/arrive', requireDeliveriesAnnouncements, DeliveryController.markArrived);
+router.post('/deliveries/:id/deliver', requireDeliveriesAnnouncements, DeliveryController.markDelivered);
+router.post('/deliveries/manual', requireDeliveriesAnnouncements, DeliveryController.createManual);
 
 // ==================== MUDANZAS ====================
 router.get('/moves', SecurityController.getApprovedMoves);
