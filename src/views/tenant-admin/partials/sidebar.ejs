@@ -76,7 +76,7 @@
                 <span class="material-icons-round mr-3 <%= activePage === 'balance-financiero' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">account_balance</span>
                 Balance Financiero
             </a>
-            <a href="/tenant-admin/reconciliation" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'reconciliation' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+            <a href="/tenant-admin/reconciliation" id="nav-reconciliation" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'reconciliation' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
                 <span class="material-icons-round mr-3 <%= activePage === 'reconciliation' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">fact_check</span>
                 Conciliación bancaria
             </a>
@@ -126,6 +126,22 @@
     </div>
     <script>
     (function(){ try { var u = JSON.parse(localStorage.getItem('user')||'{}'); if (u.isSuperAdmin) document.getElementById('superadmin-return-link').classList.remove('hidden'); } catch(e){} })();
+    (function applyReconciliationNavVisibility() {
+        var link = document.getElementById('nav-reconciliation');
+        if (!link) return;
+        var token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) return;
+        fetch('/api/tenant-admin/billing/config', { headers: { Authorization: 'Bearer ' + token } })
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                if (json.data && json.data.billing_mode === 'SUPPORT') {
+                    link.style.display = 'none';
+                } else {
+                    link.style.display = '';
+                }
+            })
+            .catch(function () {});
+    })();
     function toggleTenantMobileSidebar(){var s=document.getElementById('tenant-sidebar');var o=document.getElementById('tenant-mobile-overlay');if(s&&o){s.classList.toggle('tenant-mobile-open');o.classList.toggle('active');}}
     document.querySelectorAll('#tenant-sidebar a[href]').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<768){toggleTenantMobileSidebar();}});});
     </script>

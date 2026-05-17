@@ -708,7 +708,23 @@ async function deleteAccount(id) {
     }
 }
 
+async function ensureFullBillingMode() {
+    try {
+        const res = await fetch('/api/tenant-admin/billing/config', { headers });
+        const json = await res.json();
+        if (json.data && json.data.billing_mode === 'SUPPORT') {
+            sessionStorage.setItem('reconciliation_blocked', 'Modo Apoyo: la conciliación bancaria solo está disponible en Modo Completo.');
+            window.location.replace('/tenant-admin/billing');
+            return false;
+        }
+        return true;
+    } catch (e) {
+        return true;
+    }
+}
+
 (async () => {
+    if (!(await ensureFullBillingMode())) return;
     await loadBanks();
     await loadAccounts();
     await loadImports();

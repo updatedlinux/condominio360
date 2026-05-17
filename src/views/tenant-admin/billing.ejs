@@ -869,6 +869,11 @@
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', () => {
+            const reconBlock = sessionStorage.getItem('reconciliation_blocked');
+            if (reconBlock) {
+                sessionStorage.removeItem('reconciliation_blocked');
+                if (typeof showPageToast === 'function') showPageToast(reconBlock, 'info');
+            }
             const now = new Date();
             document.getElementById('prel-month').value = now.getMonth() + 1;
             document.getElementById('prel-year').value = now.getFullYear();

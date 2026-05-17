@@ -17,6 +17,7 @@ const TenantAdminReportsController = require('../controllers/TenantAdminReportsC
 const TenantAdminBankAccountController = require('../controllers/TenantAdminBankAccountController');
 const TenantAdminReconciliationController = require('../controllers/TenantAdminReconciliationController');
 const uploadBankStatement = require('../middleware/uploadBankStatement');
+const requireFullBillingMode = require('../middleware/requireFullBillingMode');
 
 // Middleware to ensure user is Tenant Admin
 const verifyTenantAdmin = (req, res, next) => {
@@ -159,14 +160,16 @@ router.post('/saas-invoices/:id/report-payment', (req, res, next) => {
 // ==================== BALANCE FINANCIERO ====================
 router.get('/balance/financial-summary', TenantAdminBalanceController.getFinancialSummary);
 
-// ==================== CUENTAS BANCARIAS DEL TENANT ====================
+// ==================== CUENTAS BANCARIAS + CONCILIACIÓN (solo Modo Completo) ====================
+router.use('/bank-accounts', requireFullBillingMode);
+router.use('/reconciliation', requireFullBillingMode);
+
 router.get('/bank-accounts/banks', TenantAdminBankAccountController.listBanks);
 router.get('/bank-accounts', TenantAdminBankAccountController.list);
 router.post('/bank-accounts', TenantAdminBankAccountController.create);
 router.put('/bank-accounts/:id', TenantAdminBankAccountController.update);
 router.delete('/bank-accounts/:id', TenantAdminBankAccountController.deactivate);
 
-// ==================== CONCILIACIÓN BANCARIA ====================
 router.get('/reconciliation/banks', TenantAdminReconciliationController.listActiveBanks);
 router.get('/reconciliation/imports', TenantAdminReconciliationController.listImports);
 router.get('/reconciliation/imports/:id', TenantAdminReconciliationController.getImportResults);
