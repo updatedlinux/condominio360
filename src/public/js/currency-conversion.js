@@ -34,10 +34,48 @@
         return usdToVes(amount, exchangeRate);
     }
 
+    /**
+     * Trunca hacia cero (no redondea). Solo para presentación en pantalla.
+     */
+    function truncateToDecimals(value, decimals = 2) {
+        const x = num(value);
+        const factor = 10 ** decimals;
+        return Math.trunc(x * factor) / factor;
+    }
+
+    /**
+     * Monto formateado para UI: truncado a 2 decimales, sin alterar el valor en memoria.
+     */
+    function formatAmountDisplay(amount, currency = 'VES') {
+        const t = truncateToDecimals(amount, 2);
+        const locale = currency === 'USD' ? 'en-US' : 'es-VE';
+        const symbol = currency === 'USD' ? '$' : 'Bs.';
+        const formatted = t.toLocaleString(locale, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        return currency === 'USD' ? `${symbol} ${formatted}` : `${symbol} ${formatted}`;
+    }
+
+    function formatNumberDisplay(amount) {
+        const t = truncateToDecimals(amount, 2);
+        return t.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    /** Valor para input type=number (muestra truncado, el modelo conserva precisión completa). */
+    function inputDisplayAmount(amount) {
+        if (amount === null || amount === undefined || amount === '') return '';
+        return truncateToDecimals(amount, 2);
+    }
+
     global.CurrencyConversion = {
         usdToVes,
         vesToUsd,
         itemToUsd,
-        itemToVes
+        itemToVes,
+        truncateToDecimals,
+        formatAmountDisplay,
+        formatNumberDisplay,
+        inputDisplayAmount
     };
 })(typeof window !== 'undefined' ? window : global);

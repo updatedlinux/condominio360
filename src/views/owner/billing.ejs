@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>
     <script src="/js/owner-nav.js"></script>
-    <script src="/js/currency-conversion.js?v=1"></script>
+    <script src="/js/currency-conversion.js?v=2"></script>
     <style>
         * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .sidebar-item { transition: all 0.2s; }
@@ -641,12 +641,12 @@
 
         function formatUsd(amount) {
             if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) return '-';
-            return `$ ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+            return window.CurrencyConversion.formatAmountDisplay(amount, 'USD');
         }
 
         function formatCurrency(amount) {
             if (amount === null || amount === undefined) return '-';
-            return `Bs. ${Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+            return window.CurrencyConversion.formatAmountDisplay(amount, 'VES');
         }
 
         function showError(message) {
