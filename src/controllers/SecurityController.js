@@ -760,7 +760,7 @@ class SecurityController {
             const visitorDniTrimmed = String(visitor_dni).trim().replace(/\D/g, '');
             if ((ownerDniTrimmed && !/^\d{1,15}$/.test(ownerDniTrimmed)) || !/^\d{1,15}$/.test(visitorDniTrimmed)) {
                 return res.status(400).json({ 
-                    error: 'El DNI del propietario y del visitante deben contener solo números (máx. 15 dígitos)' 
+                    error: 'La cédula de ID del propietario y del visitante deben contener solo números (máx. 15 dígitos)' 
                 });
             }
             const visitorPhoneTrimmed = visitor_phone ? String(visitor_phone).trim().replace(/\D/g, '') : null;
@@ -790,7 +790,7 @@ class SecurityController {
                     `);
 
                 if (ownerResult.recordset.length === 0) {
-                    return res.status(404).json({ error: 'No se encontró propietario con ese DNI' });
+                    return res.status(404).json({ error: 'No se encontró propietario con esa cédula de ID' });
                 }
 
                 owner = ownerResult.recordset[0];

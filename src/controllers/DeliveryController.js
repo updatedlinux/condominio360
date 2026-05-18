@@ -292,7 +292,7 @@ class DeliveryController {
             const ownerDniTrimmed = owner_dni ? String(owner_dni).trim().replace(/\D/g, '') : null;
             if (ownerDniTrimmed && !/^\d{1,15}$/.test(ownerDniTrimmed)) {
                 return res.status(400).json({ 
-                    error: 'El DNI del propietario debe contener solo números (máx. 15 dígitos)' 
+                    error: 'La cédula de ID del propietario debe contener solo números (máx. 15 dígitos)' 
                 });
             }
 
@@ -316,7 +316,7 @@ class DeliveryController {
                     `);
 
                 if (ownerResult.recordset.length === 0) {
-                    return res.status(404).json({ error: 'No se encontró propietario con ese DNI' });
+                    return res.status(404).json({ error: 'No se encontró propietario con esa cédula de ID' });
                 }
 
                 owner = ownerResult.recordset[0];

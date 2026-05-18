@@ -115,7 +115,7 @@
                             <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-[#9AA0A6] text-lg">search</span>
                             <input type="text" id="searchInput" 
                                 class="w-full pl-10 pr-4 py-3 sm:pl-12 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] text-base sm:text-lg"
-                                placeholder="Buscar por DNI, propietario o unidad..."
+                                placeholder="Buscar por cédula de ID, propietario o unidad..."
                                 onkeyup="handleSearch(event)">
                         </div>
                         <button onclick="performSearch()" 
@@ -124,7 +124,7 @@
                         </button>
                     </div>
                     <p class="text-xs text-[#9AA0A6] mt-2 ml-1 hidden sm:block">
-                        Busca visitantes por DNI, visitas frecuentes, deliveries y mudanzas. Presiona Enter para buscar.
+                        Busca visitantes por cédula de ID, visitas frecuentes, deliveries y mudanzas. Presiona Enter para buscar.
                     </p>
                 </div>
             </div>
@@ -228,7 +228,7 @@
                         <div class="flex gap-2">
                             <input type="text" id="mv-owner-dni" required maxlength="60"
                                 class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="DNI, nombre del propietario, nickname o slug del inmueble">
+                                placeholder="Cédula de ID, nombre del propietario, nickname o slug del inmueble">
                             <button type="button" onclick="searchOwnerByDNI()"
                                 class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                                 <span class="material-icons-round">search</span>
@@ -258,7 +258,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[#3C4043] mb-1">DNI Visitante *</label>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1">Cédula de ID del visitante *</label>
                         <input type="text" id="mv-visitor-dni" required maxlength="15" inputmode="numeric" pattern="[0-9]*"
                             class="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Solo números, máx. 15 dígitos"
@@ -334,7 +334,7 @@
                         <div class="flex gap-2">
                             <input type="text" id="md-owner-dni" required maxlength="60"
                                 class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="DNI, nombre del propietario, nickname o slug del inmueble">
+                                placeholder="Cédula de ID, nombre del propietario, nickname o slug del inmueble">
                             <button type="button" onclick="searchOwnerByDNIDelivery()"
                                 class="touch-target px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                                 <span class="material-icons-round">search</span>
@@ -836,7 +836,7 @@
                                 <h3 class="font-medium text-[#3C4043] text-base sm:text-lg">${v.first_name} ${v.last_name}</h3>
                                 <p class="text-[#5F6368]">
                                     <span class="material-icons-round text-sm align-middle">badge</span>
-                                    DNI: ${v.visitor_dni || v.dni}
+                                    Cédula de ID: ${v.visitor_dni || v.dni}
                                 </p>
                                 <p class="text-[#5F6368] mt-1">
                                     <span class="material-icons-round text-sm align-middle">home</span>
@@ -1528,7 +1528,7 @@
                 const ownerName = [r.first_name, r.last_name].filter(Boolean).join(' ') || 'Propietario';
                 const propLabel = r.property_nickname || r.property_name || '';
                 const sub = [
-                    r.dni ? `DNI: ${r.dni}` : null,
+                    r.dni ? `Cédula de ID: ${r.dni}` : null,
                     r.property_slug ? `Slug: ${r.property_slug}` : null
                 ].filter(Boolean).join(' • ');
                 return `
@@ -1789,8 +1789,8 @@
             const visitorDniRaw = document.getElementById('mv-visitor-dni').value.trim();
             // Puede ser DNI o búsqueda por inmueble; si no es numérico, se exige inmueble seleccionado (property_id).
             const isNumeric = /^\d+$/.test(ownerDniRaw.trim());
-            const ownerDni = isNumeric ? validateDni(ownerDniRaw, 'DNI del propietario') : null;
-            const visitorDni = validateDni(visitorDniRaw, 'DNI del visitante');
+            const ownerDni = isNumeric ? validateDni(ownerDniRaw, 'cédula de ID del propietario') : null;
+            const visitorDni = validateDni(visitorDniRaw, 'cédula de ID del visitante');
             if ((isNumeric && ownerDni === null) || visitorDni === null) return;
 
             const phoneRaw = document.getElementById('mv-visitor-phone').value.trim();
@@ -1863,7 +1863,7 @@
             const ownerDniRaw = document.getElementById('md-owner-dni').value.trim();
             // Ahora puede ser DNI o búsqueda por inmueble; si no es numérico, se exige seleccionar inmueble.
             const isNumeric = /^\d+$/.test(ownerDniRaw.trim());
-            const ownerDni = isNumeric ? validateDni(ownerDniRaw, 'DNI del propietario') : null;
+            const ownerDni = isNumeric ? validateDni(ownerDniRaw, 'cédula de ID del propietario') : null;
             if (isNumeric && ownerDni === null) return;
 
             const formData = {
@@ -2071,7 +2071,7 @@
                                     ${isInside ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Dentro</span>' : ''}
                                 </div>
                                 <p class="text-sm text-[#5F6368] mt-1">
-                                    ${isVisit ? `DNI: ${r.dni || r.visitor_dni}` : isDelivery ? `Empresa: ${r.company}` : `Propietario: ${r.owner_name}`}
+                                    ${isVisit ? `Cédula de ID: ${r.dni || r.visitor_dni}` : isDelivery ? `Empresa: ${r.company}` : `Propietario: ${r.owner_name}`}
                                 </p>
                                 <p class="text-sm text-[#5F6368]">
                                     ${isMove ? `Unidad: ${r.property_name}${moveDate ? ' • Fecha: ' + formatDate(moveDate) : ''}` : `Unidad: ${r.property_name} • Prop: ${r.owner_name}`}
@@ -2213,7 +2213,7 @@
                                         <p class="font-medium text-[#3C4043]">${move.owner_name}</p>
                                     </div>
                                     <div>
-                                        <span class="text-xs text-[#9AA0A6]">DNI</span>
+                                        <span class="text-xs text-[#9AA0A6]">Cédula de ID</span>
                                         <p class="font-medium text-[#3C4043]">${move.owner_dni || 'N/A'}</p>
                                     </div>
                                 </div>

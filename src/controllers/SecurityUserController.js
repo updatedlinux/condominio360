@@ -259,7 +259,7 @@ class SecurityUserController {
 
             if (!loginId || !password) {
                 return res.status(400).json({
-                    error: 'Usuario (DNI o correo) y contraseña son requeridos'
+                    error: 'Usuario (cédula de ID o correo) y contraseña son requeridos'
                 });
             }
 
