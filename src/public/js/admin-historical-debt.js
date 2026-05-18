@@ -43,28 +43,53 @@
         }
     };
 
-    window.downloadHistoricalDebtTemplate = function () {
-        window.location.href = `/api/admin/tenants/${tenantId}/historical-debts/template.csv?token=${encodeURIComponent(token)}`;
-        fetch(`/api/admin/tenants/${tenantId}/historical-debts/template.csv`, {
-            headers: { Authorization: `Bearer ${token}` }
-        }).then(async (res) => {
-            if (!res.ok) return;
+    window.downloadHistoricalDebtTemplate = async function () {
+        try {
+            const res = await fetch(`/api/admin/tenants/${tenantId}/historical-debts/template.csv`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Error al descargar plantilla');
+            }
             const blob = await res.blob();
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'plantilla_deuda_historica.csv';
+            document.body.appendChild(a);
             a.click();
+            a.remove();
             URL.revokeObjectURL(a.href);
-        }).catch(() => {});
+            if (typeof showPageToast === 'function') {
+                showPageToast('Plantilla descargada', 'success');
+            }
+        } catch (e) {
+            if (typeof showPageToast === 'function') {
+                showPageToast(e.message || 'Error al descargar plantilla', 'error');
+            }
+        }
     };
 
-    window.openHistoricalDebtModal = function () {
+    async function loadPropertiesForHistoricalDebtSelect() {
         const sel = document.getElementById('hd-property-id');
-        if (sel && typeof properties !== 'undefined') {
-            sel.innerHTML = '<option value="">Seleccione...</option>' + properties.map((p) =>
+        if (!sel || typeof tenantId === 'undefined') return;
+        sel.innerHTML = '<option value="">Cargando inmuebles...</option>';
+        try {
+            const res = await fetch(`/api/admin/tenants/${tenantId}/properties?limit=10000`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const list = data.properties || [];
+            sel.innerHTML = '<option value="">Seleccione...</option>' + list.map((p) =>
                 `<option value="${p.id}">${p.name}${p.building_name ? ' — ' + p.building_name : ''}</option>`
             ).join('');
+        } catch (e) {
+            sel.innerHTML = '<option value="">Error al cargar inmuebles</option>';
         }
+    }
+
+    window.openHistoricalDebtModal = function () {
+        loadPropertiesForHistoricalDebtSelect();
         document.getElementById('historical-debt-modal')?.classList.remove('hidden');
         document.getElementById('historical-debt-modal')?.classList.add('flex');
         toggleHdFreezeFields();

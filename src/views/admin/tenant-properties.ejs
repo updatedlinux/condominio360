@@ -257,6 +257,7 @@
                     </tr>
                 </tbody>
             </table>
+            <div id="properties-pagination" class="px-6 py-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600"></div>
         </div>
         <div class="card overflow-hidden mt-8">
             <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
@@ -579,6 +580,9 @@
         
         let buildings = [];
         let properties = [];
+        let propertiesPagination = { page: 1, pages: 1, total: 0, limit: 30 };
+        let propertiesAlicuotaSum = null;
+        const PROPERTIES_PAGE_SIZE = 30;
         let currentBuildingFilter = '';
         let csvUploadData = [];
         let pendingConfirmAction = null;
@@ -662,24 +666,53 @@
             }
         }
 
-        async function loadProperties() {
+        async function loadProperties(page = propertiesPagination.page || 1) {
             try {
-                const url = currentBuildingFilter 
-                    ? `/api/admin/tenants/${tenantId}/properties?building_id=${currentBuildingFilter}`
-                    : `/api/admin/tenants/${tenantId}/properties`;
-                
-                const res = await fetch(url, {
+                const params = new URLSearchParams({
+                    page: String(page),
+                    limit: String(PROPERTIES_PAGE_SIZE)
+                });
+                if (currentBuildingFilter) params.set('building_id', currentBuildingFilter);
+                const res = await fetch(`/api/admin/tenants/${tenantId}/properties?${params}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
                 if (data.success) {
                     properties = data.properties || [];
-                    document.getElementById('stat-total-properties').textContent = data.pagination?.total || properties.length;
+                    propertiesPagination = data.pagination || { page: 1, pages: 1, total: properties.length, limit: PROPERTIES_PAGE_SIZE };
+                    propertiesPagination.page = page;
+                    if (data.alicuota_sum != null) propertiesAlicuotaSum = data.alicuota_sum;
+                    document.getElementById('stat-total-properties').textContent = propertiesPagination.total ?? properties.length;
                     renderProperties();
+                    renderPropertiesPagination();
+                    updateAlicuotaStats();
                 }
             } catch (error) {
                 console.error('Error loading properties:', error);
             }
+        }
+
+        function renderPropertiesPagination() {
+            const el = document.getElementById('properties-pagination');
+            if (!el) return;
+            const { page, pages, total, limit } = propertiesPagination;
+            const from = total === 0 ? 0 : (page - 1) * limit + 1;
+            const to = Math.min(page * limit, total);
+            el.innerHTML = `
+                <span>Mostrando ${from}–${to} de ${total} inmuebles</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="goToPropertiesPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}
+                        class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Anterior</button>
+                    <span class="px-2">Página ${page} de ${pages}</span>
+                    <button type="button" onclick="goToPropertiesPage(${page + 1})" ${page >= pages ? 'disabled' : ''}
+                        class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente</button>
+                </div>`;
+        }
+
+        function goToPropertiesPage(p) {
+            if (p < 1 || p > propertiesPagination.pages) return;
+            loadProperties(p);
+            document.getElementById('properties-table')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function renderBuildingTabs() {
@@ -750,14 +783,15 @@
 
         function filterByBuilding(buildingId) {
             currentBuildingFilter = buildingId;
+            propertiesPagination.page = 1;
             renderBuildingTabs();
-            loadProperties();
+            loadProperties(1);
         }
 
         function updateAlicuotaStats() {
             if (serverBillingType !== 'ALICUOTA') return;
             
-            const totalAlicuota = properties.reduce((sum, p) => sum + (parseFloat(p.alicuota) || 0), 0);
+            const totalAlicuota = propertiesAlicuotaSum != null ? propertiesAlicuotaSum : properties.reduce((sum, p) => sum + (parseFloat(p.alicuota) || 0), 0);
             const statusEl = document.getElementById('alicuota-status');
             const alertEl = document.getElementById('alicuota-alert');
             const iconEl = document.getElementById('alicuota-icon');

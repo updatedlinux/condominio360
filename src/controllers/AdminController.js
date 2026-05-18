@@ -1397,15 +1397,44 @@ class AdminController {
             // Count total
             let countQuery = `SELECT COUNT(*) as total FROM Properties WHERE tenant_id = @tenant_id`;
             if (building_id) countQuery += ` AND building_id = @building_id`;
-            const countResult = await request.query(countQuery);
+            const countResult = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .input('building_id', sql.UniqueIdentifier, building_id || null)
+                .query(
+                    building_id
+                        ? `SELECT COUNT(*) as total FROM Properties WHERE tenant_id = @tenant_id AND building_id = @building_id`
+                        : `SELECT COUNT(*) as total FROM Properties WHERE tenant_id = @tenant_id`
+                );
+
+            let alicuota_sum = null;
+            const tenantRow = await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .query('SELECT billing_type FROM Tenants WHERE id = @id');
+            if (tenantRow.recordset[0]?.billing_type === 'ALICUOTA') {
+                const sumRes = await pool.request()
+                    .input('tenant_id', sql.UniqueIdentifier, id)
+                    .input('building_id', sql.UniqueIdentifier, building_id || null)
+                    .query(
+                        building_id
+                            ? `SELECT SUM(CAST(alicuota AS DECIMAL(18, 6))) as total FROM Properties WHERE tenant_id = @tenant_id AND building_id = @building_id`
+                            : `SELECT SUM(CAST(alicuota AS DECIMAL(18, 6))) as total FROM Properties WHERE tenant_id = @tenant_id`
+                    );
+                alicuota_sum = parseFloat(sumRes.recordset[0]?.total) || 0;
+            }
+
+            const total = countResult.recordset[0].total;
+            const pageNum = parseInt(page, 10) || 1;
+            const limitNum = parseInt(limit, 10) || 30;
 
             res.json({
                 success: true,
                 properties: result.recordset,
+                alicuota_sum,
                 pagination: {
-                    total: countResult.recordset[0].total,
-                    page: parseInt(page),
-                    limit: parseInt(limit)
+                    total,
+                    page: pageNum,
+                    limit: limitNum,
+                    pages: Math.max(1, Math.ceil(total / limitNum))
                 }
             });
         } catch (error) {
@@ -1647,40 +1676,153 @@ class AdminController {
     static async getOwners(req, res) {
         try {
             const { id } = req.params;
-            console.log(`[DEBUG] getOwners: tenantId=${id}`);
-            const pool = await connectDB();
+            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+            const rawLimit = parseInt(req.query.limit, 10);
+            const limit = Math.min(Math.max(Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 30, 1), 100);
+            const search = (req.query.search || '').trim();
+            const propertyStatus = (req.query.property_status || '').trim();
+            const buildingId = req.query.building_id || null;
 
-            // Propietarios: TenantUsers (OWNER) + solo PropertyOwners de propiedades de ESTE tenant
-            // PropsInTenant evita filas fantasma (propietario con inmueble en otro condominio)
-            const result = await pool.request()
+            const pool = await connectDB();
+            const offset = (page - 1) * limit;
+
+            const searchPattern = search ? `%${search.replace(/[%_[\]]/g, (m) => `[${m}]`)}%` : null;
+
+            const countReq = pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, id)
+                .input('building_id', sql.UniqueIdentifier, buildingId)
+                .input('search', sql.NVarChar, searchPattern)
+                .input('property_status', sql.NVarChar, propertyStatus || null);
+
+            const countResult = await countReq.query(`
+                WITH PropsInTenant AS (
+                    SELECT po.user_id, po.property_id, p.building_id
+                    FROM PropertyOwners po
+                    INNER JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
+                )
+                SELECT COUNT(DISTINCT u.id) AS total
+                FROM Users u
+                INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                WHERE (@search IS NULL OR u.first_name + N' ' + u.last_name LIKE @search OR u.email LIKE @search OR u.dni LIKE @search)
+                  AND (
+                    @property_status IS NULL OR @property_status = N'' OR
+                    (@property_status = N'with-property' AND EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id)) OR
+                    (@property_status = N'without-property' AND NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id))
+                  )
+                  AND (
+                    @building_id IS NULL OR EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id AND pit.building_id = @building_id)
+                  )
+            `);
+
+            const total = countResult.recordset[0]?.total || 0;
+
+            const statsResult = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .input('building_id', sql.UniqueIdentifier, buildingId)
+                .input('search', sql.NVarChar, searchPattern)
+                .input('property_status', sql.NVarChar, propertyStatus || null)
                 .query(`
                     WITH PropsInTenant AS (
-                        SELECT po.user_id, po.property_id, p.name as property_name, p.building_id
+                        SELECT po.user_id, po.property_id, p.building_id
                         FROM PropertyOwners po
                         INNER JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
                     )
                     SELECT
+                        SUM(CASE WHEN EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id) THEN 1 ELSE 0 END) AS with_property,
+                        SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id) THEN 1 ELSE 0 END) AS without_property
+                    FROM Users u
+                    INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                    WHERE (@search IS NULL OR u.first_name + N' ' + u.last_name LIKE @search OR u.email LIKE @search OR u.dni LIKE @search)
+                      AND (
+                        @property_status IS NULL OR @property_status = N'' OR
+                        (@property_status = N'with-property' AND EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id)) OR
+                        (@property_status = N'without-property' AND NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id))
+                      )
+                      AND (
+                        @building_id IS NULL OR EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id AND pit.building_id = @building_id)
+                      )
+                `);
+            const statsRow = statsResult.recordset[0] || {};
+
+            const dataReq = pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .input('building_id', sql.UniqueIdentifier, buildingId)
+                .input('search', sql.NVarChar, searchPattern)
+                .input('property_status', sql.NVarChar, propertyStatus || null)
+                .input('offset', sql.Int, offset)
+                .input('limit', sql.Int, limit);
+
+            const result = await dataReq.query(`
+                WITH PropsInTenant AS (
+                    SELECT po.user_id, po.property_id, p.name AS property_name, p.building_id
+                    FROM PropertyOwners po
+                    INNER JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
+                ),
+                OwnerBase AS (
+                    SELECT DISTINCT
                         u.id,
-                        u.first_name + ' ' + u.last_name as display_name,
+                        u.first_name + N' ' + u.last_name AS display_name,
                         u.email,
                         u.phone,
-                        u.dni as document_number,
-                        'DNI' as document_type,
-                        pit.property_id,
-                        pit.property_name,
-                        b.name as building_name
+                        u.dni AS document_number,
+                        N'DNI' AS document_type
                     FROM Users u
-                    INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = 'OWNER' AND tu.status = 'ACTIVE'
-                    LEFT JOIN PropsInTenant pit ON u.id = pit.user_id
-                    LEFT JOIN Buildings b ON pit.building_id = b.id
-                    ORDER BY display_name, pit.property_name
+                    INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                    WHERE (@search IS NULL OR u.first_name + N' ' + u.last_name LIKE @search OR u.email LIKE @search OR u.dni LIKE @search)
+                      AND (
+                        @property_status IS NULL OR @property_status = N'' OR
+                        (@property_status = N'with-property' AND EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id)) OR
+                        (@property_status = N'without-property' AND NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id))
+                      )
+                      AND (
+                        @building_id IS NULL OR EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id AND pit.building_id = @building_id)
+                      )
+                ),
+                PagedOwners AS (
+                    SELECT * FROM OwnerBase
+                    ORDER BY display_name
+                    OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+                )
+                SELECT
+                    po.id,
+                    po.display_name,
+                    po.email,
+                    po.phone,
+                    po.document_number,
+                    po.document_type,
+                    pit.property_id,
+                    pit.property_name,
+                    b.name AS building_name
+                FROM PagedOwners po
+                LEFT JOIN PropsInTenant pit ON po.id = pit.user_id
+                    AND (@building_id IS NULL OR pit.building_id = @building_id)
+                LEFT JOIN Buildings b ON pit.building_id = b.id
+                ORDER BY po.display_name, pit.property_name
+            `);
+
+            const availRes = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, id)
+                .query(`
+                    SELECT COUNT(*) AS available
+                    FROM Properties p
+                    WHERE p.tenant_id = @tenant_id
+                      AND NOT EXISTS (SELECT 1 FROM PropertyOwners po WHERE po.property_id = p.id)
                 `);
 
-            console.log(`[DEBUG] getOwners: found ${result.recordset.length} owners`);
             res.json({
                 success: true,
-                owners: result.recordset
+                owners: result.recordset,
+                stats: {
+                    with_property: parseInt(statsRow.with_property, 10) || 0,
+                    without_property: parseInt(statsRow.without_property, 10) || 0,
+                    available_properties: parseInt(availRes.recordset[0]?.available, 10) || 0
+                },
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    pages: Math.max(1, Math.ceil(total / limit))
+                }
             });
         } catch (error) {
             console.error('Get owners error:', error);

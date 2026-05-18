@@ -264,6 +264,7 @@
                     </tr>
                 </tbody>
             </table>
+            <div id="owners-pagination" class="px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600"></div>
         </div>
     </div>
     </div>
@@ -623,6 +624,8 @@
         let buildings = [];
         let properties = [];
         let owners = [];
+        let ownersPagination = { page: 1, pages: 1, total: 0, limit: 30 };
+        const OWNERS_PAGE_SIZE = 30;
         let uniqueOwners = [];
         let filteredOwners = [];
         let availableProperties = [];
@@ -686,11 +689,7 @@
         });
 
         async function loadData() {
-            await Promise.all([loadBuildings(), loadProperties(), loadOwners()]);
-            uniqueOwners = groupOwnersByUser(owners);
-            filteredOwners = [...uniqueOwners];
-            updateStats();
-            renderOwners();
+            await Promise.all([loadBuildings(), loadProperties(), loadOwners(1)]);
             populateFilters();
         }
 
@@ -726,16 +725,55 @@
             }
         }
 
-        async function loadOwners() {
+        async function loadOwners(page = ownersPagination.page || 1) {
             try {
-                const res = await fetch(`/api/admin/tenants/${tenantId}/owners`, {
+                const params = new URLSearchParams({ page: String(page), limit: String(OWNERS_PAGE_SIZE) });
+                const search = document.getElementById('search-filter')?.value?.trim();
+                const propertyStatus = document.getElementById('property-filter')?.value || '';
+                const buildingId = document.getElementById('building-filter')?.value || '';
+                if (search) params.set('search', search);
+                if (propertyStatus) params.set('property_status', propertyStatus);
+                if (buildingId) params.set('building_id', buildingId);
+                const res = await fetch(`/api/admin/tenants/${tenantId}/owners?${params}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
-                if (data.success) owners = data.owners || [];
+                if (data.success) {
+                    owners = data.owners || [];
+                    ownersPagination = data.pagination || { page: 1, pages: 1, total: 0, limit: OWNERS_PAGE_SIZE };
+                    ownersPagination.page = page;
+                    if (data.stats) ownersStats = data.stats;
+                    uniqueOwners = groupOwnersByUser(owners);
+                    filteredOwners = [...uniqueOwners];
+                    updateStats();
+                    renderOwners();
+                    renderOwnersPagination();
+                }
             } catch (error) {
                 console.error('Error loading owners:', error);
             }
+        }
+
+        function renderOwnersPagination() {
+            const el = document.getElementById('owners-pagination');
+            if (!el) return;
+            const { page, pages, total, limit } = ownersPagination;
+            const from = total === 0 ? 0 : (page - 1) * limit + 1;
+            const to = Math.min(page * limit, total);
+            el.innerHTML = `
+                <span>Mostrando ${from}–${to} de ${total} propietarios</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="goToOwnersPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}
+                        class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Anterior</button>
+                    <span class="px-2">Página ${page} de ${pages}</span>
+                    <button type="button" onclick="goToOwnersPage(${page + 1})" ${page >= pages ? 'disabled' : ''}
+                        class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente</button>
+                </div>`;
+        }
+
+        function goToOwnersPage(p) {
+            if (p < 1 || p > ownersPagination.pages) return;
+            loadOwners(p);
         }
 
         function groupOwnersByUser(rows) {
@@ -789,12 +827,15 @@
             return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         }
 
+        let ownersStats = { with_property: 0, without_property: 0, available_properties: 0 };
+
         function updateStats() {
-            const withProperty = uniqueOwners.filter(o => o.properties.length > 0).length;
-            document.getElementById('stat-total-owners').textContent = uniqueOwners.length;
+            const withProperty = ownersStats.with_property ?? uniqueOwners.filter(o => o.properties.length > 0).length;
+            const totalOwners = ownersPagination.total ?? uniqueOwners.length;
+            document.getElementById('stat-total-owners').textContent = totalOwners;
             document.getElementById('stat-with-property').textContent = withProperty;
-            document.getElementById('stat-without-property').textContent = uniqueOwners.length - withProperty;
-            document.getElementById('stat-available-properties').textContent = availableProperties.length;
+            document.getElementById('stat-without-property').textContent = ownersStats.without_property ?? (totalOwners - withProperty);
+            document.getElementById('stat-available-properties').textContent = ownersStats.available_properties ?? availableProperties.length;
         }
 
         function renderOwners() {
@@ -855,32 +896,10 @@
             }).join('');
         }
 
+        let ownersFilterDebounce = null;
         function applyFilters() {
-            const search = document.getElementById('search-filter').value.toLowerCase().trim();
-            const propertyStatus = document.getElementById('property-filter').value;
-            const buildingId = document.getElementById('building-filter').value;
-
-            filteredOwners = uniqueOwners.filter(o => {
-                const docNum = (o.document_number || '').toLowerCase();
-                const name = (o.display_name || o.name || '').toLowerCase();
-                const email = (o.email || '').toLowerCase();
-
-                const matchesSearch = !search ||
-                    docNum.includes(search) ||
-                    name.includes(search) ||
-                    email.includes(search);
-
-                const matchesStatus = !propertyStatus ||
-                    (propertyStatus === 'with-property' && o.properties.length > 0) ||
-                    (propertyStatus === 'without-property' && o.properties.length === 0);
-
-                const matchesBuilding = !buildingId ||
-                    o.properties.some(p => p.building_id === buildingId);
-
-                return matchesSearch && matchesStatus && matchesBuilding;
-            });
-
-            renderOwners();
+            ownersPagination.page = 1;
+            loadOwners(1);
         }
 
         function goBack() {
