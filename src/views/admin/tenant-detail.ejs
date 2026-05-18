@@ -182,6 +182,53 @@
             overflow-y: auto;
             box-shadow: var(--md-elevation-3);
         }
+
+        .modal-content.modal-content-lg {
+            max-width: 920px;
+            max-height: 92vh;
+        }
+
+        .tenant-admin-section {
+            padding: 1.25rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .tenant-admin-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .tenant-admin-section:first-child {
+            padding-top: 0;
+        }
+        .tenant-admin-section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.75rem;
+        }
+        .tenant-admin-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .tenant-admin-card-btn {
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .tenant-admin-card-btn:hover {
+            border-color: rgba(249, 115, 22, 0.45);
+            box-shadow: var(--md-elevation-2);
+        }
     </style>
 </head>
 <body class="bg-slate-50">
@@ -300,59 +347,32 @@
                     </div>
                 </div>
 
-                <!-- Logo del conjunto -->
-                <div class="md-card p-6 border border-slate-100 shadow-sm mb-6 overflow-hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-start gap-6 min-h-0">
-                        <div class="flex-shrink-0 min-h-0">
-                            <div id="tenant-logo-preview-wrap" class="tenant-logo-preview-box rounded-xl border border-dashed border-slate-200 flex items-center justify-center">
-                                <% if (tenant.logo_path) { %>
-                                <img id="tenant-logo-preview" src="/uploads/<%= tenant.logo_path %>" alt="Logo">
-                                <% } else { %>
-                                <img id="tenant-logo-preview" src="" alt="" class="hidden">
-                                <span id="tenant-logo-placeholder" class="material-symbols-rounded text-4xl text-slate-300">image</span>
-                                <% } %>
-                            </div>
+                <!-- Administración del condominio (resumen) -->
+                <button type="button" onclick="openTenantAdminModal()" class="tenant-admin-card-btn md-card p-5 sm:p-6 border border-slate-100 shadow-sm mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-rounded text-2xl text-slate-600">tune</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h2 class="text-lg font-bold text-slate-900 mb-1">Logo del conjunto</h2>
-                            <p class="text-sm text-slate-500 mb-4">Se usa en los comprobantes PDF de recibos para propietarios. Formato JPG o PNG, fondo claro recomendado.</p>
-                            <input type="file" id="tenant-logo-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="hidden">
-                            <div class="flex flex-wrap gap-2">
-                                <button type="button" onclick="document.getElementById('tenant-logo-input').click()" class="md-button md-button-tonal">
-                                    <span class="material-symbols-rounded">upload</span>
-                                    Elegir imagen
-                                </button>
-                                <button type="button" id="tenant-logo-upload-btn" onclick="uploadTenantLogo()" class="md-button md-button-filled" disabled>
-                                    <span class="material-symbols-rounded">save</span>
-                                    Guardar logo
-                                </button>
-                                <button type="button" id="tenant-logo-delete-btn" onclick="deleteTenantLogo()" class="md-button bg-red-50 text-red-600 hover:bg-red-100<%= tenant.logo_path ? '' : ' hidden' %>">
-                                    <span class="material-symbols-rounded">delete</span>
-                                    Quitar
-                                </button>
+                            <h2 class="text-lg font-bold text-slate-900">Administración del condominio</h2>
+                            <p class="text-sm text-slate-500 mt-0.5">Logo en recibos, tarifa SaaS, WhatsApp y módulos de portería</p>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="tenant-admin-chip" id="admin-card-logo-status">
+                                    <span class="material-symbols-rounded text-[14px]">image</span>
+                                    <%= tenant.logo_path ? 'Logo configurado' : 'Sin logo' %>
+                                </span>
+                                <span class="tenant-admin-chip" id="admin-card-saas-status">
+                                    <span class="material-symbols-rounded text-[14px]">payments</span>
+                                    <% const saasDisplay = tenant.saas_unit_price_usd != null && tenant.saas_unit_price_usd !== '' ? '$' + parseFloat(tenant.saas_unit_price_usd).toFixed(2) + '/und.' : '$0.50/und. (default)' %>
+                                    <%= saasDisplay %>
+                                </span>
+                                <span class="tenant-admin-chip" id="admin-card-whatsapp-status">WhatsApp…</span>
+                                <span class="tenant-admin-chip" id="admin-card-portal-status">Portería…</span>
                             </div>
                         </div>
+                        <span class="material-symbols-rounded text-slate-400 text-3xl flex-shrink-0 hidden sm:block">chevron_right</span>
                     </div>
-                </div>
-
-                <!-- Tarifa SaaS por inmueble -->
-                <div class="md-card p-6 border border-slate-100 shadow-sm mb-6">
-                    <h2 class="text-lg font-bold text-slate-900 mb-1">Tarifa Condominio360 (SaaS)</h2>
-                    <p class="text-sm text-slate-500 mb-4">Precio por inmueble al facturar la plataforma. Vacío = tarifa global ($0.50 USD). Ej.: Chaguaramos $0.25.</p>
-                    <div class="flex flex-col sm:flex-row sm:items-end gap-3 max-w-md">
-                        <div class="flex-1">
-                            <label for="saas-unit-price-input" class="block text-sm font-medium text-slate-700 mb-1">USD por inmueble</label>
-                            <input type="number" step="0.01" min="0" id="saas-unit-price-input"
-                                value="<%= tenant.saas_unit_price_usd != null && tenant.saas_unit_price_usd !== '' ? parseFloat(tenant.saas_unit_price_usd) : '' %>"
-                                placeholder="0.50 (predeterminado)"
-                                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900">
-                        </div>
-                        <button type="button" onclick="saveSaasUnitPrice()" class="md-button md-button-filled whitespace-nowrap">
-                            <span class="material-symbols-rounded">save</span>
-                            Guardar tarifa
-                        </button>
-                    </div>
-                </div>
+                </button>
 
                 <!-- Grid: Info | Acciones | Edificios | Admins -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -446,26 +466,6 @@
                                     <p class="text-sm text-slate-500">Configurar tipo y modo</p>
                                 </div>
                                 <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
-                            </button>
-                            <button type="button" onclick="configureWhatsAppMessaging()" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
-                                <div class="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center group-hover:bg-teal-200/80 transition flex-shrink-0">
-                                    <span class="material-symbols-rounded text-2xl text-teal-700">chat</span>
-                                </div>
-                                <div class="ml-4 min-w-0">
-                                    <p class="font-semibold text-slate-900">WhatsApp (Mensajes)</p>
-                                    <p class="text-sm text-slate-500">API por condominio — módulo Mensajes, no comunicados</p>
-                                </div>
-                                <span class="material-symbols-rounded text-slate-400 ml-auto flex-shrink-0 group-hover:text-orange-500">chevron_right</span>
-                            </button>
-                            <button type="button" onclick="configurePortalFeatures()" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-orange-50/80 hover:border-orange-200 transition text-left group">
-                                <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200/80 transition flex-shrink-0">
-                                    <span class="material-symbols-rounded text-2xl text-indigo-700">shield</span>
-                                </div>
-                                <div class="ml-4 min-w-0">
-                                    <p class="font-semibold text-slate-900">Visitas y Deliveries</p>
-                                    <p class="text-sm text-slate-500" id="portal-features-summary">Cargando estado…</p>
-                                </div>
-                                <span class="material-symbols-rounded text-slate-400 ml-auto flex-shrink-0 group-hover:text-orange-500">chevron_right</span>
                             </button>
                         </div>
                     </div>
@@ -846,6 +846,7 @@
                     return;
                 }
                 showPageToast('Tarifa SaaS guardada', 'success');
+                updateAdminCardSaasStatus(saas_unit_price_usd);
             } catch (e) {
                 showPageToast('Error de conexión', 'error');
             }
@@ -870,6 +871,7 @@
                     return;
                 }
                 showPageToast('Logo guardado correctamente', 'success');
+                updateAdminCardLogoStatus(true);
                 tenantLogoFile = null;
                 document.getElementById('tenant-logo-upload-btn').disabled = true;
                 const delBtn = document.getElementById('tenant-logo-delete-btn');
@@ -896,6 +898,7 @@
                     return;
                 }
                 showPageToast('Logo eliminado', 'success');
+                updateAdminCardLogoStatus(false);
                 const img = document.getElementById('tenant-logo-preview');
                 const ph = document.getElementById('tenant-logo-placeholder');
                 if (img) {
@@ -1005,36 +1008,71 @@
             openModal('billing-mode-modal');
         }
 
-        function configureWhatsAppMessaging() {
-            openModal('whatsapp-messaging-modal');
-            loadWhatsAppSettings();
-        }
-
         function portalFeaturesSummaryText(data) {
             const v = data.visits_announcements_enabled ? 'Visitas ✓' : 'Visitas ✗';
             const d = data.deliveries_announcements_enabled ? 'Deliveries ✓' : 'Deliveries ✗';
             return `${v} · ${d}`;
         }
 
-        async function refreshPortalFeaturesSummary() {
-            const el = document.getElementById('portal-features-summary');
+        function whatsAppSummaryText(data) {
+            if (!data?.enabled) return 'WhatsApp inactivo';
+            return data.hasApiSecret ? 'WhatsApp activo' : 'WhatsApp (sin clave)';
+        }
+
+        function updateAdminCardLogoStatus(hasLogo) {
+            const el = document.getElementById('admin-card-logo-status');
             if (!el) return;
+            el.innerHTML = '<span class="material-symbols-rounded text-[14px]">image</span> ' + (hasLogo ? 'Logo configurado' : 'Sin logo');
+        }
+
+        function updateAdminCardSaasStatus(value) {
+            const el = document.getElementById('admin-card-saas-status');
+            if (!el) return;
+            const raw = value !== undefined && value !== null ? String(value).trim() : '';
+            const label = raw !== '' && Number.isFinite(parseFloat(raw))
+                ? '$' + parseFloat(raw).toFixed(2) + '/und.'
+                : '$0.50/und. (default)';
+            el.innerHTML = '<span class="material-symbols-rounded text-[14px]">payments</span> ' + label;
+        }
+
+        async function refreshTenantAdminCardSummary() {
+            const waEl = document.getElementById('admin-card-whatsapp-status');
+            const pfEl = document.getElementById('admin-card-portal-status');
             try {
-                const res = await fetch(`/api/admin/tenants/${tenantId}/portal-features`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const j = await res.json();
-                if (res.ok && j.data) {
-                    el.textContent = portalFeaturesSummaryText(j.data);
+                const [waRes, pfRes] = await Promise.all([
+                    fetch(`/api/admin/tenants/${tenantId}/whatsapp-messaging`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`/api/admin/tenants/${tenantId}/portal-features`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const waJ = await waRes.json().catch(() => ({}));
+                const pfJ = await pfRes.json().catch(() => ({}));
+                if (waEl && waRes.ok && waJ.data) {
+                    waEl.textContent = whatsAppSummaryText(waJ.data);
+                } else if (waEl) {
+                    waEl.textContent = 'WhatsApp N/D';
                 }
-            } catch (e) {
-                el.textContent = 'No disponible';
+                if (pfEl && pfRes.ok && pfJ.data) {
+                    pfEl.textContent = portalFeaturesSummaryText(pfJ.data);
+                } else if (pfEl) {
+                    pfEl.textContent = 'Portería N/D';
+                }
+            } catch (_) {
+                if (waEl) waEl.textContent = 'WhatsApp N/D';
+                if (pfEl) pfEl.textContent = 'Portería N/D';
             }
         }
 
-        function configurePortalFeatures() {
-            openModal('portal-features-modal');
+        function openTenantAdminModal() {
+            openModal('tenant-admin-modal');
+            loadWhatsAppSettings();
             loadPortalFeaturesSettings();
+        }
+
+        function configureWhatsAppMessaging() {
+            openTenantAdminModal();
+        }
+
+        function configurePortalFeatures() {
+            openTenantAdminModal();
         }
 
         async function loadPortalFeaturesSettings() {
@@ -1067,15 +1105,14 @@
                 });
                 const j = await res.json();
                 if (!res.ok) throw new Error(j.error || 'Error al guardar');
-                closeModal('portal-features-modal');
                 showPageToast('Funcionalidades de portería actualizadas', 'success');
-                refreshPortalFeaturesSummary();
+                refreshTenantAdminCardSummary();
             } catch (e) {
                 showPageToast(e.message || 'Error al guardar', 'error');
             }
         }
 
-        refreshPortalFeaturesSummary();
+        refreshTenantAdminCardSummary();
 
         async function loadWhatsAppSettings() {
             const hint = document.getElementById('wa-key-hint');
@@ -1115,8 +1152,8 @@
                 });
                 const j = await res.json();
                 if (!res.ok) throw new Error(j.error || 'Error al guardar');
-                closeModal('whatsapp-messaging-modal');
                 showPageToast('Configuración de WhatsApp guardada', 'success');
+                refreshTenantAdminCardSummary();
                 setTimeout(() => window.location.reload(), 700);
             } catch (e) {
                 showPageToast(e.message || 'Error al guardar', 'error');
@@ -1492,78 +1529,141 @@
         }
     </script>
 
-    <!-- Visitas / Deliveries por condominio — SuperAdmin -->
-    <div id="portal-features-modal" class="modal-overlay">
-        <div class="modal-content p-6" style="max-width: 520px;">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold">Visitas y Deliveries</h2>
-                <button type="button" onclick="closeModal('portal-features-modal')" class="p-2 hover:bg-gray-100 rounded-full">
+    <!-- Administración del condominio — modal unificado -->
+    <div id="tenant-admin-modal" class="modal-overlay">
+        <div class="modal-content modal-content-lg p-0 flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0 sticky top-0 bg-white z-10 rounded-t-2xl">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Administración del condominio</h2>
+                    <p class="text-sm text-slate-500 mt-0.5"><%= tenant.name %></p>
+                </div>
+                <button type="button" onclick="closeModal('tenant-admin-modal')" class="p-2 hover:bg-slate-100 rounded-full" aria-label="Cerrar">
                     <span class="material-symbols-rounded">close</span>
                 </button>
             </div>
-            <p class="text-sm text-slate-600 mb-4">Controla si propietarios y vigilancia pueden usar <strong>Anuncio de Visitas</strong> y <strong>Anuncio de Deliveries</strong>. Desactívelo si el condominio aún no cuenta con personal y equipo en portería (PC/tablet).</p>
-            <div class="space-y-4">
-                <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
-                    <input type="checkbox" id="pf-visits-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
-                    <span>
-                        <span class="font-medium text-slate-900 block">Anuncio de Visitas</span>
-                        <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes de visitas.</span>
-                    </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
-                    <input type="checkbox" id="pf-deliveries-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
-                    <span>
-                        <span class="font-medium text-slate-900 block">Anuncio de Deliveries</span>
-                        <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes de deliveries.</span>
-                    </span>
-                </label>
-            </div>
-            <div class="flex gap-3 pt-6 mt-2">
-                <button type="button" onclick="closeModal('portal-features-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
-                    Cancelar
-                </button>
-                <button type="button" onclick="savePortalFeaturesSettings()" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
-                    Guardar
-                </button>
-            </div>
-        </div>
-    </div>
 
-    <!-- WhatsApp API (Mensajes in-app) — SuperAdmin -->
-    <div id="whatsapp-messaging-modal" class="modal-overlay">
-        <div class="modal-content p-6" style="max-width: 520px;">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold">WhatsApp — Mensajes a propietarios</h2>
-                <button type="button" onclick="closeModal('whatsapp-messaging-modal')" class="p-2 hover:bg-gray-100 rounded-full">
-                    <span class="material-symbols-rounded">close</span>
-                </button>
+            <div class="px-6 py-5 overflow-y-auto flex-1">
+                <!-- Logo -->
+                <section class="tenant-admin-section">
+                    <h3 class="tenant-admin-section-title">
+                        <span class="material-symbols-rounded text-orange-500">image</span>
+                        Logo del conjunto
+                    </h3>
+                    <p class="text-sm text-slate-500 mb-4">Aparece en los comprobantes PDF de recibos. JPG o PNG, fondo claro recomendado.</p>
+                    <div class="flex flex-col sm:flex-row gap-6">
+                        <div id="tenant-logo-preview-wrap" class="tenant-logo-preview-box rounded-xl border border-dashed border-slate-200 flex items-center justify-center">
+                            <% if (tenant.logo_path) { %>
+                            <img id="tenant-logo-preview" src="/uploads/<%= tenant.logo_path %>" alt="Logo">
+                            <% } else { %>
+                            <img id="tenant-logo-preview" src="" alt="" class="hidden">
+                            <span id="tenant-logo-placeholder" class="material-symbols-rounded text-4xl text-slate-300">image</span>
+                            <% } %>
+                        </div>
+                        <div class="flex-1 flex flex-wrap gap-2 items-start">
+                            <input type="file" id="tenant-logo-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="hidden">
+                            <button type="button" onclick="document.getElementById('tenant-logo-input').click()" class="md-button md-button-tonal">
+                                <span class="material-symbols-rounded">upload</span>
+                                Elegir imagen
+                            </button>
+                            <button type="button" id="tenant-logo-upload-btn" onclick="uploadTenantLogo()" class="md-button md-button-filled" disabled>
+                                <span class="material-symbols-rounded">save</span>
+                                Guardar logo
+                            </button>
+                            <button type="button" id="tenant-logo-delete-btn" onclick="deleteTenantLogo()" class="md-button bg-red-50 text-red-600 hover:bg-red-100<%= tenant.logo_path ? '' : ' hidden' %>">
+                                <span class="material-symbols-rounded">delete</span>
+                                Quitar
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tarifa SaaS -->
+                <section class="tenant-admin-section">
+                    <h3 class="tenant-admin-section-title">
+                        <span class="material-symbols-rounded text-orange-500">payments</span>
+                        Tarifa Condominio360 (SaaS)
+                    </h3>
+                    <p class="text-sm text-slate-500 mb-4">Precio por inmueble al facturar la plataforma. Vacío = $0.50 USD global.</p>
+                    <div class="flex flex-col sm:flex-row sm:items-end gap-3 max-w-lg">
+                        <div class="flex-1">
+                            <label for="saas-unit-price-input" class="block text-sm font-medium text-slate-700 mb-1">USD por inmueble</label>
+                            <input type="number" step="0.01" min="0" id="saas-unit-price-input"
+                                value="<%= tenant.saas_unit_price_usd != null && tenant.saas_unit_price_usd !== '' ? parseFloat(tenant.saas_unit_price_usd) : '' %>"
+                                placeholder="0.50 (predeterminado)"
+                                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900">
+                        </div>
+                        <button type="button" onclick="saveSaasUnitPrice()" class="md-button md-button-filled whitespace-nowrap">
+                            <span class="material-symbols-rounded">save</span>
+                            Guardar tarifa
+                        </button>
+                    </div>
+                </section>
+
+                <!-- WhatsApp -->
+                <section class="tenant-admin-section">
+                    <h3 class="tenant-admin-section-title">
+                        <span class="material-symbols-rounded text-teal-600">chat</span>
+                        WhatsApp — Mensajes
+                    </h3>
+                    <p class="text-sm text-slate-600 mb-4">API externa por condominio. La junta verá el toggle en <strong>Mensajes</strong> solo si está activo y configurado.</p>
+                    <div class="space-y-4 max-w-2xl">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="wa-enabled" class="w-5 h-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                            <span class="font-medium text-slate-900">Servicio contratado / habilitado</span>
+                        </label>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">URL base del API</label>
+                            <input type="url" id="wa-base-url" placeholder="https://wsapiback.arsystech.net/api"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm">
+                            <p class="text-xs text-slate-500 mt-1">Incluya <code class="bg-slate-100 px-1 rounded">/api</code> si el proveedor lo requiere.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                            <input type="password" id="wa-api-key" autocomplete="new-password"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                placeholder="Dejar vacío para no cambiar la clave actual">
+                            <p class="text-xs text-slate-500 mt-1" id="wa-key-hint"></p>
+                        </div>
+                        <button type="button" onclick="saveWhatsAppSettings()" class="md-button md-button-filled">
+                            <span class="material-symbols-rounded">save</span>
+                            Guardar WhatsApp
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Portería -->
+                <section class="tenant-admin-section">
+                    <h3 class="tenant-admin-section-title">
+                        <span class="material-symbols-rounded text-indigo-600">shield</span>
+                        Visitas y Deliveries
+                    </h3>
+                    <p class="text-sm text-slate-600 mb-4">Módulos de portería para propietarios y vigilancia. Desactívelos si el conjunto aún no tiene equipo en portería.</p>
+                    <div class="space-y-4 max-w-2xl">
+                        <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
+                            <input type="checkbox" id="pf-visits-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                            <span>
+                                <span class="font-medium text-slate-900 block">Anuncio de Visitas</span>
+                                <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes.</span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
+                            <input type="checkbox" id="pf-deliveries-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                            <span>
+                                <span class="font-medium text-slate-900 block">Anuncio de Deliveries</span>
+                                <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes.</span>
+                            </span>
+                        </label>
+                        <button type="button" onclick="savePortalFeaturesSettings()" class="md-button md-button-filled">
+                            <span class="material-symbols-rounded">save</span>
+                            Guardar portería
+                        </button>
+                    </div>
+                </section>
             </div>
-            <p class="text-sm text-slate-600 mb-4">URL base y clave del API externo por condominio. La junta verá el toggle en <strong>Mensajes</strong> solo si el servicio está activo y configurado.</p>
-            <div class="space-y-4">
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" id="wa-enabled" class="w-5 h-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
-                    <span class="font-medium text-slate-900">Servicio contratado / habilitado</span>
-                </label>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">URL base del API</label>
-                    <input type="url" id="wa-base-url" placeholder="https://wsapiback.arsystech.net/api"
-                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm">
-                    <p class="text-xs text-slate-500 mt-1">Debe incluir <code class="bg-slate-100 px-1 rounded">/api</code> si el API lo requiere. El <strong>hostname</strong> debe ser el mismo que en Swagger (p. ej. <code class="bg-slate-100 px-1 rounded">wsapiback</code> vs <code class="bg-slate-100 px-1 rounded">wsapi</code> son distintos; un host incorrecto suele dar 404).</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                    <input type="password" id="wa-api-key" autocomplete="new-password"
-                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
-                        placeholder="Dejar vacío para no cambiar la clave actual">
-                    <p class="text-xs text-slate-500 mt-1" id="wa-key-hint"></p>
-                </div>
-            </div>
-            <div class="flex gap-3 pt-6 mt-2">
-                <button type="button" onclick="closeModal('whatsapp-messaging-modal')" class="flex-1 px-4 py-3 border border-[#DADCE0] text-[#5F6368] font-medium hover:bg-[#F5F5F5] rounded-xl transition-colors">
-                    Cancelar
-                </button>
-                <button type="button" onclick="saveWhatsAppSettings()" class="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold hover:bg-orange-600 rounded-xl transition-colors shadow-lg shadow-orange-500/25">
-                    Guardar
+
+            <div class="px-6 py-4 border-t border-slate-200 flex-shrink-0 bg-slate-50 rounded-b-2xl">
+                <button type="button" onclick="closeModal('tenant-admin-modal')" class="w-full px-4 py-3 border border-slate-300 text-slate-700 font-medium hover:bg-white rounded-xl transition-colors">
+                    Cerrar
                 </button>
             </div>
         </div>
