@@ -104,18 +104,24 @@ class OwnerBillingController {
                     SELECT i.*, p.name as property_name, p.building,
                         pr.billing_month, pr.billing_year, pr.name as preliminary_name,
                         pr.exchange_rate_usd,
+                        CASE WHEN i.invoice_kind = N'LEGACY_DEBT' THEN N'Deuda histórica' ELSE pr.name END AS period_label,
                         CASE WHEN EXISTS (
                             SELECT 1 FROM BillingPaymentReports r
                             WHERE r.invoice_id = i.id AND r.status = N'PENDING_CONFIRMATION'
                         ) THEN 1 ELSE 0 END AS payment_report_pending
                     FROM BillingInvoices i
                     INNER JOIN Properties p ON i.property_id = p.id
-                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     WHERE i.tenant_id = @tenant_id
                     ${propertyFilter}
-                    AND pr.status = 'FINALIZED'
-                    AND pr.sent_to_owners = 1
-                    ORDER BY pr.billing_year DESC, pr.billing_month DESC, i.created_at DESC
+                    AND i.status IN (N'PENDING', N'PAID')
+                    AND (
+                        (i.invoice_kind = N'LEGACY_DEBT' AND i.sent_to_owners = 1)
+                        OR (pr.status = N'FINALIZED' AND pr.sent_to_owners = 1)
+                    )
+                    ORDER BY
+                        CASE WHEN i.invoice_kind = N'LEGACY_DEBT' THEN 0 ELSE 1 END,
+                        pr.billing_year DESC, pr.billing_month DESC, i.created_at DESC
                 `);
 
             res.json({
@@ -162,14 +168,17 @@ class OwnerBillingController {
             }
 
             const latestRate = await ExchangeRateModel.getLatest();
-            const preliminary = {
-                exchange_rate_usd: invoice.exchange_rate_preliminary,
-                exchange_rate_date: invoice.preliminary_exchange_rate_date,
-                rate_freeze_mode: invoice.rate_freeze_mode,
-                rate_freeze_window_days: invoice.rate_freeze_window_days,
-                rate_unpaid_migrate_after_month: invoice.rate_unpaid_migrate_after_month,
-                created_at: invoice.preliminary_created_at
-            };
+            const HistoricalDebtService = require('../services/HistoricalDebtService');
+            const preliminary = HistoricalDebtService.isLegacyInvoice(invoice)
+                ? HistoricalDebtService.getFreezeContextFromInvoice(invoice)
+                : {
+                    exchange_rate_usd: invoice.exchange_rate_preliminary,
+                    exchange_rate_date: invoice.preliminary_exchange_rate_date,
+                    rate_freeze_mode: invoice.rate_freeze_mode,
+                    rate_freeze_window_days: invoice.rate_freeze_window_days,
+                    rate_unpaid_migrate_after_month: invoice.rate_unpaid_migrate_after_month,
+                    created_at: invoice.preliminary_created_at
+                };
             const rateCurrent = parseFloat(invoice.current_exchange_rate)
                 || parseFloat(invoice.exchange_rate_at_creation)
                 || BillingRateFreezeService.getFrozenRate(preliminary);
@@ -354,10 +363,28 @@ class OwnerBillingController {
                 comentario
             } = req.body;
 
-            const montoAbonado = parseFloat(invoice.assigned_amount_ves);
+            const isLegacy = String(invoice.invoice_kind || '').toUpperCase() === 'LEGACY_DEBT';
+            const maxVes = parseFloat(invoice.assigned_amount_ves) || 0;
+            let montoAbonado = req.body.monto_abonado_ves != null
+                ? parseFloat(req.body.monto_abonado_ves)
+                : maxVes;
+            if (!Number.isFinite(montoAbonado) || montoAbonado <= 0) {
+                return res.status(400).json({ error: 'Monto abonado inválido' });
+            }
+            if (montoAbonado > maxVes + 0.000001) {
+                return res.status(400).json({ error: 'El monto no puede superar el saldo pendiente del recibo' });
+            }
+            if (!isLegacy && Math.abs(montoAbonado - maxVes) > 0.000001) {
+                return res.status(400).json({ error: 'En recibos ordinarios debe abonarse el monto total del recibo' });
+            }
+
             if (!banco_emisor || !fecha_transferencia || !ref_transferencia) {
                 return res.status(400).json({ error: 'Banco emisor, fecha de transferencia y referencia son requeridos' });
             }
+
+            const rate = parseFloat(invoice.current_exchange_rate) || parseFloat(invoice.exchange_rate_at_creation) || 0;
+            const { vesToUsd } = require('../utils/currencyConversion');
+            const montoAbonadoUsd = isLegacy && rate > 0 ? vesToUsd(montoAbonado, rate) : null;
 
             const attachmentPath = req.file ? `payment-receipts/${req.file.filename}` : null;
 
@@ -368,6 +395,7 @@ class OwnerBillingController {
                 fecha_transferencia: String(fecha_transferencia).trim(),
                 ref_transferencia: String(ref_transferencia).trim(),
                 monto_abonado_ves: montoAbonado,
+                monto_abonado_usd: montoAbonadoUsd,
                 comentario: comentario ? String(comentario).trim() : null,
                 attachment_path: attachmentPath
             });

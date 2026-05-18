@@ -4,6 +4,7 @@ const AdminController = require('../controllers/AdminController');
 const AdminDataUpdateController = require('../controllers/AdminDataUpdateController');
 const AdminSaaSBillingController = require('../controllers/AdminSaaSBillingController');
 const AdminBankController = require('../controllers/AdminBankController');
+const AdminHistoricalDebtController = require('../controllers/AdminHistoricalDebtController');
 const { conditionalSaaSFiscalUpload } = require('../middleware/uploadSaaSFiscalInvoice');
 const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
@@ -77,6 +78,14 @@ router.get('/tenants/:id/properties', AdminController.getProperties);
 router.post('/tenants/:id/properties', AdminController.createProperty);
 router.put('/properties/:id', AdminController.updateProperty);
 router.delete('/properties/:id', AdminController.deleteProperty);
+
+// ==================== DEUDA HISTÓRICA PRE-SISTEMA ====================
+router.get('/tenants/:id/historical-debts', AdminHistoricalDebtController.list);
+router.get('/tenants/:id/historical-debts/template.csv', AdminHistoricalDebtController.downloadTemplate);
+router.post('/tenants/:id/historical-debts', AdminHistoricalDebtController.create);
+router.post('/tenants/:id/historical-debts/bulk', AdminHistoricalDebtController.bulkCreate);
+router.put('/tenants/:id/historical-debts/:debtId', AdminHistoricalDebtController.update);
+router.post('/tenants/:id/historical-debts/:debtId/cancel', AdminHistoricalDebtController.cancel);
 
 // ==================== OWNERS (PROPIETARIOS) ====================
 router.get('/tenants/:id/owners/export', AdminController.exportOwnersExcel);

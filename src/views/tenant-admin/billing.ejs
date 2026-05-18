@@ -1514,30 +1514,52 @@
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             const byMonth = {};
             invoices.forEach(i => {
-                const key = `${i.billing_year}-${String(i.billing_month).padStart(2,'0')}`;
-                if (!byMonth[key]) byMonth[key] = { year: i.billing_year, month: i.billing_month, label: `${months[i.billing_month-1]} ${i.billing_year}`, items: [] };
+                const isLegacy = i.invoice_kind === 'LEGACY_DEBT';
+                const key = isLegacy ? 'legacy-debt' : `${i.billing_year}-${String(i.billing_month).padStart(2,'0')}`;
+                if (!byMonth[key]) {
+                    byMonth[key] = {
+                        year: isLegacy ? 0 : i.billing_year,
+                        month: isLegacy ? 0 : i.billing_month,
+                        label: isLegacy ? 'Deuda histórica pre-sistema' : `${months[(i.billing_month || 1) - 1]} ${i.billing_year}`,
+                        isLegacy,
+                        items: []
+                    };
+                }
                 byMonth[key].items.push(i);
             });
-            const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a));
+            const monthKeys = Object.keys(byMonth).sort((a, b) => {
+                if (a === 'legacy-debt') return -1;
+                if (b === 'legacy-debt') return 1;
+                return b.localeCompare(a);
+            });
 
             container.innerHTML = monthKeys.map((key, idx) => {
                 const group = byMonth[key];
                 const isExpanded = idx === 0;
                 const collapseId = `inv-month-${key.replace(/[^a-z0-9]/gi,'')}`;
-                const itemsHtml = group.items.map(i => `
-                <div class="border border-[#E5E5E5] rounded-lg p-4 hover:bg-[#FAFAFA] cursor-pointer transition bg-white" onclick="showInvoiceDetailModal('${i.id}')">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-medium text-[#3C4043]">${i.invoice_number}</h3>
+                const itemsHtml = group.items.map(i => {
+                    const isLegacy = i.invoice_kind === 'LEGACY_DEBT';
+                    const legacyCard = isLegacy ? 'border-violet-300 bg-violet-50/70 ring-1 ring-violet-200' : 'border-[#E5E5E5] bg-white';
+                    const statusLabel = i.status === 'PAID' ? 'Pagado' : (i.status === 'CANCELLED' ? 'Anulado' : 'Pendiente');
+                    return `
+                <div class="border rounded-lg p-4 hover:bg-[#FAFAFA] cursor-pointer transition ${legacyCard}" onclick="showInvoiceDetailModal('${i.id}')">
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <h3 class="font-medium text-[#3C4043]">${i.invoice_number}</h3>
+                                ${isLegacy ? '<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-200 text-violet-900"><span class="material-icons-round text-sm">history</span>Deuda histórica</span>' : ''}
+                            </div>
                             <p class="text-sm text-[#5F6368]">${i.property_name} ${i.building ? `• ${i.building}` : ''}</p>
                             <p class="text-sm mt-1">
                                 <b>${formatCurrency(i.assigned_amount_ves, 'VES')}</b>
-                                ${i.current_exchange_rate !== i.exchange_rate_at_creation ? 
+                                ${isLegacy ? `<span class="text-xs text-violet-800 ml-1">· ${formatCurrency(i.assigned_amount_usd, 'USD')} USD pend.</span>` : ''}
+                                ${!isLegacy && i.current_exchange_rate !== i.exchange_rate_at_creation ?
                                     `<span class="text-xs text-amber-600">(Tasa actualizada)</span>` : ''}
                             </p>
+                            ${isLegacy && i.status === 'PENDING' ? '<p class="text-xs text-violet-700 mt-1">Acepta abonos parciales · saldo maestro en USD</p>' : ''}
                         </div>
-                        <div class="flex flex-col items-end gap-1" onclick="event.stopPropagation()">
-                            <span class="px-2 py-1 rounded text-xs ${getStatusClass(i.status)}">${i.status}</span>
+                        <div class="flex flex-col items-end gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+                            <span class="px-2 py-1 rounded text-xs ${getStatusClass(i.status)}">${statusLabel}</span>
                             ${i.payment_report_pending ? `
                                 <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">Reporte pendiente</span>
                             ` : ''}
@@ -1547,10 +1569,11 @@
                         </div>
                     </div>
                 </div>
-                `).join('');
+                `;
+                }).join('');
                 return `
-                <div class="border border-[#E5E5E5] rounded-xl overflow-hidden mb-3">
-                    <div class="flex items-center justify-between gap-2 px-4 py-3 bg-white hover:bg-[#FAFAFA]">
+                <div class="border rounded-xl overflow-hidden mb-3 ${group.isLegacy ? 'border-violet-300 bg-violet-50/40' : 'border-[#E5E5E5]'}">
+                    <div class="flex items-center justify-between gap-2 px-4 py-3 ${group.isLegacy ? 'bg-violet-100/80' : 'bg-white'} hover:bg-[#FAFAFA]">
                         <button type="button" onclick="toggleMonthGroup('${collapseId}')" class="flex-1 flex items-center gap-2 text-left font-medium text-[#3C4043] min-w-0">
                             <span class="material-icons-round transition-transform flex-shrink-0" id="icon-${collapseId}">${isExpanded ? 'expand_less' : 'expand_more'}</span>
                             <span class="truncate">${group.label}</span>
@@ -2601,7 +2624,17 @@
                     showToast('Error al cargar detalle', 'error');
                     return;
                 }
+
                 const inv = data.data;
+                const isLegacyDebt = inv.invoice_kind === 'LEGACY_DEBT';
+                const legacyBannerHtml = isLegacyDebt ? `
+                    <div class="flex gap-2 text-sm text-violet-900 bg-violet-100 border border-violet-200 rounded-lg p-3 mb-4">
+                        <span class="material-icons-round text-violet-700 flex-shrink-0">history</span>
+                        <div>
+                            <p class="font-semibold">Deuda histórica pre-sistema</p>
+                            <p class="text-xs text-violet-800 mt-0.5">Saldo maestro en USD. Los abonos en Bs. pueden ser parciales; el equivalente USD reduce el saldo pendiente.</p>
+                        </div>
+                    </div>` : '';
                 const rate = inv.current_exchange_rate || inv.exchange_rate_at_creation || 1;
                 const totalUsd = inv.total_amount_usd || (inv.assigned_amount_ves / rate);
                 const ri = inv.rate_info || {};
@@ -2628,7 +2661,8 @@
                 
                 document.getElementById('invoice-detail-content').innerHTML = `
                     <div class="space-y-4">
-                        <div class="bg-[#FAFAFA] rounded-lg p-4">
+                        ${legacyBannerHtml}
+                        <div class="bg-[#FAFAFA] rounded-lg p-4 ${isLegacyDebt ? 'ring-1 ring-violet-200' : ''}">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <p class="text-sm text-[#5F6368]">${inv.invoice_number}</p>
@@ -2639,8 +2673,14 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div><p class="text-[#5F6368]">Inmueble</p><p class="font-medium">${inv.property_name}</p></div>
-                                <div><p class="text-[#5F6368]">Período</p><p class="font-medium">${getMonthName(inv.billing_month)} ${inv.billing_year}</p></div>
+                                <div><p class="text-[#5F6368]">Período</p><p class="font-medium">${isLegacyDebt ? 'Deuda histórica pre-sistema' : (getMonthName(inv.billing_month) + ' ' + inv.billing_year)}</p></div>
                             </div>
+                            ${isLegacyDebt ? `
+                            <div class="col-span-2 mt-2 p-3 rounded-lg bg-violet-50 border border-violet-100 text-sm grid grid-cols-2 gap-3">
+                                <div><p class="text-violet-800">Deuda original</p><p class="font-medium">${formatCurrency(inv.total_amount_usd, 'USD')} USD</p></div>
+                                <div><p class="text-violet-800">Saldo pendiente</p><p class="font-semibold text-violet-900">${formatCurrency(inv.assigned_amount_usd, 'USD')} USD</p></div>
+                                ${parseFloat(inv.paid_amount_usd) > 0 ? `<div class="col-span-2"><p class="text-violet-800">Abonado acumulado</p><p class="font-medium">${formatCurrency(inv.paid_amount_usd, 'USD')} USD · ${formatCurrency(inv.paid_amount_ves, 'VES')}</p></div>` : ''}
+                            </div>` : ''}
                             ${rateInfoHtml}
                         </div>
                         <div><h4 class="font-medium text-[#3C4043] mb-3">Desglose de Cobros</h4><div class="space-y-2">${itemsHtml}</div></div>

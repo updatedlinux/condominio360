@@ -1,0 +1,64 @@
+<!-- Modal: Deuda histórica manual -->
+<div id="historical-debt-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-medium text-slate-900">Registrar deuda histórica</h2>
+            <button type="button" onclick="closeHistoricalDebtModal()"><span class="material-symbols-rounded">close</span></button>
+        </div>
+        <form id="historical-debt-form" class="space-y-4" onsubmit="saveHistoricalDebt(event)">
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Inmueble *</label>
+                <select id="hd-property-id" required class="w-full px-4 py-3 border border-slate-200 rounded-xl"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Monto *</label>
+                    <input type="number" step="any" min="0" id="hd-amount" required class="w-full px-4 py-3 border border-slate-200 rounded-xl">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Moneda</label>
+                    <select id="hd-currency" class="w-full px-4 py-3 border border-slate-200 rounded-xl">
+                        <option value="USD">USD</option>
+                        <option value="VES">VES</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Descripción</label>
+                <input type="text" id="hd-description" class="w-full px-4 py-3 border border-slate-200 rounded-xl" placeholder="Deuda histórica pre-sistema">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Congelamiento tasa</label>
+                <select id="hd-freeze-mode" class="w-full px-4 py-3 border border-slate-200 rounded-xl" onchange="toggleHdFreezeFields()">
+                    <option value="NONE">NONE</option>
+                    <option value="PERMANENT">PERMANENT</option>
+                    <option value="WINDOW">WINDOW</option>
+                </select>
+            </div>
+            <div id="hd-window-wrap" class="hidden">
+                <label class="block text-sm font-medium text-slate-600 mb-1">Días ventana</label>
+                <input type="number" min="1" id="hd-window-days" class="w-full px-4 py-3 border border-slate-200 rounded-xl">
+            </div>
+            <div id="hd-migrate-wrap" class="hidden">
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="hd-migrate-month"> Migrar tras 1 mes impago</label>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeHistoricalDebtModal()" class="flex-1 px-4 py-3 border rounded-xl">Cancelar</button>
+                <button type="submit" class="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl font-medium">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="historical-debt-bulk-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+        <h2 class="text-xl font-medium mb-2">Carga CSV deuda histórica</h2>
+        <p class="text-xs text-amber-800 bg-amber-50 p-2 rounded mb-3">Todo o nada: un error y no se guarda nada.</p>
+        <input type="file" id="hd-csv-file" accept=".csv" class="w-full mb-3" onchange="parseHistoricalDebtCsv(event)">
+        <div id="hd-csv-preview" class="hidden text-xs max-h-40 overflow-auto border rounded p-2 mb-3"></div>
+        <div class="flex gap-3">
+            <button type="button" onclick="closeHistoricalDebtBulkModal()" class="flex-1 border rounded-xl py-2">Cancelar</button>
+            <button type="button" id="hd-bulk-submit" onclick="submitHistoricalDebtBulk()" disabled class="flex-1 bg-orange-500 text-white rounded-xl py-2 disabled:opacity-50">Procesar</button>
+        </div>
+    </div>
+</div>

@@ -258,6 +258,48 @@
                 </tbody>
             </table>
         </div>
+        <div class="card overflow-hidden mt-8">
+            <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Deuda histórica pre-sistema</h2>
+                    <p class="text-sm text-slate-500">Un recibo global por inmueble. Pagos parciales; saldo maestro en USD.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="downloadHistoricalDebtTemplate()" class="border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">
+                        <span class="material-symbols-rounded text-lg">download</span>
+                        Plantilla CSV
+                    </button>
+                    <button type="button" onclick="openHistoricalDebtBulkModal()" class="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">
+                        <span class="material-symbols-rounded text-lg">upload_file</span>
+                        Carga CSV
+                    </button>
+                    <button type="button" onclick="openHistoricalDebtModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">
+                        <span class="material-symbols-rounded text-lg">add</span>
+                        Registrar deuda
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 bg-amber-50 border-b border-amber-100 text-xs text-amber-900">
+                <strong>Carga atómica:</strong> si una fila del CSV falla, no se guarda ningún registro (todo o nada).
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Inmueble</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Recibo</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Saldo USD</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Saldo Bs.</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historical-debts-table" class="divide-y divide-slate-100">
+                        <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
     </div>
         <%- include('../partials/panels-footer') %>
@@ -526,6 +568,8 @@
     <%- include('../partials/page-notifications') %>
     <script src="/js/page-notifications.js?v=2"></script>
     <script src="/js/property-type.js"></script>
+    <%- include('partials/historical-debt-modals') %>
+    <script src="/js/admin-historical-debt.js?v=1"></script>
 
     <script>
         const token = localStorage.getItem('token');
@@ -597,6 +641,7 @@
 
         async function loadData() {
             await Promise.all([loadBuildings(), loadProperties()]);
+            if (typeof loadHistoricalDebts === 'function') loadHistoricalDebts();
             updateAlicuotaStats();
         }
 

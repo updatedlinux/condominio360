@@ -1266,11 +1266,13 @@ class TenantAdminBillingController {
             let query = `
                 SELECT i.*, p.name as property_name, p.building,
                     pr.billing_month, pr.billing_year, pr.name as preliminary_name,
+                    CASE WHEN i.invoice_kind = N'LEGACY_DEBT' THEN N'Deuda histórica' ELSE pr.name END AS period_label,
                     (SELECT TOP 1 1 FROM BillingPaymentReports r WHERE r.invoice_id = i.id AND r.status = 'PENDING_CONFIRMATION') as payment_report_pending
                 FROM BillingInvoices i
                 INNER JOIN Properties p ON i.property_id = p.id
-                INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                 WHERE i.tenant_id = @tenant_id
+                  AND (i.invoice_kind = N'LEGACY_DEBT' OR pr.id IS NOT NULL)
             `;
 
             const request = pool.request()
@@ -1297,7 +1299,8 @@ class TenantAdminBillingController {
                 request.input('months_back', sql.Int, n);
             }
 
-            query += ` ORDER BY pr.billing_year DESC, pr.billing_month DESC, p.building, p.name`;
+            query += ` ORDER BY CASE WHEN i.invoice_kind = N'LEGACY_DEBT' THEN 0 ELSE 1 END,
+                pr.billing_year DESC, pr.billing_month DESC, p.building, p.name`;
 
             const result = await request.query(query);
             
@@ -1502,12 +1505,21 @@ class TenantAdminBillingController {
                 return res.status(400).json({ error: 'Monto y método de pago son requeridos' });
             }
 
-            const invoice = await BillingModel.registerPayment(id, tenantId, {
+            const pool = await connectDB();
+            const invCheck = await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query(`SELECT invoice_kind FROM BillingInvoices WHERE id = @id AND tenant_id = @tenant_id`);
+            const kind = invCheck.recordset[0]?.invoice_kind;
+            const paymentPayload = {
                 paid_amount_ves,
                 payment_method,
                 payment_reference,
                 payment_notes
-            });
+            };
+            const invoice = kind === 'LEGACY_DEBT'
+                ? await BillingModel.registerLegacyPartialPayment(id, tenantId, paymentPayload)
+                : await BillingModel.registerPayment(id, tenantId, paymentPayload);
 
             if (!invoice) {
                 return res.status(404).json({ error: 'Recibo no encontrado' });
@@ -1560,9 +1572,16 @@ class TenantAdminBillingController {
             const owner = ownerResult.recordset[0];
             if (owner?.email) {
                 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query('SELECT p.billing_month, p.billing_year, i.invoice_number FROM BillingInvoices i INNER JOIN BillingPreliminaries p ON i.preliminary_id = p.id WHERE i.id = @id');
+                const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query(`
+                    SELECT i.invoice_number, i.invoice_kind, p.billing_month, p.billing_year
+                    FROM BillingInvoices i
+                    LEFT JOIN BillingPreliminaries p ON i.preliminary_id = p.id
+                    WHERE i.id = @id
+                `);
                 const invData = invRes.recordset[0];
-                const periodLabel = invData ? `${months[invData.billing_month - 1]} ${invData.billing_year}` : '';
+                const periodLabel = invData?.invoice_kind === 'LEGACY_DEBT'
+                    ? 'Deuda histórica pre-sistema'
+                    : (invData ? `${months[invData.billing_month - 1]} ${invData.billing_year}` : '');
                 EmailService.sendPaymentConfirmed(
                     owner.email,
                     owner.first_name || 'Propietario',
@@ -1621,9 +1640,16 @@ class TenantAdminBillingController {
             const owner = ownerResult.recordset[0];
             if (owner?.email) {
                 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query('SELECT p.billing_month, p.billing_year, i.invoice_number FROM BillingInvoices i INNER JOIN BillingPreliminaries p ON i.preliminary_id = p.id WHERE i.id = @id');
+                const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query(`
+                    SELECT i.invoice_number, i.invoice_kind, p.billing_month, p.billing_year
+                    FROM BillingInvoices i
+                    LEFT JOIN BillingPreliminaries p ON i.preliminary_id = p.id
+                    WHERE i.id = @id
+                `);
                 const invData = invRes.recordset[0];
-                const periodLabel = invData ? `${months[invData.billing_month - 1]} ${invData.billing_year}` : '';
+                const periodLabel = invData?.invoice_kind === 'LEGACY_DEBT'
+                    ? 'Deuda histórica pre-sistema'
+                    : (invData ? `${months[invData.billing_month - 1]} ${invData.billing_year}` : '');
                 EmailService.sendPaymentRejected(
                     owner.email,
                     owner.first_name || 'Propietario',

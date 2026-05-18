@@ -1,4 +1,9 @@
 const { sql, connectDB } = require('../config/database');
+const HistoricalDebtService = require('../services/HistoricalDebtService');
+const BillingRateFreezeService = require('../services/BillingRateFreezeService');
+const { usdToVes, vesToUsd } = require('../utils/currencyConversion');
+
+const USD_EPSILON = 0.000001;
 
 /**
  * Modelo para Facturación (Preliminares, Recibos, Items)
@@ -456,7 +461,7 @@ class BillingModel {
                         u.first_name + ' ' + u.last_name as owner_name, u.email as owner_email
                     FROM BillingInvoices i
                     INNER JOIN Properties p ON i.property_id = p.id
-                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     LEFT JOIN PropertyOwners po ON p.id = po.property_id AND po.is_primary_owner = 1
                     LEFT JOIN Users u ON po.user_id = u.id
                     WHERE i.id = @id AND i.tenant_id = @tenant_id
@@ -493,13 +498,17 @@ class BillingModel {
             const result = await pool.request()
                 .query(`
                     SELECT i.*, t.billing_mode,
-                        pr.rate_freeze_mode, pr.rate_freeze_window_days, pr.rate_unpaid_migrate_after_month,
-                        pr.created_at AS preliminary_created_at,
-                        pr.exchange_rate_usd AS preliminary_exchange_rate
+                        COALESCE(pr.rate_freeze_mode, i.legacy_rate_freeze_mode) AS rate_freeze_mode,
+                        COALESCE(pr.rate_freeze_window_days, i.legacy_rate_freeze_window_days) AS rate_freeze_window_days,
+                        COALESCE(pr.rate_unpaid_migrate_after_month, i.legacy_rate_unpaid_migrate_after_month) AS rate_unpaid_migrate_after_month,
+                        COALESCE(pr.created_at, i.legacy_debt_created_at) AS preliminary_created_at,
+                        COALESCE(pr.exchange_rate_usd, i.legacy_exchange_rate_usd) AS preliminary_exchange_rate,
+                        i.invoice_kind
                     FROM BillingInvoices i
                     INNER JOIN Tenants t ON i.tenant_id = t.id
-                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     WHERE i.status = 'PENDING'
+                      AND (i.invoice_kind = N'LEGACY_DEBT' OR pr.id IS NOT NULL)
                       AND NOT EXISTS (
                           SELECT 1 FROM BillingPaymentReports r
                           WHERE r.invoice_id = i.id AND r.status = N'PENDING_CONFIRMATION'
@@ -561,25 +570,30 @@ class BillingModel {
                 .input('id', sql.UniqueIdentifier, invoiceId)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
                 .query(`
-                    SELECT i.assigned_amount_usd,
+                    SELECT i.assigned_amount_usd, i.invoice_kind, i.current_exchange_rate,
+                        i.legacy_rate_freeze_mode, i.legacy_rate_freeze_window_days,
+                        i.legacy_rate_unpaid_migrate_after_month, i.legacy_debt_created_at,
+                        i.legacy_exchange_rate_usd,
                         pr.rate_freeze_mode, pr.rate_freeze_window_days, pr.rate_unpaid_migrate_after_month,
                         pr.created_at AS preliminary_created_at,
                         pr.exchange_rate_usd AS preliminary_exchange_rate
                     FROM BillingInvoices i
-                    INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     WHERE i.id = @id AND i.tenant_id = @tenant_id AND i.status = N'PENDING'
                 `);
             const row = invRes.recordset[0];
             if (!row) {
                 return null;
             }
-            const preliminary = {
-                rate_freeze_mode: row.rate_freeze_mode,
-                rate_freeze_window_days: row.rate_freeze_window_days,
-                rate_unpaid_migrate_after_month: row.rate_unpaid_migrate_after_month,
-                created_at: row.preliminary_created_at,
-                exchange_rate_usd: row.preliminary_exchange_rate
-            };
+            const preliminary = HistoricalDebtService.isLegacyInvoice(row)
+                ? HistoricalDebtService.getFreezeContextFromInvoice(row)
+                : {
+                    rate_freeze_mode: row.rate_freeze_mode,
+                    rate_freeze_window_days: row.rate_freeze_window_days,
+                    rate_unpaid_migrate_after_month: row.rate_unpaid_migrate_after_month,
+                    created_at: row.preliminary_created_at,
+                    exchange_rate_usd: row.preliminary_exchange_rate
+                };
             if (!BillingRateFreezeService.shouldApplyDailyRateUpdate(preliminary)) {
                 const frozenRate = BillingRateFreezeService.getFrozenRate(preliminary);
                 const usd = parseFloat(row.assigned_amount_usd) || 0;
@@ -640,12 +654,19 @@ class BillingModel {
                 .input('fecha_transferencia', sql.NVarChar, data.fecha_transferencia)
                 .input('ref_transferencia', sql.NVarChar, data.ref_transferencia)
                 .input('monto_abonado_ves', sql.Decimal(18, 6), data.monto_abonado_ves)
+                .input('monto_abonado_usd', sql.Decimal(18, 6), data.monto_abonado_usd ?? null)
                 .input('comentario', sql.NVarChar, data.comentario || null)
                 .input('attachment_path', sql.NVarChar, data.attachment_path || null)
                 .query(`
-                    INSERT INTO BillingPaymentReports (invoice_id, submitted_by, banco_emisor, fecha_transferencia, ref_transferencia, monto_abonado_ves, comentario, attachment_path)
+                    INSERT INTO BillingPaymentReports (
+                        invoice_id, submitted_by, banco_emisor, fecha_transferencia, ref_transferencia,
+                        monto_abonado_ves, monto_abonado_usd, comentario, attachment_path
+                    )
                     OUTPUT INSERTED.*
-                    VALUES (@invoice_id, @submitted_by, @banco_emisor, @fecha_transferencia, @ref_transferencia, @monto_abonado_ves, @comentario, @attachment_path)
+                    VALUES (
+                        @invoice_id, @submitted_by, @banco_emisor, @fecha_transferencia, @ref_transferencia,
+                        @monto_abonado_ves, @monto_abonado_usd, @comentario, @attachment_path
+                    )
                 `);
             return result.recordset[0];
         } catch (error) {
@@ -696,12 +717,35 @@ class BillingModel {
                     WHERE id = @report_id
                 `);
 
+            const invRes = await pool.request()
+                .input('id', sql.UniqueIdentifier, invoiceId)
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT invoice_kind, assigned_amount_usd, assigned_amount_ves,
+                        current_exchange_rate, paid_amount_usd, paid_amount_ves,
+                        legacy_rate_freeze_mode, legacy_rate_freeze_window_days,
+                        legacy_rate_unpaid_migrate_after_month, legacy_debt_created_at,
+                        legacy_exchange_rate_usd
+                    FROM BillingInvoices WHERE id = @id AND tenant_id = @tenant_id
+                `);
+            const inv = invRes.recordset[0];
+            if (!inv) return null;
+
             const paymentData = {
                 paid_amount_ves: report.monto_abonado_ves,
                 payment_method: 'Transferencia Bancaria',
                 payment_reference: report.ref_transferencia,
                 payment_notes: report.comentario ? `Banco emisor: ${report.banco_emisor}. ${report.comentario}` : `Banco emisor: ${report.banco_emisor}`
             };
+
+            if (HistoricalDebtService.isLegacyInvoice(inv)) {
+                const rate = parseFloat(inv.current_exchange_rate) || parseFloat(inv.legacy_exchange_rate_usd) || 0;
+                const payUsd = report.monto_abonado_usd != null
+                    ? parseFloat(report.monto_abonado_usd)
+                    : vesToUsd(report.monto_abonado_ves, rate);
+                paymentData.payment_usd = payUsd;
+                return await BillingModel.registerLegacyPartialPayment(invoiceId, tenantId, paymentData);
+            }
             return await BillingModel.registerPayment(invoiceId, tenantId, paymentData);
         } catch (error) {
             console.error('Error confirming payment report:', error);
@@ -736,6 +780,78 @@ class BillingModel {
             return out;
         } catch (error) {
             console.error('Error rejecting payment report:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Abono parcial o total en recibo de deuda histórica (saldo maestro en USD).
+     */
+    static async registerLegacyPartialPayment(id, tenantId, paymentData) {
+        try {
+            const pool = await connectDB();
+            const invRes = await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query(`
+                    SELECT * FROM BillingInvoices
+                    WHERE id = @id AND tenant_id = @tenant_id
+                      AND invoice_kind = N'LEGACY_DEBT' AND status = N'PENDING'
+                `);
+            const inv = invRes.recordset[0];
+            if (!inv) return null;
+
+            const rate = parseFloat(inv.current_exchange_rate) || parseFloat(inv.legacy_exchange_rate_usd) || 0;
+            const payVes = parseFloat(paymentData.paid_amount_ves) || 0;
+            const payUsd = paymentData.payment_usd != null
+                ? parseFloat(paymentData.payment_usd)
+                : vesToUsd(payVes, rate);
+            if (payUsd <= 0) return null;
+
+            const balanceUsd = parseFloat(inv.assigned_amount_usd) || 0;
+            if (payUsd > balanceUsd + USD_EPSILON) {
+                throw new Error('El abono en USD excede el saldo pendiente');
+            }
+
+            const newBalanceUsd = Math.max(0, balanceUsd - payUsd);
+            const newPaidUsd = (parseFloat(inv.paid_amount_usd) || 0) + payUsd;
+            const newPaidVes = (parseFloat(inv.paid_amount_ves) || 0) + payVes;
+            const freezeCtx = HistoricalDebtService.getFreezeContextFromInvoice(inv);
+            let effectiveRate = rate;
+            if (freezeCtx && !BillingRateFreezeService.shouldApplyDailyRateUpdate(freezeCtx)) {
+                effectiveRate = BillingRateFreezeService.getFrozenRate(freezeCtx);
+            }
+            const newAssignedVes = usdToVes(newBalanceUsd, effectiveRate);
+            const isPaid = HistoricalDebtService.isFullyPaid(newBalanceUsd);
+
+            const result = await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .input('assigned_amount_usd', sql.Decimal(18, 6), newBalanceUsd)
+                .input('assigned_amount_ves', sql.Decimal(18, 6), newAssignedVes)
+                .input('paid_amount_usd', sql.Decimal(18, 6), newPaidUsd)
+                .input('paid_amount_ves', sql.Decimal(18, 6), newPaidVes)
+                .input('payment_method', sql.NVarChar, paymentData.payment_method || null)
+                .input('payment_reference', sql.NVarChar, paymentData.payment_reference || null)
+                .input('payment_notes', sql.NVarChar, paymentData.payment_notes || null)
+                .query(`
+                    UPDATE BillingInvoices
+                    SET status = CASE WHEN @assigned_amount_usd <= ${USD_EPSILON} THEN N'PAID' ELSE N'PENDING' END,
+                        assigned_amount_usd = @assigned_amount_usd,
+                        assigned_amount_ves = @assigned_amount_ves,
+                        paid_amount_usd = @paid_amount_usd,
+                        paid_amount_ves = @paid_amount_ves,
+                        paid_at = CASE WHEN @assigned_amount_usd <= ${USD_EPSILON} THEN SYSDATETIME() ELSE paid_at END,
+                        payment_method = CASE WHEN @assigned_amount_usd <= ${USD_EPSILON} THEN @payment_method ELSE payment_method END,
+                        payment_reference = CASE WHEN @assigned_amount_usd <= ${USD_EPSILON} THEN @payment_reference ELSE payment_reference END,
+                        payment_notes = @payment_notes,
+                        updated_at = SYSDATETIME()
+                    OUTPUT INSERTED.*
+                    WHERE id = @id AND tenant_id = @tenant_id
+                `);
+            return result.recordset[0] || null;
+        } catch (error) {
+            console.error('Error registering legacy partial payment:', error);
             throw error;
         }
     }
