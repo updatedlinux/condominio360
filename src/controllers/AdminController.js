@@ -1835,21 +1835,27 @@ class AdminController {
                         SELECT po.user_id, po.property_id, p.building_id
                         FROM PropertyOwners po
                         INNER JOIN Properties p ON po.property_id = p.id AND p.tenant_id = @tenant_id
+                    ),
+                    OwnerFiltered AS (
+                        SELECT
+                            u.id,
+                            CASE WHEN EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id) THEN 1 ELSE 0 END AS has_property
+                        FROM Users u
+                        INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
+                        WHERE (@search IS NULL OR u.first_name + N' ' + u.last_name LIKE @search OR u.email LIKE @search OR u.dni LIKE @search)
+                          AND (
+                            @property_status IS NULL OR @property_status = N'' OR
+                            (@property_status = N'with-property' AND EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id)) OR
+                            (@property_status = N'without-property' AND NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id))
+                          )
+                          AND (
+                            @building_id IS NULL OR EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id AND pit.building_id = @building_id)
+                          )
                     )
                     SELECT
-                        SUM(CASE WHEN EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id) THEN 1 ELSE 0 END) AS with_property,
-                        SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id) THEN 1 ELSE 0 END) AS without_property
-                    FROM Users u
-                    INNER JOIN TenantUsers tu ON u.id = tu.user_id AND tu.tenant_id = @tenant_id AND tu.role = N'OWNER' AND tu.status = N'ACTIVE'
-                    WHERE (@search IS NULL OR u.first_name + N' ' + u.last_name LIKE @search OR u.email LIKE @search OR u.dni LIKE @search)
-                      AND (
-                        @property_status IS NULL OR @property_status = N'' OR
-                        (@property_status = N'with-property' AND EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id)) OR
-                        (@property_status = N'without-property' AND NOT EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id))
-                      )
-                      AND (
-                        @building_id IS NULL OR EXISTS (SELECT 1 FROM PropsInTenant pit WHERE pit.user_id = u.id AND pit.building_id = @building_id)
-                      )
+                        SUM(has_property) AS with_property,
+                        SUM(CASE WHEN has_property = 0 THEN 1 ELSE 0 END) AS without_property
+                    FROM OwnerFiltered
                 `);
             const statsRow = statsResult.recordset[0] || {};
 
