@@ -4,9 +4,9 @@ const PDFDocument = require('pdfkit');
 const SVGtoPDF = require('svg-to-pdfkit');
 
 const TENANT_LOGO = require('../constants/tenantLogo');
+const { normalizeRateDate } = require('../utils/bcvFiscalCalendar');
 const ASSETS_DIR = path.join(__dirname, '..', 'public', 'assets', 'images');
-const CONDO_BRAND_SVG = path.join(ASSETS_DIR, 'CONDOMINIO360-blacklogo.svg');
-const ISOTIPO_SVG = path.join(ASSETS_DIR, 'isotipo-naranja.svg');
+const CONDOMINIO360_WHITE_LOGO_SVG = path.join(ASSETS_DIR, 'CONDOMINIO360-whitelogo.svg');
 
 const MONTH_NAMES_ES = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -31,11 +31,25 @@ function formatUsd(amount) {
 }
 
 function formatRateDate(val) {
-    if (!val) return 'N/A';
-    const s = String(val).split('T')[0];
-    if (!/^\d{4}-\d{2}-\d{2}/.test(s)) return 'N/A';
-    const [y, m, d] = s.split('-');
+    const ymd = normalizeRateDate(val);
+    if (!ymd) return null;
+    const [y, m, d] = ymd.split('-');
     return `${parseInt(d, 10)} de ${MONTH_NAMES_ES[parseInt(m, 10) - 1].toLowerCase()} de ${y}`;
+}
+
+/** Fecha de emisión del recibo (generación / creación del documento). */
+function formatEmissionDate(invoice) {
+    const candidates = [
+        invoice.created_at,
+        invoice.sent_at,
+        invoice.finalized_at,
+        invoice.preliminary_finalized_at
+    ];
+    for (const val of candidates) {
+        const formatted = formatRateDate(val);
+        if (formatted) return formatted;
+    }
+    return '—';
 }
 
 function formatDateTime(val) {
@@ -57,26 +71,23 @@ function resolveTenantLogoFile(tenant) {
     return fs.existsSync(full) ? full : null;
 }
 
-let condoBrandSvgCache = null;
-function getCondoBrandSvg() {
-    if (condoBrandSvgCache !== null) return condoBrandSvgCache;
+let whiteLogoSvgCache = null;
+function getCondominio360WhiteLogoSvg() {
+    if (whiteLogoSvgCache !== null) return whiteLogoSvgCache;
     try {
-        condoBrandSvgCache = fs.readFileSync(CONDO_BRAND_SVG, 'utf8');
+        whiteLogoSvgCache = fs.readFileSync(CONDOMINIO360_WHITE_LOGO_SVG, 'utf8');
     } catch {
-        condoBrandSvgCache = '';
+        whiteLogoSvgCache = '';
     }
-    return condoBrandSvgCache;
+    return whiteLogoSvgCache;
 }
 
-let isotipoSvgCache = null;
-function getIsotipoSvg() {
-    if (isotipoSvgCache !== null) return isotipoSvgCache;
-    try {
-        isotipoSvgCache = fs.readFileSync(ISOTIPO_SVG, 'utf8');
-    } catch {
-        isotipoSvgCache = '';
-    }
-    return isotipoSvgCache;
+function printableBottomY(doc) {
+    return doc.page.height - doc.page.margins.bottom;
+}
+
+function footerReservePt(doc) {
+    return TENANT_LOGO.brandPdfHeight + 28;
 }
 
 class BillingInvoicePdfService {
@@ -91,7 +102,7 @@ class BillingInvoicePdfService {
 
         const doc = new PDFDocument({
             size: 'A4',
-            margins: { top: 40, left: 40, right: 40, bottom: 48 }
+            margins: { top: 40, left: 40, right: 40, bottom: 56 }
         });
         doc.on('error', (err) => {
             console.error('BillingInvoicePdf error:', err);
@@ -105,19 +116,28 @@ class BillingInvoicePdfService {
             this._drawLegacySummary(doc, invoice);
         }
         this._drawItemsTable(doc, invoice, ctx);
-        this._drawTotals(doc, invoice, ctx);
         this._drawRateInfo(doc, invoice);
         if (invoice.status === 'PAID') {
+            this._ensureSpace(doc, 58);
             this._drawPaymentConfirmed(doc, invoice, paymentReport);
         } else if (invoice.has_pending_payment_report) {
+            this._ensureSpace(doc, 42);
             this._drawPendingVerification(doc);
         }
         if (displayStatus.stamp) {
+            this._ensureSpace(doc, 108);
             this._drawPaidStamp(doc, invoice, tenant, paymentReport);
         }
         this._drawBranding(doc);
 
         doc.end();
+    }
+
+    static _ensureSpace(doc, neededHeight) {
+        const limit = printableBottomY(doc) - footerReservePt(doc);
+        if (doc.y + neededHeight > limit) {
+            doc.addPage();
+        }
     }
 
     static _drawHeader(doc, tenant, displayStatus) {
@@ -211,7 +231,7 @@ class BillingInvoicePdfService {
             ['Inmueble', invoice.property_name || '-'],
             ['Período', periodLabel],
             ['Tasa aplicada', `${Number(rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES/USD`],
-            ['Fecha de emisión', formatRateDate(invoice.created_at)]
+            ['Fecha de emisión', formatEmissionDate(invoice)]
         ];
 
         if (invoice.invoice_kind === 'LEGACY_DEBT') {
@@ -303,12 +323,16 @@ class BillingInvoicePdfService {
 
         const rate = invoice._rateCurrent || 1;
         const items = invoice.items || [];
+        const totalUsd = invoice._totalUsd != null
+            ? invoice._totalUsd
+            : (parseFloat(invoice.total_amount_usd) || parseFloat(invoice.assigned_amount_ves) / rate);
 
         items.forEach((it) => {
-            const rowHeight = 36;
-            if (y + rowHeight > doc.page.height - 120) {
+            const rowHeight = 32;
+            const pageLimit = printableBottomY(doc) - footerReservePt(doc) - 80;
+            if (y + rowHeight > pageLimit) {
                 doc.addPage();
-                y = 40;
+                y = doc.page.margins.top;
             }
             const itemUsd = it.currency === 'USD'
                 ? (parseFloat(it.base_amount) || 0)
@@ -334,40 +358,26 @@ class BillingInvoicePdfService {
         if (!items.length) {
             doc.fillColor('#9CA3AF').font('Helvetica').fontSize(10)
                 .text('Sin desglose disponible', startX + 8, y + 8);
-            y += 28;
+            y += 24;
         }
 
-        doc.y = y + 8;
-    }
-
-    static _drawTotals(doc, invoice, ctx) {
-        const startX = 40;
-        const pageWidth = doc.page.width;
-        const tableWidth = pageWidth - 80;
+        y += 4;
+        const totalsH = 48;
         const boxX = startX + tableWidth * 0.45;
         const boxWidth = tableWidth * 0.55;
-        let y = doc.y;
-
-        const rate = invoice._rateCurrent || 1;
-        const totalUsd = invoice._totalUsd != null
-            ? invoice._totalUsd
-            : (parseFloat(invoice.total_amount_usd) || parseFloat(invoice.assigned_amount_ves) / rate);
-
         doc.save();
-        doc.roundedRect(boxX, y, boxWidth, 56, 4).fill('#F9FAFB');
+        doc.roundedRect(boxX, y, boxWidth, totalsH, 4).fill('#F9FAFB');
         doc.restore();
-
-        doc.fillColor('#6B7280').font('Helvetica').fontSize(10)
-            .text('Total a pagar (Bs.)', boxX + 12, y + 10, { width: boxWidth / 2 });
-        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(13)
-            .text(formatVes(invoice.assigned_amount_ves), boxX + boxWidth / 2, y + 8, { width: boxWidth / 2 - 12, align: 'right' });
-
-        doc.fillColor('#6B7280').font('Helvetica').fontSize(10)
-            .text('Equivalente USD', boxX + 12, y + 34, { width: boxWidth / 2 });
+        doc.fillColor('#6B7280').font('Helvetica').fontSize(9)
+            .text('Total a pagar (Bs.)', boxX + 10, y + 8, { width: boxWidth / 2 });
         doc.fillColor('#111827').font('Helvetica-Bold').fontSize(12)
-            .text(formatUsd(totalUsd), boxX + boxWidth / 2, y + 32, { width: boxWidth / 2 - 12, align: 'right' });
+            .text(formatVes(invoice.assigned_amount_ves), boxX + boxWidth / 2, y + 6, { width: boxWidth / 2 - 10, align: 'right' });
+        doc.fillColor('#6B7280').font('Helvetica').fontSize(9)
+            .text('Equivalente USD', boxX + 10, y + 28, { width: boxWidth / 2 });
+        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(11)
+            .text(formatUsd(totalUsd), boxX + boxWidth / 2, y + 26, { width: boxWidth / 2 - 10, align: 'right' });
 
-        doc.y = y + 68;
+        doc.y = y + totalsH + 6;
     }
 
     static _drawRateInfo(doc, invoice) {
@@ -394,32 +404,36 @@ class BillingInvoicePdfService {
         const w = doc.page.width - 80;
         let y = doc.y;
 
-        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(11)
+        this._ensureSpace(doc, 72);
+
+        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10)
             .text('Información de tasas', startX, y);
-        y += 18;
+        y += 14;
 
         if (ri.freeze_label) {
-            doc.fillColor('#3730A3').font('Helvetica').fontSize(8)
+            doc.fillColor('#3730A3').font('Helvetica').fontSize(7.5)
                 .text(ri.freeze_label, startX, y, { width: w });
-            y += 16;
+            y += 12;
         }
 
         const line = (label, value) => {
-            doc.fillColor('#6B7280').font('Helvetica').fontSize(9).text(label, startX, y, { width: w * 0.55 });
-            doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9)
+            doc.fillColor('#6B7280').font('Helvetica').fontSize(8).text(label, startX, y, { width: w * 0.55 });
+            doc.fillColor('#111827').font('Helvetica-Bold').fontSize(8)
                 .text(value, startX + w * 0.55, y, { width: w * 0.45, align: 'right' });
-            y += 14;
+            y += 11;
         };
 
         if (ri.rate_preliminary != null) {
-            const datePart = ri.rate_preliminary_date ? ` (${formatRateDate(ri.rate_preliminary_date)})` : '';
+            const prelimDate = formatRateDate(ri.rate_preliminary_date);
+            const datePart = prelimDate ? ` (${prelimDate})` : '';
             line(
                 `Monto a pagar (tasa${datePart})`,
                 `${Number(ri.rate_preliminary).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES/USD · ${formatVes(ri.contravalue_preliminary_ves)}`
             );
         }
         if (ri.show_rate_differential && ri.rate_today != null) {
-            const datePart = ri.rate_today_date ? ` (${formatRateDate(ri.rate_today_date)})` : '';
+            const todayDate = formatRateDate(ri.rate_today_date);
+            const datePart = todayDate ? ` (${todayDate})` : '';
             line(
                 `Referencia hoy${datePart}`,
                 `${Number(ri.rate_today).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES/USD · ${formatVes(ri.contravalue_today_ves)}`
@@ -432,7 +446,7 @@ class BillingInvoicePdfService {
             );
         }
 
-        doc.y = y + 8;
+        doc.y = y + 4;
     }
 
     static _drawPaymentConfirmed(doc, invoice, paymentReport) {
@@ -552,35 +566,42 @@ class BillingInvoicePdfService {
     }
 
     static _drawBranding(doc) {
-        const pageWidth = doc.page.width;
-        const pageHeight = doc.page.height;
-        const brandW = 72;
-        const brandH = 20;
-        const x = pageWidth - 40 - brandW;
-        const y = pageHeight - 36;
+        const range = doc.bufferedPageRange();
+        const firstPage = range.start;
+        doc.switchToPage(firstPage);
 
-        const svg = getIsotipoSvg() || getCondoBrandSvg();
+        const page = doc.page;
+        const marginL = page.margins.left;
+        const marginR = page.margins.right;
+        const bottom = printableBottomY(doc);
+        const brandW = TENANT_LOGO.brandPdfWidth;
+        const brandH = TENANT_LOGO.brandPdfHeight;
+        const logoX = page.width - marginR - brandW;
+        const logoY = bottom - brandH - 2;
+
+        const svg = getCondominio360WhiteLogoSvg();
         if (svg) {
             try {
                 doc.save();
-                doc.opacity(0.45);
-                SVGtoPDF(doc, svg, x, y, { width: brandW, height: brandH, preserveAspectRatio: 'xMidYMid meet' });
+                doc.opacity(0.85);
+                SVGtoPDF(doc, svg, logoX, logoY, {
+                    width: brandW,
+                    height: brandH,
+                    preserveAspectRatio: 'xMidYMid meet'
+                });
                 doc.restore();
             } catch {
                 doc.fillColor('#9CA3AF').font('Helvetica').fontSize(7)
-                    .text('Condominio360', x, y + 6, { width: brandW, align: 'right' });
+                    .text('Condominio360', logoX, logoY + 6, { width: brandW, align: 'right' });
             }
-        } else {
-            doc.fillColor('#9CA3AF').font('Helvetica').fontSize(7)
-                .text('Condominio360', x, y + 6, { width: brandW, align: 'right' });
         }
 
-        const footerY = pageHeight - 28;
-        doc.fillColor('#D1D5DB').font('Helvetica').fontSize(7)
+        const textY = bottom - brandH - 12;
+        doc.fillColor('#D1D5DB').font('Helvetica').fontSize(6.5)
             .text(
                 'Documento generado electrónicamente por Condominio360.',
-                40, footerY,
-                { width: pageWidth - 80, align: 'center', lineBreak: false }
+                marginL, textY,
+                { width: page.width - marginL - marginR, align: 'center', lineBreak: false }
             );
     }
 

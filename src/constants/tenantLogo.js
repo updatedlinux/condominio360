@@ -11,7 +11,10 @@ const TENANT_LOGO = {
     previewHeight: 112,
     /** Encabezado PDF de recibo (pt) */
     pdfWidth: 168,
-    pdfHeight: 64
+    pdfHeight: 64,
+    /** Marca Condominio360 esquina inferior derecha (pt) */
+    brandPdfWidth: 96,
+    brandPdfHeight: 22
 };
 
 module.exports = TENANT_LOGO;
