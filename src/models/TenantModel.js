@@ -79,7 +79,7 @@ class TenantModel {
      * @param {Object} data 
      */
     static async update(id, data) {
-        const allowedFields = ['name', 'address', 'billing_type', 'billing_mode', 'payment_info', 'building_type', 'settings', 'active'];
+        const allowedFields = ['name', 'address', 'billing_type', 'billing_mode', 'payment_info', 'building_type', 'settings', 'active', 'saas_unit_price_usd'];
         const updates = [];
         const inputs = [{ name: 'id', type: sql.UniqueIdentifier, value: id }];
 
@@ -88,6 +88,15 @@ class TenantModel {
                 updates.push(`${key} = @${key}`);
                 if (key === 'settings') {
                     inputs.push({ name: key, type: sql.NVarChar, value: JSON.stringify(value) });
+                } else if (key === 'saas_unit_price_usd') {
+                    let parsed = null;
+                    if (value !== null && value !== '') {
+                        parsed = parseFloat(value);
+                        if (!Number.isFinite(parsed) || parsed < 0) {
+                            throw new Error('Tarifa SaaS inválida');
+                        }
+                    }
+                    inputs.push({ name: key, type: sql.Decimal(18, 6), value: parsed });
                 } else {
                     inputs.push({ name: key, type: sql.NVarChar, value });
                 }

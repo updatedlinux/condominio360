@@ -1,7 +1,8 @@
 const { sql, connectDB } = require('../config/database');
 const { usdToVes } = require('../utils/currencyConversion');
+const { DEFAULT_SAAS_UNIT_PRICE_USD } = require('../constants/billingReminders');
 
-const UNIT_PRICE_USD = 0.50;
+const UNIT_PRICE_USD = DEFAULT_SAAS_UNIT_PRICE_USD;
 const FISCAL_SHIPPING_USD = 10;
 const IVA_RATE = 0.16;
 
@@ -9,6 +10,26 @@ const IVA_RATE = 0.16;
  * Modelo para facturación SaaS (Condominio360 → Condominios)
  */
 class SaaSBillingModel {
+    static getDefaultUnitPriceUsd() {
+        return DEFAULT_SAAS_UNIT_PRICE_USD;
+    }
+
+    /**
+     * Tarifa por inmueble para facturación SaaS (null en DB → default).
+     */
+    static async getUnitPriceUsdForTenant(tenantId) {
+        const pool = await connectDB();
+        const r = await pool.request()
+            .input('id', sql.UniqueIdentifier, tenantId)
+            .query('SELECT saas_unit_price_usd FROM Tenants WHERE id = @id');
+        const raw = r.recordset[0]?.saas_unit_price_usd;
+        if (raw != null && raw !== '') {
+            const v = parseFloat(raw);
+            if (Number.isFinite(v) && v >= 0) return v;
+        }
+        return DEFAULT_SAAS_UNIT_PRICE_USD;
+    }
+
     /**
      * Crear factura mensual para un tenant
      * @param {object} [options]
@@ -28,8 +49,9 @@ class SaaSBillingModel {
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .query('SELECT COUNT(*) as c FROM Properties WHERE tenant_id = @tenant_id');
         const count = propCount.recordset[0]?.c || 0;
+        const unitPriceUsd = await SaaSBillingModel.getUnitPriceUsdForTenant(tenantId);
 
-        const baseTotalUsd = count * UNIT_PRICE_USD;
+        const baseTotalUsd = count * unitPriceUsd;
         let extraTotalUsd = 0;
         for (const it of extraItems) {
             extraTotalUsd += (it.amount_usd || 0);
@@ -91,9 +113,9 @@ class SaaSBillingModel {
 
             await tx.request()
                 .input('invoice_id', sql.UniqueIdentifier, invoice.id)
-                .input('description', sql.NVarChar, `Plataforma Condominio360 - ${count} unidad(es) × $0.50 USD`)
+                .input('description', sql.NVarChar, `Plataforma Condominio360 - ${count} unidad(es) × $${unitPriceUsd.toFixed(2)} USD`)
                 .input('quantity', sql.Decimal(10, 2), count)
-                .input('unit_price', sql.Decimal(15, 4), UNIT_PRICE_USD)
+                .input('unit_price', sql.Decimal(15, 4), unitPriceUsd)
                 .input('total_usd', sql.Decimal(15, 4), baseTotalUsd)
                 .input('sort_order', sql.Int, order++)
                 .query(`

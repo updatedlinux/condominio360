@@ -505,6 +505,7 @@ class AdminSaaSBillingController {
                 .input('y', sql.Int, year)
                 .query(`
                     SELECT t.id, t.name, t.slug,
+                        COALESCE(t.saas_unit_price_usd, 0.50) AS saas_unit_price_usd,
                         (SELECT COUNT(*) FROM Properties WHERE tenant_id = t.id) as property_count,
                         (SELECT COUNT(*) FROM SaaSInvoices WHERE tenant_id = t.id AND period_month = @m AND period_year = @y) as has_invoice
                     FROM Tenants t

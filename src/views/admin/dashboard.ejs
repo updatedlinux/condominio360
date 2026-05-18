@@ -924,7 +924,7 @@
                     </div>
                     <div class="md-card p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Facturación Condominio360</h3>
-                        <p class="text-sm text-gray-500 mb-4">Genera facturas mensuales a los condominios ($0.50 USD por unidad + ítems extraordinarios). Tasa BCV: días 1-5 del mes usa tasa del 1ro; día 6+ usa tasa diaria.</p>
+                        <p class="text-sm text-gray-500 mb-4">Genera facturas mensuales a los condominios (tarifa por inmueble configurable; default $0.50 USD + ítems extraordinarios). Tasa BCV: días 1-5 del mes usa tasa del 1ro; día 6+ usa tasa diaria.</p>
                         <div class="flex flex-wrap gap-4 mb-6">
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Período</label>
@@ -3008,6 +3008,11 @@
             return Number(t.has_invoice) === 0;
         }
 
+        function saasUnitPriceForTenant(t) {
+            const p = parseFloat(t?.saas_unit_price_usd);
+            return Number.isFinite(p) && p >= 0 ? p : 0.5;
+        }
+
         async function openSaaSOverviewModal() {
             saasOverviewSelectedTenantId = null;
             saasExtraItems = [];
@@ -3087,7 +3092,7 @@
                     const inner = '<span class="w-10 h-10 rounded-full ' + icon + ' flex items-center justify-center flex-shrink-0">' +
                         '<span class="material-symbols-rounded ' + iconColor + ' text-xl">apartment</span></span>' +
                         '<div class="flex-1 min-w-0"><span class="font-medium ' + nameClass + ' block truncate">' + esc(t.name) + '</span>' +
-                        '<span class="text-sm text-gray-500">' + (t.property_count || 0) + ' unidad(es)</span></div>' + right;
+                        '<span class="text-sm text-gray-500">' + (t.property_count || 0) + ' und. × $' + saasUnitPriceForTenant(t).toFixed(2) + '</span></div>' + right;
                     if (eligible) {
                         const idJs = String(t.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                         return '<button type="button" onclick="selectSaaSTenantInModal(\'' + idJs + '\'); closeSaaSTenantPickerModal();" class="' + base + ' hover:bg-gray-50 transition">' + inner + '</button>';
@@ -3155,7 +3160,9 @@
         function updateSaaSOverviewTotals(tenants) {
             saasOverviewTenantsCache = tenants || saasOverviewTenantsCache;
             const totalUnits = (tenants || saasOverviewTenantsCache).reduce((s,t) => s + (t.property_count||0), 0);
-            const baseUsd = totalUnits * 0.5;
+            const baseUsd = (tenants || saasOverviewTenantsCache).reduce(
+                (s, t) => s + (t.property_count || 0) * saasUnitPriceForTenant(t), 0
+            );
             const extraUsd = saasExtraItems.reduce((s,it) => s + (parseFloat(it.amount_usd)||0), 0);
             const subtotalUsd = baseUsd + extraUsd;
             const docType = document.querySelector('input[name="saas-billing-doc"]:checked')?.value || 'VOUCHER';

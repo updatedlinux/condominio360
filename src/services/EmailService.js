@@ -790,6 +790,93 @@ class EmailService {
     }
 
     /**
+     * Recordatorio acumulado de recibos de condominio vencidos (modo FULL).
+     */
+    async sendOverdueInvoicesReminder(email, firstName, tenantName, invoices, loginUrl, meta = {}) {
+        const rows = (invoices || []).map((inv) => `
+            <tr>
+                <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.propertyLabel || '—'}</td>
+                <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.periodLabel || '—'}</td>
+                <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.invoice_number || '—'}</td>
+                <td style="padding:8px;border-bottom:1px solid #e5e5e5;text-align:right;">Bs. ${parseFloat(inv.assigned_amount_ves || 0).toLocaleString('es-VE')}</td>
+                <td style="padding:8px;border-bottom:1px solid #e5e5e5;text-align:right;">${inv.daysOverdue} día(s)</td>
+            </tr>
+        `).join('');
+
+        const content = `
+            <h2>Hola ${firstName || 'propietario'},</h2>
+            <p>Te recordamos que en <strong>${tenantName}</strong> tienes ${invoices.length} recibo(s) de condominio pendiente(s) cuya fecha de vencimiento ya pasó.</p>
+            <p style="color:#5F6368;font-size:14px;">Este mensaje es un recordatorio informativo. Puedes revisar el detalle y reportar tu pago desde tu panel de propietario.</p>
+            <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+                <thead>
+                    <tr style="background:#f8f9fa;">
+                        <th style="padding:8px;text-align:left;">Inmueble</th>
+                        <th style="padding:8px;text-align:left;">Período</th>
+                        <th style="padding:8px;text-align:left;">Recibo</th>
+                        <th style="padding:8px;text-align:right;">Saldo (Bs.)</th>
+                        <th style="padding:8px;text-align:right;">Vencido</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div style="text-align:center;margin-top:24px;">
+                <a href="${loginUrl}" class="cta-button">Ver mis recibos</a>
+            </div>
+        `;
+
+        const html = this._generateEmailTemplate(content, {
+            title: 'Recordatorio de recibos pendientes',
+            subtitle: tenantName,
+            color: '#d97706'
+        });
+        const subject = `Recordatorio: ${invoices.length} recibo(s) vencido(s) — ${tenantName}`;
+        return this.send(email, subject, html, null, {
+            ...meta,
+            messageType: meta.messageType || 'billing_overdue_reminder'
+        });
+    }
+
+    /**
+     * Recordatorio semanal informativo de deuda histórica pre-sistema.
+     */
+    async sendLegacyDebtWeeklyReminder(email, firstName, tenantName, debts, loginUrl, meta = {}) {
+        const blocks = (debts || []).map((d) => {
+            const partial = d.hasPartialPayment
+                ? `<p style="margin:4px 0 0;font-size:13px;color:#0d9488;"><strong>Pago parcial registrado.</strong> Saldo pendiente: $${parseFloat(d.assigned_amount_usd).toFixed(2)} USD · Bs. ${parseFloat(d.assigned_amount_ves).toLocaleString('es-VE')}</p>`
+                : `<p style="margin:4px 0 0;font-size:13px;"><strong>Saldo:</strong> $${parseFloat(d.assigned_amount_usd).toFixed(2)} USD · Bs. ${parseFloat(d.assigned_amount_ves).toLocaleString('es-VE')}</p>`;
+            return `
+                <div class="details-box" style="margin-bottom:12px;">
+                    <p style="margin:0 0 4px;"><strong>${d.propertyLabel}</strong></p>
+                    <p style="margin:0;font-size:13px;color:#5F6368;">${d.description}</p>
+                    ${partial}
+                    <p style="margin:8px 0 0;font-size:12px;color:#73777f;">${d.freezeNote}</p>
+                </div>
+            `;
+        }).join('');
+
+        const content = `
+            <h2>Hola ${firstName || 'propietario'},</h2>
+            <p>Este es un recordatorio semanal sobre la <strong>deuda histórica</strong> registrada en <strong>${tenantName}</strong> (cargada antes del uso de Condominio360).</p>
+            <p style="color:#5F6368;font-size:14px;">No es un cobro compulsivo: solo queremos que tengas visible el estado de tu saldo. Si ya realizaste un pago, repórtalo desde tu panel para que la junta lo confirme.</p>
+            ${blocks}
+            <div style="text-align:center;margin-top:24px;">
+                <a href="${loginUrl}" class="cta-button">Ver deuda en mi panel</a>
+            </div>
+        `;
+
+        const html = this._generateEmailTemplate(content, {
+            title: 'Estado de deuda histórica',
+            subtitle: tenantName,
+            color: '#50606e'
+        });
+        const subject = `Recordatorio semanal: deuda histórica — ${tenantName}`;
+        return this.send(email, subject, html, null, {
+            ...meta,
+            messageType: meta.messageType || 'billing_legacy_weekly_reminder'
+        });
+    }
+
+    /**
      * Notificar al propietario que su reserva de área común fue recibida
      */
     async sendReservationReceivedNotification(reservation, ownerEmail, ownerName, areaName, requiresApproval) {
