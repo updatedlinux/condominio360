@@ -8,7 +8,8 @@ const DeliveryController = require('../controllers/DeliveryController');
 const { authenticate, requireOwner, requirePropertyAccess } = require('../middleware/auth');
 const {
     requireVisitsAnnouncements,
-    requireDeliveriesAnnouncements
+    requireDeliveriesAnnouncements,
+    requireVehicleAccess
 } = require('../middleware/requireTenantFeature');
 const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
 
@@ -92,7 +93,7 @@ router.get('/visits/upcoming', requireVisitsAnnouncements, OwnerController.getUp
 router.get('/visits/history', requireVisitsAnnouncements, OwnerController.getVisitsHistory);
 
 // ==================== ACCESOS VEHICULARES (NFC) ====================
-router.get('/vehicle-access', OwnerController.getVehicleAccess);
+router.get('/vehicle-access', requireVehicleAccess, OwnerController.getVehicleAccess);
 
 // ==================== FACTURACIÓN ====================
 // Rutas de billing permiten OWNER o TENANT_ADMIN

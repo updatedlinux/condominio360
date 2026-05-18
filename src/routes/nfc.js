@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const NFCAdminController = require('../controllers/NFCAdminController');
 const { authenticate, requireTenantAdmin } = require('../middleware/auth');
+const { requireVehicleAccess } = require('../middleware/requireTenantFeature');
 
 /**
  * Rutas para Gestión de NFC (por parte de la Junta de Condominio)
@@ -9,7 +10,7 @@ const { authenticate, requireTenantAdmin } = require('../middleware/auth');
  * Accesible por: Tenant Admins
  */
 
-router.use(authenticate, requireTenantAdmin);
+router.use(authenticate, requireTenantAdmin, requireVehicleAccess);
 
 // Tarjetas
 router.get('/cards', NFCAdminController.getCards);

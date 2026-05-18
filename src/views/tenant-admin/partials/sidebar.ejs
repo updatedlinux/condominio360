@@ -105,7 +105,7 @@
                     <span class="material-icons-round mr-3 <%= activePage === 'visits-deliveries-report' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">summarize</span>
                     Visitas y Deliveries
                 </a>
-                <a href="/tenant-admin/nfc-cards" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'nfc-cards' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+                <a href="/tenant-admin/nfc-cards" id="nav-nfc-cards" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'nfc-cards' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
                     <span class="material-icons-round mr-3 <%= activePage === 'nfc-cards' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">nfc</span>
                     Tarjetas NFC
                 </a>
@@ -143,8 +143,8 @@
             .catch(function () {});
     })();
     (function applyPortalFeaturesNavVisibility() {
-        var link = document.getElementById('nav-visits-deliveries-report');
-        if (!link) return;
+        var reportLink = document.getElementById('nav-visits-deliveries-report');
+        var nfcLink = document.getElementById('nav-nfc-cards');
         var token = sessionStorage.getItem('token') || localStorage.getItem('token');
         if (!token) return;
         fetch('/api/tenant-admin/portal-features', { headers: { Authorization: 'Bearer ' + token } })
@@ -152,10 +152,15 @@
             .then(function (json) {
                 var d = json.data;
                 if (!d) return;
-                if (!d.visits_announcements_enabled && !d.deliveries_announcements_enabled) {
-                    link.style.display = 'none';
-                } else {
-                    link.style.display = '';
+                if (reportLink) {
+                    if (!d.visits_announcements_enabled && !d.deliveries_announcements_enabled) {
+                        reportLink.style.display = 'none';
+                    } else {
+                        reportLink.style.display = '';
+                    }
+                }
+                if (nfcLink) {
+                    nfcLink.style.display = d.vehicle_access_enabled ? '' : 'none';
                 }
             })
             .catch(function () {});

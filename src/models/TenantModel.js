@@ -301,20 +301,21 @@ class TenantModel {
         const result = await pool.request()
             .input('id', sql.UniqueIdentifier, tenantId)
             .query(`
-                SELECT visits_announcements_enabled, deliveries_announcements_enabled
+                SELECT visits_announcements_enabled, deliveries_announcements_enabled, vehicle_access_enabled
                 FROM Tenants WHERE id = @id
             `);
         const row = result.recordset[0];
         if (!row) return null;
         return {
             visits_announcements_enabled: TenantModel.normalizeBitFlag(row.visits_announcements_enabled, true),
-            deliveries_announcements_enabled: TenantModel.normalizeBitFlag(row.deliveries_announcements_enabled, true)
+            deliveries_announcements_enabled: TenantModel.normalizeBitFlag(row.deliveries_announcements_enabled, true),
+            vehicle_access_enabled: TenantModel.normalizeBitFlag(row.vehicle_access_enabled, true)
         };
     }
 
     /**
-     * SuperAdmin: activar/desactivar anuncios de visitas y deliveries.
-     * @param {Object} data - { visitsEnabled?, deliveriesEnabled? }
+     * SuperAdmin: activar/desactivar módulos de portería (visitas, deliveries, acceso vehicular).
+     * @param {Object} data - { visitsEnabled?, deliveriesEnabled?, vehicleAccessEnabled? }
      */
     static async updatePortalFeatureFlags(tenantId, data) {
         const pool = await connectDB();
@@ -333,6 +334,10 @@ class TenantModel {
         if (data.deliveriesEnabled !== undefined) {
             parts.push('deliveries_announcements_enabled = @d_en');
             request.input('d_en', sql.Bit, data.deliveriesEnabled ? 1 : 0);
+        }
+        if (data.vehicleAccessEnabled !== undefined) {
+            parts.push('vehicle_access_enabled = @v_acc');
+            request.input('v_acc', sql.Bit, data.vehicleAccessEnabled ? 1 : 0);
         }
 
         if (parts.length === 0) {

@@ -1,13 +1,18 @@
 const { connectDB, sql } = require('../config/database');
 
-const MESSAGES = {
-    visits: 'Los anuncios de visitas no están habilitados para este condominio.',
-    deliveries: 'Los anuncios de deliveries no están habilitados para este condominio.'
-};
-
-const COLUMNS = {
-    visits: 'visits_announcements_enabled',
-    deliveries: 'deliveries_announcements_enabled'
+const FEATURES = {
+    visits: {
+        flagKey: 'visits_announcements_enabled',
+        message: 'Los anuncios de visitas no están habilitados para este condominio.'
+    },
+    deliveries: {
+        flagKey: 'deliveries_announcements_enabled',
+        message: 'Los anuncios de deliveries no están habilitados para este condominio.'
+    },
+    vehicle_access: {
+        flagKey: 'vehicle_access_enabled',
+        message: 'El acceso vehicular no está habilitado para este condominio.'
+    }
 };
 
 async function loadFlags(tenantId) {
@@ -15,20 +20,26 @@ async function loadFlags(tenantId) {
     const result = await pool.request()
         .input('tenant_id', sql.UniqueIdentifier, tenantId)
         .query(`
-            SELECT visits_announcements_enabled, deliveries_announcements_enabled
+            SELECT visits_announcements_enabled, deliveries_announcements_enabled, vehicle_access_enabled
             FROM Tenants WHERE id = @tenant_id
         `);
     const row = result.recordset[0];
     if (!row) return null;
+
+    const normalize = (v) => v !== false && v !== 0;
+
     return {
-        visits_announcements_enabled: row.visits_announcements_enabled !== false && row.visits_announcements_enabled !== 0,
-        deliveries_announcements_enabled: row.deliveries_announcements_enabled !== false && row.deliveries_announcements_enabled !== 0
+        visits_announcements_enabled: normalize(row.visits_announcements_enabled),
+        deliveries_announcements_enabled: normalize(row.deliveries_announcements_enabled),
+        vehicle_access_enabled: row.vehicle_access_enabled === undefined || row.vehicle_access_enabled === null
+            ? true
+            : normalize(row.vehicle_access_enabled)
     };
 }
 
 function requireTenantFeature(feature) {
-    const column = COLUMNS[feature];
-    if (!column) {
+    const config = FEATURES[feature];
+    if (!config) {
         throw new Error(`Unknown tenant feature: ${feature}`);
     }
 
@@ -38,7 +49,7 @@ function requireTenantFeature(feature) {
             if (!tenantId) {
                 return res.status(403).json({
                     success: false,
-                    error: MESSAGES[feature]
+                    error: config.message
                 });
             }
 
@@ -47,14 +58,10 @@ function requireTenantFeature(feature) {
                 return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
             }
 
-            const enabledKey = feature === 'visits'
-                ? 'visits_announcements_enabled'
-                : 'deliveries_announcements_enabled';
-
-            if (!flags[enabledKey]) {
+            if (!flags[config.flagKey]) {
                 return res.status(403).json({
                     success: false,
-                    error: MESSAGES[feature],
+                    error: config.message,
                     feature_disabled: feature
                 });
             }
@@ -71,5 +78,6 @@ function requireTenantFeature(feature) {
 module.exports = {
     loadFlags,
     requireVisitsAnnouncements: requireTenantFeature('visits'),
-    requireDeliveriesAnnouncements: requireTenantFeature('deliveries')
+    requireDeliveriesAnnouncements: requireTenantFeature('deliveries'),
+    requireVehicleAccess: requireTenantFeature('vehicle_access')
 };

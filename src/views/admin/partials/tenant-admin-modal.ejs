@@ -104,9 +104,9 @@
                 <section class="tenant-admin-section">
                     <h3 class="tenant-admin-section-title">
                         <span class="material-symbols-rounded text-indigo-600">shield</span>
-                        Visitas y Deliveries
+                        Visitas, Deliveries y Acceso Vehicular
                     </h3>
-                    <p class="text-sm text-slate-600 mb-4">Módulos de portería para propietarios y vigilancia. Desactívelos si el conjunto aún no tiene equipo en portería.</p>
+                    <p class="text-sm text-slate-600 mb-4">Módulos de portería para propietarios y vigilancia. Desactívelos si el conjunto aún no cuenta con el servicio o equipo necesario.</p>
                     <div class="space-y-4 max-w-2xl">
                         <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
                             <input type="checkbox" id="pf-visits-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
@@ -120,6 +120,13 @@
                             <span>
                                 <span class="font-medium text-slate-900 block">Anuncio de Deliveries</span>
                                 <span class="text-sm text-slate-500">Panel propietario, vigilancia y reportes.</span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
+                            <input type="checkbox" id="pf-vehicle-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                            <span>
+                                <span class="font-medium text-slate-900 block">Acceso Vehicular (NFC)</span>
+                                <span class="text-sm text-slate-500">Tarjetas NFC, registro en vigilancia e historial para propietarios.</span>
                             </span>
                         </label>
                         <button type="button" onclick="savePortalFeaturesSettings()" class="md-button md-button-filled">

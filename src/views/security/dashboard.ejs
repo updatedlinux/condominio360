@@ -98,7 +98,7 @@
                         <span>Visitas Activas</span>
                         <span id="active-visits-badge" class="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs hidden">0</span>
                     </button>
-                    <button onclick="switchTab('nfc'); openNFCVehicleAccess()" 
+                    <button id="btn-nfc-access" onclick="switchTab('nfc'); openNFCVehicleAccess()" 
                         class="touch-target flex items-center justify-center sm:justify-start gap-2 px-3 py-3 sm:px-4 sm:py-2.5 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors text-sm sm:text-base col-span-2 sm:col-span-1">
                         <span class="material-icons-round text-lg sm:text-sm">nfc</span>
                         <span class="hidden sm:inline">Acceso Vehicular NFC</span>
@@ -553,7 +553,11 @@
             return res;
         }
         
-        let portalFeatures = { visits_announcements_enabled: true, deliveries_announcements_enabled: true };
+        let portalFeatures = {
+            visits_announcements_enabled: true,
+            deliveries_announcements_enabled: true,
+            vehicle_access_enabled: true
+        };
         let currentTab = 'visits';
         let selectedOwnerVisit = null;
         let selectedOwnerDelivery = null;
@@ -606,9 +610,18 @@
             }
         }
 
+        function firstEnabledSecurityTab() {
+            if (portalFeatures.visits_announcements_enabled) return 'visits';
+            if (portalFeatures.deliveries_announcements_enabled) return 'deliveries';
+            if (portalFeatures.vehicle_access_enabled) return 'nfc';
+            return 'moves';
+        }
+
         function applySecurityPortalTabs() {
             const tabVisits = document.getElementById('tab-visits');
             const tabDeliveries = document.getElementById('tab-deliveries');
+            const tabNfc = document.getElementById('tab-nfc');
+            const btnNfc = document.getElementById('btn-nfc-access');
             const activeVisitsBtn = document.querySelector('button[onclick="showActiveVisits()"]');
             if (!portalFeatures.visits_announcements_enabled) {
                 if (tabVisits) tabVisits.style.display = 'none';
@@ -617,14 +630,12 @@
             if (!portalFeatures.deliveries_announcements_enabled) {
                 if (tabDeliveries) tabDeliveries.style.display = 'none';
             }
-            if (!portalFeatures.visits_announcements_enabled && portalFeatures.deliveries_announcements_enabled) {
-                currentTab = 'deliveries';
-            } else if (!portalFeatures.visits_announcements_enabled && !portalFeatures.deliveries_announcements_enabled) {
-                currentTab = 'moves';
-            } else {
-                currentTab = 'visits';
+            if (!portalFeatures.vehicle_access_enabled) {
+                if (tabNfc) tabNfc.style.display = 'none';
+                if (btnNfc) btnNfc.style.display = 'none';
             }
-            if (currentTab !== 'visits' && currentTab !== 'deliveries') {
+            currentTab = firstEnabledSecurityTab();
+            if (currentTab !== 'visits') {
                 switchTab(currentTab);
             }
         }
@@ -726,11 +737,15 @@
 
         async function loadTabData(tab) {
             if (tab === 'visits' && !portalFeatures.visits_announcements_enabled) {
-                switchTab(portalFeatures.deliveries_announcements_enabled ? 'deliveries' : 'moves');
+                switchTab(firstEnabledSecurityTab());
                 return;
             }
             if (tab === 'deliveries' && !portalFeatures.deliveries_announcements_enabled) {
-                switchTab(portalFeatures.visits_announcements_enabled ? 'visits' : 'moves');
+                switchTab(firstEnabledSecurityTab());
+                return;
+            }
+            if (tab === 'nfc' && !portalFeatures.vehicle_access_enabled) {
+                switchTab(firstEnabledSecurityTab());
                 return;
             }
             const contentArea = document.getElementById('contentArea');

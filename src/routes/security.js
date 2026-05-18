@@ -6,7 +6,8 @@ const NFCSecurityController = require('../controllers/NFCSecurityController');
 const { authenticate, requireSecurity } = require('../middleware/auth');
 const {
     requireVisitsAnnouncements,
-    requireDeliveriesAnnouncements
+    requireDeliveriesAnnouncements,
+    requireVehicleAccess
 } = require('../middleware/requireTenantFeature');
 
 /**
@@ -60,8 +61,8 @@ router.get('/moves', SecurityController.getApprovedMoves);
 router.get('/moves/search', SecurityController.searchMoves);
 
 // ==================== ACCESO VEHICULAR NFC ====================
-router.post('/nfc/log', NFCSecurityController.logAccess);
-router.get('/nfc/lookup/:card_uid', NFCSecurityController.lookupByUid);
-router.get('/nfc/today-logs', NFCSecurityController.getTodayLogs);
+router.post('/nfc/log', requireVehicleAccess, NFCSecurityController.logAccess);
+router.get('/nfc/lookup/:card_uid', requireVehicleAccess, NFCSecurityController.lookupByUid);
+router.get('/nfc/today-logs', requireVehicleAccess, NFCSecurityController.getTodayLogs);
 
 module.exports = router;
