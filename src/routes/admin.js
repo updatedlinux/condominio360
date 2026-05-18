@@ -6,6 +6,7 @@ const AdminSaaSBillingController = require('../controllers/AdminSaaSBillingContr
 const AdminBankController = require('../controllers/AdminBankController');
 const AdminHistoricalDebtController = require('../controllers/AdminHistoricalDebtController');
 const { conditionalSaaSFiscalUpload } = require('../middleware/uploadSaaSFiscalInvoice');
+const uploadTenantLogo = require('../middleware/uploadTenantLogo');
 const AdminBalanceController = require('../controllers/AdminBalanceController');
 const BuildingController = require('../controllers/BuildingController');
 const PropertyController = require('../controllers/PropertyController');
@@ -54,6 +55,8 @@ router.get('/tenants', AdminController.getAllTenants);
 router.get('/tenants/:id', AdminController.getTenantById);
 router.post('/tenants', AdminController.createTenant);
 router.put('/tenants/:id', AdminController.updateTenant);
+router.post('/tenants/:id/logo', uploadTenantLogo.single('logo'), AdminController.uploadTenantLogo);
+router.delete('/tenants/:id/logo', AdminController.deleteTenantLogo);
 router.get('/tenants/:id/whatsapp-messaging', AdminController.getTenantWhatsAppMessaging);
 router.put('/tenants/:id/whatsapp-messaging', AdminController.updateTenantWhatsAppMessaging);
 router.get('/tenants/:id/portal-features', AdminController.getTenantPortalFeatures);

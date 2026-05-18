@@ -13,6 +13,8 @@ const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel
 const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailService');
 const OwnersExportService = require('../services/OwnersExportService');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { sql, connectDB } = require('../config/database');
 const { normalizePropertyTypeOrDefault } = require('../utils/propertyType');
 
@@ -321,6 +323,9 @@ class AdminController {
             const tenantRow = tenantResult.recordset[0];
             const { whatsapp_api_secret: _waSec, ...tenant } = tenantRow;
             tenant.whatsapp_api_secret_configured = !!(_waSec && String(_waSec).trim());
+            if (tenant.logo_path) {
+                tenant.logo_url = `/uploads/${tenant.logo_path}`;
+            }
 
             // Estadísticas
             const statsResult = await pool.request()
@@ -804,6 +809,101 @@ class AdminController {
         } catch (error) {
             console.error('Update tenant error:', error);
             res.status(500).json({ error: 'Error al actualizar condominio' });
+        }
+    }
+
+    /**
+     * POST /api/admin/tenants/:id/logo
+     * Subir logo del conjunto (JPG/PNG) para comprobantes PDF.
+     */
+    static async uploadTenantLogo(req, res) {
+        try {
+            const { id } = req.params;
+            if (!req.file) {
+                return res.status(400).json({ error: 'Debe enviar una imagen JPG o PNG' });
+            }
+
+            const pool = await connectDB();
+            const existing = await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .query('SELECT id, logo_path FROM Tenants WHERE id = @id');
+
+            if (existing.recordset.length === 0) {
+                try { fs.unlinkSync(req.file.path); } catch (_) { /* noop */ }
+                return res.status(404).json({ error: 'Condominio no encontrado' });
+            }
+
+            const oldPath = existing.recordset[0].logo_path;
+            const relPath = path.join('tenant-logos', path.basename(req.file.path)).replace(/\\/g, '/');
+
+            if (oldPath && oldPath !== relPath) {
+                const oldFull = path.join(process.cwd(), 'uploads', oldPath);
+                if (fs.existsSync(oldFull)) {
+                    try { fs.unlinkSync(oldFull); } catch (_) { /* noop */ }
+                }
+            }
+
+            ['.jpg', '.jpeg', '.png'].forEach((ext) => {
+                const alt = path.join(process.cwd(), 'uploads', 'tenant-logos', `${id}${ext}`);
+                if (fs.existsSync(alt) && alt !== req.file.path) {
+                    try { fs.unlinkSync(alt); } catch (_) { /* noop */ }
+                }
+            });
+
+            await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .input('logo_path', sql.NVarChar, relPath)
+                .query('UPDATE Tenants SET logo_path = @logo_path, updated_at = GETDATE() WHERE id = @id');
+
+            await AdminController.logAudit(req, 'UPDATE', 'TENANT', id, 'Logo del conjunto actualizado', id);
+
+            res.json({
+                success: true,
+                message: 'Logo actualizado correctamente',
+                data: {
+                    logo_path: relPath,
+                    logo_url: `/uploads/${relPath}`
+                }
+            });
+        } catch (error) {
+            console.error('uploadTenantLogo error:', error);
+            res.status(500).json({ error: 'Error al subir el logo' });
+        }
+    }
+
+    /**
+     * DELETE /api/admin/tenants/:id/logo
+     */
+    static async deleteTenantLogo(req, res) {
+        try {
+            const { id } = req.params;
+            const pool = await connectDB();
+            const existing = await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .query('SELECT logo_path FROM Tenants WHERE id = @id');
+
+            if (existing.recordset.length === 0) {
+                return res.status(404).json({ error: 'Condominio no encontrado' });
+            }
+
+            const oldPath = existing.recordset[0].logo_path;
+            if (oldPath) {
+                const oldFull = path.join(process.cwd(), 'uploads', oldPath);
+                if (fs.existsSync(oldFull)) {
+                    try { fs.unlinkSync(oldFull); } catch (_) { /* noop */ }
+                }
+            }
+
+            await pool.request()
+                .input('id', sql.UniqueIdentifier, id)
+                .query('UPDATE Tenants SET logo_path = NULL, updated_at = GETDATE() WHERE id = @id');
+
+            await AdminController.logAudit(req, 'UPDATE', 'TENANT', id, 'Logo del conjunto eliminado', id);
+
+            res.json({ success: true, message: 'Logo eliminado' });
+        } catch (error) {
+            console.error('deleteTenantLogo error:', error);
+            res.status(500).json({ error: 'Error al eliminar el logo' });
         }
     }
 

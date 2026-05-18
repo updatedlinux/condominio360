@@ -98,6 +98,7 @@ router.get('/vehicle-access', OwnerController.getVehicleAccess);
 // Rutas de billing permiten OWNER o TENANT_ADMIN
 router.get('/billing/config', authenticate, requireOwnerOrTenantAdmin, OwnerBillingController.getConfig);
 router.get('/billing/invoices', authenticate, requireOwnerOrTenantAdmin, OwnerBillingController.getInvoices);
+router.get('/billing/invoices/:id/pdf', authenticate, requireOwnerOrTenantAdmin, OwnerBillingController.getInvoicePdf);
 router.get('/billing/invoices/:id', authenticate, requireOwnerOrTenantAdmin, OwnerBillingController.getInvoiceById);
 router.post('/billing/invoices/:id/report-payment', authenticate, requireOwnerOrTenantAdmin, (req, res, next) => {
     uploadPaymentReceipt.single('receipt')(req, res, (err) => {

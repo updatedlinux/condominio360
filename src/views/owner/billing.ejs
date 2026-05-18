@@ -133,11 +133,17 @@
     <!-- Modal de Detalle de Recibo / Reportar Pago -->
     <div id="invoice-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
         <div class="bg-white rounded-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-4 gap-3">
                 <h3 class="text-lg font-medium text-[#3C4043]" id="modal-title">Detalle del Recibo</h3>
-                <button onclick="closeModal()" class="text-[#5F6368] hover:text-[#3C4043]">
-                    <span class="material-icons-round">close</span>
-                </button>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button type="button" id="download-pdf-btn" onclick="downloadInvoicePdf()" class="hidden items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#f97316] border border-[#f97316] rounded-lg hover:bg-orange-50 transition">
+                        <span class="material-icons-round text-lg">picture_as_pdf</span>
+                        Descargar PDF
+                    </button>
+                    <button type="button" onclick="closeModal()" class="text-[#5F6368] hover:text-[#3C4043] p-1">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
             </div>
             <div id="modal-content"></div>
         </div>
@@ -394,6 +400,12 @@
                 }
 
                 const isLegacyDebt = inv.invoice_kind === 'LEGACY_DEBT';
+                const displayStatus = getInvoiceDisplayStatus(inv);
+                const pdfBtn = document.getElementById('download-pdf-btn');
+                if (pdfBtn) {
+                    pdfBtn.classList.remove('hidden');
+                    pdfBtn.classList.add('inline-flex');
+                }
                 content.innerHTML = `
                     <div class="space-y-4">
                         ${isLegacyDebt ? `
@@ -411,8 +423,8 @@
                                     <h2 class="text-2xl font-bold text-[#3C4043]">${formatCurrency(inv.assigned_amount_ves)}</h2>
                                     <p class="text-lg text-[#5F6368] mt-1">${formatUsd(totalUsd)} USD</p>
                                 </div>
-                                <span class="px-3 py-1 rounded-full text-sm ${getStatusClass(inv.status)}">
-                                    ${inv.status === 'PAID' ? 'Pagado' : 'Pendiente'}
+                                <span class="px-3 py-1 rounded-full text-sm ${displayStatus.class}">
+                                    ${displayStatus.label}
                                 </span>
                             </div>
                             <div class="grid grid-cols-2 gap-4 text-sm">
@@ -635,6 +647,33 @@
             const modal = document.getElementById('invoice-modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            const pdfBtn = document.getElementById('download-pdf-btn');
+            if (pdfBtn) {
+                pdfBtn.classList.add('hidden');
+                pdfBtn.classList.remove('inline-flex');
+            }
+        }
+
+        function getInvoiceDisplayStatus(inv) {
+            const isLegacy = inv.invoice_kind === 'LEGACY_DEBT';
+            const balanceUsd = parseFloat(inv.assigned_amount_usd) || 0;
+            const paidUsd = parseFloat(inv.paid_amount_usd) || 0;
+            if (inv.status === 'PAID') {
+                return { label: 'Pagado', class: 'bg-green-100 text-green-700' };
+            }
+            if (isLegacy && paidUsd > 0.000001 && balanceUsd > 0.000001) {
+                return { label: 'Pago parcial', class: 'bg-violet-100 text-violet-700' };
+            }
+            return { label: 'Pendiente de pago', class: 'bg-amber-100 text-amber-700' };
+        }
+
+        function downloadInvoicePdf() {
+            if (!currentInvoiceDetail || !token) {
+                showToast('No se puede descargar el comprobante', 'error');
+                return;
+            }
+            const url = `/api/owner/billing/invoices/${currentInvoiceDetail.id}/pdf?token=${encodeURIComponent(token)}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function getItemTypeLabel(type) {

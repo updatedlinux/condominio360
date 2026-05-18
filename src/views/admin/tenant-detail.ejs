@@ -275,6 +275,41 @@
                     </div>
                 </div>
 
+                <!-- Logo del conjunto -->
+                <div class="md-card p-6 border border-slate-100 shadow-sm mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-start gap-6">
+                        <div class="flex-shrink-0">
+                            <div id="tenant-logo-preview-wrap" class="w-40 h-28 rounded-xl border border-dashed border-slate-200 bg-white flex items-center justify-center overflow-hidden">
+                                <% if (tenant.logo_path) { %>
+                                <img id="tenant-logo-preview" src="/uploads/<%= tenant.logo_path %>" alt="Logo" class="max-w-full max-h-full object-contain p-2">
+                                <% } else { %>
+                                <img id="tenant-logo-preview" src="" alt="" class="max-w-full max-h-full object-contain p-2 hidden">
+                                <span id="tenant-logo-placeholder" class="material-symbols-rounded text-4xl text-slate-300">image</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h2 class="text-lg font-bold text-slate-900 mb-1">Logo del conjunto</h2>
+                            <p class="text-sm text-slate-500 mb-4">Se usa en los comprobantes PDF de recibos para propietarios. Formato JPG o PNG, fondo claro recomendado.</p>
+                            <input type="file" id="tenant-logo-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="hidden">
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="document.getElementById('tenant-logo-input').click()" class="md-button md-button-tonal">
+                                    <span class="material-symbols-rounded">upload</span>
+                                    Elegir imagen
+                                </button>
+                                <button type="button" id="tenant-logo-upload-btn" onclick="uploadTenantLogo()" class="md-button md-button-filled" disabled>
+                                    <span class="material-symbols-rounded">save</span>
+                                    Guardar logo
+                                </button>
+                                <button type="button" id="tenant-logo-delete-btn" onclick="deleteTenantLogo()" class="md-button bg-red-50 text-red-600 hover:bg-red-100<%= tenant.logo_path ? '' : ' hidden' %>">
+                                    <span class="material-symbols-rounded">delete</span>
+                                    Quitar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Grid: Info | Acciones | Edificios | Admins -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
@@ -715,6 +750,90 @@
 
         function switchToTenantAdmin(tenantId) {
             window.open('/admin/impersonate-tenant/' + tenantId, '_blank', 'noopener,noreferrer');
+        }
+
+        let tenantLogoFile = null;
+        const tenantLogoInput = document.getElementById('tenant-logo-input');
+        if (tenantLogoInput) {
+            tenantLogoInput.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                tenantLogoFile = file || null;
+                const uploadBtn = document.getElementById('tenant-logo-upload-btn');
+                if (uploadBtn) uploadBtn.disabled = !tenantLogoFile;
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = document.getElementById('tenant-logo-preview');
+                    const ph = document.getElementById('tenant-logo-placeholder');
+                    if (img) {
+                        img.src = reader.result;
+                        img.classList.remove('hidden');
+                    }
+                    if (ph) ph.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadTenantLogo() {
+            if (!tenantLogoFile) {
+                showPageToast('Seleccione una imagen JPG o PNG', 'error');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('logo', tenantLogoFile);
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/logo`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showPageToast(data.error || 'Error al subir logo', 'error');
+                    return;
+                }
+                showPageToast('Logo guardado correctamente', 'success');
+                tenantLogoFile = null;
+                document.getElementById('tenant-logo-upload-btn').disabled = true;
+                const delBtn = document.getElementById('tenant-logo-delete-btn');
+                if (delBtn) delBtn.classList.remove('hidden');
+                if (data.data && data.data.logo_url) {
+                    const img = document.getElementById('tenant-logo-preview');
+                    if (img) img.src = data.data.logo_url + '?t=' + Date.now();
+                }
+            } catch (err) {
+                showPageToast('Error de conexión', 'error');
+            }
+        }
+
+        async function deleteTenantLogo() {
+            if (!confirm('¿Quitar el logo de este conjunto?')) return;
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/logo`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showPageToast(data.error || 'Error al eliminar logo', 'error');
+                    return;
+                }
+                showPageToast('Logo eliminado', 'success');
+                const img = document.getElementById('tenant-logo-preview');
+                const ph = document.getElementById('tenant-logo-placeholder');
+                if (img) {
+                    img.src = '';
+                    img.classList.add('hidden');
+                }
+                if (ph) ph.classList.remove('hidden');
+                document.getElementById('tenant-logo-delete-btn').classList.add('hidden');
+                tenantLogoFile = null;
+                if (tenantLogoInput) tenantLogoInput.value = '';
+                document.getElementById('tenant-logo-upload-btn').disabled = true;
+            } catch (err) {
+                showPageToast('Error de conexión', 'error');
+            }
         }
 
         function openModal(id) {
