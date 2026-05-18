@@ -12,6 +12,10 @@ const FEATURES = {
     vehicle_access: {
         flagKey: 'vehicle_access_enabled',
         message: 'El acceso vehicular no está habilitado para este condominio.'
+    },
+    common_areas: {
+        flagKey: 'common_areas_enabled',
+        message: 'Las áreas comunes no están habilitadas para este condominio.'
     }
 };
 
@@ -20,7 +24,8 @@ async function loadFlags(tenantId) {
     const result = await pool.request()
         .input('tenant_id', sql.UniqueIdentifier, tenantId)
         .query(`
-            SELECT visits_announcements_enabled, deliveries_announcements_enabled, vehicle_access_enabled
+            SELECT visits_announcements_enabled, deliveries_announcements_enabled,
+                   vehicle_access_enabled, common_areas_enabled
             FROM Tenants WHERE id = @tenant_id
         `);
     const row = result.recordset[0];
@@ -33,7 +38,10 @@ async function loadFlags(tenantId) {
         deliveries_announcements_enabled: normalize(row.deliveries_announcements_enabled),
         vehicle_access_enabled: row.vehicle_access_enabled === undefined || row.vehicle_access_enabled === null
             ? true
-            : normalize(row.vehicle_access_enabled)
+            : normalize(row.vehicle_access_enabled),
+        common_areas_enabled: row.common_areas_enabled === undefined || row.common_areas_enabled === null
+            ? true
+            : normalize(row.common_areas_enabled)
     };
 }
 
@@ -79,5 +87,6 @@ module.exports = {
     loadFlags,
     requireVisitsAnnouncements: requireTenantFeature('visits'),
     requireDeliveriesAnnouncements: requireTenantFeature('deliveries'),
-    requireVehicleAccess: requireTenantFeature('vehicle_access')
+    requireVehicleAccess: requireTenantFeature('vehicle_access'),
+    requireCommonAreas: requireTenantFeature('common_areas')
 };

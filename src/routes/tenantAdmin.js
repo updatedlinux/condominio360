@@ -20,7 +20,8 @@ const uploadBankStatement = require('../middleware/uploadBankStatement');
 const requireFullBillingMode = require('../middleware/requireFullBillingMode');
 const {
     requireVisitsAnnouncements,
-    requireDeliveriesAnnouncements
+    requireDeliveriesAnnouncements,
+    requireCommonAreas
 } = require('../middleware/requireTenantFeature');
 
 // Middleware to ensure user is Tenant Admin
@@ -114,16 +115,16 @@ router.get('/requests/:id', TenantAdminRequestController.getRequestById);
 router.put('/requests/:id/status', TenantAdminRequestController.updateRequestStatus);
 
 // ==================== ÁREAS COMUNES ====================
-router.get('/common-areas', TenantAdminCommonAreaController.getAreas);
-router.get('/common-areas/stats', TenantAdminCommonAreaController.getStats);
-router.get('/common-areas/reservations', TenantAdminCommonAreaController.getReservations);
-router.get('/common-areas/reservations/today', TenantAdminCommonAreaController.getTodayReservations);
-router.get('/common-areas/:id', TenantAdminCommonAreaController.getAreaDetail);
-router.post('/common-areas', TenantAdminCommonAreaController.createArea);
-router.put('/common-areas/:id', TenantAdminCommonAreaController.updateArea);
-router.delete('/common-areas/:id', TenantAdminCommonAreaController.deleteArea);
-router.post('/common-areas/reservations/:id/approve', TenantAdminCommonAreaController.approveReservation);
-router.post('/common-areas/reservations/:id/reject', TenantAdminCommonAreaController.rejectReservation);
+router.get('/common-areas', requireCommonAreas, TenantAdminCommonAreaController.getAreas);
+router.get('/common-areas/stats', requireCommonAreas, TenantAdminCommonAreaController.getStats);
+router.get('/common-areas/reservations', requireCommonAreas, TenantAdminCommonAreaController.getReservations);
+router.get('/common-areas/reservations/today', requireCommonAreas, TenantAdminCommonAreaController.getTodayReservations);
+router.get('/common-areas/:id', requireCommonAreas, TenantAdminCommonAreaController.getAreaDetail);
+router.post('/common-areas', requireCommonAreas, TenantAdminCommonAreaController.createArea);
+router.put('/common-areas/:id', requireCommonAreas, TenantAdminCommonAreaController.updateArea);
+router.delete('/common-areas/:id', requireCommonAreas, TenantAdminCommonAreaController.deleteArea);
+router.post('/common-areas/reservations/:id/approve', requireCommonAreas, TenantAdminCommonAreaController.approveReservation);
+router.post('/common-areas/reservations/:id/reject', requireCommonAreas, TenantAdminCommonAreaController.rejectReservation);
 
 // ==================== EDIFICIOS (SOLO LECTURA) ====================
 router.get('/buildings', BuildingController.listForTenantAdmin);

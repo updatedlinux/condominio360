@@ -1012,7 +1012,8 @@
             const v = data.visits_announcements_enabled ? 'Visitas ✓' : 'Visitas ✗';
             const d = data.deliveries_announcements_enabled ? 'Deliveries ✓' : 'Deliveries ✗';
             const veh = data.vehicle_access_enabled ? 'Vehicular ✓' : 'Vehicular ✗';
-            return `${v} · ${d} · ${veh}`;
+            const areas = data.common_areas_enabled ? 'Áreas ✓' : 'Áreas ✗';
+            return `${v} · ${d} · ${veh} · ${areas}`;
         }
 
         function whatsAppSummaryText(data) {
@@ -1087,6 +1088,8 @@
                 document.getElementById('pf-deliveries-enabled').checked = !!j.data.deliveries_announcements_enabled;
                 const pfVehicle = document.getElementById('pf-vehicle-enabled');
                 if (pfVehicle) pfVehicle.checked = !!j.data.vehicle_access_enabled;
+                const pfAreas = document.getElementById('pf-common-areas-enabled');
+                if (pfAreas) pfAreas.checked = !!j.data.common_areas_enabled;
             } catch (e) {
                 showPageToast(e.message || 'Error al cargar', 'error');
             }
@@ -1096,7 +1099,8 @@
             const body = {
                 visitsEnabled: document.getElementById('pf-visits-enabled').checked,
                 deliveriesEnabled: document.getElementById('pf-deliveries-enabled').checked,
-                vehicleAccessEnabled: document.getElementById('pf-vehicle-enabled')?.checked ?? true
+                vehicleAccessEnabled: document.getElementById('pf-vehicle-enabled')?.checked ?? true,
+                commonAreasEnabled: document.getElementById('pf-common-areas-enabled')?.checked ?? true
             };
             try {
                 const res = await fetch(`/api/admin/tenants/${tenantId}/portal-features`, {
@@ -1109,7 +1113,7 @@
                 });
                 const j = await res.json();
                 if (!res.ok) throw new Error(j.error || 'Error al guardar');
-                showPageToast('Funcionalidades de portería actualizadas', 'success');
+                showPageToast('Módulos del portal actualizados', 'success');
                 refreshTenantAdminCardSummary();
             } catch (e) {
                 showPageToast(e.message || 'Error al guardar', 'error');
@@ -1635,13 +1639,13 @@
                     </div>
                 </section>
 
-                <!-- Portería -->
+                <!-- Módulos del portal -->
                 <section class="tenant-admin-section">
                     <h3 class="tenant-admin-section-title">
-                        <span class="material-symbols-rounded text-indigo-600">shield</span>
-                        Visitas, Deliveries y Acceso Vehicular
+                        <span class="material-symbols-rounded text-indigo-600">tune</span>
+                        Módulos del portal
                     </h3>
-                    <p class="text-sm text-slate-600 mb-4">Módulos de portería para propietarios y vigilancia. Desactívelos si el conjunto aún no cuenta con el servicio o equipo necesario.</p>
+                    <p class="text-sm text-slate-600 mb-4">Active solo los servicios que el condominio utiliza. Los desactivados no aparecerán para propietarios, junta ni vigilancia.</p>
                     <div class="space-y-4 max-w-2xl">
                         <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
                             <input type="checkbox" id="pf-visits-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
@@ -1664,9 +1668,16 @@
                                 <span class="text-sm text-slate-500">Tarjetas NFC, registro en vigilancia e historial para propietarios.</span>
                             </span>
                         </label>
+                        <label class="flex items-start gap-3 cursor-pointer p-4 border border-slate-200 rounded-xl hover:bg-slate-50">
+                            <input type="checkbox" id="pf-common-areas-enabled" class="w-5 h-5 mt-0.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
+                            <span>
+                                <span class="font-medium text-slate-900 block">Áreas Comunes</span>
+                                <span class="text-sm text-slate-500">Reservas de espacios compartidos para propietarios y gestión en junta.</span>
+                            </span>
+                        </label>
                         <button type="button" onclick="savePortalFeaturesSettings()" class="md-button md-button-filled">
                             <span class="material-symbols-rounded">save</span>
-                            Guardar portería
+                            Guardar módulos
                         </button>
                     </div>
                 </section>

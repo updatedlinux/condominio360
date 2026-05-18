@@ -9,7 +9,8 @@ const { authenticate, requireOwner, requirePropertyAccess } = require('../middle
 const {
     requireVisitsAnnouncements,
     requireDeliveriesAnnouncements,
-    requireVehicleAccess
+    requireVehicleAccess,
+    requireCommonAreas
 } = require('../middleware/requireTenantFeature');
 const uploadPaymentReceipt = require('../middleware/uploadPaymentReceipt');
 
@@ -78,12 +79,12 @@ router.get('/consultations/:id', OwnerController.getConsultationById);
 router.post('/consultations/:id/vote', OwnerController.vote);
 
 // ==================== ÁREAS COMUNES / RESERVAS ====================
-router.get('/common-areas', OwnerCommonAreaController.getAreas);
-router.get('/common-areas/reservations', OwnerCommonAreaController.getMyReservations);
-router.post('/common-areas/reservations', OwnerCommonAreaController.createReservation);
-router.post('/common-areas/reservations/:id/cancel', OwnerCommonAreaController.cancelReservation);
-router.get('/common-areas/:id/slots', OwnerCommonAreaController.getAvailableSlots);
-router.get('/common-areas/:id', OwnerCommonAreaController.getAreaDetail);
+router.get('/common-areas', requireCommonAreas, OwnerCommonAreaController.getAreas);
+router.get('/common-areas/reservations', requireCommonAreas, OwnerCommonAreaController.getMyReservations);
+router.post('/common-areas/reservations', requireCommonAreas, OwnerCommonAreaController.createReservation);
+router.post('/common-areas/reservations/:id/cancel', requireCommonAreas, OwnerCommonAreaController.cancelReservation);
+router.get('/common-areas/:id/slots', requireCommonAreas, OwnerCommonAreaController.getAvailableSlots);
+router.get('/common-areas/:id', requireCommonAreas, OwnerCommonAreaController.getAreaDetail);
 
 // ==================== VISITAS ====================
 router.get('/visitors', requireVisitsAnnouncements, OwnerController.getVisitors);

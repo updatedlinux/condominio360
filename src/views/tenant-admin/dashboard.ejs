@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="/js/tenant-admin-portal-features.js"></script>
     <style>
         * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         .sidebar-item { transition: all 0.2s; }
@@ -89,7 +90,7 @@
                         </a>
                     </div>
 
-                    <div class="stat-card p-6 card-hover">
+                    <div id="tenant-dash-common-areas-stat" class="stat-card p-6 card-hover">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-[#5F6368]">Reservas Hoy</p>
@@ -132,7 +133,7 @@
                         <p class="text-sm text-[#5F6368] mt-1">Consultar visitas y deliveries del condominio</p>
                     </a>
 
-                    <a href="/tenant-admin/common-areas" class="card p-6 card-hover group">
+                    <a href="/tenant-admin/common-areas" id="tenant-dash-common-areas-action" class="card p-6 card-hover group">
                         <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <span class="material-icons-round text-white">add</span>
                         </div>

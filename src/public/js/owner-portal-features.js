@@ -1,5 +1,5 @@
 /**
- * Oculta enlaces de visitas/deliveries/acceso vehicular según flags del condominio (SuperAdmin).
+ * Oculta enlaces y bloquea vistas según flags del condominio (SuperAdmin).
  */
 (function () {
     if (typeof window === 'undefined') return;
@@ -7,6 +7,7 @@
     const VISIT_PATHS = ['/owner/visitors', '/owner/visitors/new', '/owner/visitors/history'];
     const DELIVERY_PATHS = ['/owner/delivery/new'];
     const VEHICLE_PATHS = ['/owner/vehicle-access'];
+    const COMMON_AREAS_PATHS = ['/owner/common-areas'];
 
     function hideByHref(paths) {
         paths.forEach(function (path) {
@@ -49,6 +50,15 @@
                     el.style.display = 'none';
                 });
                 if (VEHICLE_PATHS.indexOf(window.location.pathname.replace(/\/$/, '')) !== -1) {
+                    window.location.replace('/owner/dashboard');
+                }
+            }
+            if (!flags.common_areas_enabled) {
+                hideByHref(COMMON_AREAS_PATHS);
+                document.querySelectorAll('.owner-portal-common-areas').forEach(function (el) {
+                    el.style.display = 'none';
+                });
+                if (COMMON_AREAS_PATHS.indexOf(window.location.pathname.replace(/\/$/, '')) !== -1) {
                     window.location.replace('/owner/dashboard');
                 }
             }

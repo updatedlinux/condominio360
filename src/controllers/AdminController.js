@@ -3203,23 +3203,24 @@ class AdminController {
 
     /**
      * PUT /api/admin/tenants/:id/portal-features
-     * body: { visitsEnabled, deliveriesEnabled, vehicleAccessEnabled }
+     * body: { visitsEnabled, deliveriesEnabled, vehicleAccessEnabled, commonAreasEnabled }
      */
     static async updateTenantPortalFeatures(req, res) {
         try {
             const { id } = req.params;
-            const { visitsEnabled, deliveriesEnabled, vehicleAccessEnabled } = req.body || {};
+            const { visitsEnabled, deliveriesEnabled, vehicleAccessEnabled, commonAreasEnabled } = req.body || {};
             const data = await TenantModel.updatePortalFeatureFlags(id, {
                 visitsEnabled,
                 deliveriesEnabled,
-                vehicleAccessEnabled
+                vehicleAccessEnabled,
+                commonAreasEnabled
             });
             await AdminController.logAudit(
                 req,
                 'UPDATE',
                 'TENANT',
                 id,
-                `Portería: visitas=${visitsEnabled ? 1 : 0}, deliveries=${deliveriesEnabled ? 1 : 0}, vehicular=${vehicleAccessEnabled ? 1 : 0}`,
+                `Módulos portal: visitas=${visitsEnabled ? 1 : 0}, deliveries=${deliveriesEnabled ? 1 : 0}, vehicular=${vehicleAccessEnabled ? 1 : 0}, áreas=${commonAreasEnabled ? 1 : 0}`,
                 id
             );
             res.json({ success: true, data });

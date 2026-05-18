@@ -59,7 +59,7 @@
                 <span class="material-icons-round mr-3 <%= activePage === 'communications' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">campaign</span>
                 Mensajes
             </a>
-            <a href="/tenant-admin/common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'common-areas' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
+            <a href="/tenant-admin/common-areas" id="nav-common-areas" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'common-areas' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
                 <span class="material-icons-round mr-3 <%= activePage === 'common-areas' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">sports_tennis</span>
                 Áreas Comunes
             </a>
@@ -145,6 +145,7 @@
     (function applyPortalFeaturesNavVisibility() {
         var reportLink = document.getElementById('nav-visits-deliveries-report');
         var nfcLink = document.getElementById('nav-nfc-cards');
+        var commonAreasLink = document.getElementById('nav-common-areas');
         var token = sessionStorage.getItem('token') || localStorage.getItem('token');
         if (!token) return;
         fetch('/api/tenant-admin/portal-features', { headers: { Authorization: 'Bearer ' + token } })
@@ -161,6 +162,9 @@
                 }
                 if (nfcLink) {
                     nfcLink.style.display = d.vehicle_access_enabled ? '' : 'none';
+                }
+                if (commonAreasLink) {
+                    commonAreasLink.style.display = d.common_areas_enabled ? '' : 'none';
                 }
             })
             .catch(function () {});

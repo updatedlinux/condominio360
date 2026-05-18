@@ -1,5 +1,5 @@
 /**
- * Oculta navegación y bloquea vistas de portería según flags del condominio (SuperAdmin).
+ * Oculta navegación y bloquea vistas según flags del condominio (SuperAdmin).
  */
 (function () {
     if (typeof window === 'undefined') return;
@@ -7,6 +7,10 @@
     const PATH_GUARDS = {
         '/tenant-admin/nfc-cards': {
             flag: 'vehicle_access_enabled',
+            redirect: '/tenant-admin'
+        },
+        '/tenant-admin/common-areas': {
+            flag: 'common_areas_enabled',
             redirect: '/tenant-admin'
         },
         '/tenant-admin/visits-deliveries-report': {
@@ -28,6 +32,12 @@
     function hideDisabledUi(flags) {
         if (!flags.vehicle_access_enabled) {
             ['tab-nfc', 'content-nfc'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+        if (!flags.common_areas_enabled) {
+            ['nav-common-areas', 'tenant-dash-common-areas-stat', 'tenant-dash-common-areas-action'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
