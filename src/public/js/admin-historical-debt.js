@@ -44,9 +44,16 @@
     };
 
     window.downloadHistoricalDebtTemplate = async function () {
+        if (!token) {
+            if (typeof showPageToast === 'function') {
+                showPageToast('Sesión expirada. Vuelva a iniciar sesión.', 'error');
+            }
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/tenants/${tenantId}/historical-debts/template.csv`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: 'same-origin'
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));

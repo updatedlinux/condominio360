@@ -16,13 +16,21 @@ const TenantAdminModel = require('../models/TenantAdminModel');
  * Middleware base de autenticación
  */
 const authenticate = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
+    let authHeader = req.headers.authorization;
+
+    // Descargas directas en el navegador (p. ej. plantilla CSV) pueden enviar ?token=
+    if (!authHeader && req.query && req.query.token) {
+        const q = String(req.query.token).trim();
+        if (q) authHeader = `Bearer ${q}`;
+    }
 
     if (!authHeader) {
         return res.status(401).json({ error: 'No se proporcionó token de autenticación' });
     }
 
-    const token = authHeader.split(' ')[1]; // Bearer <token>
+    const token = authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7).trim()
+        : authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ error: 'Token inválido' });
