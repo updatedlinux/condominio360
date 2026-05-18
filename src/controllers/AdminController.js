@@ -12,6 +12,7 @@ const AuthService = require('../services/AuthService');
 const BulkOwnerWelcomeBatchModel = require('../models/BulkOwnerWelcomeBatchModel');
 const OwnerBulkWelcomeEmailService = require('../services/OwnerBulkWelcomeEmailService');
 const OwnersExportService = require('../services/OwnersExportService');
+const TenantLogoService = require('../services/TenantLogoService');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -849,6 +850,14 @@ class AdminController {
                     try { fs.unlinkSync(alt); } catch (_) { /* noop */ }
                 }
             });
+
+            try {
+                await TenantLogoService.normalizeUploadedFile(req.file.path);
+            } catch (normalizeErr) {
+                console.error('normalize tenant logo error:', normalizeErr);
+                try { fs.unlinkSync(req.file.path); } catch (_) { /* noop */ }
+                return res.status(400).json({ error: 'No se pudo procesar la imagen. Use JPG o PNG válido.' });
+            }
 
             await pool.request()
                 .input('id', sql.UniqueIdentifier, id)

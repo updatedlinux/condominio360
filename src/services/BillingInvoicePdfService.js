@@ -3,6 +3,7 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const SVGtoPDF = require('svg-to-pdfkit');
 
+const TENANT_LOGO = require('../constants/tenantLogo');
 const ASSETS_DIR = path.join(__dirname, '..', 'public', 'assets', 'images');
 const CONDO_BRAND_SVG = path.join(ASSETS_DIR, 'CONDOMINIO360-blacklogo.svg');
 const ISOTIPO_SVG = path.join(ASSETS_DIR, 'isotipo-naranja.svg');
@@ -126,8 +127,14 @@ class BillingInvoicePdfService {
 
         if (logoPath) {
             try {
-                doc.image(logoPath, startX, y, { fit: [140, 56], align: 'left', valign: 'center' });
-                y += 62;
+                const boxW = TENANT_LOGO.pdfWidth;
+                const boxH = TENANT_LOGO.pdfHeight;
+                doc.image(logoPath, startX, y, {
+                    fit: [boxW, boxH],
+                    align: 'left',
+                    valign: 'top'
+                });
+                y += boxH + 10;
             } catch (e) {
                 console.error('Error cargando logo del conjunto:', e.message);
                 doc.fillColor('#111827').font('Helvetica-Bold').fontSize(16)
