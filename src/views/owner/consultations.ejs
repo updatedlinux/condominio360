@@ -274,23 +274,45 @@
             loadConsultations();
         }
 
+        function showListError(containerId, message) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = `
+                <div class="card text-center py-12">
+                    <span class="material-icons-round text-4xl text-red-400">error_outline</span>
+                    <p class="text-[#5F6368] mt-4">${message}</p>
+                    <button type="button" onclick="loadConsultations()" class="mt-4 text-[#f97316] font-medium hover:underline">Reintentar</button>
+                </div>
+            `;
+        }
+
         async function loadConsultations() {
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
             try {
                 const [activeRes, closedRes] = await Promise.all([
                     fetch('/api/consultations/active', { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch('/api/consultations/closed', { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
-                const activeData = await activeRes.json();
-                const closedData = await closedRes.json();
-                
-                if (activeData.success) {
+                const activeData = activeRes.ok ? await activeRes.json() : null;
+                const closedData = closedRes.ok ? await closedRes.json() : null;
+
+                if (activeData?.success) {
                     renderActiveConsultations(activeData.data || []);
+                } else {
+                    showListError('active-list', activeData?.error || 'No se pudieron cargar las consultas activas');
                 }
-                if (closedData.success) {
+                if (closedData?.success) {
                     renderClosedConsultations(closedData.data || []);
+                } else {
+                    showListError('closed-list', closedData?.error || 'No se pudieron cargar las consultas finalizadas');
                 }
             } catch (error) {
                 console.error('Error:', error);
+                showListError('active-list', 'Error de conexión al cargar consultas');
+                showListError('closed-list', 'Error de conexión al cargar consultas');
             }
         }
 
@@ -892,8 +914,7 @@
                     <div class="pdf-footer">
                         Generado por Condominio360 | Potenciado por: <img src="${intelalogoUrl}" alt="Intelalogo">
                     </div>
-                    <script src="/js/owner-portal-features.js"></script>
-</body>
+                </body>
                 </html>
             `;
 
