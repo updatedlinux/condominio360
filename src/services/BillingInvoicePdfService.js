@@ -208,7 +208,13 @@ class BillingInvoicePdfService {
 
         doc.fillColor('#6B7280').font('Helvetica').fontSize(11)
             .text(`Recibo #${invoice.invoice_number || '-'}`, startX, y);
-        y += 18;
+        y += 16;
+        if (invoice.property_invoice_code) {
+            doc.fillColor('#6B7280').font('Helvetica').fontSize(10)
+                .text(`Código inmueble: ${invoice.property_invoice_code}`, startX, y);
+            y += 16;
+        }
+        y += 2;
 
         const rate = invoice._rateCurrent || invoice.current_exchange_rate || invoice.exchange_rate_at_creation || 1;
         const totalUsd = invoice._totalUsd != null
@@ -226,9 +232,11 @@ class BillingInvoicePdfService {
             ? 'Deuda histórica pre-sistema'
             : `${MONTH_NAMES_ES[(invoice.billing_month || 1) - 1]} ${invoice.billing_year || ''}`;
 
+        const propertyCode = invoice.property_invoice_code;
         const rows = [
             ['Conjunto', tenant.name || '-'],
             ['Inmueble', invoice.property_name || '-'],
+            ...(propertyCode ? [['Código inmueble', propertyCode]] : []),
             ['Período', periodLabel],
             ['Tasa aplicada', `${Number(rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES/USD`],
             ['Fecha de emisión', formatEmissionDate(invoice)]

@@ -5,6 +5,7 @@ const OwnerInvoiceDetailService = require('../services/OwnerInvoiceDetailService
 const BillingInvoicePdfService = require('../services/BillingInvoicePdfService');
 const { itemToVes, allocateVesByWeight } = require('../utils/currencyConversion');
 const { formatRateDateDisplay } = require('../utils/bcvFiscalCalendar');
+const { enrichInvoicePropertyCode } = require('../utils/invoiceNumber');
 const { sql, connectDB } = require('../config/database');
 const { VENEZUELAN_BANKS } = require('../constants/venezuelanBanks');
 
@@ -103,7 +104,8 @@ class OwnerBillingController {
                 .input('user_id', sql.UniqueIdentifier, userId)
                 .input('property_id', sql.UniqueIdentifier, propertyId || null)
                 .query(`
-                    SELECT i.*, p.name as property_name, p.building,
+                    SELECT i.*, p.name as property_name, p.slug as property_slug, p.building,
+                        b.name as building_name, t.building_type,
                         pr.billing_month, pr.billing_year, pr.name as preliminary_name,
                         pr.exchange_rate_usd,
                         CASE WHEN i.invoice_kind = N'LEGACY_DEBT' THEN N'Deuda histórica' ELSE pr.name END AS period_label,
@@ -113,6 +115,8 @@ class OwnerBillingController {
                         ) THEN 1 ELSE 0 END AS payment_report_pending
                     FROM BillingInvoices i
                     INNER JOIN Properties p ON i.property_id = p.id
+                    INNER JOIN Tenants t ON t.id = i.tenant_id
+                    LEFT JOIN Buildings b ON p.building_id = b.id
                     LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     WHERE i.tenant_id = @tenant_id
                     ${propertyFilter}
@@ -126,9 +130,11 @@ class OwnerBillingController {
                         pr.billing_year DESC, pr.billing_month DESC, i.created_at DESC
                 `);
 
+            const data = result.recordset.map((row) => enrichInvoicePropertyCode(row));
+
             res.json({
                 success: true,
-                data: result.recordset,
+                data,
                 billing_mode: 'FULL'
             });
         } catch (error) {

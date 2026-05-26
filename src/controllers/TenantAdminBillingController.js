@@ -15,6 +15,7 @@ const {
     allocateVesByWeight
 } = require('../utils/currencyConversion');
 const { normalizeRateDate, formatRateDateDisplay } = require('../utils/bcvFiscalCalendar');
+const { buildMonthlyInvoiceNumber, enrichInvoicePropertyCode, getInvoicePropertyCode } = require('../utils/invoiceNumber');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -857,12 +858,20 @@ class TenantAdminBillingController {
             console.log(`[Billing] Total inmuebles: ${debugResult.recordset.length}`);
             console.log(`[Billing] Buscando edificio: '${buildingName}' (ID: ${building})`);
             
-            let propertiesQuery = 'SELECT id, name, building, alicuota FROM Properties WHERE tenant_id = @tenant_id';
+            let propertiesQuery = `
+                SELECT p.id, p.name, p.slug, p.building, p.alicuota, b.name AS building_name
+                FROM Properties p
+                LEFT JOIN Buildings b ON p.building_id = b.id
+                WHERE p.tenant_id = @tenant_id`;
             if (building) {
-                // Filtrar por building_id (UUID) que es el campo que realmente tiene valor
-                propertiesQuery += ' AND building_id = @buildingId';
+                propertiesQuery += ' AND p.building_id = @buildingId';
             }
-            propertiesQuery += ' ORDER BY name';
+            propertiesQuery += ' ORDER BY p.name';
+
+            const tenantMetaRes = await pool.request()
+                .input('tenant_id', sql.UniqueIdentifier, tenantId)
+                .query('SELECT building_type FROM Tenants WHERE id = @tenant_id');
+            const buildingType = tenantMetaRes.recordset[0]?.building_type || 'SINGLE';
             
             const propertiesRequest = pool.request()
                 .input('tenant_id', sql.UniqueIdentifier, tenantId);
@@ -893,15 +902,19 @@ class TenantAdminBillingController {
                 return { ...p, proportion };
             });
 
-            // Generar recibos
+            // Generar recibos (número visible incluye código del inmueble)
             const invoices = [];
-            let invoiceCounter = 1;
 
             for (const prop of propertyProportions) {
                 const assignedAmountUsd = recalcTotalUsd * (prop.proportion / totalProportion);
                 const assignedAmountVes = recalcTotalVes * (prop.proportion / totalProportion);
-                
-                const invoiceNumber = `REC-${preliminary.billing_year}-${String(preliminary.billing_month).padStart(2, '0')}-${String(invoiceCounter++).padStart(3, '0')}`;
+
+                const invoiceNumber = buildMonthlyInvoiceNumber(
+                    prop,
+                    preliminary.billing_year,
+                    preliminary.billing_month,
+                    { buildingType }
+                );
 
                 const invoice = await BillingModel.createInvoice({
                     tenant_id: tenantId,
@@ -1007,16 +1020,26 @@ class TenantAdminBillingController {
             const propertyResult = await pool.request()
                 .input('property_id', sql.UniqueIdentifier, propertyId)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
-                .query('SELECT id, name, building, alicuota FROM Properties WHERE id = @property_id AND tenant_id = @tenant_id');
-            
+                .query(`
+                    SELECT p.id, p.name, p.slug, p.building, p.alicuota, b.name AS building_name, t.building_type
+                    FROM Properties p
+                    INNER JOIN Tenants t ON t.id = p.tenant_id
+                    LEFT JOIN Buildings b ON p.building_id = b.id
+                    WHERE p.id = @property_id AND p.tenant_id = @tenant_id
+                `);
+
             if (propertyResult.recordset.length === 0) {
                 return res.status(404).json({ error: 'Inmueble no encontrado' });
             }
 
             const property = propertyResult.recordset[0];
 
-            // Generar número de recibo
-            const invoiceNumber = `REC-${preliminary.billing_year}-${String(preliminary.billing_month).padStart(2, '0')}-001`;
+            const invoiceNumber = buildMonthlyInvoiceNumber(
+                property,
+                preliminary.billing_year,
+                preliminary.billing_month,
+                { buildingType: property.building_type || 'SINGLE' }
+            );
 
             // Crear recibo para el inmueble (monto completo, con tasa actual)
             const invoice = await BillingModel.createInvoice({
@@ -1139,6 +1162,17 @@ class TenantAdminBillingController {
                     }
                     
                     const user = userResult.recordset[0];
+
+                    let invoiceMetaHtml = '';
+                    try {
+                        const data = JSON.parse(notification.data || '{}');
+                        if (data.property_invoice_code) {
+                            invoiceMetaHtml += `<p style="margin:0 0 8px;color:#3C4043;font-size:14px;"><strong>Código inmueble:</strong> <span style="font-family:monospace;">${data.property_invoice_code}</span></p>`;
+                        }
+                        if (data.invoice_number) {
+                            invoiceMetaHtml += `<p style="margin:0 0 8px;color:#3C4043;font-size:14px;"><strong>Nº de recibo:</strong> ${data.invoice_number}</p>`;
+                        }
+                    } catch (_) { /* noop */ }
                     
                     // Enviar email con estilo mejorado
                     const emailHtml = `
@@ -1151,6 +1185,7 @@ class TenantAdminBillingController {
                                 <h2 style="color: #3C4043; margin-top: 0;">${notification.title}</h2>
                                 <p style="color: #5F6368; font-size: 16px; line-height: 1.6;">Hola <strong>${user.first_name}</strong>,</p>
                                 <p style="color: #5F6368; font-size: 16px; line-height: 1.6;">${notification.message}</p>
+                                ${invoiceMetaHtml ? `<div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:16px;margin:16px 0;">${invoiceMetaHtml}</div>` : ''}
                                 
                                 <div style="background: #f8f9fa; border-left: 4px solid #8B5028; padding: 16px; margin: 24px 0; border-radius: 4px;">
                                     <p style="margin: 0; color: #3C4043; font-size: 14px;">
@@ -1446,6 +1481,8 @@ class TenantAdminBillingController {
                 return res.status(404).json({ error: 'Recibo no encontrado' });
             }
 
+            enrichInvoicePropertyCode(invoice);
+
             // Tasa del día y comparativa para spread (igual que OwnerBillingController)
             const latestRate = await ExchangeRateModel.getLatest();
             const totalUsd = parseFloat(invoice.total_amount_usd) || (parseFloat(invoice.assigned_amount_ves) / (parseFloat(invoice.current_exchange_rate) || 1));
@@ -1573,9 +1610,15 @@ class TenantAdminBillingController {
             if (owner?.email) {
                 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
                 const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query(`
-                    SELECT i.invoice_number, i.invoice_kind, p.billing_month, p.billing_year
+                    SELECT i.invoice_number, i.invoice_kind,
+                        pr.billing_month, pr.billing_year,
+                        prop.name AS property_name, prop.slug AS property_slug,
+                        b.name AS building_name, t.building_type
                     FROM BillingInvoices i
-                    LEFT JOIN BillingPreliminaries p ON i.preliminary_id = p.id
+                    LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    INNER JOIN Properties prop ON prop.id = i.property_id
+                    INNER JOIN Tenants t ON t.id = i.tenant_id
+                    LEFT JOIN Buildings b ON b.id = prop.building_id
                     WHERE i.id = @id
                 `);
                 const invData = invRes.recordset[0];
@@ -1588,7 +1631,8 @@ class TenantAdminBillingController {
                     invData?.invoice_number || 'N/A',
                     periodLabel,
                     invoice.paid_amount_ves,
-                    { tenantId }
+                    { tenantId },
+                    getInvoicePropertyCode(invData)
                 ).catch(err => console.error('Error sending payment confirmed email:', err));
             }
 
@@ -1641,9 +1685,15 @@ class TenantAdminBillingController {
             if (owner?.email) {
                 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
                 const invRes = await pool.request().input('id', sql.UniqueIdentifier, id).query(`
-                    SELECT i.invoice_number, i.invoice_kind, p.billing_month, p.billing_year
+                    SELECT i.invoice_number, i.invoice_kind,
+                        pr.billing_month, pr.billing_year,
+                        prop.name AS property_name, prop.slug AS property_slug,
+                        b.name AS building_name, t.building_type
                     FROM BillingInvoices i
-                    LEFT JOIN BillingPreliminaries p ON i.preliminary_id = p.id
+                    LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
+                    INNER JOIN Properties prop ON prop.id = i.property_id
+                    INNER JOIN Tenants t ON t.id = i.tenant_id
+                    LEFT JOIN Buildings b ON b.id = prop.building_id
                     WHERE i.id = @id
                 `);
                 const invData = invRes.recordset[0];
@@ -1656,7 +1706,8 @@ class TenantAdminBillingController {
                     invData?.invoice_number || 'N/A',
                     periodLabel,
                     rejection_reason,
-                    { tenantId }
+                    { tenantId },
+                    getInvoicePropertyCode(invData)
                 ).catch(err => console.error('Error sending payment rejected email:', err));
             }
 
@@ -1923,11 +1974,14 @@ class TenantAdminBillingController {
                 .input('invoice_id', sql.UniqueIdentifier, invoiceId)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
                 .query(`
-                    SELECT i.*, p.name as property_name, p.building, 
+                    SELECT i.*, p.name as property_name, p.slug as property_slug, p.building,
+                           b.name as building_name, t.building_type,
                            pr.billing_month, pr.billing_year, pr.name as preliminary_name,
                            u.id as owner_id, u.email, u.first_name, u.last_name
                     FROM BillingInvoices i
                     INNER JOIN Properties p ON i.property_id = p.id
+                    INNER JOIN Tenants t ON t.id = i.tenant_id
+                    LEFT JOIN Buildings b ON p.building_id = b.id
                     INNER JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     LEFT JOIN PropertyOwners po ON p.id = po.property_id AND po.is_primary_owner = 1
                     LEFT JOIN Users u ON po.user_id = u.id
@@ -1940,7 +1994,8 @@ class TenantAdminBillingController {
             }
             
             const invoice = invoiceResult.recordset[0];
-            
+            const propertyCode = getInvoicePropertyCode(invoice);
+
             // Limpiar owner_id - a veces viene con caracteres extraños como comas
             let ownerId = invoice.owner_id;
             console.log(`[Billing] Raw owner_id: '${ownerId}', tipo: ${typeof ownerId}`);
@@ -1980,12 +2035,15 @@ class TenantAdminBillingController {
                 .input('user_id', sql.UniqueIdentifier, ownerId)
                 .input('type', sql.NVarChar, 'INVOICE_READY')
                 .input('title', sql.NVarChar, `Recibo de Condominio Disponible - ${invoice.preliminary_name}`)
-                .input('message', sql.NVarChar, 
-                    `Su inmueble ${invoice.property_name} tiene un recibo disponible por el período ${invoice.billing_month}/${invoice.billing_year}. ` +
+                .input('message', sql.NVarChar,
+                    `Su inmueble ${invoice.property_name}${propertyCode ? ` (código: ${propertyCode})` : ''} tiene un recibo disponible por el período ${invoice.billing_month}/${invoice.billing_year}. ` +
+                    `Nº de recibo: ${invoice.invoice_number}. ` +
                     `Monto: ${invoice.assigned_amount_ves.toFixed(2)} VES (${invoice.assigned_amount_usd.toFixed(2)} USD). ` +
                     `Ingresa a Condominio360 para ver el detalle del recibo.`)
                 .input('data', sql.NVarChar, JSON.stringify({
                     invoice_id: invoiceId,
+                    invoice_number: invoice.invoice_number,
+                    property_invoice_code: propertyCode,
                     preliminary_name: invoice.preliminary_name,
                     billing_month: invoice.billing_month,
                     billing_year: invoice.billing_year,

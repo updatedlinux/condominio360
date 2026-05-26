@@ -10,6 +10,7 @@ const {
     getIsoWeekKey
 } = require('../utils/billingDueDate');
 const { formatRateDateDisplay } = require('../utils/bcvFiscalCalendar');
+const { getInvoicePropertyCode } = require('../utils/invoiceNumber');
 
 const APP_URL = () => process.env.APP_URL || 'http://localhost:3000';
 
@@ -30,9 +31,12 @@ class BillingReminderService {
                 i.assigned_amount_ves,
                 i.current_exchange_rate,
                 p.name AS property_name,
+                p.slug AS property_slug,
                 p.building,
+                b.name AS building_name,
                 t.name AS tenant_name,
                 t.slug AS tenant_slug,
+                t.building_type,
                 u.id AS user_id,
                 u.email,
                 u.first_name,
@@ -41,6 +45,7 @@ class BillingReminderService {
             FROM BillingInvoices i
             INNER JOIN Tenants t ON t.id = i.tenant_id AND t.active = 1 AND t.billing_mode = N'FULL'
             INNER JOIN Properties p ON p.id = i.property_id
+            LEFT JOIN Buildings b ON b.id = p.building_id
             INNER JOIN BillingPreliminaries pr ON pr.id = i.preliminary_id
             INNER JOIN PropertyOwners po ON po.property_id = i.property_id
             INNER JOIN Users u ON u.id = po.user_id
@@ -76,15 +81,19 @@ class BillingReminderService {
                 i.legacy_debt_created_at,
                 phd.description AS debt_description,
                 p.name AS property_name,
+                p.slug AS property_slug,
                 p.building,
+                b.name AS building_name,
                 t.name AS tenant_name,
                 t.slug AS tenant_slug,
+                t.building_type,
                 u.id AS user_id,
                 u.email,
                 u.first_name
             FROM BillingInvoices i
             INNER JOIN Tenants t ON t.id = i.tenant_id AND t.active = 1 AND t.billing_mode = N'FULL'
             INNER JOIN Properties p ON p.id = i.property_id
+            LEFT JOIN Buildings b ON b.id = p.building_id
             LEFT JOIN PropertyHistoricalDebts phd ON phd.invoice_id = i.id AND phd.status = N'ACTIVE'
             INNER JOIN PropertyOwners po ON po.property_id = i.property_id
             INNER JOIN Users u ON u.id = po.user_id
@@ -110,7 +119,8 @@ class BillingReminderService {
             dueDate,
             daysOverdue,
             periodLabel: formatPeriodLabel(row.billing_month, row.billing_year),
-            propertyLabel: row.building ? `${row.building} — ${row.property_name}` : row.property_name
+            propertyLabel: row.building ? `${row.building} — ${row.property_name}` : row.property_name,
+            property_invoice_code: getInvoicePropertyCode(row)
         };
     }
 
@@ -248,6 +258,7 @@ class BillingReminderService {
                 g.debts.push({
                     invoice_id: row.invoice_id,
                     invoice_number: row.invoice_number,
+                    property_invoice_code: getInvoicePropertyCode(row),
                     propertyLabel: row.building ? `${row.building} — ${row.property_name}` : row.property_name,
                     description: row.debt_description || 'Deuda histórica pre-sistema',
                     assigned_amount_usd: assignedUsd,

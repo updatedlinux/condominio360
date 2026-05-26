@@ -3,6 +3,7 @@ const ExchangeRateModel = require('../models/ExchangeRateModel');
 const BillingRateFreezeService = require('./BillingRateFreezeService');
 const HistoricalDebtService = require('./HistoricalDebtService');
 const { itemToVes, allocateVesByWeight } = require('../utils/currencyConversion');
+const { enrichInvoicePropertyCode } = require('../utils/invoiceNumber');
 const { sql, connectDB } = require('../config/database');
 
 /**
@@ -124,6 +125,8 @@ class OwnerInvoiceDetailService {
 
         invoice._rateCurrent = rateCurrent;
         invoice._totalUsd = totalUsd;
+
+        enrichInvoicePropertyCode(invoice);
 
         const displayStatus = this.resolveDisplayStatus(invoice);
 

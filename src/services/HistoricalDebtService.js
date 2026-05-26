@@ -5,12 +5,13 @@ const PropertyHistoricalDebtModel = require('../models/PropertyHistoricalDebtMod
 const BillingRateFreezeService = require('./BillingRateFreezeService');
 const { itemToUsd, usdToVes } = require('../utils/currencyConversion');
 const { normalizeRateDate } = require('../utils/bcvFiscalCalendar');
+const { buildLegacyDebtInvoiceNumber, toSlug } = require('../utils/invoiceNumber');
 
 const USD_EPSILON = 0.000001;
 
 class HistoricalDebtService {
     static toSlug(s) {
-        return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return toSlug(s);
     }
 
     static resolvePropertySlug(inmuebleSlug, tenantProperties, buildingType) {
@@ -202,14 +203,31 @@ class HistoricalDebtService {
         const debtId = uuidv4();
         const now = new Date();
 
-        const countRes = await transaction.request()
+        const propRes = await transaction.request()
+            .input('property_id', sql.UniqueIdentifier, propertyId)
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .query(`
+                SELECT p.id, p.name, p.slug, b.name AS building_name, t.building_type
+                FROM Properties p
+                INNER JOIN Tenants t ON t.id = p.tenant_id
+                LEFT JOIN Buildings b ON p.building_id = b.id
+                WHERE p.id = @property_id AND p.tenant_id = @tenant_id
+            `);
+        const propertyRow = propRes.recordset[0];
+        if (!propertyRow) throw new Error('Inmueble no encontrado');
+
+        const countRes = await transaction.request()
+            .input('property_id', sql.UniqueIdentifier, propertyId)
+            .query(`
                 SELECT COUNT(*) AS cnt FROM BillingInvoices
-                WHERE tenant_id = @tenant_id AND invoice_kind = N'LEGACY_DEBT'
+                WHERE property_id = @property_id AND invoice_kind = N'LEGACY_DEBT'
             `);
         const seq = (parseInt(countRes.recordset[0]?.cnt, 10) || 0) + 1;
-        const invoiceNumber = `DEUDA-HIST-${String(seq).padStart(4, '0')}`;
+        const invoiceNumber = buildLegacyDebtInvoiceNumber(
+            propertyRow,
+            seq,
+            { buildingType: propertyRow.building_type || 'SINGLE' }
+        );
 
         const ownerRes = await transaction.request()
             .input('property_id', sql.UniqueIdentifier, propertyId)

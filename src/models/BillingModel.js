@@ -452,7 +452,9 @@ class BillingModel {
                 .input('id', sql.UniqueIdentifier, id)
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
                 .query(`
-                    SELECT i.*, p.name as property_name, p.building, p.alicuota,
+                    SELECT i.*, p.name as property_name, p.slug as property_slug, p.building, p.alicuota,
+                        b.name as building_name,
+                        t.building_type,
                         pr.billing_month, pr.billing_year, pr.name as preliminary_name,
                         pr.exchange_rate_usd as exchange_rate_preliminary,
                         pr.exchange_rate_date as preliminary_exchange_rate_date,
@@ -461,6 +463,8 @@ class BillingModel {
                         u.first_name + ' ' + u.last_name as owner_name, u.email as owner_email
                     FROM BillingInvoices i
                     INNER JOIN Properties p ON i.property_id = p.id
+                    INNER JOIN Tenants t ON t.id = i.tenant_id
+                    LEFT JOIN Buildings b ON p.building_id = b.id
                     LEFT JOIN BillingPreliminaries pr ON i.preliminary_id = pr.id
                     LEFT JOIN PropertyOwners po ON p.id = po.property_id AND po.is_primary_owner = 1
                     LEFT JOIN Users u ON po.user_id = u.id

@@ -737,7 +737,13 @@ class EmailService {
     /**
      * Enviar notificación de pago confirmado al propietario
      */
-    async sendPaymentConfirmed(email, firstName, invoiceNumber, periodLabel, amountVes, meta = {}) {
+    _propertyCodeHtml(propertyCode) {
+        if (!propertyCode) return '';
+        return `<p><strong>Código inmueble:</strong> <span style="font-family:monospace;">${propertyCode}</span></p>`;
+    }
+
+    async sendPaymentConfirmed(email, firstName, invoiceNumber, periodLabel, amountVes, meta = {}, propertyCode = null) {
+        const code = propertyCode || meta.propertyCode || null;
         const subject = `✅ Pago confirmado - Recibo ${invoiceNumber}`;
         const content = `
             <h2>Hola ${firstName},</h2>
@@ -745,6 +751,7 @@ class EmailService {
             <div class="details-box">
                 <h3>Detalle del recibo</h3>
                 <p><strong>Número:</strong> ${invoiceNumber}</p>
+                ${this._propertyCodeHtml(code)}
                 <p><strong>Período:</strong> ${periodLabel}</p>
                 <p><strong>Monto:</strong> Bs. ${parseFloat(amountVes).toLocaleString('es-VE')}</p>
             </div>
@@ -764,7 +771,8 @@ class EmailService {
     /**
      * Enviar notificación de pago rechazado al propietario
      */
-    async sendPaymentRejected(email, firstName, invoiceNumber, periodLabel, rejectionReason, meta = {}) {
+    async sendPaymentRejected(email, firstName, invoiceNumber, periodLabel, rejectionReason, meta = {}, propertyCode = null) {
+        const code = propertyCode || meta.propertyCode || null;
         const subject = `⚠️ Pago rechazado - Recibo ${invoiceNumber}`;
         const reason = rejectionReason ? `Motivo: ${rejectionReason}` : 'Sin motivo especificado';
         const content = `
@@ -773,6 +781,7 @@ class EmailService {
             <div class="details-box">
                 <h3>Detalle del recibo</h3>
                 <p><strong>Número:</strong> ${invoiceNumber}</p>
+                ${this._propertyCodeHtml(code)}
                 <p><strong>Período:</strong> ${periodLabel}</p>
                 <p><strong>${reason}</strong></p>
             </div>
@@ -795,7 +804,7 @@ class EmailService {
     async sendOverdueInvoicesReminder(email, firstName, tenantName, invoices, loginUrl, meta = {}) {
         const rows = (invoices || []).map((inv) => `
             <tr>
-                <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.propertyLabel || '—'}</td>
+                <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.propertyLabel || '—'}${inv.property_invoice_code ? `<br><span style="font-size:12px;color:#73777f;font-family:monospace;">${inv.property_invoice_code}</span>` : ''}</td>
                 <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.periodLabel || '—'}</td>
                 <td style="padding:8px;border-bottom:1px solid #e5e5e5;">${inv.invoice_number || '—'}</td>
                 <td style="padding:8px;border-bottom:1px solid #e5e5e5;text-align:right;">Bs. ${parseFloat(inv.assigned_amount_ves || 0).toLocaleString('es-VE')}</td>
@@ -847,6 +856,7 @@ class EmailService {
             return `
                 <div class="details-box" style="margin-bottom:12px;">
                     <p style="margin:0 0 4px;"><strong>${d.propertyLabel}</strong></p>
+                    ${d.property_invoice_code ? `<p style="margin:0 0 4px;font-size:12px;color:#73777f;">Código inmueble: <span style="font-family:monospace;">${d.property_invoice_code}</span></p>` : ''}
                     <p style="margin:0;font-size:13px;color:#5F6368;">${d.description}</p>
                     ${partial}
                     <p style="margin:8px 0 0;font-size:12px;color:#73777f;">${d.freezeNote}</p>
