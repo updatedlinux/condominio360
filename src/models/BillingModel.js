@@ -1,7 +1,7 @@
 const { sql, connectDB } = require('../config/database');
 const HistoricalDebtService = require('../services/HistoricalDebtService');
 const BillingRateFreezeService = require('../services/BillingRateFreezeService');
-const { usdToVes, vesToUsd } = require('../utils/currencyConversion');
+const { usdToVes, vesToUsd, itemToVes } = require('../utils/currencyConversion');
 
 const USD_EPSILON = 0.000001;
 
@@ -560,7 +560,6 @@ class BillingModel {
         try {
             const ExchangeRateModel = require('./ExchangeRateModel');
             const BillingRateFreezeService = require('../services/BillingRateFreezeService');
-            const { usdToVes, itemToVes } = require('../utils/currencyConversion');
             const latestRate = await ExchangeRateModel.getLatest();
             if (!latestRate || latestRate.usd_rate == null) {
                 return null;
