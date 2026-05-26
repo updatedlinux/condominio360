@@ -1,23 +1,30 @@
 const axios = require('axios');
+const https = require('https');
+
+/** bcv.org.ve suele presentar cadena SSL incompleta en algunos entornos Node */
+const bcvHttpsAgent = new https.Agent({ rejectUnauthorized: false });
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 const {
     resolveHistoricoTargets,
     getMinimumRequiredRateDate,
     toHistoricoPath,
+    toYmd,
     normalizeRateDate,
     isRateDateAdequate,
     getCaracasParts
 } = require('../utils/bcvFiscalCalendar');
 
 /**
- * Tasas BCV oficiales vía ve.dolarapi.com (sin API key).
- * La tasa fiscal se obtiene del endpoint histórico para el día hábil bancario siguiente
- * (no del endpoint /dolares/oficial, que puede ir desfasado).
+ * Tasas BCV oficiales:
+ * 1) ve.dolarapi.com histórico (día fiscal / fecha valor)
+ * 2) bcv.org.ve (publicación directa; suele adelantar a dolarapi)
+ * 3) ve.dolarapi.com /dolares/oficial (fallback; puede ir desfasado)
  */
 const API_USD = 'https://ve.dolarapi.com/v1/dolares/oficial';
 const API_EUR = 'https://ve.dolarapi.com/v1/euros/oficial';
 const API_HIST_USD = 'https://ve.dolarapi.com/v1/historicos/dolares/oficial';
 const API_HIST_EUR = 'https://ve.dolarapi.com/v1/historicos/euros/oficial';
+const BCV_HOME_URL = 'https://www.bcv.org.ve/';
 
 class BCVService {
     constructor() {
@@ -25,7 +32,7 @@ class BCVService {
         this._lastApiOkAtUtc = null;
         this._lastApiError = null;
         this._lastApiStatus = null;
-        this._lastFetchMode = null; // 'historico' | 'oficial' | null
+        this._lastFetchMode = null; // 'historico' | 'bcv-web' | 'oficial' | null
         this._lastFetchTargets = null;
     }
 
@@ -57,6 +64,87 @@ class BCVService {
         const n = Number(next);
         if (!p || isNaN(p) || isNaN(n)) return 0;
         return ((n - p) / p) * 100;
+    }
+
+    /** Número con formato venezolano: 540,04310000 → 540.0431 */
+    _parseVeNumber(raw) {
+        if (raw == null) return NaN;
+        const cleaned = String(raw).trim().replace(/\s/g, '');
+        if (!cleaned) return NaN;
+        if (cleaned.includes(',')) {
+            return parseFloat(cleaned.replace(/\./g, '').replace(',', '.'));
+        }
+        return parseFloat(cleaned);
+    }
+
+    /**
+     * Publicación directa en bcv.org.ve (fecha valor = día fiscal de la tasa).
+     * @param {Date} [referenceDate]
+     * @returns {Promise<Object|null>}
+     */
+    async fetchFromBCVWebsite(referenceDate = new Date()) {
+        try {
+            this._lastApiCheckAtUtc = new Date().toISOString();
+            console.log('🔄 Consultando BCV oficial (bcv.org.ve)...');
+
+            const res = await axios.get(BCV_HOME_URL, {
+                timeout: 30000,
+                httpsAgent: bcvHttpsAgent,
+                headers: {
+                    Accept: 'text/html,application/xhtml+xml',
+                    'User-Agent': 'Condominio360/1.0'
+                },
+                maxRedirects: 5
+            });
+
+            const html = typeof res.data === 'string' ? res.data : '';
+            if (!html) return null;
+
+            const usdMatch = html.match(/id="dolar"[\s\S]*?<strong class="strong-tb">\s*([\d.,]+)\s*<\/strong>/i);
+            const eurMatch = html.match(/id="euro"[\s\S]*?<strong class="strong-tb">\s*([\d.,]+)\s*<\/strong>/i);
+            const dateMatch = html.match(/Fecha Valor:[\s\S]*?content="(\d{4}-\d{2}-\d{2})T/i);
+
+            const usd = this._parseVeNumber(usdMatch?.[1]);
+            const eur = this._parseVeNumber(eurMatch?.[1]);
+            const date = dateMatch?.[1] || null;
+
+            if (!date || isNaN(usd) || isNaN(eur) || usd <= 0 || eur <= 0) {
+                console.warn('⚠️ bcv.org.ve: no se pudo interpretar USD/EUR o fecha valor');
+                return null;
+            }
+
+            const minRequired = getMinimumRequiredRateDate(referenceDate);
+            if (!isRateDateAdequate(date, minRequired)) {
+                console.warn(
+                    `⚠️ bcv.org.ve fecha valor ${date} no cubre el día fiscal ${minRequired}; no se usa.`
+                );
+                return null;
+            }
+
+            const prev = await ExchangeRateModel.getLatestBeforeDate(date);
+            const changeUsd = prev ? this._percentChange(prev.usd_rate, usd) : 0;
+            const changeEur = prev ? this._percentChange(prev.eur_rate, eur) : 0;
+
+            this._lastFetchMode = 'bcv-web';
+            this._lastApiStatus = 'ok';
+            this._lastApiOkAtUtc = new Date().toISOString();
+
+            console.log(`   ✓ BCV web fecha valor ${date}: USD ${usd} | EUR ${eur}`);
+
+            return {
+                date,
+                usd,
+                eur,
+                changePercentageUsd: Math.round(changeUsd * 100) / 100,
+                changePercentageEur: Math.round(changeEur * 100) / 100,
+                rawData: { source: 'bcv.org.ve', fechaValor: date }
+            };
+        } catch (error) {
+            console.error('❌ Error consultando bcv.org.ve:', error.message);
+            this._lastApiStatus = 'error';
+            this._lastApiError = error?.message || 'Error bcv.org.ve';
+            return null;
+        }
     }
 
     /**
@@ -169,7 +257,7 @@ class BCVService {
      * Fallback: endpoint oficial vigente (puede ir desfasado respecto al día fiscal).
      * @returns {Promise<Object|null>}
      */
-    async fetchFromAPI() {
+    async fetchFromAPI(referenceDate = new Date()) {
         try {
             this._lastApiCheckAtUtc = new Date().toISOString();
             this._lastApiStatus = null;
@@ -197,10 +285,23 @@ class BCVService {
             const eur = parseFloat(eurRes.data.promedio);
             if (isNaN(usd) || isNaN(eur)) return null;
 
-            const date =
+            let date =
                 this._extractEffectiveDateFromDolarApi(usdRes.data.fechaActualizacion) ||
                 this._extractEffectiveDateFromDolarApi(eurRes.data.fechaActualizacion);
             if (!date) return null;
+
+            const minRequired = getMinimumRequiredRateDate(referenceDate);
+            const c = getCaracasParts(referenceDate);
+            const today = toYmd(c);
+            if (
+                !isRateDateAdequate(date, minRequired) &&
+                c.dayOfWeek >= 1 &&
+                c.dayOfWeek <= 5 &&
+                c.hour >= 18 &&
+                date === today
+            ) {
+                date = minRequired;
+            }
 
             const prev = await ExchangeRateModel.getLatestBeforeDate(date);
             const changeUsd = prev ? this._percentChange(prev.usd_rate, usd) : 0;
@@ -253,13 +354,17 @@ class BCVService {
                 };
             }
 
-            console.log('⚠️ Histórico sin resultados; intentando fallback endpoint oficial...');
-            rateData = await this.fetchFromAPI();
-            if (rateData && !isRateDateAdequate(rateData.date, minRequired)) {
-                console.warn(
-                    `⚠️ Fallback oficial (${rateData.date}) no cubre el día fiscal ${minRequired}; no se guarda.`
-                );
-                rateData = null;
+            console.log('⚠️ Histórico sin resultados; consultando bcv.org.ve...');
+            rateData = await this.fetchFromBCVWebsite(referenceDate);
+            if (!rateData) {
+                console.log('⚠️ bcv.org.ve sin tasa adecuada; intentando fallback ve.dolarapi.com...');
+                rateData = await this.fetchFromAPI(referenceDate);
+                if (rateData && !isRateDateAdequate(rateData.date, minRequired)) {
+                    console.warn(
+                        `⚠️ Fallback dolarapi (${rateData.date}) no cubre el día fiscal ${minRequired}; no se guarda.`
+                    );
+                    rateData = null;
+                }
             }
         } else {
             this._lastApiStatus = 'ok';

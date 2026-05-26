@@ -3042,7 +3042,7 @@ class AdminController {
                     success: true,
                     data: {
                         hasRates: false,
-                        message: 'Aún no hay tasas guardadas. El sistema las obtiene de ve.dolarapi.com según el horario configurado.'
+                        message: 'Aún no hay tasas guardadas. El sistema las obtiene del BCV (bcv.org.ve y ve.dolarapi.com) según el horario configurado.'
                     }
                 });
             }
@@ -3057,7 +3057,7 @@ class AdminController {
                     changeUsd: latest.change_percentage_usd != null ? parseFloat(latest.change_percentage_usd) : 0,
                     changeEur: latest.change_percentage_eur != null ? parseFloat(latest.change_percentage_eur) : 0,
                     updatedAt: latest.updated_at,
-                    sourceLabel: 'BCV oficial — ve.dolarapi.com (histórico día hábil siguiente)',
+                    sourceLabel: 'BCV oficial — bcv.org.ve / ve.dolarapi.com (fecha valor día hábil)',
                     apiMeta: meta
                 }
             });
