@@ -26,7 +26,11 @@
  *   direction: 'CREDIT' | 'DEBIT',
  *   balance_ves: number | null,
  *   raw_line: string,                 // línea original tal cual del PDF
- *   is_relevant_for_match: boolean    // true si es candidato a matchear contra pagos de propietarios
+ *   is_relevant_for_match: boolean,   // true si es candidato a matchear contra pagos de propietarios
+ *   payer_document?: string | null,  // cédula del pagador (ej. V12345678) — BDV y similares
+ *   payer_phone?: string | null,       // teléfono pagomóvil (04XXXXXXXXX)
+ *   payment_method?: string | null,    // PAGO_MOVIL | TRANSFERENCIA | COMISION | PAGO_SALIENTE | OTRO
+ *   counterparty_bank_code?: string | null  // código SUDEBAN 4 dígitos del banco origen
  * }
  */
 class BankStatementParser {

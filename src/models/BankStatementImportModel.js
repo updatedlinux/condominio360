@@ -75,13 +75,19 @@ class BankStatementImportModel {
                     .input('direction', sql.NVarChar, m.direction)
                     .input('balance_ves', sql.Decimal(18, 2), m.balance_ves != null ? Number(m.balance_ves) : null)
                     .input('raw_line', sql.NVarChar, m.raw_line || null)
+                    .input('payer_document', sql.NVarChar, m.payer_document || null)
+                    .input('payer_phone', sql.NVarChar, m.payer_phone || null)
+                    .input('payment_method', sql.NVarChar, m.payment_method || null)
+                    .input('counterparty_bank_code', sql.NVarChar, m.counterparty_bank_code || null)
                     .query(`
                         INSERT INTO BankStatementMovements
                             (import_id, movement_date, reference, description,
-                             amount_ves, direction, balance_ves, raw_line)
+                             amount_ves, direction, balance_ves, raw_line,
+                             payer_document, payer_phone, payment_method, counterparty_bank_code)
                         VALUES
                             (@import_id, @movement_date, @reference, @description,
-                             @amount_ves, @direction, @balance_ves, @raw_line)
+                             @amount_ves, @direction, @balance_ves, @raw_line,
+                             @payer_document, @payer_phone, @payment_method, @counterparty_bank_code)
                     `);
             }
 

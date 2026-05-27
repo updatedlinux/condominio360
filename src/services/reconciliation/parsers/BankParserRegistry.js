@@ -1,4 +1,5 @@
 const BancamigaParser = require('./BancamigaParser');
+const BancoDeVenezuelaParser = require('./BancoDeVenezuelaParser');
 const UbiiPagosParser = require('./UbiiPagosParser');
 
 /**
@@ -12,6 +13,7 @@ const UbiiPagosParser = require('./UbiiPagosParser');
  */
 const REGISTERED = [
     new BancamigaParser(),
+    new BancoDeVenezuelaParser(),
     new UbiiPagosParser()
 ];
 

@@ -455,6 +455,7 @@ function renderMatchedTable(rows) {
                     <th class="text-left py-2 pr-3">Fecha</th>
                     <th class="text-left py-2 pr-3">Referencia</th>
                     <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Medio / Cédula extracto</th>
                     <th class="text-left py-2 pr-3">Propietario</th>
                     <th class="text-left py-2 pr-3">Inmueble</th>
                     <th class="text-right py-2 pr-3">Score</th>
@@ -466,7 +467,8 @@ function renderMatchedTable(rows) {
                         <td class="py-2 pr-3">${fmtDate(r.movement_date)}</td>
                         <td class="py-2 pr-3 font-mono text-xs">${r.reference || '—'}</td>
                         <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.amount_ves)}</td>
-                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">Cédula de ID ${r.owner_dni || '—'}</span></td>
+                        <td class="py-2 pr-3 text-xs">${paymentMethodLabel(r.payment_method)}<br><span class="font-mono text-[#5F6368]">${r.payer_document || '—'}</span></td>
+                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">Cédula ${r.owner_dni || '—'}</span></td>
                         <td class="py-2 pr-3">${r.building_name || ''} ${r.property_name || ''}</td>
                         <td class="py-2 pr-3 text-right"><span class="badge-conf px-2 py-1 rounded text-xs font-medium">${r.match_score || 100}</span></td>
                     </tr>
@@ -485,6 +487,7 @@ function renderSuggestedTable(rows) {
                     <th class="text-left py-2 pr-3">Fecha</th>
                     <th class="text-left py-2 pr-3">Ref. extracto</th>
                     <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Medio / Cédula extracto</th>
                     <th class="text-left py-2 pr-3">Propietario sugerido</th>
                     <th class="text-left py-2 pr-3">Ref. reporte</th>
                     <th class="text-right py-2 pr-3">Score</th>
@@ -497,7 +500,11 @@ function renderSuggestedTable(rows) {
                         <td class="py-2 pr-3">${fmtDate(r.movement_date)}</td>
                         <td class="py-2 pr-3 font-mono text-xs">${r.reference || '—'}</td>
                         <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.amount_ves)}</td>
-                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">${r.property_name || ''}</span></td>
+                        <td class="py-2 pr-3 text-xs">
+                            ${paymentMethodLabel(r.payment_method)}<br>
+                            <span class="font-mono text-[#5F6368]">${r.payer_document || '—'}</span>
+                        </td>
+                        <td class="py-2 pr-3">${ownerName(r)}<br><span class="text-xs text-[#5F6368]">${r.property_name || ''} · ${r.owner_dni || ''}</span></td>
                         <td class="py-2 pr-3 font-mono text-xs">${r.ref_transferencia || '—'}</td>
                         <td class="py-2 pr-3 text-right"><span class="badge-sug px-2 py-1 rounded text-xs font-medium">${Math.round(r.match_score)}</span></td>
                         <td class="py-2 pr-3 text-right whitespace-nowrap">
@@ -511,6 +518,25 @@ function renderSuggestedTable(rows) {
     `;
 }
 
+function paymentMethodLabel(code) {
+    const map = {
+        PAGO_MOVIL: 'Pago móvil',
+        TRANSFERENCIA: 'Transferencia',
+        COMISION: 'Comisión',
+        PAGO_SALIENTE: 'Pago saliente',
+        OTRO: 'Otro'
+    };
+    return map[code] || code || '—';
+}
+
+function movementPayerHint(r) {
+    const parts = [];
+    if (r.payer_document) parts.push(r.payer_document);
+    if (r.payer_phone) parts.push(r.payer_phone);
+    if (r.counterparty_bank_code) parts.push(`Bco. ${r.counterparty_bank_code}`);
+    return parts.length ? parts.join(' · ') : '';
+}
+
 function renderUnmatchedMovTable(rows) {
     if (rows.length === 0) return '<p class="text-sm text-[#5F6368]">Todos los créditos del extracto fueron emparejados.</p>';
     return `
@@ -520,6 +546,7 @@ function renderUnmatchedMovTable(rows) {
                     <th class="text-left py-2 pr-3">Fecha</th>
                     <th class="text-left py-2 pr-3">Referencia</th>
                     <th class="text-right py-2 pr-3">Monto</th>
+                    <th class="text-left py-2 pr-3">Medio / Pagador</th>
                     <th class="text-left py-2 pr-3">Descripción</th>
                 </tr>
             </thead>
@@ -529,6 +556,10 @@ function renderUnmatchedMovTable(rows) {
                         <td class="py-2 pr-3">${fmtDate(r.movement_date)}</td>
                         <td class="py-2 pr-3 font-mono text-xs">${r.reference || '—'}</td>
                         <td class="py-2 pr-3 text-right">Bs. ${fmtVes(r.amount_ves)}</td>
+                        <td class="py-2 pr-3 text-xs">
+                            <span class="text-[#3C4043]">${paymentMethodLabel(r.payment_method)}</span>
+                            ${movementPayerHint(r) ? `<br><span class="text-[#5F6368] font-mono">${movementPayerHint(r)}</span>` : ''}
+                        </td>
                         <td class="py-2 pr-3 text-xs text-[#5F6368]">${(r.description || '').slice(0, 80)}</td>
                     </tr>
                 `).join('')}

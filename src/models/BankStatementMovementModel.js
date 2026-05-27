@@ -8,6 +8,7 @@ class BankStatementMovementModel {
             .query(`
                 SELECT id, import_id, movement_date, reference, description, amount_ves,
                        direction, balance_ves, raw_line,
+                       payer_document, payer_phone, payment_method, counterparty_bank_code,
                        match_status, match_score, matched_payment_report_id,
                        matched_by, matched_at, notes, created_at
                 FROM BankStatementMovements
@@ -71,7 +72,9 @@ class BankStatementMovementModel {
             .input('import_id', sql.UniqueIdentifier, importId)
             .query(`
                 SELECT m.id, m.movement_date, m.reference, m.description, m.amount_ves,
-                       m.direction, m.balance_ves, m.match_status, m.match_score,
+                       m.direction, m.balance_ves,
+                       m.payer_document, m.payer_phone, m.payment_method, m.counterparty_bank_code,
+                       m.match_status, m.match_score,
                        m.matched_payment_report_id, m.matched_at, m.notes,
                        bpr.id AS payment_report_id,
                        bpr.ref_transferencia, bpr.banco_emisor, bpr.fecha_transferencia,

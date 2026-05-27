@@ -9,6 +9,7 @@
  *   - Monto aproximado (±1%):                   15
  *   - Fecha exacta:                             10
  *   - Fecha ±2 días:                             5
+ *   - Cédula pagador = cédula propietario:      15  (extractos BDV y similares)
  *
  * Umbrales:
  *   - score ≥ 90 → CONFIRMED (auto-match)
@@ -29,12 +30,19 @@ class ReconciliationMatcher {
      * }}
      */
     static run(movements, reports) {
-        const movs = (movements || []).map((m, idx) => ({ idx, ref: this._normalizeRef(m.reference), date: m.movement_date, amount: Number(m.amount_ves || 0) }));
+        const movs = (movements || []).map((m, idx) => ({
+            idx,
+            ref: this._normalizeRef(m.reference),
+            date: m.movement_date,
+            amount: Number(m.amount_ves || 0),
+            payerDoc: this._normalizeDocument(m.payer_document)
+        }));
         const reps = (reports || []).map((r, idx) => ({
             idx,
             ref: this._normalizeRef(r.ref_transferencia),
             date: this._parseReportDate(r.fecha_transferencia),
-            amount: Number(r.monto_abonado_ves || 0)
+            amount: Number(r.monto_abonado_ves || 0),
+            ownerDoc: this._normalizeDocument(r.owner_dni)
         }));
 
         const pairs = [];
@@ -105,7 +113,17 @@ class ReconciliationMatcher {
             }
         }
 
+        if (m.payerDoc && r.ownerDoc && m.payerDoc === r.ownerDoc) {
+            score += 15;
+        }
+
         return score;
+    }
+
+    static _normalizeDocument(doc) {
+        if (!doc) return '';
+        const digits = String(doc).replace(/\D/g, '');
+        return digits.length >= 6 ? digits : '';
     }
 
     static _normalizeRef(ref) {

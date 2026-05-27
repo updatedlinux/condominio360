@@ -98,7 +98,8 @@ class BankReconciliationService {
             .map(m => ({
                 ...m,
                 movement_date: m.movement_date ? new Date(m.movement_date) : null,
-                amount_ves: Number(m.amount_ves || 0)
+                amount_ves: Number(m.amount_ves || 0),
+                payer_document: m.payer_document || null
             }));
 
         const reports = await this._fetchCandidateReports(tenantId);
