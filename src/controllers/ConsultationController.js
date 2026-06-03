@@ -358,6 +358,7 @@ class ConsultationController {
                         id: consultation.id,
                         title: consultation.title,
                         description: consultation.description,
+                        footer_note: consultation.footer_note,
                         status: consultation.status,
                         target_building: consultation.target_building,
                         start_date: consultation.start_date,

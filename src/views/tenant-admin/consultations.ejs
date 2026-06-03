@@ -120,12 +120,22 @@
                     <div>
                         <label class="block text-sm font-medium text-[#5F6368] mb-2">Fecha de inicio *</label>
                         <input type="date" id="cons-start-date" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
-                        <p class="text-xs text-[#9AA0A6] mt-1">Se activará a las 00:00 GMT-4</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#5F6368] mb-2">Fecha de cierre *</label>
                         <input type="date" id="cons-end-date" required class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
                     </div>
+                </div>
+                <div class="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-xs text-[#5F6368] leading-relaxed">
+                    <p class="font-medium text-[#3C4043] mb-1.5 flex items-center gap-1">
+                        <span class="material-icons-round text-sm text-blue-600">info</span>
+                        Interpretación de fechas (hora Venezuela, GMT-4)
+                    </p>
+                    <ul class="space-y-1 ml-0.5">
+                        <li><strong>Inicio (inclusiva):</strong> la carta abre ese día a las <strong>00:00</strong>.</li>
+                        <li><strong>Cierre (exclusiva):</strong> desde ese día a las <strong>00:00</strong> la carta queda <strong>cerrada para votar</strong>. El último día con voto es el día anterior.</li>
+                    </ul>
+                    <p class="mt-2 text-[#9AA0A6]">Ejemplo: cierre el <strong>19/06</strong> → se puede votar hasta la noche del <strong>18/06</strong>; el <strong>19/06</strong> amanecerá cerrada.</p>
                 </div>
 
                 <div id="building-selector-container" class="hidden">
@@ -146,6 +156,12 @@
                     <div id="questions-container" class="space-y-4">
                         <!-- Preguntas dinámicas -->
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Nota al pie <span class="font-normal text-[#9AA0A6]">(opcional)</span></label>
+                    <textarea id="cons-footer-note" rows="4" maxlength="4000" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none text-sm" placeholder="Nota: La ejecución de los proyectos que sean aprobados..."></textarea>
+                    <p class="text-xs text-[#9AA0A6] mt-1">Aparece al final de la carta en el voto, resultados y PDF. Máximo 4.000 caracteres.</p>
                 </div>
             </form>
             <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
@@ -211,6 +227,17 @@
                 <div class="mb-3 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-[#5F6368] leading-relaxed whitespace-pre-wrap">
                     <span class="text-xs font-semibold uppercase tracking-wide text-amber-800 block mb-1">Nota de apoyo</span>
                     ${escapeHtml(note)}
+                </div>
+            `;
+        }
+
+        function renderConsultationFooterNote(note) {
+            if (!note || !String(note).trim()) return '';
+            return `
+                <div class="mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <div class="rounded-xl bg-[#F8F9FA] border border-[#E8EAED] px-5 py-4">
+                        <div class="text-sm md:text-base text-[#5F6368] leading-relaxed whitespace-pre-wrap italic">${escapeHtml(note)}</div>
+                    </div>
                 </div>
             `;
         }
@@ -607,6 +634,7 @@
             const data = {
                 title,
                 description: document.getElementById('cons-description').value,
+                footer_note: document.getElementById('cons-footer-note').value.trim() || null,
                 start_date: startDate,
                 end_date: endDate,
                 target_building: document.getElementById('cons-building').value || null,
@@ -728,6 +756,8 @@
                         </div>
                     `;
                 });
+
+                html += renderConsultationFooterNote(c.footer_note);
 
                 // Voting Properties Table
                 html += `
@@ -956,6 +986,18 @@
             letter-spacing: 0.04em;
             margin-bottom: 4px;
         }
+        .footer-note {
+            margin: 28px 0 24px;
+            padding: 16px 18px;
+            border-top: 1px solid #ddd;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 10pt;
+            color: #5F6368;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-style: italic;
+        }
         .option-row { 
             margin-bottom: 12px;
         }
@@ -1099,6 +1141,10 @@
         </div>
         `;
     }).join('')}
+    
+    ${consultation.footer_note && String(consultation.footer_note).trim() ? `
+    <div class="footer-note">${escapeHtml(consultation.footer_note)}</div>
+    ` : ''}
     
     <div class="voters-section">
         <h3>Inmuebles que votaron (${voting_properties.length})</h3>

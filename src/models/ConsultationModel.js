@@ -6,7 +6,7 @@ class ConsultationModel {
      * Create a new consultation with questions and options transactionally.
      */
     static async create(data) {
-        const { tenant_id, created_by, title, description, start_date, end_date, target_building, questions } = data;
+        const { tenant_id, created_by, title, description, footer_note, start_date, end_date, target_building, questions } = data;
 
         let pool = await connectDB();
         const transaction = new sql.Transaction(pool);
@@ -21,13 +21,14 @@ class ConsultationModel {
                 .input('created_by', sql.UniqueIdentifier, created_by)
                 .input('title', sql.NVarChar, title)
                 .input('description', sql.NVarChar, description || null)
+                .input('footer_note', sql.NVarChar, (footer_note && String(footer_note).trim()) || null)
                 .input('start_date', sql.DateTime2, start_date)
                 .input('end_date', sql.DateTime2, end_date)
                 .input('target_building', sql.NVarChar, target_building || null)
                 .query(`
-                    INSERT INTO Consultations (tenant_id, created_by, title, description, start_date, end_date, target_building)
+                    INSERT INTO Consultations (tenant_id, created_by, title, description, footer_note, start_date, end_date, target_building)
                     OUTPUT INSERTED.id
-                    VALUES (@tenant_id, @created_by, @title, @description, @start_date, @end_date, @target_building)
+                    VALUES (@tenant_id, @created_by, @title, @description, @footer_note, @start_date, @end_date, @target_building)
                 `);
 
             const consultationId = consultResult.recordset[0].id;

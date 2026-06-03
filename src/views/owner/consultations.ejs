@@ -273,6 +273,17 @@
             `;
         }
 
+        function renderConsultationFooterNote(note) {
+            if (!note || !String(note).trim()) return '';
+            return `
+                <div class="mt-8 pt-6 border-t border-[#E5E5E5]">
+                    <div class="rounded-xl bg-[#F8F9FA] border border-[#E8EAED] px-5 py-4">
+                        <div class="text-sm md:text-base text-[#5F6368] leading-relaxed whitespace-pre-wrap italic">${escapeHtml(note)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             currentPropertyId = getPropertyIdFromToken();
             loadConsultations();
@@ -549,6 +560,8 @@
                     `;
                 });
 
+                html += renderConsultationFooterNote(c.footer_note);
+
                 document.getElementById('vote-modal-content').innerHTML = html;
                 
                 // Check initial validity (all buttons disabled)
@@ -794,6 +807,8 @@
                     `;
                 });
 
+                html += renderConsultationFooterNote(c.footer_note);
+
                 // Voting Properties List
                 html += `
                     <div class="mt-8">
@@ -940,6 +955,18 @@
                             letter-spacing: 0.04em;
                             margin-bottom: 4px;
                         }
+                        .footer-note {
+                            margin: 28px 0 24px;
+                            padding: 16px 20px;
+                            border-top: 1px solid #ddd;
+                            background: #f8f9fa;
+                            border-radius: 8px;
+                            font-size: 11pt;
+                            color: #5F6368;
+                            line-height: 1.6;
+                            white-space: pre-wrap;
+                            font-style: italic;
+                        }
                         .option { margin: 10px 0; }
                         .bar { background: #f97316; height: 20px; border-radius: 4px; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -987,6 +1014,10 @@
                 });
                 html += '</div>';
             });
+
+            if (c.footer_note && String(c.footer_note).trim()) {
+                html += `<div class="footer-note">${escapeHtml(c.footer_note)}</div>`;
+            }
 
             html += `
                     <h2>Inmuebles que votaron</h2>

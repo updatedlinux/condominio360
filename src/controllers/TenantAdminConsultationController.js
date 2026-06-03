@@ -174,7 +174,7 @@ class TenantAdminConsultationController {
         try {
             const tenantId = req.user.tenantId;
             const userId = req.user.userId;
-            const { title, description, start_date, end_date, target_building, questions } = req.body;
+            const { title, description, footer_note, start_date, end_date, target_building, questions } = req.body;
 
             // Validaciones
             if (!title || !start_date || !end_date || !questions || questions.length === 0) {
@@ -235,6 +235,7 @@ class TenantAdminConsultationController {
                 created_by: userId,
                 title,
                 description,
+                footer_note: footer_note ? String(footer_note).trim() || null : null,
                 start_date: startDateUTC,
                 end_date: endDateUTC,
                 target_building: target_building || null,
@@ -264,7 +265,7 @@ class TenantAdminConsultationController {
         try {
             const tenantId = req.user.tenantId;
             const { id } = req.params;
-            const { title, description, start_date, end_date, status } = req.body;
+            const { title, description, footer_note, start_date, end_date, status } = req.body;
 
             const pool = await connectDB();
 
@@ -302,6 +303,7 @@ class TenantAdminConsultationController {
                 .input('tenant_id', sql.UniqueIdentifier, tenantId)
                 .input('title', sql.NVarChar, title)
                 .input('description', sql.NVarChar, description)
+                .input('footer_note', sql.NVarChar, footer_note)
                 .input('start_date', sql.DateTime2, start_date)
                 .input('end_date', sql.DateTime2, end_date)
                 .input('status', sql.NVarChar, status)
@@ -310,6 +312,7 @@ class TenantAdminConsultationController {
                     SET 
                         title = COALESCE(@title, title),
                         description = COALESCE(@description, description),
+                        footer_note = COALESCE(@footer_note, footer_note),
                         start_date = COALESCE(@start_date, start_date),
                         end_date = COALESCE(@end_date, end_date),
                         status = COALESCE(@status, status),
