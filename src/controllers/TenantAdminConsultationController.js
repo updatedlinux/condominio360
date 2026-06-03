@@ -242,14 +242,19 @@ class TenantAdminConsultationController {
                 questions
             });
 
-            // Send creation notifications
+            consultation.tenant_id = tenantId;
+
+            // Encolar notificaciones (no bloquear la respuesta HTTP)
             const recipients = await ConsultationNotificationService.getRecipients(tenantId, target_building || null);
-            await ConsultationNotificationService.sendCreationNotification(consultation, recipients);
+            const queuedCount = await ConsultationNotificationService.queueCreationNotifications(consultation, recipients);
 
             res.status(201).json({
                 success: true,
-                message: 'Consulta creada exitosamente',
-                data: consultation
+                message: `Consulta creada exitosamente. ${queuedCount} notificaciones encoladas; se enviarán en segundo plano.`,
+                data: {
+                    ...consultation,
+                    notifications_queued: queuedCount
+                }
             });
         } catch (error) {
             console.error('Create consultation error:', error);

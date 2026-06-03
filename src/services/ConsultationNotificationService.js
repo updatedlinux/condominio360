@@ -1,182 +1,261 @@
+const { CronJob } = require('cron');
 const ConsultationModel = require('../models/ConsultationModel');
+const NotificationQueueModel = require('../models/NotificationQueueModel');
 const { connectDB, sql } = require('../config/database');
 const EmailService = require('./EmailService');
 
 /**
- * Servicio para notificaciones de consultas/votaciones
- * Envía notificaciones por lotes al crear y al activar consultas
+ * Notificaciones de consultas: encolado asíncrono + procesador en background.
  */
 class ConsultationNotificationService {
-    
+
     constructor() {
-        this.batchSize = 30; // Same as communiques
-        this.isProcessing = false;
-        this.checkInterval = null;
+        this.batchSize = 30;
+        this.queueBatchSize = 40;
+        this.isProcessingActivations = false;
+        this.isProcessingQueue = false;
+        this.activationTask = null;
+        this.queueTask = null;
     }
 
-    /**
-     * Iniciar el servicio de notificaciones
-     */
     start() {
         console.log('📬 Servicio de notificaciones de consultas iniciado');
-        
-        // Check every 5 minutes for consultations to notify
-        this.checkInterval = setInterval(() => {
-            this.checkAndNotifyActivations();
-        }, 5 * 60 * 1000);
-        
-        // Initial check
+
+        this.activationTask = new CronJob(
+            '*/5 * * * *',
+            () => this.checkAndNotifyActivations(),
+            null,
+            true,
+            'America/Caracas'
+        );
+
+        this.queueTask = new CronJob(
+            '*/2 * * * *',
+            () => this.processNotificationQueue(),
+            null,
+            true,
+            'America/Caracas'
+        );
+
         this.checkAndNotifyActivations();
+        this.processNotificationQueue();
     }
 
-    /**
-     * Detener el servicio
-     */
     stop() {
-        if (this.checkInterval) {
-            clearInterval(this.checkInterval);
-            this.checkInterval = null;
+        if (this.activationTask) {
+            this.activationTask.stop();
+            this.activationTask = null;
+        }
+        if (this.queueTask) {
+            this.queueTask.stop();
+            this.queueTask = null;
         }
     }
 
     /**
-     * Enviar notificación de nueva consulta creada
-     * @param {Object} consultation - Datos de la consulta
-     * @param {Array} recipients - Lista de destinatarios
+     * Encolar aviso de nueva consulta (no bloquea la creación HTTP).
+     */
+    async queueCreationNotifications(consultation, recipients) {
+        if (!recipients?.length) {
+            console.log('⚠️ No hay destinatarios para encolar (creación)');
+            return 0;
+        }
+
+        const tenantId = consultation.tenant_id;
+        const items = recipients.map((recipient) => ({
+            tenant_id: tenantId,
+            user_id: recipient.id,
+            type: 'consultation_creation',
+            title: `Nueva Consulta: ${consultation.title}`,
+            message: `Se ha programado una nueva consulta para tu condominio: ${consultation.title}`,
+            data: {
+                consultation_id: consultation.id,
+                kind: 'creation'
+            }
+        }));
+
+        const queued = await NotificationQueueModel.enqueueMany(items);
+        console.log(`📥 Encoladas ${queued} notificaciones de creación (consulta ${consultation.id})`);
+        return queued;
+    }
+
+    /**
+     * Encolar aviso de consulta activa (votación abierta).
+     */
+    async queueActivationNotifications(consultation, recipients) {
+        if (!recipients?.length) return 0;
+
+        const tenantId = consultation.tenant_id;
+        const items = recipients.map((recipient) => ({
+            tenant_id: tenantId,
+            user_id: recipient.id,
+            type: 'consultation_activation',
+            title: `🔔 Consulta Activa: ${consultation.title}`,
+            message: `La consulta "${consultation.title}" ya está abierta para votación.`,
+            data: {
+                consultation_id: consultation.id,
+                kind: 'activation'
+            }
+        }));
+
+        const queued = await NotificationQueueModel.enqueueMany(items);
+        console.log(`📥 Encoladas ${queued} notificaciones de activación (consulta ${consultation.id})`);
+        return queued;
+    }
+
+    /**
+     * Procesar cola de correos de consultas.
+     */
+    async processNotificationQueue() {
+        if (this.isProcessingQueue) return;
+        this.isProcessingQueue = true;
+
+        try {
+            const pending = await NotificationQueueModel.getPendingByTypes(
+                NotificationQueueModel.CONSULTATION_QUEUE_TYPES || ['consultation_creation', 'consultation_activation'],
+                this.queueBatchSize
+            );
+
+            if (pending.length === 0) return;
+
+            console.log(`📧 Procesando ${pending.length} notificaciones de consulta en cola...`);
+
+            const consultationCache = new Map();
+
+            for (const row of pending) {
+                try {
+                    let payload = {};
+                    try {
+                        payload = JSON.parse(row.data || '{}');
+                    } catch (_) { /* noop */ }
+
+                    const consultationId = payload.consultation_id;
+                    if (!consultationId) {
+                        await NotificationQueueModel.markAsFailed(row.id, 'Falta consultation_id en data');
+                        continue;
+                    }
+
+                    if (!consultationCache.has(consultationId)) {
+                        const pool = await connectDB();
+                        const cRes = await pool.request()
+                            .input('id', sql.UniqueIdentifier, consultationId)
+                            .query('SELECT * FROM Consultations WHERE id = @id');
+                        if (cRes.recordset.length === 0) {
+                            await NotificationQueueModel.markAsFailed(row.id, 'Consulta no encontrada');
+                            consultationCache.set(consultationId, null);
+                            continue;
+                        }
+                        consultationCache.set(consultationId, cRes.recordset[0]);
+                    }
+
+                    const consultation = consultationCache.get(consultationId);
+                    if (!consultation) continue;
+
+                    const pool = await connectDB();
+                    const userRes = await pool.request()
+                        .input('user_id', sql.UniqueIdentifier, row.user_id)
+                        .query('SELECT email, first_name, last_name FROM Users WHERE id = @user_id');
+
+                    const user = userRes.recordset[0];
+                    if (!user?.email) {
+                        await NotificationQueueModel.markAsFailed(row.id, 'Usuario sin email');
+                        continue;
+                    }
+
+                    const recipientName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Propietario';
+                    const kind = payload.kind || (row.type === 'consultation_activation' ? 'activation' : 'creation');
+
+                    let subject;
+                    let html;
+                    if (kind === 'activation') {
+                        const endDate = new Date(consultation.end_date).toLocaleDateString('es-VE', {
+                            timeZone: 'America/Caracas',
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                        subject = `🔔 Consulta Activa: ${consultation.title}`;
+                        html = this.getActivationEmailTemplate({
+                            title: consultation.title,
+                            description: consultation.description,
+                            endDate,
+                            recipientName,
+                            consultationId: consultation.id
+                        });
+                    } else {
+                        const startDate = new Date(consultation.start_date).toLocaleDateString('es-VE', {
+                            timeZone: 'America/Caracas',
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                        const targetInfo = consultation.target_building
+                            ? `para el edificio/calle ${consultation.target_building}`
+                            : 'para todo el conjunto residencial';
+                        subject = `Nueva Consulta: ${consultation.title}`;
+                        html = this.getCreationEmailTemplate({
+                            title: consultation.title,
+                            description: consultation.description,
+                            startDate,
+                            targetInfo,
+                            recipientName,
+                            consultationId: consultation.id
+                        });
+                    }
+
+                    await this.sendEmail(user.email, subject, html, consultation.tenant_id);
+                    await NotificationQueueModel.markAsSent(row.id);
+                } catch (err) {
+                    await NotificationQueueModel.markAsFailed(row.id, err.message || 'Error al enviar');
+                }
+            }
+        } catch (error) {
+            console.error('Error procesando cola de consultas:', error);
+        } finally {
+            this.isProcessingQueue = false;
+        }
+    }
+
+    /**
+     * @deprecated Usar queueCreationNotifications. Mantenido para scripts de conciliación directa.
      */
     async sendCreationNotification(consultation, recipients) {
-        if (!recipients || recipients.length === 0) {
-            console.log('⚠️ No hay destinatarios para notificar');
-            return;
-        }
-
-        console.log(`📧 Enviando notificación de creación a ${recipients.length} propietarios`);
-
-        const startDate = new Date(consultation.start_date).toLocaleDateString('es-VE', {
-            timeZone: 'America/Caracas',
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
-
-        const targetInfo = consultation.target_building 
-            ? `para el edificio/calle ${consultation.target_building}` 
-            : 'para todo el conjunto residencial';
-
-        const subject = `Nueva Consulta: ${consultation.title}`;
-        
-        // Send in batches
-        for (let i = 0; i < recipients.length; i += this.batchSize) {
-            const batch = recipients.slice(i, i + this.batchSize);
-            
-            await Promise.all(batch.map(recipient => 
-                this.sendEmail(recipient.email, subject, this.getCreationEmailTemplate({
-                    title: consultation.title,
-                    description: consultation.description,
-                    startDate,
-                    targetInfo,
-                    recipientName: `${recipient.first_name} ${recipient.last_name}`,
-                    consultationId: consultation.id
-                }), consultation.tenant_id)
-            ));
-
-            // Small delay between batches
-            if (i + this.batchSize < recipients.length) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
-
-        console.log('✅ Notificaciones de creación enviadas');
+        return this.queueCreationNotifications(consultation, recipients);
     }
 
-    /**
-     * Verificar y enviar notificaciones de activación
-     */
     async checkAndNotifyActivations() {
-        if (this.isProcessing) return;
-        this.isProcessing = true;
+        if (this.isProcessingActivations) return;
+        this.isProcessingActivations = true;
 
         try {
             const pool = await connectDB();
-            
-            // Find consultations that start today and haven't been notified
-            const result = await pool.request()
-                .query(`
-                    SELECT c.*, t.name as tenant_name
-                    FROM Consultations c
-                    INNER JOIN Tenants t ON c.tenant_id = t.id
-                    WHERE c.status = 'OPEN'
-                    AND c.activation_notified = 0
-                    AND c.start_date <= GETUTCDATE()
-                    AND c.end_date >= GETUTCDATE()
-                `);
+            const result = await pool.request().query(`
+                SELECT c.*, t.name AS tenant_name
+                FROM Consultations c
+                INNER JOIN Tenants t ON c.tenant_id = t.id
+                WHERE c.status = 'OPEN'
+                AND c.activation_notified = 0
+                AND c.start_date <= GETUTCDATE()
+                AND c.end_date >= GETUTCDATE()
+            `);
 
             for (const consultation of result.recordset) {
-                console.log(`📢 Activando consulta: ${consultation.title}`);
-                
-                // Get recipients
+                console.log(`📢 Encolando activación: ${consultation.title}`);
                 const recipients = await this.getRecipients(consultation.tenant_id, consultation.target_building);
-                
-                // Send activation notifications
-                await this.sendActivationNotification(consultation, recipients);
-                
-                // Mark as notified
+                await this.queueActivationNotifications(consultation, recipients);
                 await ConsultationModel.markAsNotified(consultation.id);
             }
         } catch (error) {
             console.error('Error checking activations:', error);
         } finally {
-            this.isProcessing = false;
+            this.isProcessingActivations = false;
         }
     }
 
-    /**
-     * Enviar notificación de activación
-     */
-    async sendActivationNotification(consultation, recipients) {
-        if (!recipients || recipients.length === 0) return;
-
-        console.log(`📧 Enviando notificación de activación a ${recipients.length} propietarios`);
-
-        const endDate = new Date(consultation.end_date).toLocaleDateString('es-VE', {
-            timeZone: 'America/Caracas',
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
-
-        const subject = `🔔 Consulta Activa: ${consultation.title}`;
-
-        for (let i = 0; i < recipients.length; i += this.batchSize) {
-            const batch = recipients.slice(i, i + this.batchSize);
-            
-            await Promise.all(batch.map(recipient => 
-                this.sendEmail(recipient.email, subject, this.getActivationEmailTemplate({
-                    title: consultation.title,
-                    description: consultation.description,
-                    endDate,
-                    recipientName: `${recipient.first_name} ${recipient.last_name}`,
-                    consultationId: consultation.id
-                }), consultation.tenant_id)
-            ));
-
-            if (i + this.batchSize < recipients.length) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
-
-        console.log('✅ Notificaciones de activación enviadas');
-    }
-
-    /**
-     * Obtener destinatarios elegibles
-     * - targetBuilding null: todos los propietarios del tenant
-     * - targetBuilding "Lourdes": solo propietarios con inmuebles en ese edificio (building o building_id->Buildings.name)
-     */
     async getRecipients(tenantId, targetBuilding = null) {
         try {
             const pool = await connectDB();
-            
+
             let query = `
                 SELECT DISTINCT u.id, u.email, u.first_name, u.last_name
                 FROM Users u
@@ -204,23 +283,13 @@ class ConsultationNotificationService {
         }
     }
 
-    /**
-     * Enviar email
-     */
     async sendEmail(to, subject, html, tenantId = null) {
-        try {
-            await EmailService.send(to, subject, html, null, {
-                tenantId,
-                messageType: 'consultation_notification'
-            });
-        } catch (error) {
-            // El error ya se registra en EmailOrchestrator (evitar duplicar la misma traza en PM2).
-        }
+        await EmailService.send(to, subject, html, null, {
+            tenantId,
+            messageType: 'consultation_notification'
+        });
     }
 
-    /**
-     * Template para email de creación
-     */
     getCreationEmailTemplate(data) {
         return `
             <!DOCTYPE html>
@@ -247,9 +316,7 @@ class ConsultationNotificationService {
                     </div>
                     <div class="content">
                         <h2>Hola ${data.recipientName},</h2>
-                        
                         <p>Se ha creado una nueva consulta <strong>${data.targetInfo}</strong>:</p>
-                        
                         <div class="info-box">
                             <h3 style="margin-top: 0; color: #8B5028;">${data.title}</h3>
                             <p>${data.description || 'Sin descripción'}</p>
@@ -258,11 +325,8 @@ class ConsultationNotificationService {
                                 <small>La consulta se activará automáticamente a la medianoche (00:00) de esa fecha, hora Venezuela.</small>
                             </p>
                         </div>
-                        
                         <p>Te enviaremos un recordatorio cuando la consulta esté abierta para votación.</p>
-                        
                         <a href="${process.env.APP_URL || 'https://condominio360.com'}/owner/consultations" class="button">Ver Consulta</a>
-                        
                         <p style="margin-top: 30px; font-size: 12px; color: #666;">
                             Este es un mensaje automático de Condominio360. Por favor no respondas a este correo.
                         </p>
@@ -276,9 +340,6 @@ class ConsultationNotificationService {
         `;
     }
 
-    /**
-     * Template para email de activación
-     */
     getActivationEmailTemplate(data) {
         return `
             <!DOCTYPE html>
@@ -306,11 +367,9 @@ class ConsultationNotificationService {
                     </div>
                     <div class="content">
                         <h2>Hola ${data.recipientName},</h2>
-                        
                         <div class="alert">
                             <strong>🔔 ¡La consulta ya está abierta para votación!</strong>
                         </div>
-                        
                         <div class="info-box">
                             <h3 style="margin-top: 0; color: #8B5028;">${data.title}</h3>
                             <p>${data.description || 'Sin descripción'}</p>
@@ -318,16 +377,13 @@ class ConsultationNotificationService {
                                 <strong>⏰ Fecha de cierre:</strong> ${data.endDate}
                             </p>
                         </div>
-                        
                         <p><strong>Recuerda:</strong></p>
                         <ul>
                             <li>Cada inmueble tiene derecho a un voto</li>
                             <li>Si eres propietario de varios inmuebles, deberás votar por cada uno</li>
                             <li>Una vez emitido el voto, no se puede modificar</li>
                         </ul>
-                        
                         <a href="${process.env.APP_URL || 'https://condominio360.com'}/owner/consultations" class="button">Votar Ahora</a>
-                        
                         <p style="margin-top: 30px; font-size: 12px; color: #666;">
                             Este es un mensaje automático de Condominio360. Por favor no respondas a este correo.
                         </p>
