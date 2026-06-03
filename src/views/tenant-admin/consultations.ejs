@@ -196,6 +196,25 @@
         let currentResults = null;
         let consultationsData = [];
 
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderQuestionSupportNote(note) {
+            if (!note || !String(note).trim()) return '';
+            return `
+                <div class="mb-3 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-[#5F6368] leading-relaxed whitespace-pre-wrap">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-amber-800 block mb-1">Nota de apoyo</span>
+                    ${escapeHtml(note)}
+                </div>
+            `;
+        }
+
         // Helper: Formatear fecha a hora de Venezuela (GMT-4)
         function formatDateTimeVenezuela(dateString) {
             if (!dateString) return '-';
@@ -483,6 +502,8 @@
                     </button>
                 </div>
                 <input type="text" class="question-text w-full px-3 py-2 border border-[#E5E5E5] rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-[#f97316]" placeholder="Escribe la pregunta..." required>
+                <label class="block text-xs font-medium text-[#5F6368] mb-1">Nota de apoyo <span class="font-normal text-[#9AA0A6]">(opcional)</span></label>
+                <textarea class="question-note w-full px-3 py-2 border border-[#E5E5E5] rounded-lg mb-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none" rows="2" placeholder="Contexto adicional para esta pregunta..."></textarea>
                 <div class="space-y-2 options-container">
                     <div class="flex items-center gap-2">
                         <span class="text-sm text-[#5F6368]">Opciones:</span>
@@ -566,12 +587,13 @@
             const questions = [];
             document.querySelectorAll('.question-card').forEach(card => {
                 const text = card.querySelector('.question-text').value;
+                const supportNote = card.querySelector('.question-note')?.value?.trim() || null;
                 const options = [];
                 card.querySelectorAll('.option-text').forEach(opt => {
                     if (opt.value.trim()) options.push({ text: opt.value.trim() });
                 });
                 if (text && options.length >= 2) {
-                    questions.push({ text, options });
+                    questions.push({ text, support_note: supportNote, options });
                 }
             });
 
@@ -663,12 +685,25 @@
                     </div>
                 `;
 
+                if (c.description && String(c.description).trim()) {
+                    html += `
+                    <div class="mb-8 rounded-xl border border-[#E5E5E5] bg-white p-5 md:p-6">
+                        <h3 class="text-sm font-semibold text-[#3C4043] mb-3 flex items-center gap-2">
+                            <span class="material-icons-round text-[#f97316] text-lg">description</span>
+                            Descripción de la consulta
+                        </h3>
+                        <div class="text-sm md:text-base text-[#5F6368] leading-relaxed whitespace-pre-wrap">${escapeHtml(c.description)}</div>
+                    </div>
+                    `;
+                }
+
                 // Charts for each question
                 results.forEach((q, idx) => {
                     const chartId = `admin-chart-${idx}`;
                     html += `
                         <div class="mb-8 border-b border-[#E5E5E5] pb-8">
-                            <h3 class="font-medium text-[#3C4043] mb-4">${idx + 1}. ${q.question_text}</h3>
+                            ${renderQuestionSupportNote(q.question_support_note)}
+                            <h3 class="font-medium text-[#3C4043] mb-4">${idx + 1}. ${escapeHtml(q.question_text)}</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="chart-container">
                                     <canvas id="${chartId}"></canvas>
@@ -849,6 +884,21 @@
             font-size: 16pt; 
             margin-bottom: 10px;
         }
+        .consultation-info .description {
+            color: #5F6368;
+            font-size: 11pt;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-bottom: 8px;
+        }
+        .consultation-info .description-label {
+            font-size: 9pt;
+            font-weight: 600;
+            color: #3C4043;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
         .consultation-info .meta { 
             color: #666; 
             font-size: 10pt;
@@ -886,6 +936,25 @@
             margin-bottom: 15px;
             padding-bottom: 8px;
             border-bottom: 1px solid #e0e0e0;
+        }
+        .question-support-note {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 10pt;
+            color: #5F6368;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .question-support-note .label {
+            font-size: 8pt;
+            font-weight: 600;
+            color: #92400e;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
         }
         .option-row { 
             margin-bottom: 12px;
@@ -975,8 +1044,11 @@
     </div>
     
     <div class="consultation-info">
-        <h2>${consultation.title}</h2>
-        <p>${consultation.description || 'Sin descripción'}</p>
+        <h2>${escapeHtml(consultation.title)}</h2>
+        ${consultation.description && String(consultation.description).trim() ? `
+        <div class="description-label">Descripción de la consulta</div>
+        <div class="description">${escapeHtml(consultation.description)}</div>
+        ` : '<p class="description">Sin descripción</p>'}
         <div class="meta">
             <strong>Período:</strong> ${formatDate(consultation.start_date)} - ${formatDate(consultation.end_date)}<br>
             <strong>Alcance:</strong> ${consultation.target_building || 'Todo el conjunto residencial'}
@@ -1002,7 +1074,12 @@
         const total = q.options.reduce((sum, o) => sum + o.votes, 0);
         return `
         <div class="question-section">
-            <div class="question-title">Pregunta ${idx + 1}: ${q.question_text}</div>
+            ${q.question_support_note && String(q.question_support_note).trim() ? `
+            <div class="question-support-note">
+                <div class="label">Nota de apoyo</div>
+                ${escapeHtml(q.question_support_note)}
+            </div>` : ''}
+            <div class="question-title">Pregunta ${idx + 1}: ${escapeHtml(q.question_text)}</div>
             ${q.options.map(opt => {
                 const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
                 return `

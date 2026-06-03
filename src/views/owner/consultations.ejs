@@ -188,17 +188,17 @@
 
     <!-- Vote Modal -->
     <div id="vote-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
-                <h2 class="text-xl font-medium text-[#3C4043]" id="vote-modal-title">Votar</h2>
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-xl">
+            <div class="px-6 md:px-8 py-5 border-b border-[#E5E5E5] flex items-center justify-between">
+                <h2 class="text-xl md:text-2xl font-medium text-[#3C4043] pr-4" id="vote-modal-title">Votar</h2>
                 <button onclick="closeVoteModal()" class="text-[#9AA0A6] hover:text-[#3C4043]">
                     <span class="material-icons-round">close</span>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6" id="vote-modal-content">
+            <div class="flex-1 overflow-y-auto p-6 md:p-8" id="vote-modal-content">
                 <!-- Content loaded dynamically -->
             </div>
-            <div class="p-6 border-t border-[#E5E5E5] flex gap-3">
+            <div class="p-6 md:px-8 border-t border-[#E5E5E5] flex gap-3 bg-[#FAFAFA]">
                 <button onclick="closeVoteModal()" class="flex-1 px-6 py-3 border border-[#DADCE0] rounded-xl text-[#5F6368] font-medium hover:bg-[#F5F5F5]">
                     Cancelar
                 </button>
@@ -252,6 +252,25 @@
                 console.error('Error decoding token:', e);
                 return null;
             }
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderQuestionSupportNote(note) {
+            if (!note || !String(note).trim()) return '';
+            return `
+                <div class="mb-3 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-[#5F6368] leading-relaxed whitespace-pre-wrap">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-amber-800 block mb-1">Nota de apoyo</span>
+                    ${escapeHtml(note)}
+                </div>
+            `;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -486,24 +505,43 @@
                 document.getElementById('vote-modal-title').textContent = c.title;
                 
                 let html = `
-                    <div class="mb-6 bg-[#FAFAFA] rounded-xl p-4">
+                    <div class="mb-6 bg-[#FAFAFA] rounded-xl p-4 md:p-5">
                         <div class="flex items-center gap-2 text-[#3C4043]">
                             <span class="material-icons-round text-[#f97316]">home</span>
-                            <span class="font-medium">${currentProperty.name} ${currentProperty.building ? `(${currentProperty.building})` : ''}</span>
+                            <span class="font-medium">${escapeHtml(currentProperty.name)} ${currentProperty.building ? `(${escapeHtml(currentProperty.building)})` : ''}</span>
                         </div>
                         <p class="text-xs text-[#9AA0A6] mt-2">Votando como propietario de este inmueble. Una vez emitido el voto, no se podrá modificar.</p>
+                    </div>
+                `;
+
+                if (c.description && String(c.description).trim()) {
+                    html += `
+                    <div class="mb-8 rounded-xl border border-[#E5E5E5] bg-white p-5 md:p-6">
+                        <h3 class="text-sm font-semibold text-[#3C4043] mb-3 flex items-center gap-2">
+                            <span class="material-icons-round text-[#f97316] text-lg">description</span>
+                            Descripción de la consulta
+                        </h3>
+                        <div class="text-sm md:text-base text-[#5F6368] leading-relaxed whitespace-pre-wrap">${escapeHtml(c.description)}</div>
+                    </div>
+                    `;
+                }
+
+                html += `
+                    <div class="mb-4 pt-2 border-t border-[#E5E5E5]">
+                        <h3 class="text-xs font-semibold uppercase tracking-wide text-[#9AA0A6]">Preguntas</h3>
                     </div>
                 `;
 
                 c.questions.forEach((q, idx) => {
                     html += `
                         <div class="mb-6 question-group" data-question-id="${q.id}">
-                            <label class="block text-sm font-medium text-[#3C4043] mb-3">${idx + 1}. ${q.text}</label>
+                            ${renderQuestionSupportNote(q.support_note)}
+                            <label class="block text-sm md:text-base font-medium text-[#3C4043] mb-3">${idx + 1}. ${escapeHtml(q.text)}</label>
                             <div class="space-y-2">
                                 ${q.options.map(opt => `
-                                    <label class="flex items-center gap-3 p-3 border border-[#E5E5E5] rounded-xl cursor-pointer hover:bg-[#FAFAFA] transition-colors">
+                                    <label class="flex items-center gap-3 p-3 md:p-4 border border-[#E5E5E5] rounded-xl cursor-pointer hover:bg-[#FAFAFA] hover:border-[#f97316]/40 transition-colors">
                                         <input type="radio" name="question_${q.id}" value="${opt.id}" class="vote-option w-5 h-5 text-[#f97316] focus:ring-[#f97316]" required onchange="checkFormValidity()">
-                                        <span class="text-[#3C4043]">${opt.text}</span>
+                                        <span class="text-[#3C4043]">${escapeHtml(opt.text)}</span>
                                     </label>
                                 `).join('')}
                             </div>
@@ -707,7 +745,18 @@
                     </div>
                 `;
 
-                // Results per question with charts
+                if (c.description && String(c.description).trim()) {
+                    html += `
+                    <div class="mb-8 rounded-xl border border-[#E5E5E5] bg-white p-5 md:p-6">
+                        <h3 class="text-sm font-semibold text-[#3C4043] mb-3 flex items-center gap-2">
+                            <span class="material-icons-round text-[#f97316] text-lg">description</span>
+                            Descripción de la consulta
+                        </h3>
+                        <div class="text-sm md:text-base text-[#5F6368] leading-relaxed whitespace-pre-wrap">${escapeHtml(c.description)}</div>
+                    </div>
+                    `;
+                }
+
                 results.forEach((q, idx) => {
                     const chartId = `chart-${idx}`;
                     const labels = q.options.map(o => o.option_text);
@@ -716,7 +765,8 @@
 
                     html += `
                         <div class="mb-8 border-b border-[#E5E5E5] pb-8">
-                            <h3 class="font-medium text-[#3C4043] mb-4">${idx + 1}. ${q.question_text}</h3>
+                            ${renderQuestionSupportNote(q.question_support_note)}
+                            <h3 class="font-medium text-[#3C4043] mb-4">${idx + 1}. ${escapeHtml(q.question_text)}</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <div class="chart-container">
@@ -849,8 +899,47 @@
                         .pdf-header .separator { color: #999; }
                         .pdf-header .tenant-name { font-size: 16px; color: #555; }
                         h1 { color: #f97316; margin-top: 0; }
+                        .description-box {
+                            background: #f9f9f9;
+                            border-left: 4px solid #f97316;
+                            padding: 16px 20px;
+                            border-radius: 8px;
+                            margin: 16px 0 24px;
+                        }
+                        .description-box h2 {
+                            font-size: 13px;
+                            color: #3C4043;
+                            margin: 0 0 8px;
+                            text-transform: uppercase;
+                            letter-spacing: 0.04em;
+                        }
+                        .description-box p {
+                            margin: 0;
+                            color: #5F6368;
+                            line-height: 1.6;
+                            white-space: pre-wrap;
+                        }
                         .summary { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
                         .question { margin: 30px 0; border-bottom: 1px solid #ddd; padding-bottom: 20px; }
+                        .question-support-note {
+                            background: #fffbeb;
+                            border: 1px solid #fde68a;
+                            border-radius: 6px;
+                            padding: 10px 14px;
+                            margin-bottom: 12px;
+                            font-size: 11pt;
+                            color: #5F6368;
+                            line-height: 1.5;
+                            white-space: pre-wrap;
+                        }
+                        .question-support-note .label {
+                            font-size: 9pt;
+                            font-weight: 600;
+                            color: #92400e;
+                            text-transform: uppercase;
+                            letter-spacing: 0.04em;
+                            margin-bottom: 4px;
+                        }
                         .option { margin: 10px 0; }
                         .bar { background: #f97316; height: 20px; border-radius: 4px; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -867,8 +956,13 @@
                         <span class="separator">|</span>
                         <span class="tenant-name">${tenantName}</span>
                     </div>
-                    <h1>${c.title}</h1>
-                    <p>${c.description || ''}</p>
+                    <h1>${escapeHtml(c.title)}</h1>
+                    ${c.description && String(c.description).trim() ? `
+                    <div class="description-box">
+                        <h2>Descripción de la consulta</h2>
+                        <p>${escapeHtml(c.description)}</p>
+                    </div>
+                    ` : ''}
                     <div class="summary">
                         <p><strong>Inmuebles habilitados:</strong> ${currentResults.consultation?.eligible_properties ?? currentResults.eligible_properties ?? 0}</p>
                         <p><strong>Inmuebles que votaron:</strong> ${currentResults.total_votes ?? 0}</p>
@@ -878,12 +972,15 @@
             `;
 
             currentResults.results.forEach((q, idx) => {
-                html += `<div class="question"><h3>${idx + 1}. ${q.question_text}</h3>`;
+                const noteBlock = q.question_support_note && String(q.question_support_note).trim()
+                    ? `<div class="question-support-note"><div class="label">Nota de apoyo</div>${escapeHtml(q.question_support_note)}</div>`
+                    : '';
+                html += `<div class="question">${noteBlock}<h3>${idx + 1}. ${escapeHtml(q.question_text)}</h3>`;
                 q.options.forEach(opt => {
                     const percentage = q.total > 0 ? Math.round((opt.votes / q.total) * 100) : 0;
                     html += `
                         <div class="option">
-                            <p>${opt.option_text}: ${opt.votes} votos (${percentage}%)</p>
+                            <p>${escapeHtml(opt.option_text)}: ${opt.votes} votos (${percentage}%)</p>
                             <div class="bar" style="width: ${percentage}%"></div>
                         </div>
                     `;

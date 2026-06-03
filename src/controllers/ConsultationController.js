@@ -329,6 +329,7 @@ class ConsultationController {
                     questionsMap[r.question_id] = {
                         question_id: r.question_id,
                         question_text: r.question_text,
+                        question_support_note: r.question_support_note || null,
                         options: [],
                         total: 0
                     };

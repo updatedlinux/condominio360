@@ -40,11 +40,12 @@ class ConsultationModel {
                     const qResult = await qRequest
                         .input('consultation_id', sql.UniqueIdentifier, consultationId)
                         .input('text', sql.NVarChar, q.text)
+                        .input('support_note', sql.NVarChar, (q.support_note && String(q.support_note).trim()) || null)
                         .input('order_index', sql.Int, i)
                         .query(`
-                            INSERT INTO ConsultationQuestions (consultation_id, text, order_index)
+                            INSERT INTO ConsultationQuestions (consultation_id, text, support_note, order_index)
                             OUTPUT INSERTED.id
-                            VALUES (@consultation_id, @text, @order_index)
+                            VALUES (@consultation_id, @text, @support_note, @order_index)
                         `);
 
                     const questionId = qResult.recordset[0].id;
@@ -395,14 +396,14 @@ class ConsultationModel {
                 .input('consultation_id', sql.UniqueIdentifier, consultationId)
                 .query(`
                     SELECT 
-                        q.id as question_id, q.text as question_text,
+                        q.id as question_id, q.text as question_text, q.support_note as question_support_note,
                         o.id as option_id, o.text as option_text,
                         COUNT(v.id) as vote_count
                     FROM ConsultationQuestions q
                     JOIN ConsultationOptions o ON o.question_id = q.id
                     LEFT JOIN ConsultationVotes v ON v.option_id = o.id
                     WHERE q.consultation_id = @consultation_id
-                    GROUP BY q.id, q.text, q.order_index, o.id, o.text, o.order_index
+                    GROUP BY q.id, q.text, q.support_note, q.order_index, o.id, o.text, o.order_index
                     ORDER BY q.order_index, o.order_index
                 `);
             return result.recordset;
