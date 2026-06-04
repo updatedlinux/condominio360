@@ -1,11 +1,5 @@
-// Owner Panel - Mobile navigation toggle + flags del condominio (cargar pronto)
+// Owner Panel - Mobile navigation toggle
 (function() {
-    if (!window.__ownerPortalFeaturesBootstrapped) {
-        var pf = document.createElement('script');
-        pf.src = '/js/owner-portal-features.js';
-        pf.defer = true;
-        document.head.appendChild(pf);
-    }
     window.toggleOwnerMobileNav = function() {
         const sidebar = document.getElementById('owner-sidebar');
         const overlay = document.getElementById('owner-mobile-overlay');
@@ -15,7 +9,6 @@
         }
     };
 
-    // Close sidebar when clicking a nav link (mobile)
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('owner-sidebar');
         const overlay = document.getElementById('owner-mobile-overlay');
