@@ -979,31 +979,73 @@
                         <p class="text-xs text-gray-500 mt-4" id="balance-rate-info">Cargando última tasa...</p>
                     </div>
                     <div class="md-card p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Balance por Condominio</h3>
-                        <p class="text-sm text-gray-500 mb-4">Cobros según inmuebles, facturas SaaS generadas y por generar</p>
-                        <div class="overflow-x-auto">
-                            <table class="md-table">
+                        <h3 class="text-lg font-medium text-gray-900 mb-1">Facturación Condominio360</h3>
+                        <p class="text-sm text-gray-500 mb-4" id="balance-fx-policy">Cobros SaaS a condominios. Spread = USD facturado − (VES cobrados ÷ tasa BCV del día de pago). Días 1-5: precio congelado con tasa del 1ro.</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+                            <div class="stat-card primary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">Facturado (USD)</p>
+                                <p class="text-lg font-bold" id="balance-total-usd">-</p>
+                            </div>
+                            <div class="stat-card primary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">Cobrado (VES)</p>
+                                <p class="text-lg font-bold" id="balance-total-ves">-</p>
+                            </div>
+                            <div class="stat-card secondary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">USD al cobro</p>
+                                <p class="text-lg font-bold" id="balance-total-usd-equiv">-</p>
+                                <p class="text-[10px] text-gray-400 mt-1">Según tasa del día de pago</p>
+                            </div>
+                            <div class="stat-card tertiary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">Spread FX</p>
+                                <p class="text-lg font-bold" id="balance-total-spread">-</p>
+                                <p class="text-[10px] text-gray-400 mt-1">+ = pérdida cambiaria</p>
+                            </div>
+                            <div class="stat-card tertiary p-4 rounded-xl">
+                                <p class="text-xs text-gray-500 uppercase">Spread ventana 1-5</p>
+                                <p class="text-lg font-bold" id="balance-freeze-spread">-</p>
+                            </div>
+                            <div class="stat-card p-4 rounded-xl border border-amber-100 bg-amber-50/50">
+                                <p class="text-xs text-gray-500 uppercase">Pendiente</p>
+                                <p class="text-lg font-bold" id="balance-saas-pending">-</p>
+                            </div>
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-800 mb-2">Por condominio</h4>
+                        <div class="overflow-x-auto mb-8">
+                            <table class="md-table text-sm">
                                 <thead>
                                     <tr>
                                         <th>Condominio</th>
-                                        <th>Unidades</th>
-                                        <th>Cobro Condo (VES)</th>
-                                        <th>SaaS Pagado (VES)</th>
-                                        <th>SaaS Pendiente (VES)</th>
+                                        <th>Unid.</th>
+                                        <th>Facturado USD</th>
+                                        <th>Cobrado VES</th>
+                                        <th>USD al cobro</th>
+                                        <th>Spread USD</th>
+                                        <th>Spread 1-5</th>
+                                        <th>Pendiente</th>
                                     </tr>
                                 </thead>
                                 <tbody id="balance-tenant-table"></tbody>
                             </table>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                            <div class="stat-card primary p-4 rounded-xl">
-                                <p class="text-xs text-gray-500 uppercase">Total Cobrado Condo</p>
-                                <p class="text-xl font-bold" id="balance-total-condo">-</p>
-                            </div>
-                            <div class="stat-card tertiary p-4 rounded-xl">
-                                <p class="text-xs text-gray-500 uppercase">SaaS Pendiente</p>
-                                <p class="text-xl font-bold" id="balance-saas-pending">-</p>
-                            </div>
+                        <h4 class="text-sm font-medium text-gray-800 mb-2">Detalle de pagos confirmados</h4>
+                        <p class="text-xs text-gray-500 mb-3">Compara tasa de la factura (congelada) vs tasa del día en que se pagó.</p>
+                        <div class="overflow-x-auto">
+                            <table class="md-table text-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Período</th>
+                                        <th>Condominio</th>
+                                        <th>USD fact.</th>
+                                        <th>VES cobrado</th>
+                                        <th>Tasa factura</th>
+                                        <th>Fecha pago</th>
+                                        <th>Tasa pago</th>
+                                        <th>USD al cobro</th>
+                                        <th>Spread</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="balance-paid-invoices-table"></tbody>
+                            </table>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2948,27 +2990,79 @@
 
                 const byTenant = summaryData.by_tenant || [];
                 const fmtVes = (v) => v != null ? `Bs. ${Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                const fmtUsd = (v) => v != null ? `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+                const fmtSpread = (v) => {
+                    if (v == null || Number.isNaN(v)) return '-';
+                    const n = Number(v);
+                    const cls = n > 0.005 ? 'text-red-600' : (n < -0.005 ? 'text-emerald-600' : 'text-gray-600');
+                    const sign = n > 0 ? '+' : '';
+                    return `<span class="${cls} font-medium">${sign}${fmtUsd(n)}</span>`;
+                };
+                const fmtRate = (v) => v != null && v > 0 ? Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '-';
+                const fmtDateYmd = (d) => {
+                    if (!d) return '-';
+                    const s = String(d).split('T')[0];
+                    const [y, m, day] = s.split('-');
+                    return `${parseInt(day, 10)}/${parseInt(m, 10)}/${y}`;
+                };
+                const monthShort = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+                if (summaryData.freeze_policy?.description) {
+                    document.getElementById('balance-fx-policy').textContent = summaryData.freeze_policy.description;
+                }
+
+                const totals = summaryData.totals || {};
+                document.getElementById('balance-total-usd').textContent = fmtUsd(totals.invoiced_usd);
+                document.getElementById('balance-total-ves').textContent = fmtVes(totals.paid_ves);
+                document.getElementById('balance-total-usd-equiv').textContent = fmtUsd(totals.paid_usd_equivalent);
+                document.getElementById('balance-total-spread').innerHTML = fmtSpread(totals.spread_usd);
+                document.getElementById('balance-freeze-spread').innerHTML = fmtSpread(totals.spread_in_freeze_window_usd);
+                document.getElementById('balance-saas-pending').textContent =
+                    fmtVes(totals.pending_ves) + ' · ' + fmtUsd(totals.pending_usd);
+
                 document.getElementById('balance-tenant-table').innerHTML = byTenant.length === 0
-                    ? '<tr><td colspan="5" class="text-center text-gray-500 py-4">No hay datos</td></tr>'
+                    ? '<tr><td colspan="8" class="text-center text-gray-500 py-4">No hay datos</td></tr>'
                     : byTenant.map(t => `
                         <tr>
                             <td class="font-medium">${t.tenant_name || '-'}</td>
                             <td>${t.properties || 0}</td>
-                            <td>${fmtVes(t.condo_collected_ves)}</td>
-                            <td>${fmtVes(t.saas_paid_ves)}</td>
-                            <td>${fmtVes(t.saas_pending_ves)}</td>
+                            <td>${fmtUsd(t.invoiced_usd)}</td>
+                            <td>${fmtVes(t.paid_ves)}</td>
+                            <td>${fmtUsd(t.paid_usd_equivalent)}</td>
+                            <td>${fmtSpread(t.spread_usd)}</td>
+                            <td>${fmtSpread(t.spread_in_freeze_window_usd)}</td>
+                            <td>${t.pending_usd > 0 ? fmtUsd(t.pending_usd) + '<br><span class="text-xs text-gray-500">' + fmtVes(t.pending_ves) + '</span>' : '-'}</td>
                         </tr>
                     `).join('');
 
-                const totals = summaryData.totals || {};
-                document.getElementById('balance-total-condo').textContent = fmtVes(totals.condo_collected);
-                document.getElementById('balance-saas-pending').textContent = fmtVes(totals.saas_pending_ves) + ' (' + (totals.saas_pending_usd?.toFixed(2) || '0') + ' USD)';
+                const paidInvoices = summaryData.paid_invoices || [];
+                document.getElementById('balance-paid-invoices-table').innerHTML = paidInvoices.length === 0
+                    ? '<tr><td colspan="9" class="text-center text-gray-500 py-4">Sin pagos confirmados</td></tr>'
+                    : paidInvoices.map(inv => {
+                        const period = `${monthShort[(inv.period_month || 1) - 1]} ${inv.period_year}`;
+                        const freezeBadge = inv.freeze_spread_window
+                            ? ' <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">1-5</span>' : '';
+                        return `
+                        <tr>
+                            <td>${period}</td>
+                            <td class="font-medium">${inv.tenant_name || '-'}</td>
+                            <td>${fmtUsd(inv.invoiced_usd)}</td>
+                            <td>${fmtVes(inv.paid_ves)}</td>
+                            <td class="text-xs">${fmtRate(inv.invoice_rate)}<br><span class="text-gray-400">${fmtDateYmd(inv.invoice_rate_date)}</span></td>
+                            <td>${fmtDateYmd(inv.payment_date)}${freezeBadge}</td>
+                            <td class="text-xs">${fmtRate(inv.payment_rate)}<br><span class="text-gray-400">${fmtDateYmd(inv.payment_rate_date)}</span></td>
+                            <td>${fmtUsd(inv.paid_usd_equivalent)}</td>
+                            <td>${fmtSpread(inv.spread_usd)}</td>
+                        </tr>`;
+                    }).join('');
 
                 const comp = summaryData.comparative || [];
                 document.getElementById('balance-comparative-list').innerHTML = comp.map(c => `
-                    <div class="flex justify-between py-1 border-b border-gray-100 last:border-0">
-                        <span>${c.label}</span>
-                        <span class="text-gray-600">SaaS: ${fmtVes(c.saas_paid_ves)} | Condo: ${fmtVes(c.condo_collected_ves)}</span>
+                    <div class="flex flex-col sm:flex-row sm:justify-between py-2 border-b border-gray-100 last:border-0 gap-1">
+                        <span class="font-medium">${c.label}</span>
+                        <span class="text-gray-600 text-xs sm:text-sm">
+                            ${fmtUsd(c.saas_paid_usd)} fact. · ${fmtVes(c.saas_paid_ves)} cobr. · USD cobro ${fmtUsd(c.saas_paid_usd_equivalent)} · Spread ${fmtSpread(c.saas_spread_usd)}
+                        </span>
                     </div>
                 `).join('') || '<p class="text-gray-500 text-sm">Sin datos de meses anteriores</p>';
 
@@ -2978,8 +3072,9 @@
                     data: {
                         labels: comp.map(c => c.label),
                         datasets: [
-                            { label: 'SaaS (VES)', data: comp.map(c => c.saas_paid_ves), backgroundColor: 'rgba(249,115,22,0.7)' },
-                            { label: 'Condo (VES)', data: comp.map(c => c.condo_collected_ves), backgroundColor: 'rgba(80,96,110,0.7)' }
+                            { label: 'USD facturado', data: comp.map(c => c.saas_paid_usd), backgroundColor: 'rgba(249,115,22,0.7)' },
+                            { label: 'USD al cobro', data: comp.map(c => c.saas_paid_usd_equivalent), backgroundColor: 'rgba(34,197,94,0.6)' },
+                            { label: 'Spread USD', data: comp.map(c => c.saas_spread_usd), backgroundColor: 'rgba(239,68,68,0.55)' }
                         ]
                     },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
