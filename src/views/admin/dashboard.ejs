@@ -1028,7 +1028,7 @@
                             </table>
                         </div>
                         <h4 class="text-sm font-medium text-gray-800 mb-2">Detalle de pagos confirmados</h4>
-                        <p class="text-xs text-gray-500 mb-3">Compara tasa de la factura (congelada) vs tasa del día en que se pagó.</p>
+                        <p class="text-xs text-gray-500 mb-3">Fecha cobro = confirmación del pago (paid_at). Tasa pago = BCV de ese día. El comprobante bancario puede tener otra fecha.</p>
                         <div class="overflow-x-auto">
                             <table class="md-table text-sm">
                                 <thead>
@@ -1038,7 +1038,7 @@
                                         <th>USD fact.</th>
                                         <th>VES cobrado</th>
                                         <th>Tasa factura</th>
-                                        <th>Fecha pago</th>
+                                        <th>Fecha cobro</th>
                                         <th>Tasa pago</th>
                                         <th>USD al cobro</th>
                                         <th>Spread</th>
@@ -3042,6 +3042,9 @@
                         const period = `${monthShort[(inv.period_month || 1) - 1]} ${inv.period_year}`;
                         const freezeBadge = inv.freeze_spread_window
                             ? ' <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">1-5</span>' : '';
+                        const transferHint = inv.transfer_date_warning && inv.transfer_date_raw
+                            ? `<br><span class="text-[10px] text-amber-700" title="Fecha del comprobante (${inv.transfer_date_raw}) anterior a la factura; se usa fecha de confirmación">Comp.: ${fmtDateYmd(inv.transfer_date)}</span>`
+                            : '';
                         return `
                         <tr>
                             <td>${period}</td>
@@ -3049,7 +3052,7 @@
                             <td>${fmtUsd(inv.invoiced_usd)}</td>
                             <td>${fmtVes(inv.paid_ves)}</td>
                             <td class="text-xs">${fmtRate(inv.invoice_rate)}<br><span class="text-gray-400">${fmtDateYmd(inv.invoice_rate_date)}</span></td>
-                            <td>${fmtDateYmd(inv.payment_date)}${freezeBadge}</td>
+                            <td>${fmtDateYmd(inv.payment_date)}${freezeBadge}${transferHint}</td>
                             <td class="text-xs">${fmtRate(inv.payment_rate)}<br><span class="text-gray-400">${fmtDateYmd(inv.payment_rate_date)}</span></td>
                             <td>${fmtUsd(inv.paid_usd_equivalent)}</td>
                             <td>${fmtSpread(inv.spread_usd)}</td>

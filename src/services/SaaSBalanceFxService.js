@@ -1,6 +1,7 @@
 const ExchangeRateModel = require('../models/ExchangeRateModel');
 
 const FREEZE_WINDOW_DAYS = 5;
+const TZ_CARACAS = 'America/Caracas';
 
 /**
  * Cálculos FX para balance financiero SaaS (Condominio360).
@@ -9,6 +10,11 @@ const FREEZE_WINDOW_DAYS = 5;
  */
 class SaaSBalanceFxService {
     static toYmd(value) {
+        return SaaSBalanceFxService.toYmdLocal(value);
+    }
+
+    /** Fecha calendario en Venezuela (evita desfase UTC en paid_at). */
+    static toYmdLocal(value) {
         if (!value) return null;
         if (typeof value === 'string') {
             const s = value.trim();
@@ -16,28 +22,75 @@ class SaaSBalanceFxService {
         }
         const d = value instanceof Date ? value : new Date(value);
         if (Number.isNaN(d.getTime())) return null;
-        return d.toISOString().slice(0, 10);
+        try {
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: TZ_CARACAS,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(d);
+            const y = parts.find((p) => p.type === 'year')?.value;
+            const m = parts.find((p) => p.type === 'month')?.value;
+            const day = parts.find((p) => p.type === 'day')?.value;
+            if (y && m && day) return `${y}-${m}-${day}`;
+        } catch (_) { /* fallback abajo */ }
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     }
 
+    /** DD/MM/YYYY (Venezuela) — también D/M/YYYY */
     static parseTransferDate(raw) {
         if (!raw) return null;
         const s = String(raw).trim();
         let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
         if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-        m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
         if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-        const d = new Date(s);
-        return Number.isNaN(d.getTime()) ? null : d;
+        return null;
     }
 
+    static compareYmd(a, b) {
+        if (!a || !b) return 0;
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    }
+
+    /**
+     * Fecha efectiva del cobro para spread FX.
+     * Prioridad: paid_at (confirmación) > confirmed_at > fecha_transferencia (si es plausible).
+     */
     static resolvePaymentDate(invoice, paymentReport) {
-        const fromTransfer = SaaSBalanceFxService.parseTransferDate(paymentReport?.fecha_transferencia);
-        if (fromTransfer) return SaaSBalanceFxService.toYmd(fromTransfer);
-        if (invoice?.paid_at) return SaaSBalanceFxService.toYmd(invoice.paid_at);
-        if (paymentReport?.confirmed_at) return SaaSBalanceFxService.toYmd(paymentReport.confirmed_at);
-        return null;
+        const fromPaidAt = invoice?.paid_at ? SaaSBalanceFxService.toYmdLocal(invoice.paid_at) : null;
+        const fromConfirmed = paymentReport?.confirmed_at
+            ? SaaSBalanceFxService.toYmdLocal(paymentReport.confirmed_at)
+            : null;
+
+        const transferParsed = SaaSBalanceFxService.parseTransferDate(paymentReport?.fecha_transferencia);
+        const transferYmd = transferParsed ? SaaSBalanceFxService.toYmdLocal(transferParsed) : null;
+
+        const invoiceAnchor = SaaSBalanceFxService.toYmdLocal(invoice?.created_at)
+            || SaaSBalanceFxService.toYmdLocal(invoice?.bcv_rate_date);
+
+        if (fromPaidAt) return fromPaidAt;
+        if (fromConfirmed) return fromConfirmed;
+
+        if (transferYmd) {
+            if (!invoiceAnchor || SaaSBalanceFxService.compareYmd(transferYmd, invoiceAnchor) >= 0) {
+                return transferYmd;
+            }
+        }
+
+        return transferYmd || null;
+    }
+
+    static resolveTransferDate(paymentReport) {
+        const transferParsed = SaaSBalanceFxService.parseTransferDate(paymentReport?.fecha_transferencia);
+        return transferParsed ? SaaSBalanceFxService.toYmdLocal(transferParsed) : null;
     }
 
     static isInFreezeWindow(dateYmd) {
@@ -94,8 +147,14 @@ class SaaSBalanceFxService {
         const paidVes = parseFloat(invoice.paid_amount_ves ?? invoice.total_ves) || 0;
         const invoicedVes = parseFloat(invoice.total_ves) || 0;
         const invoiceRate = parseFloat(invoice.bcv_rate) || 0;
-        const invoiceRateDate = SaaSBalanceFxService.toYmd(invoice.bcv_rate_date);
-        const paymentDate = SaaSBalanceFxService.resolvePaymentDate(invoice, invoice);
+        const invoiceRateDate = SaaSBalanceFxService.toYmdLocal(invoice.bcv_rate_date);
+
+        const paymentReport = {
+            fecha_transferencia: invoice.fecha_transferencia,
+            confirmed_at: invoice.payment_confirmed_at || invoice.confirmed_at
+        };
+        const transferDate = SaaSBalanceFxService.resolveTransferDate(paymentReport);
+        const paymentDate = SaaSBalanceFxService.resolvePaymentDate(invoice, paymentReport);
         const paymentRateInfo = SaaSBalanceFxService.lookupRate(paymentDate, ratesMap);
         const paymentRate = paymentRateInfo?.rate || 0;
 
@@ -111,6 +170,8 @@ class SaaSBalanceFxService {
         const invoiceInFreeze = SaaSBalanceFxService.isInFreezeWindow(invoiceRateDate);
         const paymentInFreeze = SaaSBalanceFxService.isInFreezeWindow(paymentDate);
         const daysToPay = SaaSBalanceFxService.daysBetween(invoiceRateDate, paymentDate);
+        const transferBeforeInvoice = transferDate && invoiceRateDate
+            && SaaSBalanceFxService.compareYmd(transferDate, invoiceRateDate) < 0;
 
         return {
             invoice_id: invoice.id,
@@ -124,7 +185,12 @@ class SaaSBalanceFxService {
             paid_ves: paidVes,
             invoice_rate: invoiceRate,
             invoice_rate_date: invoiceRateDate,
+            transfer_date: transferDate,
+            transfer_date_raw: invoice.fecha_transferencia || null,
             payment_date: paymentDate,
+            payment_date_source: invoice.paid_at
+                ? 'paid_at'
+                : (paymentReport.confirmed_at ? 'confirmed_at' : 'transfer'),
             payment_rate: paymentRate || null,
             payment_rate_date: paymentRateInfo?.rate_date || null,
             payment_rate_source: paymentRateInfo?.source || null,
@@ -135,7 +201,8 @@ class SaaSBalanceFxService {
             days_to_payment: daysToPay,
             invoice_in_freeze_window: invoiceInFreeze,
             payment_in_freeze_window: paymentInFreeze,
-            freeze_spread_window: invoiceInFreeze && paymentInFreeze && daysToPay != null && daysToPay >= 0 && daysToPay <= FREEZE_WINDOW_DAYS
+            freeze_spread_window: invoiceInFreeze && paymentInFreeze && daysToPay != null && daysToPay >= 0 && daysToPay <= FREEZE_WINDOW_DAYS,
+            transfer_date_warning: transferBeforeInvoice || false
         };
     }
 
