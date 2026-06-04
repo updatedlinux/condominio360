@@ -85,7 +85,7 @@ class AuthController {
                 }
             }
 
-            const loginId = identifier || email; // DNI o correo electrónico
+            const loginId = String(identifier || email || '').trim(); // DNI o correo electrónico
 
             if (!loginId || !password) {
                 return res.status(400).json({ 
@@ -267,13 +267,17 @@ class AuthController {
 
             res.json({
                 success: true,
-                ...result
+                ...result,
+                loginHint: result.email
+                    ? `Ingresa con el correo ${result.email}${result.dni ? ` o la cédula ${result.dni}` : ''}.`
+                    : (result.dni ? `Ingresa con la cédula ${result.dni}.` : null)
             });
 
         } catch (error) {
             console.error('Complete registration error:', error);
-            res.status(400).json({ 
-                error: error.message || 'Error al completar registro' 
+            res.status(400).json({
+                success: false,
+                error: error.message || 'Error al completar registro'
             });
         }
     }
@@ -313,7 +317,10 @@ class AuthController {
                     firstName: user.first_name,
                     lastName: user.last_name,
                     email: user.email,
-                    dni: user.dni
+                    dni: user.dni,
+                    loginHint: user.email
+                        ? `Correo: ${user.email}${user.dni ? ` · Cédula: ${user.dni}` : ''}`
+                        : (user.dni ? `Cédula: ${user.dni}` : null)
                 }
             });
 

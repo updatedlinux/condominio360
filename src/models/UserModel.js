@@ -11,14 +11,19 @@ class UserModel {
      */
     static async findByEmail(email) {
         try {
+            const normalized = String(email || '').trim().toLowerCase();
+            if (!normalized) return null;
             const pool = await connectDB();
             const result = await pool.request()
-                .input('email', sql.NVarChar, email)
+                .input('email', sql.NVarChar, normalized)
                 .query(`
                     SELECT u.* FROM Users u
                     WHERE u.is_active = 1 AND (
-                        u.email = @email
-                        OR EXISTS (SELECT 1 FROM UserEmails ue WHERE ue.user_id = u.id AND ue.email = @email)
+                        LOWER(LTRIM(RTRIM(u.email))) = @email
+                        OR EXISTS (
+                            SELECT 1 FROM UserEmails ue
+                            WHERE ue.user_id = u.id AND LOWER(LTRIM(RTRIM(ue.email))) = @email
+                        )
                     )
                 `);
 
@@ -150,12 +155,12 @@ class UserModel {
      */
     static async findByDniOrEmail(identifier) {
         try {
-            const pool = await connectDB();
-            const isEmail = identifier && identifier.includes('@');
-            if (isEmail) {
-                return await this.findByEmail(identifier);
+            const raw = String(identifier || '').trim();
+            if (!raw) return null;
+            if (raw.includes('@')) {
+                return await this.findByEmail(raw);
             }
-            return await this.findByDni(identifier);
+            return await this.findByDni(raw);
         } catch (error) {
             console.error('Error finding user by DNI or email:', error);
             throw error;
@@ -169,12 +174,26 @@ class UserModel {
      */
     static async findByDni(dni) {
         try {
+            const trimmed = String(dni || '').trim();
+            if (!trimmed) return null;
+            const candidates = [trimmed];
+            const digits = trimmed.replace(/\D/g, '');
+            if (digits) {
+                if (digits !== trimmed) candidates.push(digits);
+                if (!/^V/i.test(trimmed)) {
+                    candidates.push(`V${digits}`, `V-${digits}`);
+                }
+            }
             const pool = await connectDB();
-            const result = await pool.request()
-                .input('dni', sql.NVarChar, dni)
-                .query('SELECT * FROM Users WHERE dni = @dni');
-
-            return result.recordset[0] || null;
+            for (const candidate of [...new Set(candidates)]) {
+                const result = await pool.request()
+                    .input('dni', sql.NVarChar, candidate)
+                    .query('SELECT * FROM Users WHERE dni = @dni');
+                if (result.recordset[0]) {
+                    return result.recordset[0];
+                }
+            }
+            return null;
         } catch (error) {
             console.error('Error finding user by DNI:', error);
             throw error;
@@ -220,7 +239,11 @@ class UserModel {
             const pool = await connectDB();
             const result = await pool.request()
                 .input('token', sql.NVarChar, token)
-                .query('SELECT * FROM Users WHERE invitation_token = @token AND is_active = 1');
+                .query(`
+                    SELECT * FROM Users
+                    WHERE invitation_token = @token
+                    AND registration_status IN ('INVITED', 'PENDING')
+                `);
 
             return result.recordset[0] || null;
         } catch (error) {
@@ -432,41 +455,22 @@ class UserModel {
      */
     static async completeRegistration(token, password, email = null) {
         try {
-            const saltRounds = 10;
-            const password_hash = await bcrypt.hash(password, saltRounds);
+            const user = await this.findByInvitationToken(token);
+            if (!user) return null;
 
             const pool = await connectDB();
-            
-            // Build query dynamically based on whether email is provided
-            let query = `
-                UPDATE Users 
-                SET password_hash = @password_hash,
-                    registration_status = 'ACTIVE',
-                    email_verified = 1,
-                    invitation_token = NULL,
-                    is_active = 1,
-                    updated_at = SYSDATETIME()
-            `;
-            
-            if (email) {
-                query += `, email = @email`;
-            }
-            
-            query += `
-                OUTPUT INSERTED.*
-                WHERE invitation_token = @token AND registration_status = 'INVITED'
-            `;
-
-            const request = pool.request()
-                .input('token', sql.NVarChar, token)
-                .input('password_hash', sql.NVarChar, password_hash);
-            
-            if (email) {
-                request.input('email', sql.NVarChar, email);
+            const emailTrim = email ? String(email).trim().toLowerCase() : null;
+            if (emailTrim) {
+                await pool.request()
+                    .input('id', sql.UniqueIdentifier, user.id)
+                    .input('email', sql.NVarChar, emailTrim)
+                    .query(`
+                        UPDATE Users SET email = @email, updated_at = SYSDATETIME()
+                        WHERE id = @id
+                    `);
             }
 
-            const result = await request.query(query);
-            return result.recordset[0] || null;
+            return await this.updatePassword(user.id, password);
         } catch (error) {
             console.error('Error completing registration:', error);
             throw error;

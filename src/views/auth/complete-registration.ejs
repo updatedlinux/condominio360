@@ -70,6 +70,7 @@
                 </div>
                 <h2 class="text-xl font-bold text-slate-900">Registro confirmado</h2>
                 <p class="mt-2 text-slate-600">Tu cuenta ha sido activada. Ya puedes iniciar sesión como propietario.</p>
+                <p id="success-login-hint" class="mt-3 text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-3 hidden"></p>
                 <a href="/login" class="mt-6 inline-block px-6 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">
                     Ir a Iniciar Sesión
                 </a>
@@ -83,6 +84,7 @@
     <script>
         (function() {
             const token = new URLSearchParams(window.location.search).get('token');
+            let loginHintFromVerify = '';
             const states = {
                 loading: document.getElementById('state-loading'),
                 error: document.getElementById('state-error'),
@@ -111,6 +113,7 @@
                 .then(data => {
                     if (data.valid && data.user) {
                         document.getElementById('user-name').textContent = (data.user.firstName || '') + ' ' + (data.user.lastName || '');
+                        loginHintFromVerify = data.user.loginHint || '';
                         document.getElementById('completeForm').dataset.token = token;
                         show('form');
                     } else {
@@ -150,9 +153,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: document.getElementById('completeForm').dataset.token, password: pwd })
                 })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
+                    .then(async (r) => {
+                        const data = await r.json().catch(() => ({}));
+                        return { ok: r.ok, data };
+                    })
+                    .then(({ ok, data }) => {
+                        if (ok && data.success) {
+                            const hintEl = document.getElementById('success-login-hint');
+                            const hint = data.loginHint || loginHintFromVerify;
+                            if (hint && hintEl) {
+                                hintEl.textContent = 'Para iniciar sesión usa: ' + hint;
+                                hintEl.classList.remove('hidden');
+                            }
                             show('success');
                         } else {
                             formError.textContent = data.error || 'Error al completar el registro.';

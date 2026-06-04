@@ -38,7 +38,15 @@ router.get('/properties', OwnerController.getProperties);
 router.get('/portal-features', async (req, res) => {
     try {
         const TenantModel = require('../models/TenantModel');
-        const data = await TenantModel.getPortalFeatureFlags(req.user.tenantId);
+        const { resolveOwnerTenantId } = require('../utils/resolveOwnerTenantId');
+        const tenantId = await resolveOwnerTenantId(req.user, req.query.tenantId);
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'No se pudo determinar el condominio. Selecciona tu inmueble e intenta de nuevo.'
+            });
+        }
+        const data = await TenantModel.getPortalFeatureFlags(tenantId);
         if (!data) {
             return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
         }

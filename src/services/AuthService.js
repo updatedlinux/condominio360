@@ -277,14 +277,20 @@ class AuthService {
         }
 
         const updated = await UserModel.completeRegistration(token, password, email);
-        
+
         if (!updated) {
             throw new Error('Error al completar el registro');
         }
 
+        const passwordOk = await UserModel.validatePassword(password, updated.password_hash);
+        if (!passwordOk) {
+            throw new Error('No se pudo guardar la contraseña. Intenta de nuevo o solicita un nuevo enlace.');
+        }
+
         return {
             message: 'Registro completado exitosamente. Ya puedes iniciar sesión.',
-            email: updated.email
+            email: updated.email,
+            dni: updated.dni
         };
     }
 
