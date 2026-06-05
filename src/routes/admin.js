@@ -12,6 +12,8 @@ const BuildingController = require('../controllers/BuildingController');
 const PropertyController = require('../controllers/PropertyController');
 const EmailAdminController = require('../controllers/EmailAdminController');
 const WhatsAppAdminController = require('../controllers/WhatsAppAdminController');
+const AdminMailgunBounceController = require('../controllers/AdminMailgunBounceController');
+const uploadCsv = require('../middleware/uploadCsv');
 
 // Middleware to ensure user is SuperAdmin
 const { authenticate } = require('../middleware/auth');
@@ -100,6 +102,7 @@ router.delete('/tenants/:id/owners/:ownerId', AdminController.deleteOwner);
 router.put('/owners/:id', AdminController.updateOwner);
 router.post('/owners/:id/password', AdminController.setOwnerPassword);
 router.post('/owners/:id/send-password-reset', AdminController.sendOwnerPasswordResetEmail);
+router.post('/tenants/:id/mailgun-bounces/analyze', uploadCsv.single('csv'), AdminMailgunBounceController.analyze);
 
 // ==================== FACTURACIÓN SAAS (Condominio360 → Condominios) ====================
 router.get('/saas-billing/rate', AdminSaaSBillingController.getRate);
