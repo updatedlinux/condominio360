@@ -35,7 +35,9 @@ class AdminMailgunBounceController {
             }
 
             const csvText = req.file.buffer.toString('utf8').replace(/^\uFEFF/, '');
-            const result = await MailgunBounceReportService.analyzeCsvForTenant(tenantId, csvText);
+            const result = await MailgunBounceReportService.analyzeCsvForTenant(tenantId, csvText, {
+                originalFilename: req.file.originalname
+            });
 
             if (!result.success) {
                 return res.status(400).json({ success: false, error: result.error });

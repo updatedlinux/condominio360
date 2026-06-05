@@ -537,11 +537,20 @@
                     <p>Analizando archivo de Mailgun…</p>
                 </div>
                 <div id="mailgun-bounce-content" class="hidden">
-                    <div id="mailgun-bounce-date-range" class="hidden mb-4 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
-                        <span class="material-symbols-rounded text-slate-500 text-xl shrink-0 mt-0.5">date_range</span>
-                        <div>
-                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Período analizado del CSV</p>
-                            <p id="mailgun-bounce-date-range-text" class="text-sm font-semibold text-slate-800 mt-0.5"></p>
+                    <div id="mailgun-bounce-date-range" class="hidden mb-4 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <span class="material-symbols-rounded text-slate-500 text-xl shrink-0 mt-0.5">date_range</span>
+                            <div class="space-y-2 min-w-0">
+                                <div id="mailgun-bounce-export-filter-wrap" class="hidden">
+                                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Filtro del export en Mailgun</p>
+                                    <p id="mailgun-bounce-export-filter-text" class="text-sm text-slate-800 mt-0.5"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Rebotes en el archivo</p>
+                                    <p id="mailgun-bounce-date-range-text" class="text-sm font-semibold text-slate-800 mt-0.5"></p>
+                                </div>
+                                <p id="mailgun-bounce-date-range-note" class="hidden text-xs text-slate-500"></p>
+                            </div>
                         </div>
                     </div>
                     <div id="mailgun-bounce-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
@@ -2028,8 +2037,28 @@
 
                 const dateRangeEl = document.getElementById('mailgun-bounce-date-range');
                 const dateRangeText = document.getElementById('mailgun-bounce-date-range-text');
-                if (data.date_range?.label && dateRangeEl && dateRangeText) {
-                    dateRangeText.textContent = data.date_range.label;
+                const exportFilterWrap = document.getElementById('mailgun-bounce-export-filter-wrap');
+                const exportFilterText = document.getElementById('mailgun-bounce-export-filter-text');
+                const dateRangeNote = document.getElementById('mailgun-bounce-date-range-note');
+                const dr = data.date_range || {};
+                if ((dr.events_label || dr.export_filter_label) && dateRangeEl) {
+                    if (dr.export_filter_label && exportFilterWrap && exportFilterText) {
+                        exportFilterText.textContent = dr.export_filter_label;
+                        exportFilterWrap.classList.remove('hidden');
+                    } else if (exportFilterWrap) {
+                        exportFilterWrap.classList.add('hidden');
+                    }
+                    if (dateRangeText) {
+                        dateRangeText.textContent = dr.events_label || '—';
+                    }
+                    if (dateRangeNote) {
+                        if (dr.note) {
+                            dateRangeNote.textContent = dr.note;
+                            dateRangeNote.classList.remove('hidden');
+                        } else {
+                            dateRangeNote.classList.add('hidden');
+                        }
+                    }
                     dateRangeEl.classList.remove('hidden');
                 } else if (dateRangeEl) {
                     dateRangeEl.classList.add('hidden');

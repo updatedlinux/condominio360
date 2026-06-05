@@ -79,24 +79,50 @@ class MailgunBounceExcelService {
         resumen.mergeCells('B4:E4');
         resumen.getCell('B4').value = tenantName || '—';
 
-        const periodLabel = summary?.date_range?.label;
-        resumen.getCell('A5').value = 'Período del CSV';
-        resumen.getCell('A5').font = { bold: true, color: { argb: COLORS.slate700 } };
-        resumen.mergeCells('B5:E5');
-        resumen.getCell('B5').value = periodLabel || '—';
-        if (periodLabel) {
-            resumen.getCell('B5').font = { bold: true, color: { argb: COLORS.slate900 } };
+        const dr = summary?.date_range || {};
+        let metaRow = 5;
+
+        if (dr.export_filter_label) {
+            resumen.getCell(`A${metaRow}`).value = 'Filtro Mailgun';
+            resumen.getCell(`A${metaRow}`).font = { bold: true, color: { argb: COLORS.slate700 } };
+            resumen.mergeCells(`B${metaRow}:E${metaRow}`);
+            resumen.getCell(`B${metaRow}`).value = dr.export_filter_label;
+            metaRow += 1;
+            if (dr.export_filter?.timezone_note) {
+                resumen.mergeCells(`A${metaRow}:E${metaRow}`);
+                resumen.getCell(`A${metaRow}`).value = dr.export_filter.timezone_note;
+                resumen.getCell(`A${metaRow}`).font = { italic: true, color: { argb: COLORS.slate500 } };
+                metaRow += 1;
+            }
         }
 
-        resumen.getCell('A6').value = 'Reporte generado';
-        resumen.getCell('A6').font = { bold: true, color: { argb: COLORS.slate700 } };
-        resumen.mergeCells('B6:E6');
-        resumen.getCell('B6').value = formatDateTimeEs();
+        resumen.getCell(`A${metaRow}`).value = 'Rebotes en el archivo';
+        resumen.getCell(`A${metaRow}`).font = { bold: true, color: { argb: COLORS.slate700 } };
+        resumen.mergeCells(`B${metaRow}:E${metaRow}`);
+        resumen.getCell(`B${metaRow}`).value = dr.events_label || '—';
+        if (dr.events_label) {
+            resumen.getCell(`B${metaRow}`).font = { bold: true, color: { argb: COLORS.slate900 } };
+        }
+        metaRow += 1;
+
+        if (dr.note) {
+            resumen.mergeCells(`A${metaRow}:E${metaRow}`);
+            resumen.getCell(`A${metaRow}`).value = dr.note;
+            resumen.getCell(`A${metaRow}`).font = { italic: true, color: { argb: COLORS.slate500 } };
+            metaRow += 1;
+        }
+
+        resumen.getCell(`A${metaRow}`).value = 'Reporte generado';
+        resumen.getCell(`A${metaRow}`).font = { bold: true, color: { argb: COLORS.slate700 } };
+        resumen.mergeCells(`B${metaRow}:E${metaRow}`);
+        resumen.getCell(`B${metaRow}`).value = formatDateTimeEs();
+        metaRow += 1;
 
         if (includeUnmatched) {
-            resumen.mergeCells('A7:E7');
-            resumen.getCell('A7').value = 'Incluye correos no asociados a propietarios de este condominio.';
-            resumen.getCell('A7').font = { italic: true, color: { argb: COLORS.amber700 } };
+            resumen.mergeCells(`A${metaRow}:E${metaRow}`);
+            resumen.getCell(`A${metaRow}`).value = 'Incluye correos no asociados a propietarios de este condominio.';
+            resumen.getCell(`A${metaRow}`).font = { italic: true, color: { argb: COLORS.amber700 } };
+            metaRow += 1;
         }
 
         const s = summary || {};
@@ -107,7 +133,7 @@ class MailgunBounceExcelService {
             { label: 'Fuera del condominio', value: s.not_in_tenant ?? '—', fill: COLORS.amber50, fg: COLORS.amber700 }
         ];
 
-        const cardRow = includeUnmatched ? 9 : 8;
+        const cardRow = metaRow + 1;
         cards.forEach((card, i) => {
             const col = i * 2 + 1;
             const labelCell = resumen.getCell(cardRow, col);

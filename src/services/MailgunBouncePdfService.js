@@ -197,11 +197,26 @@ class MailgunBouncePdfService {
         doc.fillColor(COLORS.slate700).font('Helvetica').fontSize(10)
             .text(`Condominio: ${ctx.tenantName}`, startX, doc.y, { width });
 
-        const periodLabel = ctx.summary?.date_range?.label;
-        if (periodLabel) {
+        const dr = ctx.summary?.date_range || {};
+        if (dr.export_filter_label) {
+            doc.moveDown(0.15);
+            doc.fillColor(COLORS.slate700).font('Helvetica').fontSize(9.5)
+                .text(`Filtro del export en Mailgun: ${dr.export_filter_label}`, startX, doc.y, { width });
+            if (dr.export_filter?.timezone_note) {
+                doc.moveDown(0.1);
+                doc.fillColor(COLORS.slate500).font('Helvetica-Oblique').fontSize(8)
+                    .text(dr.export_filter.timezone_note, startX, doc.y, { width });
+            }
+        }
+        if (dr.events_label) {
             doc.moveDown(0.15);
             doc.fillColor(COLORS.slate700).font('Helvetica-Bold').fontSize(9.5)
-                .text(`Período analizado (CSV Mailgun): ${periodLabel}`, startX, doc.y, { width });
+                .text(`Rebotes registrados en el archivo: ${dr.events_label}`, startX, doc.y, { width });
+        }
+        if (dr.note) {
+            doc.moveDown(0.12);
+            doc.fillColor(COLORS.slate500).font('Helvetica-Oblique').fontSize(8)
+                .text(dr.note, startX, doc.y, { width });
         }
 
         doc.moveDown(0.15);

@@ -117,6 +117,90 @@ class MailgunBounceReportService {
         return { from, to, label };
     }
 
+    static _monthNamesEs() {
+        return [
+            'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+        ];
+    }
+
+    static _parseMailgunExportTimePart(month, day, year, hour, minute, second, ampm) {
+        let h = parseInt(hour, 10);
+        const isPm = /p/i.test(String(ampm || ''));
+        if (isPm && h !== 12) h += 12;
+        if (!isPm && h === 12) h = 0;
+        return {
+            month: parseInt(month, 10),
+            day: parseInt(day, 10),
+            year: parseInt(year, 10),
+            hour: h,
+            minute: parseInt(minute, 10),
+            second: parseInt(second, 10)
+        };
+    }
+
+    static _formatFilterTimestampEs(part) {
+        const months = MailgunBounceReportService._monthNamesEs();
+        const h12 = part.hour % 12 || 12;
+        const suffix = part.hour >= 12 ? 'p.m.' : 'a.m.';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${part.day} de ${months[part.month - 1]} de ${part.year}, ${h12}:${pad(part.minute)} ${suffix}`;
+    }
+
+    /**
+     * Mailgun nombra el CSV: exported-logs-D-M-Y-H-M-S-a.m.-to-D-M-Y-...
+     * (día-mes-año, como en el panel). Es el filtro del export, no el último evento.
+     */
+    static parseMailgunExportFilename(filename) {
+        const m = String(filename || '').match(
+            /exported-logs-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(a\.?\s*m\.?|p\.?\s*m\.?)-to-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(a\.?\s*m\.?|p\.?\s*m\.?)/i
+        );
+        if (!m) return null;
+
+        const from = MailgunBounceReportService._parseMailgunExportTimePart(
+            m[2], m[1], m[3], m[4], m[5], m[6], m[7]
+        );
+        const to = MailgunBounceReportService._parseMailgunExportTimePart(
+            m[9], m[8], m[10], m[11], m[12], m[13], m[14]
+        );
+        const fromLabel = MailgunBounceReportService._formatFilterTimestampEs(from);
+        const toLabel = MailgunBounceReportService._formatFilterTimestampEs(to);
+        const label = fromLabel === toLabel
+            ? fromLabel
+            : `Del ${fromLabel} al ${toLabel}`;
+
+        return {
+            from,
+            to,
+            label,
+            timezone_note: 'Hora del panel Mailgun (normalmente US/Eastern)'
+        };
+    }
+
+    static buildDateRangeInfo(parsedRows, originalFilename) {
+        const events = MailgunBounceReportService.computeCsvDateRange(parsedRows);
+        const exportFilter = MailgunBounceReportService.parseMailgunExportFilename(originalFilename);
+
+        const eventsLabel = events.label || null;
+        const exportFilterLabel = exportFilter?.label || null;
+
+        let note = null;
+        if (exportFilterLabel && eventsLabel) {
+            note = 'El filtro del export en Mailgun puede llegar más lejos en el calendario; aquí solo aparecen las fechas en que hubo rebotes en el archivo.';
+        } else if (eventsLabel) {
+            note = 'Rango calculado a partir de los timestamps (@timestamp) de las filas del CSV.';
+        }
+
+        return {
+            events,
+            export_filter: exportFilter,
+            events_label: eventsLabel,
+            export_filter_label: exportFilterLabel,
+            label: eventsLabel,
+            note
+        };
+    }
+
     static severityRank(row) {
         const sev = String(row.severity || '').toLowerCase();
         if (sev === 'permanent') return 3;
@@ -429,7 +513,7 @@ class MailgunBounceReportService {
         return map;
     }
 
-    static async analyzeCsvForTenant(tenantId, csvText) {
+    static async analyzeCsvForTenant(tenantId, csvText, options = {}) {
         const parsed = MailgunBounceReportService.parseCsv(csvText);
         if (!parsed.length) {
             return {
@@ -480,7 +564,10 @@ class MailgunBounceReportService {
                 unique_failed_emails: failures.length,
                 matched_in_tenant: tenantRows.length,
                 not_in_tenant: unmatchedRows.length,
-                date_range: MailgunBounceReportService.computeCsvDateRange(parsed),
+                date_range: MailgunBounceReportService.buildDateRangeInfo(
+                    parsed,
+                    options.originalFilename
+                ),
                 rows: tenantRows,
                 other_rows: unmatchedRows
             }
