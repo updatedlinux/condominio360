@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const MailgunMailProvider = require('./email/MailgunMailProvider');
 const EmailOrchestrator = require('./email/EmailOrchestrator');
+const { ensureEmailBrandAssetsOnce, getEmailLogoUrl } = require('../utils/emailBrandAssets');
 
 /**
  * Formatea fecha para correos: la DB guarda hora Venezuela pero el driver la interpreta como UTC.
@@ -39,6 +40,7 @@ class EmailService {
      * @param {object} meta - tenantId, messageType, pipeline (transactional|bulk), createdBy, idempotencyKey, metadata
      */
     async send(to, subject, html, text = null, meta = {}) {
+        await ensureEmailBrandAssetsOnce();
         const plain = text || this._htmlToText(html);
         return EmailOrchestrator.dispatchMail({
             to,
@@ -350,7 +352,7 @@ class EmailService {
                 ? headerBackground
                 : '#ea580c';
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-        const logoUrl = `${baseUrl}/assets/images/isotipo-naranja.svg`;
+        const logoUrl = getEmailLogoUrl(baseUrl, 'condominio360');
 
         return `<!DOCTYPE html>
 <html lang="es">
@@ -1144,7 +1146,7 @@ class EmailService {
      */
     _arsysIntelaTemplate(content, options = {}) {
         const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-        const logoUrl = `${baseUrl}/assets/images/main-intelawhite.svg`;
+        const logoUrl = getEmailLogoUrl(baseUrl, 'arsysIntela');
         const { title, subtitle } = options;
 
         return `<!DOCTYPE html>

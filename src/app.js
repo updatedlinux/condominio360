@@ -163,6 +163,11 @@ app.listen(PORT, () => {
         console.warn('⚠️  RECAPTCHA_SECRET_KEY está configurado pero RECAPTCHA_SITE_KEY no. El login requerirá token que el frontend no puede obtener.');
     }
     
+    const { ensureEmailBrandAssets } = require('./utils/emailBrandAssets');
+    ensureEmailBrandAssets().catch((err) => {
+        console.warn('[emailBrandAssets] No se pudieron preparar logos PNG para correos:', err.message || err);
+    });
+
     // Iniciar tareas programadas
     SchedulerService.start();
     
