@@ -103,6 +103,8 @@ router.put('/owners/:id', AdminController.updateOwner);
 router.post('/owners/:id/password', AdminController.setOwnerPassword);
 router.post('/owners/:id/send-password-reset', AdminController.sendOwnerPasswordResetEmail);
 router.post('/tenants/:id/mailgun-bounces/analyze', uploadCsv.single('csv'), AdminMailgunBounceController.analyze);
+router.post('/tenants/:id/mailgun-bounces/pdf', AdminMailgunBounceController.downloadPdf);
+router.post('/tenants/:id/mailgun-bounces/excel', AdminMailgunBounceController.downloadExcel);
 
 // ==================== FACTURACIÓN SAAS (Condominio360 → Condominios) ====================
 router.get('/saas-billing/rate', AdminSaaSBillingController.getRate);

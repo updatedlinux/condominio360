@@ -226,7 +226,7 @@
                 <span class="material-symbols-rounded text-rose-600 text-2xl shrink-0">mail_off</span>
                 <div>
                     <h2 class="text-base font-semibold text-slate-900">Correos rebotados (Mailgun)</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">Sube el CSV de Mailgun y revisa propietarios afectados en un reporte descargable.</p>
+                    <p class="text-sm text-slate-500 mt-0.5">Sube el CSV de Mailgun y descarga un reporte PDF con propietarios afectados.</p>
                 </div>
             </div>
             <label class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 cursor-pointer shrink-0">
@@ -516,10 +516,15 @@
                     <p class="text-sm text-slate-500 mt-1"><%= tenant?.name || 'Condominio' %></p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" id="mailgun-bounce-download-btn" onclick="downloadMailgunBounceReport()"
+                    <button type="button" id="mailgun-bounce-excel-btn" onclick="downloadMailgunBounceExcel()"
                         class="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-rounded text-lg">download</span>
-                        Descargar CSV
+                        <span class="material-symbols-rounded text-lg">table</span>
+                        Excel
+                    </button>
+                    <button type="button" id="mailgun-bounce-download-btn" onclick="downloadMailgunBounceReport()"
+                        class="inline-flex items-center gap-2 px-3 py-2 bg-rose-600 text-white hover:bg-rose-700 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-rounded text-lg">picture_as_pdf</span>
+                        PDF
                     </button>
                     <button type="button" onclick="closeMailgunBounceModal()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500" aria-label="Cerrar">
                         <span class="material-symbols-rounded">close</span>
@@ -1822,6 +1827,7 @@
 
         let mailgunBounceTenantRows = [];
         let mailgunBounceOtherRows = [];
+        let mailgunBounceSummary = null;
 
         function openMailgunBounceModal() {
             const modal = document.getElementById('mailgun-bounce-modal');
@@ -1847,64 +1853,80 @@
                 : [...mailgunBounceTenantRows];
         }
 
-        function csvEscapeCell(value) {
-            const s = value == null ? '' : String(value);
-            if (/[",\n\r]/.test(s)) {
-                return '"' + s.replace(/"/g, '""') + '"';
-            }
-            return s;
+        function mailgunBounceExportPayload() {
+            return {
+                include_unmatched: !!document.getElementById('mailgun-show-unmatched')?.checked,
+                tenant_rows: mailgunBounceTenantRows,
+                other_rows: mailgunBounceOtherRows,
+                summary: mailgunBounceSummary
+            };
         }
 
-        function downloadMailgunBounceReport() {
+        async function downloadMailgunBounceFile(endpoint, btnId, fallbackExt, okLabel) {
             const rows = getMailgunBounceExportRows();
             if (!rows.length) {
                 showPageToast('No hay datos para exportar. Sube un CSV de Mailgun primero.', 'info');
                 return;
             }
 
-            const headers = [
-                'Correo fallido',
-                'En este condominio',
-                'Propietario',
-                'Cédula',
-                'Correo principal',
-                'Teléfono',
-                'Inmueble(s)',
-                'Otros condominios',
-                'Qué pasó',
-                'Detalle técnico',
-                'Último fallo (UTC)'
-            ];
-
-            const lines = [headers.map(csvEscapeCell).join(',')];
-            for (const r of rows) {
-                const o = r.owner;
-                lines.push([
-                    r.email,
-                    r.matched_in_tenant ? 'Sí' : 'No',
-                    o ? o.name : '',
-                    o ? (o.dni || '') : '',
-                    o ? (o.primary_email || '') : '',
-                    o ? (o.phone || '') : '',
-                    o ? (o.properties_label || '') : '',
-                    o && o.other_tenants && o.other_tenants.length ? o.other_tenants.join('; ') : '',
-                    r.error?.summary || '',
-                    r.error?.technical || '',
-                    r.last_failure_at || ''
-                ].map(csvEscapeCell).join(','));
+            const downloadBtn = document.getElementById(btnId);
+            const prevHtml = downloadBtn ? downloadBtn.innerHTML : '';
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+                downloadBtn.innerHTML = '<span class="inline-block h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></span>';
             }
 
-            const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const stamp = new Date().toISOString().slice(0, 10);
-            a.href = url;
-            a.download = `rebotes_mailgun_${tenantNameForFile}_${stamp}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-            showPageToast('Reporte descargado', 'success');
+            try {
+                const res = await fetch(`/api/admin/tenants/${tenantId}/mailgun-bounces/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(mailgunBounceExportPayload())
+                });
+
+                if (!res.ok) {
+                    let msg = `No se pudo generar el ${fallbackExt.toUpperCase()}`;
+                    try {
+                        const err = await res.json();
+                        if (err.error) msg = err.error;
+                    } catch (_) { /* noop */ }
+                    throw new Error(msg);
+                }
+
+                const blob = await res.blob();
+                const disp = res.headers.get('Content-Disposition') || '';
+                const match = disp.match(/filename="?([^";]+)"?/i);
+                const stamp = new Date().toISOString().slice(0, 10);
+                const filename = (match && match[1]) || `rebotes_mailgun_${tenantNameForFile}_${stamp}.${fallbackExt}`;
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                showPageToast(okLabel, 'success');
+            } catch (e) {
+                console.error(e);
+                showPageToast(e.message || `Error al generar el ${fallbackExt.toUpperCase()}`, 'error');
+            } finally {
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.innerHTML = prevHtml;
+                }
+            }
+        }
+
+        function downloadMailgunBounceReport() {
+            return downloadMailgunBounceFile('pdf', 'mailgun-bounce-download-btn', 'pdf', 'PDF descargado');
+        }
+
+        function downloadMailgunBounceExcel() {
+            return downloadMailgunBounceFile('excel', 'mailgun-bounce-excel-btn', 'xlsx', 'Excel descargado');
         }
 
         function renderMailgunBounceTable() {
@@ -1916,13 +1938,14 @@
                 ? [...mailgunBounceTenantRows, ...mailgunBounceOtherRows]
                 : [...mailgunBounceTenantRows];
 
-            const downloadBtn = document.getElementById('mailgun-bounce-download-btn');
             const hasAnyData = mailgunBounceTenantRows.length > 0 || mailgunBounceOtherRows.length > 0;
-            if (downloadBtn) {
-                downloadBtn.disabled = !hasAnyData;
-                downloadBtn.classList.toggle('opacity-50', !hasAnyData);
-                downloadBtn.classList.toggle('cursor-not-allowed', !hasAnyData);
-            }
+            ['mailgun-bounce-download-btn', 'mailgun-bounce-excel-btn'].forEach((id) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.disabled = !hasAnyData;
+                btn.classList.toggle('opacity-50', !hasAnyData);
+                btn.classList.toggle('cursor-not-allowed', !hasAnyData);
+            });
 
             if (!rows.length) {
                 results.classList.add('hidden');
@@ -1987,6 +2010,12 @@
 
                 mailgunBounceTenantRows = data.rows || [];
                 mailgunBounceOtherRows = data.other_rows || [];
+                mailgunBounceSummary = {
+                    total_csv_rows: data.total_csv_rows,
+                    unique_failed_emails: data.unique_failed_emails,
+                    matched_in_tenant: data.matched_in_tenant,
+                    not_in_tenant: data.not_in_tenant
+                };
                 if (showUnmatchedEl) showUnmatchedEl.checked = false;
 
                 summary.innerHTML = `
