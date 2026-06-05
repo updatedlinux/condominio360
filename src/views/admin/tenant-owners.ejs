@@ -220,48 +220,20 @@
             </div>
         </div>
 
-        <!-- Rebotes Mailgun -->
-        <div class="card p-6 mb-6 border border-rose-100">
-            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+        <!-- Rebotes Mailgun (entrada compacta; resultados en modal) -->
+        <div class="card p-4 mb-6 border border-rose-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+                <span class="material-symbols-rounded text-rose-600 text-2xl shrink-0">mail_off</span>
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                        <span class="material-symbols-rounded text-rose-600">mail_off</span>
-                        Correos rebotados (Mailgun)
-                    </h2>
-                    <p class="text-sm text-slate-600 mt-1 max-w-2xl">
-                        Sube el CSV que exportas desde Mailgun (Logs → Export). El sistema cruza cada correo fallido con los propietarios de este condominio y muestra inmueble, teléfono y una explicación del error.
-                    </p>
+                    <h2 class="text-base font-semibold text-slate-900">Correos rebotados (Mailgun)</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Sube el CSV de Mailgun y revisa propietarios afectados en un reporte descargable.</p>
                 </div>
-                <label class="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 cursor-pointer shrink-0">
-                    <span class="material-symbols-rounded text-lg">upload_file</span>
-                    Subir CSV Mailgun
-                    <input type="file" id="mailgun-bounce-csv" accept=".csv,text/csv" class="hidden" onchange="analyzeMailgunBounces(event)">
-                </label>
             </div>
-            <div id="mailgun-bounce-summary" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-            <div id="mailgun-bounce-toolbar" class="hidden flex flex-wrap items-center justify-between gap-3 mb-3">
-                <p class="text-sm text-slate-600">Propietarios asociados a <strong><%= tenant?.name || 'este condominio' %></strong> (por rol o inmueble asignado).</p>
-                <label class="inline-flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                    <input type="checkbox" id="mailgun-show-unmatched" class="rounded border-slate-300" onchange="renderMailgunBounceTable()">
-                    Mostrar correos no encontrados en este condominio
-                </label>
-            </div>
-            <div id="mailgun-bounce-results" class="hidden overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left font-medium text-slate-600">Correo fallido</th>
-                            <th class="px-4 py-3 text-left font-medium text-slate-600">Propietario</th>
-                            <th class="px-4 py-3 text-left font-medium text-slate-600">Inmueble(s)</th>
-                            <th class="px-4 py-3 text-left font-medium text-slate-600">Teléfono</th>
-                            <th class="px-4 py-3 text-left font-medium text-slate-600">Qué pasó</th>
-                        </tr>
-                    </thead>
-                    <tbody id="mailgun-bounce-table" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
-            <p id="mailgun-bounce-empty" class="text-sm text-slate-500">Aún no has cargado un reporte.</p>
-            <p id="mailgun-bounce-loading" class="hidden text-sm text-slate-500">Analizando archivo…</p>
+            <label class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 cursor-pointer shrink-0">
+                <span class="material-symbols-rounded text-lg">upload_file</span>
+                Analizar CSV
+                <input type="file" id="mailgun-bounce-csv" accept=".csv,text/csv" class="hidden" onchange="analyzeMailgunBounces(event)">
+            </label>
         </div>
 
         <!-- Filters -->
@@ -527,6 +499,67 @@
                 </button>
                 <button type="button" onclick="confirmBulkMultiPropertyAndProcess()" class="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600">
                     Confirmar y cargar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Rebotes Mailgun -->
+    <div id="mailgun-bounce-modal" class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this) closeMailgunBounceModal()">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[min(92vh,900px)] flex flex-col overflow-hidden" role="dialog" aria-labelledby="mailgun-bounce-modal-title">
+            <div class="flex items-start justify-between gap-4 px-6 py-4 border-b border-slate-100 shrink-0">
+                <div>
+                    <h2 id="mailgun-bounce-modal-title" class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-rounded text-rose-600">mail_off</span>
+                        Reporte de rebotes Mailgun
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1"><%= tenant?.name || 'Condominio' %></p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" id="mailgun-bounce-download-btn" onclick="downloadMailgunBounceReport()"
+                        class="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-rounded text-lg">download</span>
+                        Descargar CSV
+                    </button>
+                    <button type="button" onclick="closeMailgunBounceModal()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500" aria-label="Cerrar">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+            </div>
+            <div class="px-6 py-4 overflow-y-auto flex-1 min-h-0">
+                <div id="mailgun-bounce-loading" class="hidden py-16 text-center text-slate-500">
+                    <span class="inline-block h-8 w-8 rounded-full border-2 border-rose-500 border-t-transparent animate-spin mb-3" aria-hidden="true"></span>
+                    <p>Analizando archivo de Mailgun…</p>
+                </div>
+                <div id="mailgun-bounce-content" class="hidden">
+                    <div id="mailgun-bounce-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+                    <div id="mailgun-bounce-toolbar" class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                        <p class="text-sm text-slate-600">Propietarios asociados a este condominio (rol o inmueble).</p>
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                            <input type="checkbox" id="mailgun-show-unmatched" class="rounded border-slate-300" onchange="renderMailgunBounceTable()">
+                            Incluir no encontrados aquí
+                        </label>
+                    </div>
+                    <p id="mailgun-bounce-empty" class="hidden text-sm text-slate-500 text-center py-8"></p>
+                    <div id="mailgun-bounce-results" class="hidden overflow-x-auto border border-slate-100 rounded-xl">
+                        <table class="w-full text-sm min-w-[720px]">
+                            <thead class="bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-600">Correo fallido</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-600">Propietario</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-600">Inmueble(s)</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-600">Teléfono</th>
+                                    <th class="px-4 py-3 text-left font-medium text-slate-600">Qué pasó</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mailgun-bounce-table" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end">
+                <button type="button" onclick="closeMailgunBounceModal()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-medium hover:bg-slate-900">
+                    Cerrar
                 </button>
             </div>
         </div>
@@ -1790,6 +1823,90 @@
         let mailgunBounceTenantRows = [];
         let mailgunBounceOtherRows = [];
 
+        function openMailgunBounceModal() {
+            const modal = document.getElementById('mailgun-bounce-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeMailgunBounceModal() {
+            const modal = document.getElementById('mailgun-bounce-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function setMailgunBounceModalLoading(isLoading) {
+            document.getElementById('mailgun-bounce-loading').classList.toggle('hidden', !isLoading);
+            document.getElementById('mailgun-bounce-content').classList.toggle('hidden', isLoading);
+        }
+
+        function getMailgunBounceExportRows() {
+            const showUnmatched = document.getElementById('mailgun-show-unmatched')?.checked;
+            return showUnmatched
+                ? [...mailgunBounceTenantRows, ...mailgunBounceOtherRows]
+                : [...mailgunBounceTenantRows];
+        }
+
+        function csvEscapeCell(value) {
+            const s = value == null ? '' : String(value);
+            if (/[",\n\r]/.test(s)) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        }
+
+        function downloadMailgunBounceReport() {
+            const rows = getMailgunBounceExportRows();
+            if (!rows.length) {
+                showPageToast('No hay datos para exportar. Sube un CSV de Mailgun primero.', 'info');
+                return;
+            }
+
+            const headers = [
+                'Correo fallido',
+                'En este condominio',
+                'Propietario',
+                'Cédula',
+                'Correo principal',
+                'Teléfono',
+                'Inmueble(s)',
+                'Otros condominios',
+                'Qué pasó',
+                'Detalle técnico',
+                'Último fallo (UTC)'
+            ];
+
+            const lines = [headers.map(csvEscapeCell).join(',')];
+            for (const r of rows) {
+                const o = r.owner;
+                lines.push([
+                    r.email,
+                    r.matched_in_tenant ? 'Sí' : 'No',
+                    o ? o.name : '',
+                    o ? (o.dni || '') : '',
+                    o ? (o.primary_email || '') : '',
+                    o ? (o.phone || '') : '',
+                    o ? (o.properties_label || '') : '',
+                    o && o.other_tenants && o.other_tenants.length ? o.other_tenants.join('; ') : '',
+                    r.error?.summary || '',
+                    r.error?.technical || '',
+                    r.last_failure_at || ''
+                ].map(csvEscapeCell).join(','));
+            }
+
+            const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `rebotes_mailgun_${tenantNameForFile}_${stamp}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showPageToast('Reporte descargado', 'success');
+        }
+
         function renderMailgunBounceTable() {
             const tbody = document.getElementById('mailgun-bounce-table');
             const results = document.getElementById('mailgun-bounce-results');
@@ -1799,10 +1916,18 @@
                 ? [...mailgunBounceTenantRows, ...mailgunBounceOtherRows]
                 : [...mailgunBounceTenantRows];
 
+            const downloadBtn = document.getElementById('mailgun-bounce-download-btn');
+            const hasAnyData = mailgunBounceTenantRows.length > 0 || mailgunBounceOtherRows.length > 0;
+            if (downloadBtn) {
+                downloadBtn.disabled = !hasAnyData;
+                downloadBtn.classList.toggle('opacity-50', !hasAnyData);
+                downloadBtn.classList.toggle('cursor-not-allowed', !hasAnyData);
+            }
+
             if (!rows.length) {
                 results.classList.add('hidden');
                 empty.textContent = mailgunBounceTenantRows.length === 0 && mailgunBounceOtherRows.length > 0
-                    ? 'Ningún correo rebotado corresponde a propietarios de este condominio. Activa «Mostrar correos no encontrados» para ver el resto.'
+                    ? 'Ningún correo rebotado corresponde a propietarios de este condominio. Activa «Incluir no encontrados aquí» para ver el resto.'
                     : 'No se encontraron eventos «failed» en el CSV.';
                 empty.classList.remove('hidden');
                 return;
@@ -1839,17 +1964,13 @@
             event.target.value = '';
             if (!file) return;
 
-            const loading = document.getElementById('mailgun-bounce-loading');
-            const empty = document.getElementById('mailgun-bounce-empty');
             const summary = document.getElementById('mailgun-bounce-summary');
-            const toolbar = document.getElementById('mailgun-bounce-toolbar');
             const showUnmatchedEl = document.getElementById('mailgun-show-unmatched');
 
-            loading.classList.remove('hidden');
-            empty.classList.add('hidden');
-            summary.classList.add('hidden');
-            toolbar.classList.add('hidden');
+            openMailgunBounceModal();
+            setMailgunBounceModalLoading(true);
             document.getElementById('mailgun-bounce-results').classList.add('hidden');
+            document.getElementById('mailgun-bounce-empty').classList.add('hidden');
 
             try {
                 const fd = new FormData();
@@ -1868,8 +1989,6 @@
                 mailgunBounceOtherRows = data.other_rows || [];
                 if (showUnmatchedEl) showUnmatchedEl.checked = false;
 
-                summary.classList.remove('hidden');
-                toolbar.classList.remove('hidden');
                 summary.innerHTML = `
                     <div class="p-3 bg-slate-50 rounded-xl"><p class="text-xs text-slate-500">Filas CSV</p><p class="text-xl font-bold">${data.total_csv_rows}</p></div>
                     <div class="p-3 bg-rose-50 rounded-xl"><p class="text-xs text-rose-700">Correos únicos fallidos</p><p class="text-xl font-bold text-rose-800">${data.unique_failed_emails}</p></div>
@@ -1877,14 +1996,12 @@
                     <div class="p-3 bg-amber-50 rounded-xl"><p class="text-xs text-amber-700">No en este condominio</p><p class="text-xl font-bold text-amber-800">${data.not_in_tenant}</p></div>
                 `;
 
+                setMailgunBounceModalLoading(false);
                 renderMailgunBounceTable();
             } catch (e) {
                 console.error(e);
-                empty.textContent = e.message || 'Error al analizar';
-                empty.classList.remove('hidden');
+                closeMailgunBounceModal();
                 showPageToast(e.message || 'Error al analizar CSV', 'error');
-            } finally {
-                loading.classList.add('hidden');
             }
         }
     </script>
