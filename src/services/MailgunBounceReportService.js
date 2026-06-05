@@ -73,6 +73,50 @@ class MailgunBounceReportService {
         );
     }
 
+    static parseRowTimestamp(row) {
+        const raw = row['@timestamp'] || row.timestamp || row['message.scheduledFor'] || '';
+        const ts = Date.parse(String(raw || '').trim());
+        return Number.isFinite(ts) ? ts : null;
+    }
+
+    static formatTimestampEsUtc(isoOrDate) {
+        const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
+        if (Number.isNaN(d.getTime())) return '—';
+        const pad = (n) => String(n).padStart(2, '0');
+        const months = [
+            'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+        ];
+        return `${d.getUTCDate()} de ${months[d.getUTCMonth()]} de ${d.getUTCFullYear()}, ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+    }
+
+    /** Rango @timestamp del export CSV de Mailgun (todas las filas). */
+    static computeCsvDateRange(rows) {
+        let min = null;
+        let max = null;
+
+        for (const row of rows || []) {
+            const ts = MailgunBounceReportService.parseRowTimestamp(row);
+            if (ts == null) continue;
+            if (min === null || ts < min) min = ts;
+            if (max === null || ts > max) max = ts;
+        }
+
+        if (min === null || max === null) {
+            return { from: null, to: null, label: null };
+        }
+
+        const from = new Date(min).toISOString();
+        const to = new Date(max).toISOString();
+        const fromLabel = MailgunBounceReportService.formatTimestampEsUtc(from);
+        const toLabel = MailgunBounceReportService.formatTimestampEsUtc(to);
+        const label = fromLabel === toLabel
+            ? `${fromLabel} (UTC)`
+            : `Del ${fromLabel} al ${toLabel} (UTC)`;
+
+        return { from, to, label };
+    }
+
     static severityRank(row) {
         const sev = String(row.severity || '').toLowerCase();
         if (sev === 'permanent') return 3;
@@ -436,6 +480,7 @@ class MailgunBounceReportService {
                 unique_failed_emails: failures.length,
                 matched_in_tenant: tenantRows.length,
                 not_in_tenant: unmatchedRows.length,
+                date_range: MailgunBounceReportService.computeCsvDateRange(parsed),
                 rows: tenantRows,
                 other_rows: unmatchedRows
             }

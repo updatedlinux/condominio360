@@ -79,15 +79,24 @@ class MailgunBounceExcelService {
         resumen.mergeCells('B4:E4');
         resumen.getCell('B4').value = tenantName || '—';
 
-        resumen.getCell('A5').value = 'Generado';
+        const periodLabel = summary?.date_range?.label;
+        resumen.getCell('A5').value = 'Período del CSV';
         resumen.getCell('A5').font = { bold: true, color: { argb: COLORS.slate700 } };
         resumen.mergeCells('B5:E5');
-        resumen.getCell('B5').value = formatDateTimeEs();
+        resumen.getCell('B5').value = periodLabel || '—';
+        if (periodLabel) {
+            resumen.getCell('B5').font = { bold: true, color: { argb: COLORS.slate900 } };
+        }
+
+        resumen.getCell('A6').value = 'Reporte generado';
+        resumen.getCell('A6').font = { bold: true, color: { argb: COLORS.slate700 } };
+        resumen.mergeCells('B6:E6');
+        resumen.getCell('B6').value = formatDateTimeEs();
 
         if (includeUnmatched) {
-            resumen.mergeCells('A6:E6');
-            resumen.getCell('A6').value = 'Incluye correos no asociados a propietarios de este condominio.';
-            resumen.getCell('A6').font = { italic: true, color: { argb: COLORS.amber700 } };
+            resumen.mergeCells('A7:E7');
+            resumen.getCell('A7').value = 'Incluye correos no asociados a propietarios de este condominio.';
+            resumen.getCell('A7').font = { italic: true, color: { argb: COLORS.amber700 } };
         }
 
         const s = summary || {};
@@ -98,7 +107,7 @@ class MailgunBounceExcelService {
             { label: 'Fuera del condominio', value: s.not_in_tenant ?? '—', fill: COLORS.amber50, fg: COLORS.amber700 }
         ];
 
-        const cardRow = includeUnmatched ? 8 : 7;
+        const cardRow = includeUnmatched ? 9 : 8;
         cards.forEach((card, i) => {
             const col = i * 2 + 1;
             const labelCell = resumen.getCell(cardRow, col);

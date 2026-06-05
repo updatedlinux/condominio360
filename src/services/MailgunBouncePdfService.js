@@ -4,7 +4,7 @@ const PDFDocument = require('pdfkit');
 const SVGtoPDF = require('svg-to-pdfkit');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'public', 'assets', 'images');
-const CONDO_LOGO_WHITE_SVG = path.join(ASSETS_DIR, 'CONDOMINIO360-whitelogo.svg');
+const CONDO_LOGO_BLACK_SVG = path.join(ASSETS_DIR, 'CONDOMINIO360-blacklogo.svg');
 const INTELA_LOGO_PNG = path.join(ASSETS_DIR, 'png', 'main-intelawhite.png');
 
 const COLORS = {
@@ -27,17 +27,17 @@ const HEADER_H = 88;
 const ACCENT_H = 4;
 const FOOTER_H = 36;
 
-let condoWhiteSvgCache = null;
+let condoLogoSvgCache = null;
 let intelaPngCache = null;
 
-function getCondoWhiteSvg() {
-    if (condoWhiteSvgCache !== null) return condoWhiteSvgCache;
+function getCondoLogoSvg() {
+    if (condoLogoSvgCache !== null) return condoLogoSvgCache;
     try {
-        condoWhiteSvgCache = fs.readFileSync(CONDO_LOGO_WHITE_SVG, 'utf8');
+        condoLogoSvgCache = fs.readFileSync(CONDO_LOGO_BLACK_SVG, 'utf8');
     } catch {
-        condoWhiteSvgCache = '';
+        condoLogoSvgCache = '';
     }
-    return condoWhiteSvgCache;
+    return condoLogoSvgCache;
 }
 
 function getIntelaPng() {
@@ -140,7 +140,7 @@ class MailgunBouncePdfService {
         const innerY = 16;
         const innerH = HEADER_H - 32;
 
-        const condoSvg = getCondoWhiteSvg();
+        const condoSvg = getCondoLogoSvg();
         if (condoSvg) {
             try {
                 SVGtoPDF(doc, condoSvg, padX, innerY, {
@@ -197,9 +197,16 @@ class MailgunBouncePdfService {
         doc.fillColor(COLORS.slate700).font('Helvetica').fontSize(10)
             .text(`Condominio: ${ctx.tenantName}`, startX, doc.y, { width });
 
+        const periodLabel = ctx.summary?.date_range?.label;
+        if (periodLabel) {
+            doc.moveDown(0.15);
+            doc.fillColor(COLORS.slate700).font('Helvetica-Bold').fontSize(9.5)
+                .text(`Período analizado (CSV Mailgun): ${periodLabel}`, startX, doc.y, { width });
+        }
+
         doc.moveDown(0.15);
         doc.fillColor(COLORS.slate500).font('Helvetica').fontSize(9)
-            .text(`Generado el ${formatDateTimeEs()}`, startX, doc.y, { width });
+            .text(`Reporte generado el ${formatDateTimeEs()}`, startX, doc.y, { width });
 
         if (ctx.includeUnmatched) {
             doc.moveDown(0.15);

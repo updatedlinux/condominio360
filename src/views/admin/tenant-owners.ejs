@@ -537,6 +537,13 @@
                     <p>Analizando archivo de Mailgun…</p>
                 </div>
                 <div id="mailgun-bounce-content" class="hidden">
+                    <div id="mailgun-bounce-date-range" class="hidden mb-4 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
+                        <span class="material-symbols-rounded text-slate-500 text-xl shrink-0 mt-0.5">date_range</span>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Período analizado del CSV</p>
+                            <p id="mailgun-bounce-date-range-text" class="text-sm font-semibold text-slate-800 mt-0.5"></p>
+                        </div>
+                    </div>
                     <div id="mailgun-bounce-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
                     <div id="mailgun-bounce-toolbar" class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
                         <p class="text-sm text-slate-600">Propietarios asociados a este condominio (rol o inmueble).</p>
@@ -2014,9 +2021,19 @@
                     total_csv_rows: data.total_csv_rows,
                     unique_failed_emails: data.unique_failed_emails,
                     matched_in_tenant: data.matched_in_tenant,
-                    not_in_tenant: data.not_in_tenant
+                    not_in_tenant: data.not_in_tenant,
+                    date_range: data.date_range || null
                 };
                 if (showUnmatchedEl) showUnmatchedEl.checked = false;
+
+                const dateRangeEl = document.getElementById('mailgun-bounce-date-range');
+                const dateRangeText = document.getElementById('mailgun-bounce-date-range-text');
+                if (data.date_range?.label && dateRangeEl && dateRangeText) {
+                    dateRangeText.textContent = data.date_range.label;
+                    dateRangeEl.classList.remove('hidden');
+                } else if (dateRangeEl) {
+                    dateRangeEl.classList.add('hidden');
+                }
 
                 summary.innerHTML = `
                     <div class="p-3 bg-slate-50 rounded-xl"><p class="text-xs text-slate-500">Filas CSV</p><p class="text-xl font-bold">${data.total_csv_rows}</p></div>
