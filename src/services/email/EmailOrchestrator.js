@@ -1,6 +1,10 @@
 const crypto = require('crypto');
 const EmailJobModel = require('../../models/EmailJobModel');
 const MailgunMailProvider = require('./MailgunMailProvider');
+const {
+    buildInlineLogoAttachmentsForHtml,
+    replaceExternalLogoUrlsWithCid
+} = require('../../utils/emailBrandAssets');
 
 function sha256(s) {
     return crypto.createHash('sha256').update(String(s), 'utf8').digest('hex');
@@ -43,6 +47,7 @@ class EmailOrchestrator {
         subject,
         html,
         text = null,
+        inline = null,
         tenantId = null,
         messageType = 'generic',
         pipeline = 'transactional',
@@ -84,6 +89,7 @@ class EmailOrchestrator {
                 subject,
                 html,
                 text,
+                inline,
                 tenantId,
                 messageType,
                 createdBy,
@@ -98,6 +104,7 @@ class EmailOrchestrator {
             subject,
             html,
             text,
+            inline,
             tenantId,
             messageType,
             createdBy,
@@ -105,6 +112,14 @@ class EmailOrchestrator {
             sourceBatchId,
             metadata
         });
+    }
+
+    async _prepareHtmlAndInline(html, inline) {
+        const normalizedHtml = replaceExternalLogoUrlsWithCid(html);
+        const resolvedInline = inline && inline.length
+            ? inline
+            : await buildInlineLogoAttachmentsForHtml(normalizedHtml);
+        return { html: normalizedHtml, inline: resolvedInline };
     }
 
     async _enqueueBulk(opts) {
@@ -170,12 +185,14 @@ class EmailOrchestrator {
         }
 
         try {
+            const prepared = await this._prepareHtmlAndInline(opts.html, opts.inline);
             const result = await MailgunMailProvider.send({
                 domain,
                 to: opts.to,
                 subject: opts.subject,
-                html: opts.html,
-                text: opts.text || undefined
+                html: prepared.html,
+                text: opts.text || undefined,
+                inline: prepared.inline
             });
 
             await EmailJobModel.updateRecipient(recipient.id, {
@@ -262,12 +279,14 @@ class EmailOrchestrator {
         });
 
         try {
+            const prepared = await this._prepareHtmlAndInline(row.html_body, null);
             const result = await MailgunMailProvider.send({
                 domain,
                 to: row.recipient_email,
                 subject: row.subject,
-                html: row.html_body,
-                text: row.text_body || undefined
+                html: prepared.html,
+                text: row.text_body || undefined,
+                inline: prepared.inline
             });
             await EmailJobModel.updateRecipient(row.id, {
                 status: 'sent',
@@ -362,12 +381,14 @@ class EmailOrchestrator {
         });
 
         try {
+            const prepared = await this._prepareHtmlAndInline(row.html_body, null);
             const result = await MailgunMailProvider.send({
                 domain,
                 to: row.recipient_email,
                 subject: row.subject,
-                html: row.html_body,
-                text: row.text_body || undefined
+                html: prepared.html,
+                text: row.text_body || undefined,
+                inline: prepared.inline
             });
             await EmailJobModel.updateRecipient(recipientId, {
                 status: 'sent',

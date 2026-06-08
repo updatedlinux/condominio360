@@ -1,7 +1,11 @@
 const crypto = require('crypto');
 const MailgunMailProvider = require('./email/MailgunMailProvider');
 const EmailOrchestrator = require('./email/EmailOrchestrator');
-const { ensureEmailBrandAssetsOnce, getEmailLogoUrl } = require('../utils/emailBrandAssets');
+const {
+    ensureEmailBrandAssetsOnce,
+    buildInlineLogoAttachmentsForHtml,
+    getEmailLogoSrc
+} = require('../utils/emailBrandAssets');
 
 /**
  * Formatea fecha para correos: la DB guarda hora Venezuela pero el driver la interpreta como UTC.
@@ -42,11 +46,13 @@ class EmailService {
     async send(to, subject, html, text = null, meta = {}) {
         await ensureEmailBrandAssetsOnce();
         const plain = text || this._htmlToText(html);
+        const inline = await buildInlineLogoAttachmentsForHtml(html);
         return EmailOrchestrator.dispatchMail({
             to,
             subject,
             html,
             text: plain,
+            inline,
             tenantId: meta.tenantId ?? null,
             messageType: meta.messageType || 'generic',
             pipeline: meta.pipeline || 'transactional',
@@ -351,8 +357,7 @@ class EmailService {
             headerBackground != null && String(headerBackground).trim() !== ''
                 ? headerBackground
                 : '#ea580c';
-        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-        const logoUrl = getEmailLogoUrl(baseUrl, 'condominio360');
+        const logoUrl = getEmailLogoSrc('condominio360');
 
         return `<!DOCTYPE html>
 <html lang="es">
@@ -1193,8 +1198,7 @@ class EmailService {
      * Template HTML para emails Arsys Intela (azul, logo)
      */
     _arsysIntelaTemplate(content, options = {}) {
-        const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-        const logoUrl = getEmailLogoUrl(baseUrl, 'arsysIntela');
+        const logoUrl = getEmailLogoSrc('arsysIntela');
         const { title, subtitle } = options;
 
         return `<!DOCTYPE html>

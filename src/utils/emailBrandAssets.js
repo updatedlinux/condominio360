@@ -67,17 +67,99 @@ function ensureEmailBrandAssetsOnce() {
     return ensurePromise;
 }
 
+function resolveEmailPublicBaseUrl() {
+    const raw = (
+        process.env.EMAIL_PUBLIC_BASE_URL
+        || process.env.APP_URL
+        || 'https://condominio-360.com'
+    ).trim().replace(/\/+$/, '');
+
+    if (!raw) return 'https://condominio-360.com';
+    if (process.env.NODE_ENV === 'production' && raw.startsWith('http://')) {
+        return `https://${raw.slice(7)}`;
+    }
+    return raw;
+}
+
+function getEmailLogoFilename(brand = 'condominio360') {
+    const asset = BRAND_ASSETS[brand] || BRAND_ASSETS.condominio360;
+    return path.basename(asset.png);
+}
+
 function getEmailLogoUrl(baseUrl, brand = 'condominio360') {
     const asset = BRAND_ASSETS[brand] || BRAND_ASSETS.condominio360;
-    if (fs.existsSync(asset.png)) {
-        return `${baseUrl}${asset.publicPngPath}`;
+    const root = (baseUrl || resolveEmailPublicBaseUrl()).replace(/\/+$/, '');
+    return `${root}${asset.publicPngPath}`;
+}
+
+/**
+ * Src para <img>: por defecto CID embebido (no depende de APP_URL ni de assets públicos).
+ * EMAIL_LOGO_MODE=url fuerza URL pública (EMAIL_PUBLIC_BASE_URL / APP_URL).
+ */
+function getEmailLogoSrc(brand = 'condominio360') {
+    const mode = (process.env.EMAIL_LOGO_MODE || 'inline').toLowerCase();
+    if (mode === 'url' || mode === 'external') {
+        return getEmailLogoUrl(resolveEmailPublicBaseUrl(), brand);
     }
-    return `${baseUrl}${asset.publicPngPath}`;
+    return `cid:${getEmailLogoFilename(brand)}`;
+}
+
+/** Reemplaza URLs públicas antiguas del logo por cid: (correos ya encolados). */
+function replaceExternalLogoUrlsWithCid(html) {
+    let out = String(html || '');
+    for (const asset of Object.values(BRAND_ASSETS)) {
+        const filename = path.basename(asset.png);
+        const escapedPath = asset.publicPngPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        out = out.replace(
+            new RegExp(`https?:\\/\\/[^"'\\s>]+${escapedPath}`, 'gi'),
+            `cid:${filename}`
+        );
+    }
+    return out;
+}
+
+/**
+ * Adjuntos inline Mailgun referenciados como cid:filename en el HTML.
+ */
+async function buildInlineLogoAttachmentsForHtml(html) {
+    if (!html || !String(html).includes('cid:')) {
+        return [];
+    }
+
+    await ensureEmailBrandAssets();
+
+    const attachments = [];
+    for (const asset of Object.values(BRAND_ASSETS)) {
+        const filename = path.basename(asset.png);
+        const cidRef = `cid:${filename}`;
+        if (!String(html).includes(cidRef)) continue;
+
+        if (!fs.existsSync(asset.png)) {
+            await svgToPngIfNeeded(asset);
+        }
+        if (!fs.existsSync(asset.png)) {
+            console.warn(`[emailBrandAssets] PNG no disponible para inline: ${asset.png}`);
+            continue;
+        }
+
+        attachments.push({
+            filename,
+            data: await fs.promises.readFile(asset.png),
+            contentType: 'image/png'
+        });
+    }
+
+    return attachments;
 }
 
 module.exports = {
     ensureEmailBrandAssets,
     ensureEmailBrandAssetsOnce,
+    resolveEmailPublicBaseUrl,
     getEmailLogoUrl,
+    getEmailLogoSrc,
+    getEmailLogoFilename,
+    replaceExternalLogoUrlsWithCid,
+    buildInlineLogoAttachmentsForHtml,
     BRAND_ASSETS
 };

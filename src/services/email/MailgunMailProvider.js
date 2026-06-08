@@ -45,7 +45,7 @@ class MailgunMailProvider {
     /**
      * @returns {Promise<{ id: string, message: string }>}
      */
-    async send({ domain, to, subject, html, text, fromOverride = null }) {
+    async send({ domain, to, subject, html, text, fromOverride = null, inline = null }) {
         if (!this.isConfigured()) {
             throw new Error('Mailgun API no configurada (MAILGUN_API_KEY)');
         }
@@ -58,6 +58,9 @@ class MailgunMailProvider {
             html,
             ...(text ? { text } : {})
         };
+        if (inline && inline.length) {
+            data.inline = inline;
+        }
         if (this.replyTo) {
             data['h:Reply-To'] = this.replyTo;
         }
