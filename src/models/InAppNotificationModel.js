@@ -17,6 +17,14 @@ function coerceBool(value) {
     return undefined;
 }
 
+function sanitizeTargetBuilding(value) {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    const s = String(value).trim();
+    if (!s || s.toLowerCase() === 'null') return null;
+    return s;
+}
+
 class InAppNotificationModel {
     static async create(data) {
         const pool = await connectDB();
@@ -40,6 +48,7 @@ class InAppNotificationModel {
         }
 
         const scheduledAtSql = coerceScheduledAt(scheduledAt);
+        const targetBuildingSql = sanitizeTargetBuilding(targetBuilding);
 
         const result = await pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
@@ -48,7 +57,7 @@ class InAppNotificationModel {
             .input('status', sql.NVarChar, status)
             .input('scheduled_at', sql.DateTime2, scheduledAtSql)
             .input('send_whatsapp', sql.Bit, sendWhatsapp)
-            .input('target_building', sql.NVarChar, targetBuilding || null)
+            .input('target_building', sql.NVarChar, targetBuildingSql)
             .input('attachment_path', sql.NVarChar, attachmentPath)
             .input('attachment_mime', sql.NVarChar, attachmentMime)
             .input('attachment_original_name', sql.NVarChar, attachmentOriginalName)
@@ -100,7 +109,7 @@ class InAppNotificationModel {
         }
         if (targetBuilding !== undefined) {
             updates.push('target_building = @target_building');
-            request.input('target_building', sql.NVarChar, targetBuilding || null);
+            request.input('target_building', sql.NVarChar, sanitizeTargetBuilding(targetBuilding));
         }
         if (clearAttachment) {
             updates.push('attachment_path = NULL, attachment_mime = NULL, attachment_original_name = NULL');
@@ -206,7 +215,11 @@ class InAppNotificationModel {
 
         let buildingClause = '';
         if (buildingName) {
-            buildingClause = ' AND (n.target_building IS NULL OR n.target_building = @building)';
+            buildingClause = ` AND (
+                n.target_building IS NULL
+                OR LOWER(LTRIM(RTRIM(n.target_building))) IN ('', 'null')
+                OR n.target_building = @building
+            )`;
             req.input('building', sql.NVarChar, buildingName);
         }
 

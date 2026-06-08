@@ -10,6 +10,15 @@ const path = require('path');
 const WA_UNAVAILABLE_MSG =
     'El servicio de WhatsApp no está contratado o configurado para este condominio. Contacte a administración Condominio360.';
 
+/** null/''/undefined → sin filtro; evita String(null) === "null" en JSON del frontend. */
+function normalizeTargetBuilding(value) {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    const s = String(value).trim();
+    if (!s || s.toLowerCase() === 'null') return null;
+    return s;
+}
+
 function parseRequestFields(req) {
     const b = req.body || {};
     return {
@@ -18,9 +27,7 @@ function parseRequestFields(req) {
         scheduledAt: b.scheduledAt,
         sendWhatsapp: InAppNotificationModel.coerceBool(b.sendWhatsapp),
         sendNow: InAppNotificationModel.coerceBool(b.sendNow),
-        targetBuilding: b.targetBuilding !== undefined && b.targetBuilding !== ''
-            ? String(b.targetBuilding).trim()
-            : (b.targetBuilding === '' ? null : undefined),
+        targetBuilding: normalizeTargetBuilding(b.targetBuilding),
         removeAttachment: InAppNotificationModel.coerceBool(b.removeAttachment) === true
     };
 }

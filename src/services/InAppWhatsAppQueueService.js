@@ -19,6 +19,13 @@ function resolveMessageType(mime) {
     return 'TEXT';
 }
 
+function effectiveTargetBuilding(value) {
+    if (value == null) return null;
+    const s = String(value).trim();
+    if (!s || s.toLowerCase() === 'null') return null;
+    return s;
+}
+
 /**
  * Cola global: máximo 30 envíos exitosos a OpenWA cada 2 minutos (plataforma).
  * Un job = un propietario. Teléfonos VE (+58), ES (+34) y US (+1).
@@ -27,10 +34,11 @@ class InAppWhatsAppQueueService {
     static async loadOwnerRecipientsWithPhones(tenantId, targetBuilding = null) {
         const pool = await connectDB();
         const req = pool.request().input('tenant_id', sql.UniqueIdentifier, tenantId);
+        const building = effectiveTargetBuilding(targetBuilding);
         let buildingClause = '';
-        if (targetBuilding) {
+        if (building) {
             buildingClause = ' AND (p.building = @target_building OR b.name = @target_building)';
-            req.input('target_building', sql.NVarChar, targetBuilding);
+            req.input('target_building', sql.NVarChar, building);
         }
         const r = await req.query(`
             SELECT DISTINCT u.id AS user_id, u.phone
@@ -77,7 +85,7 @@ class InAppWhatsAppQueueService {
         const messageType = hasAttachment ? resolveMessageType(n.attachment_mime) : 'TEXT';
         const owners = await InAppWhatsAppQueueService.loadOwnerRecipientsWithPhones(
             n.tenant_id,
-            n.target_building || null
+            effectiveTargetBuilding(n.target_building)
         );
         let enqueued = 0;
         let skippedPhones = 0;

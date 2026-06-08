@@ -2357,7 +2357,9 @@
                     const typeBadge = r.message_type && r.message_type !== 'TEXT'
                         ? `<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">${escapeHtml(r.message_type)}</span> `
                         : '';
-                    const scope = r.target_building ? `<div class="text-xs text-gray-400">${escapeHtml(r.target_building)}</div>` : '';
+                    const scope = r.target_building && String(r.target_building).toLowerCase() !== 'null'
+                        ? `<div class="text-xs text-gray-400">${escapeHtml(r.target_building)}</div>`
+                        : '';
                     let queueHtml = '';
                     if (r.status === 'SENT') {
                         queueHtml = '<span class="text-emerald-700 font-medium">Cola: enviado</span>';

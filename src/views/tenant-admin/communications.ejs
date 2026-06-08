@@ -185,6 +185,11 @@
             return v || null;
         }
 
+        function notificationJsonExtras() {
+            const tb = getTargetBuilding();
+            return tb ? { targetBuilding: tb } : {};
+        }
+
         function buildNotificationFormData(extra = {}) {
             const fd = new FormData();
             fd.append('message', document.getElementById('msg-content').value.trim());
@@ -360,7 +365,7 @@
                             <p class="text-[#3C4043] flex-1">${escapeHtml(n.message)}</p>
                             <div class="flex items-center gap-2 ml-4 flex-wrap justify-end">
                                 <span class="px-2 py-1 rounded-full text-xs font-medium status-${n.status.toLowerCase()}">${n.status === 'DRAFT' ? 'Borrador' : n.status === 'SCHEDULED' ? 'Programado' : 'Enviado'}</span>
-                            ${n.target_building ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">${escapeHtml(n.target_building)}</span>` : ''}
+                            ${n.target_building && String(n.target_building).toLowerCase() !== 'null' ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">${escapeHtml(n.target_building)}</span>` : ''}
                             ${n.has_attachment ? `<span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">Adjunto</span>` : ''}
                             ${n.send_whatsapp ? `<span class="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded">WhatsApp</span>` : ''}
                                 ${n.status !== 'SENT' ? `
@@ -508,7 +513,7 @@
                         message: msg,
                         status: 'DRAFT',
                         sendWhatsapp: getSendWhatsappFlag(),
-                        targetBuilding: getTargetBuilding()
+                        ...notificationJsonExtras()
                     },
                     formExtra: { status: 'DRAFT', sendWhatsapp: getSendWhatsappFlag() }
                 });
@@ -539,7 +544,7 @@
                         status: 'SCHEDULED',
                         scheduledAt: iso,
                         sendWhatsapp: getSendWhatsappFlag(),
-                        targetBuilding: getTargetBuilding()
+                        ...notificationJsonExtras()
                     },
                     formExtra: { status: 'SCHEDULED', scheduledAt: iso, sendWhatsapp: getSendWhatsappFlag() }
                 });
@@ -572,7 +577,7 @@
                             message: msg,
                             sendNow: true,
                             sendWhatsapp: getSendWhatsappFlag(),
-                            targetBuilding: getTargetBuilding()
+                            ...notificationJsonExtras()
                         },
                         formExtra: { sendNow: true, sendWhatsapp: getSendWhatsappFlag() }
                     });
