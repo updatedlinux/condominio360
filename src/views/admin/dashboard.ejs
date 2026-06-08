@@ -1265,6 +1265,7 @@
                                 <option value="PENDING">Pendiente</option>
                                 <option value="SENT">Enviado</option>
                                 <option value="FAILED">Fallido</option>
+                                <option value="SKIPPED">Omitido (lista negra)</option>
                             </select>
                         </div>
                         <div id="wa-tenant-filter-wrap">
@@ -2370,6 +2371,8 @@
                         queueHtml = '<span class="text-emerald-700 font-medium">Cola: enviado</span>';
                     } else if (r.status === 'FAILED') {
                         queueHtml = '<span class="text-red-600 font-medium">Cola: fallido</span>';
+                    } else if (r.status === 'SKIPPED') {
+                        queueHtml = '<span class="text-gray-600 font-medium">Cola: omitido</span>';
                     } else {
                         queueHtml = '<span class="text-amber-700 font-medium">Cola: pendiente</span>';
                     }

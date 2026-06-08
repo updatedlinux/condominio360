@@ -1031,7 +1031,55 @@ class EmailService {
             <p>Si no realizaste esta solicitud, por favor contacta a la administración de tu condominio.</p>
         `;
         const html = this._generateEmailTemplate(content, { title: 'Solicitud en Proceso', subtitle: 'Actualización de datos', color: '#f97316' });
-        await this.send(email, subject, html, null, {});
+        await this.send(email, subject, html, null, { messageType: 'data_update_request_owner' });
+    }
+
+    /**
+     * Aviso al propietario: teléfono sin WhatsApp válido (lista negra tras fallos OpenWA).
+     */
+    async sendWhatsAppPhoneBlacklistNotice(email, firstName, tenantName, profileUrl, meta = {}) {
+        const safeName = this._escapeHtml(firstName || 'Propietario');
+        const safeTenant = this._escapeHtml(tenantName || 'su condominio');
+        const href = String(profileUrl || `${process.env.APP_URL || 'http://localhost:3000'}/owner/profile`)
+            .replace(/&/g, '&amp;');
+        const subject = `Actualice su número de WhatsApp - ${tenantName || 'Condominio360'}`;
+
+        const content = `
+            <h2>Hola ${safeName},</h2>
+            <p>No hemos podido enviarle mensajes de WhatsApp desde <strong>${safeTenant}</strong> al número de teléfono registrado en su perfil.</p>
+            <div class="details-box" style="background-color:#fff7ed;border-left:4px solid #f97316;">
+                <h3>¿Qué significa esto?</h3>
+                <p>El número indicado no parece tener una cuenta de WhatsApp activa o no acepta mensajes de nuestro sistema. Para seguir recibiendo avisos importantes de la junta de condominio por WhatsApp, debe actualizar su teléfono móvil.</p>
+                <p><strong>Use un número que:</strong></p>
+                <ul style="margin: 12px 0; padding-left: 24px;">
+                    <li>Tenga WhatsApp instalado y activo</li>
+                    <li>Incluya el código de país (ej. +58 para Venezuela, +1 para EE.UU.)</li>
+                    <li>Sea el mismo que usa habitualmente en WhatsApp</li>
+                </ul>
+            </div>
+            <p>Puede solicitar la actualización de su teléfono desde su perfil en Condominio360. La junta o el administrador revisará el cambio.</p>
+            <div style="text-align: center; margin: 28px 0 22px;">
+                <a href="${href}" class="cta-button">Ir a mi perfil</a>
+            </div>
+            <p class="date-info">Si ya corrigió su número, ignore este mensaje; los avisos por WhatsApp se reanudarán automáticamente cuando el envío vuelva a ser exitoso.</p>
+        `;
+
+        const html = this._generateEmailTemplate(content, {
+            title: 'WhatsApp no disponible',
+            subtitle: 'Actualización de teléfono requerida',
+            color: '#f97316',
+            headerBackground: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+        });
+
+        const idempotencyKey = meta.idempotencyKey
+            || `wa-blacklist:${meta.tenantId || 'unknown'}:${meta.chatId || email}`;
+
+        return await this.send(email, subject, html, null, {
+            ...meta,
+            messageType: 'whatsapp_blacklist_owner',
+            pipeline: 'transactional',
+            idempotencyKey
+        });
     }
 
     /**

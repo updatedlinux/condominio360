@@ -1,12 +1,15 @@
 const { sql, connectDB } = require('../config/database');
 const TenantModel = require('../models/TenantModel');
 const WhatsAppQueueModel = require('../models/WhatsAppQueueModel');
+const WhatsAppPhoneBlacklistModel = require('../models/WhatsAppPhoneBlacklistModel');
+const UserModel = require('../models/UserModel');
 const OpenWAWhatsAppService = require('./OpenWAWhatsAppService');
+const EmailService = require('./EmailService');
 const { normalizePhoneForWhatsApp } = require('../utils/whatsappPhone');
 
 function buildWhatsAppOutboundBody(tenantName, userMessage) {
     const name = (tenantName || '').replace(/\s+/g, ' ').trim() || 'Condominio';
-    const header = `⚠️ Mensaje enviado por la Junta de Condominio - ${name}:\n\n`;
+    const header = `📢 Mensaje enviado por la Junta de Condominio - ${name}:\n\n`;
     const body = (userMessage || '').trim();
     const footer = '\n\n_⚙️ Este es un mensaje automático del sistema. Por favor, no responda a este bot_';
     return `${header}${body}${footer}`;
@@ -24,6 +27,30 @@ function effectiveTargetBuilding(value) {
     const s = String(value).trim();
     if (!s || s.toLowerCase() === 'null') return null;
     return s;
+}
+
+function isOpenWAServerError(errText) {
+    return /^HTTP 500\b/i.test(errText || '');
+}
+
+function maskChatId(chatId) {
+    const s = String(chatId || '').replace(/@c\.us$/, '');
+    if (s.length <= 4) return '****@c.us';
+    return `***${s.slice(-4)}@c.us`;
+}
+
+async function resolveOwnerPrimaryEmail(userId) {
+    const user = await UserModel.findById(userId);
+    if (!user) return { email: null, firstName: 'Propietario' };
+    if (user.email && String(user.email).trim()) {
+        return { email: String(user.email).trim(), firstName: user.first_name || 'Propietario' };
+    }
+    const emails = await UserModel.getEmails(userId);
+    const pick = emails.find((e) => e.is_primary) || emails[0];
+    return {
+        email: pick?.email ? String(pick.email).trim() : null,
+        firstName: user.first_name || 'Propietario'
+    };
 }
 
 /**
@@ -87,12 +114,19 @@ class InAppWhatsAppQueueService {
             n.tenant_id,
             effectiveTargetBuilding(n.target_building)
         );
+        const blockedChatIds = await WhatsAppPhoneBlacklistModel.getBlockedChatIds(n.tenant_id);
         let enqueued = 0;
         let skippedPhones = 0;
+        let skippedBlacklisted = 0;
         for (const row of owners) {
             const norm = normalizePhoneForWhatsApp(row.phone);
             if (!norm) {
                 skippedPhones += 1;
+                continue;
+            }
+
+            if (blockedChatIds.has(norm.chatId)) {
+                skippedBlacklisted += 1;
                 continue;
             }
 
@@ -112,7 +146,41 @@ class InAppWhatsAppQueueService {
             });
             enqueued += 1;
         }
-        return { enqueued, skippedPhones, targetBuilding: n.target_building || null };
+        if (skippedBlacklisted > 0) {
+            console.log('[WhatsApp] Destinatarios omitidos (lista negra)', {
+                notificationId: inAppNotificationId,
+                tenantId: n.tenant_id,
+                skippedBlacklisted
+            });
+        }
+        return { enqueued, skippedPhones, skippedBlacklisted, targetBuilding: n.target_building || null };
+    }
+
+    static async notifyOwnerWhatsAppBlacklisted(tenantId, userId, chatId, tenantName) {
+        const { email, firstName } = await resolveOwnerPrimaryEmail(userId);
+        if (!email) {
+            console.warn('[WhatsApp] Lista negra: propietario sin correo', {
+                tenantId,
+                userId,
+                chatId: maskChatId(chatId)
+            });
+            return false;
+        }
+
+        const base = (process.env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+        await EmailService.sendWhatsAppPhoneBlacklistNotice(
+            email,
+            firstName,
+            tenantName,
+            `${base}/owner/profile`,
+            { tenantId, chatId, userId }
+        );
+        await WhatsAppPhoneBlacklistModel.markOwnerNotified(tenantId, chatId);
+        console.log('[WhatsApp] Correo lista negra enviado al propietario', {
+            tenantId,
+            chatId: maskChatId(chatId)
+        });
+        return true;
     }
 
     static async processQueueTick() {
@@ -130,6 +198,15 @@ class InAppWhatsAppQueueService {
             const cfg = await TenantModel.getWhatsAppDeliveryConfig(job.tenant_id);
             if (!cfg) {
                 await WhatsAppQueueModel.markFailed(job.id, 'OpenWA no configurado para este condominio (sesión o plataforma)');
+                continue;
+            }
+
+            const chatId = job.chat_id || job.phone_national;
+            if (await WhatsAppPhoneBlacklistModel.isBlocked(job.tenant_id, chatId)) {
+                await WhatsAppQueueModel.markSkipped(
+                    job.id,
+                    'Número en lista negra WhatsApp (fallos 500 recurrentes). Revise el teléfono del propietario.'
+                );
                 continue;
             }
 
@@ -154,8 +231,33 @@ class InAppWhatsAppQueueService {
                 });
                 await WhatsAppQueueModel.markSent(job.id, result.messageId);
                 await WhatsAppQueueModel.logGlobalSend();
+                await WhatsAppPhoneBlacklistModel.recordSuccess(job.tenant_id, chatId);
             } catch (e) {
                 const errText = e.message || 'Error de envío';
+                if (isOpenWAServerError(errText)) {
+                    const bl = await WhatsAppPhoneBlacklistModel.recordServerFailure(
+                        job.tenant_id,
+                        chatId,
+                        job.user_id,
+                        errText
+                    );
+                    if (bl.newlyBlocked && !bl.ownerNotified) {
+                        console.warn('[WhatsApp] Número añadido a lista negra', {
+                            tenantId: job.tenant_id,
+                            chatId: maskChatId(chatId),
+                            failures: bl.failureCount,
+                            threshold: bl.threshold
+                        });
+                        InAppWhatsAppQueueService.notifyOwnerWhatsAppBlacklisted(
+                            job.tenant_id,
+                            job.user_id,
+                            chatId,
+                            tenantRow?.name
+                        ).catch((mailErr) => {
+                            console.warn('[WhatsApp] No se pudo enviar correo de lista negra', mailErr.message);
+                        });
+                    }
+                }
                 console.warn(`[WhatsApp queue] Job ${job.id} FAILED:`, errText);
                 await WhatsAppQueueModel.markFailed(job.id, errText);
             }

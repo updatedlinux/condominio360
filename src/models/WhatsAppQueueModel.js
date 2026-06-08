@@ -121,6 +121,18 @@ class WhatsAppQueueModel {
                 WHERE id = @id
             `);
     }
+
+    static async markSkipped(id, reason) {
+        const pool = await connectDB();
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, id)
+            .input('err', sql.NVarChar, (reason || 'Omitido').slice(0, 4000))
+            .query(`
+                UPDATE WhatsAppOutboundQueue
+                SET status = 'SKIPPED', error_message = @err
+                WHERE id = @id
+            `);
+    }
 }
 
 WhatsAppQueueModel.WINDOW_SECONDS = WINDOW_SECONDS;

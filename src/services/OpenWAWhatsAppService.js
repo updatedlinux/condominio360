@@ -4,8 +4,8 @@ const path = require('path');
 const sharp = require('sharp');
 
 /**
- * Cliente OpenWA — send-{text|image|document} (DTO real: campos planos chatId/url/base64/mimetype).
- * La doc 06 muestra image:{url} pero el API espera { chatId, url, caption } o { chatId, base64, mimetype }.
+ * Cliente OpenWA — send-{text|image|document} (DTO plano: chatId + url|base64 + mimetype).
+ * Multimedia: URL pública por defecto; base64 solo si OPENWA_MEDIA_USE_BASE64=true.
  */
 
 const MIME_BY_EXT = {
@@ -19,7 +19,7 @@ const MIME_BY_EXT = {
 
 const CAPTION_MAX = 1024;
 const DEFAULT_MAX_URL_BYTES = 1500000;
-const DEFAULT_MAX_BASE64_BYTES = 350000;
+const DEFAULT_MAX_BASE64_BYTES = 75000;
 
 function joinUrl(baseUrl, pathPart) {
     const b = (baseUrl || '').trim().replace(/\/+$/, '');
@@ -64,6 +64,11 @@ function parseMaxBase64Bytes() {
     return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_BASE64_BYTES;
 }
 
+function useBase64Fallback() {
+    const v = (process.env.OPENWA_MEDIA_USE_BASE64 || '').trim().toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+}
+
 function truncateCaption(text) {
     const t = (text || '').trim();
     if (!t) return undefined;
@@ -88,12 +93,7 @@ function isRetryableMediaError(status, detail) {
     if (status === 413) return true;
     if (status !== 400) return false;
     const d = String(detail || '').toLowerCase();
-    return (
-        d.includes('download') ||
-        d.includes('media') ||
-        d.includes('validation') ||
-        d.includes('bad request')
-    );
+    return d.includes('download') || d.includes('media') || d.includes('validation');
 }
 
 async function ensureWhatsappOptimizedImage(relativePath) {
@@ -132,7 +132,7 @@ async function resolveImageRelativePath(relativePath, explicitMime) {
         size > parseMaxUrlBytes() || mime === 'image/png' || path.extname(relativePath).toLowerCase() === '.png';
     if (!needsOptimize) return relativePath;
     const optimized = await ensureWhatsappOptimizedImage(relativePath);
-    console.log('[OpenWA] Imagen optimizada para WhatsApp', {
+    console.log('[OpenWA] Imagen optimizada', {
         original: relativePath,
         originalSize: size,
         optimized,
@@ -142,52 +142,25 @@ async function resolveImageRelativePath(relativePath, explicitMime) {
 }
 
 function readFileAsBase64(relativePath) {
-    const abs = localUploadPath(relativePath);
-    return fs.readFileSync(abs).toString('base64');
+    return fs.readFileSync(localUploadPath(relativePath)).toString('base64');
 }
 
-function buildImageSendAttempts(servePath, mime) {
-    const abs = localUploadPath(servePath);
-    const size = fs.statSync(abs).size;
-    const url = buildPublicUploadUrl(servePath);
-    const filename = path.basename(servePath);
+function buildMediaSendAttempts(relativePath, mime, filename) {
+    const size = fs.statSync(localUploadPath(relativePath)).size;
+    const publicUrl = buildPublicUploadUrl(relativePath);
     const attempts = [];
-
-    if (size <= parseMaxBase64Bytes()) {
-        attempts.push({
-            mode: 'base64',
-            buildBody: (chatId, caption) => {
-                const body = {
-                    chatId,
-                    base64: readFileAsBase64(servePath),
-                    mimetype: mime,
-                    filename
-                };
-                if (caption) body.caption = caption;
-                return body;
-            }
-        });
-    }
 
     attempts.push({
         mode: 'url',
         buildBody: (chatId, caption) => {
-            const body = { chatId, url };
+            const body = { chatId, url: publicUrl };
+            if (filename) body.filename = filename;
             if (caption) body.caption = caption;
             return body;
         }
     });
 
-    return { attempts, url, servePath, size };
-}
-
-function buildDocumentSendAttempts(relativePath, mime, filename) {
-    const abs = localUploadPath(relativePath);
-    const size = fs.statSync(abs).size;
-    const url = buildPublicUploadUrl(relativePath);
-    const attempts = [];
-
-    if (size <= parseMaxBase64Bytes()) {
+    if (useBase64Fallback() && size <= parseMaxBase64Bytes()) {
         attempts.push({
             mode: 'base64',
             buildBody: (chatId, caption) => {
@@ -195,7 +168,7 @@ function buildDocumentSendAttempts(relativePath, mime, filename) {
                     chatId,
                     base64: readFileAsBase64(relativePath),
                     mimetype: mime,
-                    filename
+                    filename: filename || path.basename(relativePath)
                 };
                 if (caption) body.caption = caption;
                 return body;
@@ -203,16 +176,7 @@ function buildDocumentSendAttempts(relativePath, mime, filename) {
         });
     }
 
-    attempts.push({
-        mode: 'url',
-        buildBody: (chatId, caption) => {
-            const body = { chatId, url, filename };
-            if (caption) body.caption = caption;
-            return body;
-        }
-    });
-
-    return { attempts, url, size };
+    return { attempts, url: publicUrl, size };
 }
 
 async function postOpenWA(platform, apiPath, body) {
@@ -271,42 +235,24 @@ class OpenWAWhatsAppService {
             apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-image`;
             const servePath = await resolveImageRelativePath(attachmentPath, attachmentMime);
             const mime = guessMime(servePath, 'image/jpeg');
-            const built = buildImageSendAttempts(servePath, mime);
+            const built = buildMediaSendAttempts(servePath, mime, path.basename(servePath));
             attempts = built.attempts;
             mediaUrl = built.url;
-            console.log('[OpenWA] send-image', {
-                servePath,
-                fileSize: built.size,
-                modes: attempts.map((a) => a.mode),
-                url: built.url,
-                ...(logMeta || {})
-            });
         } else if (media === 'DOCUMENT' && attachmentPath) {
             apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-document`;
             const abs = localUploadPath(attachmentPath);
             if (!fs.existsSync(abs)) throw new Error(`Adjunto no encontrado: ${abs}`);
             const mime = guessMime(attachmentPath, attachmentMime);
             const filename = attachmentOriginalName || path.basename(attachmentPath) || 'documento.pdf';
-            const built = buildDocumentSendAttempts(attachmentPath, mime, filename);
+            const built = buildMediaSendAttempts(attachmentPath, mime, filename);
             attempts = built.attempts;
             mediaUrl = built.url;
-            console.log('[OpenWA] send-document', {
-                filename,
-                fileSize: built.size,
-                modes: attempts.map((a) => a.mode),
-                url: built.url,
-                ...(logMeta || {})
-            });
         } else {
             apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-text`;
             attempts = [{
                 mode: 'text',
                 buildBody: () => ({ chatId, text: text || ' ' })
             }];
-            console.log('[OpenWA] send-text', {
-                chatId: maskChatId(chatId),
-                ...(logMeta || {})
-            });
         }
 
         let lastError = null;
@@ -321,59 +267,47 @@ class OpenWAWhatsAppService {
                 if (res.status >= 400 || data.success === false) {
                     const detail = extractApiError(data, res.status, res.statusText);
                     const canRetry = i < attempts.length - 1 && isRetryableMediaError(res.status, detail);
-
-                    console.warn('[OpenWA] Fallo envío', {
-                        mode: attempt.mode,
-                        url,
-                        status: res.status,
-                        detail: detail.slice(0, 800),
-                        response: JSON.stringify(data).slice(0, 500),
-                        requestBodyPreview: attempt.mode === 'base64'
-                            ? `{ chatId, base64: "<${body.base64?.length || 0} chars>", mimetype: "${body.mimetype}", caption? }`
-                            : JSON.stringify(body).slice(0, 400),
-                        chatId: maskChatId(chatId),
-                        media,
-                        mediaUrl,
-                        attachmentPath: attachmentPath || null,
-                        ...(logMeta || {})
-                    });
+                    lastError = new Error(`HTTP ${res.status} ${url}: ${detail}`.slice(0, 4000));
 
                     if (canRetry) {
-                        console.warn('[OpenWA] Reintento con modo alternativo', {
+                        console.log('[OpenWA] Reintento multimedia', {
                             from: attempt.mode,
                             to: attempts[i + 1].mode,
+                            status: res.status,
+                            chatId: maskChatId(chatId),
                             ...(logMeta || {})
                         });
-                        lastError = new Error(`HTTP ${res.status} ${url}: ${detail}`.slice(0, 4000));
                         continue;
                     }
 
-                    throw new Error(`HTTP ${res.status} ${url}: ${detail}`.slice(0, 4000));
+                    console.warn('[OpenWA] Fallo envío', {
+                        mode: attempt.mode,
+                        status: res.status,
+                        detail: detail.slice(0, 300),
+                        chatId: maskChatId(chatId),
+                        media,
+                        ...(logMeta || {})
+                    });
+                    throw lastError;
                 }
 
                 const payload = data.data || data;
                 const messageId = payload.messageId || payload.id || null;
                 console.log('[OpenWA] Envío OK', {
                     mode: attempt.mode,
-                    ...(logMeta || {}),
                     messageId,
                     chatId: maskChatId(chatId),
                     media,
-                    mediaUrl
+                    ...(logMeta || {})
                 });
                 return { messageId, raw: data };
             } catch (e) {
-                if (e.response?.data) {
-                    const detail = extractApiError(e.response.data, e.response.status, e.message);
-                    lastError = new Error(detail.slice(0, 4000));
-                    if (i < attempts.length - 1) continue;
-                    throw lastError;
+                if (e === lastError || (lastError && e.message === lastError.message)) {
+                    throw e;
                 }
                 if (e.code === 'ENOTFOUND' || e.code === 'EAI_AGAIN') {
                     throw new Error(`No se pudo conectar con OpenWA (${e.code}). Revise OPENWA_BASE_URL y red.`);
                 }
-                lastError = e;
-                if (i < attempts.length - 1) continue;
                 throw e;
             }
         }
