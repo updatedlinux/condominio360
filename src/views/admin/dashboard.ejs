@@ -1219,7 +1219,12 @@
                         <p class="font-medium text-gray-900 mb-2">Webhook OpenWA (configurar en dashboard OpenWA → Webhooks)</p>
                         <p class="text-xs text-gray-500 mb-2">URL destino:</p>
                         <code id="wa-webhook-url" class="block bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs break-all">—</code>
-                        <p class="text-xs text-gray-500 mt-3">Eventos recomendados: <code>message.sent</code>, <code>message.ack</code>, <code>session.connected</code>, <code>session.disconnected</code>, <code>session.qr</code></p>
+                        <p class="text-xs text-gray-500 mt-3">Eventos recomendados: <code>message.sent</code>, <code>message.ack</code>, <code>session.status</code> (o <code>session.connected</code>)</p>
+                        <p class="text-xs text-amber-800 mt-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                            Si la tabla de eventos está vacía: (1) quita <code>OPENWA_WEBHOOK_SECRET</code> del .env si OpenWA no firma,
+                            (2) despliega el fix de límite 10&nbsp;MB en <code>/api/webhooks</code>,
+                            (3) en logs PM2 busca <code>[OpenWA webhook] evento guardado</code> tras un envío.
+                        </p>
                         <p class="text-xs text-gray-500 mt-1" id="wa-openwa-platform-status">—</p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -2368,9 +2373,14 @@
                     } else {
                         queueHtml = '<span class="text-amber-700 font-medium">Cola: pendiente</span>';
                     }
-                    const del = r.delivery_status
-                        ? `<div class="text-xs text-teal-700 mt-1">Webhook: ${escapeHtml(r.delivery_status)}</div>`
-                        : '';
+                    const del = (() => {
+                        if (r.status === 'FAILED' || !r.delivery_status) return '';
+                        if (r.delivery_status === 'QUEUED_SENT') {
+                            return '<div class="text-xs text-gray-500 mt-1">Sin ACK de OpenWA aún</div>';
+                        }
+                        if (r.delivery_status === 'FAILED') return '';
+                        return `<div class="text-xs text-teal-700 mt-1">ACK OpenWA: ${escapeHtml(r.delivery_status)}</div>`;
+                    })();
                     const err = r.error_message ? `<div class="text-xs text-red-600 mt-1 max-w-xs">${escapeHtml(String(r.error_message).slice(0, 200))}</div>` : '';
                     const dt = r.sent_at || r.created_at;
                     const when = dt ? formatOutgoingQueuesTime(dt) : '—';

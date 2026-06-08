@@ -56,6 +56,34 @@ function sanitizeWebhookPayload(body) {
     return walk(body);
 }
 
+/** OpenWA HTTP puede enviar plano { event, sessionId, data } o envuelto { type:"event", payload:{...} }. */
+function normalizeWebhookBody(raw) {
+    if (!raw || typeof raw !== 'object') {
+        return { body: {}, eventType: 'unknown', sessionId: null, envelope: raw };
+    }
+    if (raw.type === 'event' && raw.payload && typeof raw.payload === 'object') {
+        const p = raw.payload;
+        return {
+            body: p,
+            envelope: raw,
+            eventType: p.event || p.type || 'unknown',
+            sessionId: p.sessionId || p.data?.sessionId || null
+        };
+    }
+    const eventType = raw.event || (raw.type && raw.type !== 'event' ? raw.type : null) || 'unknown';
+    return {
+        body: raw,
+        envelope: raw,
+        eventType,
+        sessionId: raw.sessionId || raw.data?.sessionId || null
+    };
+}
+
+function extractMessageId(data) {
+    if (!data || typeof data !== 'object') return null;
+    return data.messageId || data.id || null;
+}
+
 class OpenWAWebhookController {
     /**
      * GET /api/webhooks/openwa — comprobar que la URL es alcanzable (OpenWA usa POST).
@@ -88,18 +116,20 @@ class OpenWAWebhookController {
             return res.status(401).json({ success: false, error: 'Invalid signature' });
         }
 
-        const body = req.body || {};
-        const eventType = body.event || body.type || 'unknown';
-        const sessionId = body.sessionId || body.data?.sessionId || null;
+        const normalized = normalizeWebhookBody(req.body || {});
+        const body = normalized.body;
+        const eventType = normalized.eventType;
+        const sessionId = normalized.sessionId;
 
         try {
             const tenantId = await WhatsAppWebhookModel.findTenantIdBySessionId(sessionId);
             let openwaMessageId = null;
             let queueId = null;
             let deliveryStatus = null;
+            const data = body.data || {};
 
             if (eventType === 'message.sent') {
-                openwaMessageId = body.data?.messageId || body.data?.id || null;
+                openwaMessageId = extractMessageId(data);
                 deliveryStatus = 'SENT_CONFIRMED';
                 queueId = await WhatsAppWebhookModel.findQueueIdByMessageId(openwaMessageId);
                 if (openwaMessageId) {
@@ -110,8 +140,8 @@ class OpenWAWebhookController {
                     );
                 }
             } else if (eventType === 'message.ack') {
-                openwaMessageId = body.data?.messageId || body.data?.id || null;
-                deliveryStatus = mapAckName(body.data?.ackName, body.data?.ack);
+                openwaMessageId = extractMessageId(data);
+                deliveryStatus = mapAckName(data.ackName, data.ack);
                 queueId = await WhatsAppWebhookModel.findQueueIdByMessageId(openwaMessageId);
                 if (openwaMessageId) {
                     await WhatsAppWebhookModel.updateQueueDeliveryByMessageId(
@@ -121,7 +151,7 @@ class OpenWAWebhookController {
                     );
                 }
             } else if (eventType === 'message.received') {
-                openwaMessageId = body.data?.id || null;
+                openwaMessageId = extractMessageId(data);
             }
 
             await WhatsAppWebhookModel.insertEvent({
@@ -130,7 +160,15 @@ class OpenWAWebhookController {
                 eventType,
                 openwaMessageId,
                 queueId,
-                payload: sanitizeWebhookPayload(body)
+                payload: sanitizeWebhookPayload(normalized.envelope)
+            });
+
+            console.log('[OpenWA webhook] evento guardado', {
+                eventType,
+                sessionId: sessionId || '-',
+                tenantId: tenantId || '-',
+                openwaMessageId: openwaMessageId || '-',
+                queueId: queueId || '-'
             });
 
             if (eventType.startsWith('session.')) {

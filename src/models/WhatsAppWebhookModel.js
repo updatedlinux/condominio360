@@ -40,21 +40,6 @@ class WhatsAppWebhookModel {
         return r.recordset[0]?.id || null;
     }
 
-    static async updateQueueDeliveryByMessageId(openwaMessageId, deliveryStatus, deliveredAt = null) {
-        if (!openwaMessageId) return;
-        const pool = await connectDB();
-        await pool.request()
-            .input('mid', sql.NVarChar, openwaMessageId)
-            .input('ds', sql.NVarChar, deliveryStatus)
-            .input('da', sql.DateTime2, deliveredAt)
-            .query(`
-                UPDATE WhatsAppOutboundQueue
-                SET delivery_status = @ds,
-                    delivered_at = COALESCE(@da, delivered_at)
-                WHERE openwa_message_id = @mid
-            `);
-    }
-
     static async findQueueIdByMessageId(openwaMessageId) {
         if (!openwaMessageId) return null;
         const pool = await connectDB();
@@ -63,7 +48,40 @@ class WhatsAppWebhookModel {
             .query(`
                 SELECT TOP 1 id FROM WhatsAppOutboundQueue WHERE openwa_message_id = @mid
             `);
-        return r.recordset[0]?.id || null;
+        if (r.recordset[0]?.id) return r.recordset[0].id;
+
+        const parts = String(openwaMessageId).split('_');
+        const suffix = parts.length > 1 ? parts[parts.length - 1] : null;
+        if (suffix && suffix.length >= 8) {
+            const r2 = await pool.request()
+                .input('pat', sql.NVarChar, `%_${suffix}`)
+                .query(`
+                    SELECT TOP 1 id FROM WhatsAppOutboundQueue
+                    WHERE openwa_message_id LIKE @pat
+                    ORDER BY created_at DESC
+                `);
+            return r2.recordset[0]?.id || null;
+        }
+        return null;
+    }
+
+    static async updateQueueDeliveryByMessageId(openwaMessageId, deliveryStatus, deliveredAt = null) {
+        if (!openwaMessageId) return;
+        const queueId = await WhatsAppWebhookModel.findQueueIdByMessageId(openwaMessageId);
+        if (!queueId) return;
+        const pool = await connectDB();
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, queueId)
+            .input('mid', sql.NVarChar, openwaMessageId)
+            .input('ds', sql.NVarChar, deliveryStatus)
+            .input('da', sql.DateTime2, deliveredAt)
+            .query(`
+                UPDATE WhatsAppOutboundQueue
+                SET delivery_status = @ds,
+                    delivered_at = COALESCE(@da, delivered_at),
+                    openwa_message_id = COALESCE(openwa_message_id, @mid)
+                WHERE id = @id
+            `);
     }
 
     /**

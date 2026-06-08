@@ -117,7 +117,7 @@ class WhatsAppQueueModel {
             .input('err', sql.NVarChar, (errorMessage || '').slice(0, 4000))
             .query(`
                 UPDATE WhatsAppOutboundQueue
-                SET status = 'FAILED', error_message = @err, delivery_status = 'FAILED'
+                SET status = 'FAILED', error_message = @err
                 WHERE id = @id
             `);
     }
