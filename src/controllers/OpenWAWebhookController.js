@@ -30,6 +30,32 @@ function mapAckName(ackName, ack) {
     return 'ACK';
 }
 
+/** Evita guardar QR/imágenes base64 completos en WhatsAppWebhookEvents. */
+function sanitizeWebhookPayload(body) {
+    if (!body || typeof body !== 'object') return body;
+
+    function trimValue(value) {
+        if (typeof value !== 'string') return value;
+        if (value.length <= 500) return value;
+        if (value.startsWith('data:') || /^[A-Za-z0-9+/=\r\n]{200,}/.test(value.slice(0, 300))) {
+            return `[omitted ${value.length} chars]`;
+        }
+        return `${value.slice(0, 500)}…[+${value.length - 500}]`;
+    }
+
+    function walk(node) {
+        if (node == null || typeof node !== 'object') return trimValue(node);
+        if (Array.isArray(node)) return node.map(walk);
+        const out = {};
+        for (const [key, val] of Object.entries(node)) {
+            out[key] = walk(val);
+        }
+        return out;
+    }
+
+    return walk(body);
+}
+
 class OpenWAWebhookController {
     /**
      * GET /api/webhooks/openwa — comprobar que la URL es alcanzable (OpenWA usa POST).
@@ -104,7 +130,7 @@ class OpenWAWebhookController {
                 eventType,
                 openwaMessageId,
                 queueId,
-                payload: body
+                payload: sanitizeWebhookPayload(body)
             });
 
             if (eventType.startsWith('session.')) {

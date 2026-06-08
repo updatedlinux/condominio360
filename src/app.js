@@ -66,13 +66,23 @@ const morganFormat =
     process.env.MORGAN_FORMAT ||
     ':remote-addr :method :url :status :response-time ms - :res[content-length]';
 app.use(morgan(morganFormat));
-app.use(express.json({
-    verify: (req, res, buf) => {
-        if (req.originalUrl && req.originalUrl.startsWith('/api/webhooks/')) {
+
+const webhooksRouter = require('./routes/webhooks');
+const openwaWebhookBodyLimit = process.env.OPENWA_WEBHOOK_BODY_LIMIT || '10mb';
+
+// Webhooks antes del JSON global: OpenWA envía QR/imágenes en base64 (supera 100kb por defecto).
+app.use(
+    '/api/webhooks',
+    express.json({
+        limit: openwaWebhookBodyLimit,
+        verify: (req, res, buf) => {
             req.rawBody = buf.toString('utf8');
         }
-    }
-}));
+    }),
+    webhooksRouter
+);
+
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '100kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -116,7 +126,6 @@ app.use('/api/visitors', visitorRoutes);
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/security', securityRoutes);
 app.use('/api/tenant-admin/nfc', nfcAdminRoutes);
-app.use('/api/webhooks', require('./routes/webhooks'));
 
 // Demo request desde landing (público)
 const DemoController = require('./controllers/DemoController');
