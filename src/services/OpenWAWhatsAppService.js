@@ -4,8 +4,9 @@ const path = require('path');
 const sharp = require('sharp');
 
 /**
- * Cliente OpenWA — API unificada POST /api/sessions/:sessionId/messages
- * (phone, type, body|media). PNG/grandes → JPEG optimizado (-openwa.jpg).
+ * Cliente OpenWA — endpoints legacy send-{text|image|document} (spec 06).
+ * Imagen: JPEG optimizado en base64 (data URI); fallback URL pública si falla.
+ * PNG/grandes → cache local (-openwa.jpg).
  */
 
 const MIME_BY_EXT = {
@@ -19,6 +20,7 @@ const MIME_BY_EXT = {
 
 const CAPTION_MAX = 1024;
 const DEFAULT_MAX_URL_BYTES = 1500000;
+const DEFAULT_MAX_BASE64_BYTES = 350000;
 
 function joinUrl(baseUrl, pathPart) {
     const b = (baseUrl || '').trim().replace(/\/+$/, '');
@@ -58,6 +60,11 @@ function parseMaxUrlBytes() {
     return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_URL_BYTES;
 }
 
+function parseMaxBase64Bytes() {
+    const n = parseInt(process.env.OPENWA_MEDIA_BASE64_MAX_BYTES || String(DEFAULT_MAX_BASE64_BYTES), 10);
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_BASE64_BYTES;
+}
+
 function truncateCaption(text) {
     const t = (text || '').trim();
     if (!t) return undefined;
@@ -78,9 +85,20 @@ function extractApiError(data, resStatus, resStatusText) {
     return JSON.stringify(data).slice(0, 500);
 }
 
+function isRetryableMediaError(status, detail) {
+    if (status === 413) return true;
+    if (status !== 400) return false;
+    const d = String(detail || '').toLowerCase();
+    return (
+        d.includes('download') ||
+        d.includes('media') ||
+        d.includes('validation') ||
+        d.includes('bad request')
+    );
+}
+
 async function ensureWhatsappOptimizedImage(relativePath) {
     const abs = localUploadPath(relativePath);
-    const ext = path.extname(relativePath).toLowerCase();
     const cacheRel = relativePath.replace(/\.[^./\\]+$/, '') + '-openwa.jpg';
     const cacheAbs = localUploadPath(cacheRel);
 
@@ -104,7 +122,6 @@ async function ensureWhatsappOptimizedImage(relativePath) {
     return cacheRel;
 }
 
-/** Ruta relativa servida por /uploads para OpenWA (optimiza PNG/grandes). */
 async function resolveImageRelativePath(relativePath, explicitMime) {
     const abs = localUploadPath(relativePath);
     if (!fs.existsSync(abs)) {
@@ -112,25 +129,95 @@ async function resolveImageRelativePath(relativePath, explicitMime) {
     }
     const size = fs.statSync(abs).size;
     const mime = guessMime(relativePath, explicitMime);
-    const needsOptimize = size > parseMaxUrlBytes() || mime === 'image/png' || extIs(relativePath, '.png');
+    const needsOptimize =
+        size > parseMaxUrlBytes() || mime === 'image/png' || path.extname(relativePath).toLowerCase() === '.png';
     if (!needsOptimize) return relativePath;
     const optimized = await ensureWhatsappOptimizedImage(relativePath);
     console.log('[OpenWA] Imagen optimizada para WhatsApp', {
         original: relativePath,
         originalSize: size,
-        optimized: optimized,
+        optimized,
         optimizedSize: fs.statSync(localUploadPath(optimized)).size
     });
     return optimized;
 }
 
-function extIs(relativePath, ext) {
-    return path.extname(relativePath || '').toLowerCase() === ext;
+function readFileAsDataUri(relativePath, mime) {
+    const abs = localUploadPath(relativePath);
+    const buf = fs.readFileSync(abs);
+    return `data:${mime};base64,${buf.toString('base64')}`;
 }
 
-function buildUrlMediaPayload(relativePath) {
+function buildImageSendAttempts(servePath, mime) {
+    const abs = localUploadPath(servePath);
+    const size = fs.statSync(abs).size;
+    const url = buildPublicUploadUrl(servePath);
+    const attempts = [];
+
+    if (size <= parseMaxBase64Bytes()) {
+        attempts.push({
+            mode: 'base64',
+            buildBody: (chatId, caption) => {
+                const body = {
+                    chatId,
+                    image: { base64: readFileAsDataUri(servePath, mime) }
+                };
+                if (caption) body.caption = caption;
+                return body;
+            }
+        });
+    }
+
+    attempts.push({
+        mode: 'url',
+        buildBody: (chatId, caption) => {
+            const body = {
+                chatId,
+                image: { url, mimetype: mime }
+            };
+            if (caption) body.caption = caption;
+            return body;
+        }
+    });
+
+    return { attempts, url, servePath, size };
+}
+
+function buildDocumentSendAttempts(relativePath, mime, filename) {
+    const abs = localUploadPath(relativePath);
+    const size = fs.statSync(abs).size;
     const url = buildPublicUploadUrl(relativePath);
-    return { media: { url }, downloadUrl: url, servePath: relativePath };
+    const attempts = [];
+
+    if (size <= parseMaxBase64Bytes()) {
+        attempts.push({
+            mode: 'base64',
+            buildBody: (chatId, caption) => {
+                const body = {
+                    chatId,
+                    document: { base64: readFileAsDataUri(relativePath, mime) },
+                    filename
+                };
+                if (caption) body.caption = caption;
+                return body;
+            }
+        });
+    }
+
+    attempts.push({
+        mode: 'url',
+        buildBody: (chatId, caption) => {
+            const body = {
+                chatId,
+                document: { url, mimetype: mime },
+                filename
+            };
+            if (caption) body.caption = caption;
+            return body;
+        }
+    });
+
+    return { attempts, url, size };
 }
 
 async function postOpenWA(platform, apiPath, body) {
@@ -139,7 +226,8 @@ async function postOpenWA(platform, apiPath, body) {
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-API-Key': platform.apiKey
+            'X-API-Key': platform.apiKey,
+            'X-Request-ID': `c360_${Date.now()}`
         },
         timeout: 120000,
         validateStatus: () => true,
@@ -180,93 +268,122 @@ class OpenWAWhatsAppService {
 
         const media = (mediaType || 'TEXT').toUpperCase();
         const caption = truncateCaption(text);
-        const apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages`;
-        let body;
-        let mediaPayload = null;
+        let apiPath;
+        let attempts;
+        let mediaUrl = null;
 
         if (media === 'IMAGE' && attachmentPath) {
+            apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-image`;
             const servePath = await resolveImageRelativePath(attachmentPath, attachmentMime);
-            mediaPayload = buildUrlMediaPayload(servePath);
-            body = {
-                phone: chatId,
-                type: 'image',
-                media: mediaPayload.media
-            };
-            if (caption) body.caption = caption;
-            console.log('[OpenWA] send message (image) vía URL', {
-                url: mediaPayload.downloadUrl,
+            const mime = guessMime(servePath, 'image/jpeg');
+            const built = buildImageSendAttempts(servePath, mime);
+            attempts = built.attempts;
+            mediaUrl = built.url;
+            console.log('[OpenWA] send-image', {
                 servePath,
+                fileSize: built.size,
+                modes: attempts.map((a) => a.mode),
+                url: built.url,
                 ...(logMeta || {})
             });
         } else if (media === 'DOCUMENT' && attachmentPath) {
+            apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-document`;
             const abs = localUploadPath(attachmentPath);
             if (!fs.existsSync(abs)) throw new Error(`Adjunto no encontrado: ${abs}`);
-            mediaPayload = buildUrlMediaPayload(attachmentPath);
+            const mime = guessMime(attachmentPath, attachmentMime);
             const filename = attachmentOriginalName || path.basename(attachmentPath) || 'documento.pdf';
-            body = {
-                phone: chatId,
-                type: 'document',
-                media: mediaPayload.media,
-                filename
-            };
-            if (caption) body.caption = caption;
-            console.log('[OpenWA] send message (document) vía URL', {
-                url: mediaPayload.downloadUrl,
+            const built = buildDocumentSendAttempts(attachmentPath, mime, filename);
+            attempts = built.attempts;
+            mediaUrl = built.url;
+            console.log('[OpenWA] send-document', {
                 filename,
+                fileSize: built.size,
+                modes: attempts.map((a) => a.mode),
+                url: built.url,
                 ...(logMeta || {})
             });
         } else {
-            body = {
-                phone: chatId,
-                type: 'text',
-                body: text || ' '
-            };
-            console.log('[OpenWA] send message (text)', {
+            apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-text`;
+            attempts = [{
+                mode: 'text',
+                buildBody: () => ({ chatId, text: text || ' ' })
+            }];
+            console.log('[OpenWA] send-text', {
                 chatId: maskChatId(chatId),
                 ...(logMeta || {})
             });
         }
 
-        try {
-            let { url, res, data } = await postOpenWA(platform, apiPath, body);
+        let lastError = null;
 
-            if (res.status >= 400 || data.success === false) {
-                const detail = extractApiError(data, res.status, res.statusText);
-                const msg = `HTTP ${res.status} ${url}: ${detail}`.slice(0, 4000);
-                console.warn('[OpenWA] Fallo envío', {
-                    url,
-                    status: res.status,
-                    detail: detail.slice(0, 800),
-                    response: JSON.stringify(data).slice(0, 500),
-                    requestBody: JSON.stringify(body).slice(0, 400),
+        for (let i = 0; i < attempts.length; i++) {
+            const attempt = attempts[i];
+            const body = attempt.buildBody(chatId, caption);
+
+            try {
+                const { url, res, data } = await postOpenWA(platform, apiPath, body);
+
+                if (res.status >= 400 || data.success === false) {
+                    const detail = extractApiError(data, res.status, res.statusText);
+                    const canRetry = i < attempts.length - 1 && isRetryableMediaError(res.status, detail);
+
+                    console.warn('[OpenWA] Fallo envío', {
+                        mode: attempt.mode,
+                        url,
+                        status: res.status,
+                        detail: detail.slice(0, 800),
+                        response: JSON.stringify(data).slice(0, 500),
+                        requestBodyPreview: attempt.mode === 'base64'
+                            ? `{ chatId, image|document: { base64: "<${body.image?.base64?.length || body.document?.base64?.length || 0} chars>" }, caption? }`
+                            : JSON.stringify(body).slice(0, 400),
+                        chatId: maskChatId(chatId),
+                        media,
+                        mediaUrl,
+                        attachmentPath: attachmentPath || null,
+                        ...(logMeta || {})
+                    });
+
+                    if (canRetry) {
+                        console.warn('[OpenWA] Reintento con modo alternativo', {
+                            from: attempt.mode,
+                            to: attempts[i + 1].mode,
+                            ...(logMeta || {})
+                        });
+                        lastError = new Error(`HTTP ${res.status} ${url}: ${detail}`.slice(0, 4000));
+                        continue;
+                    }
+
+                    throw new Error(`HTTP ${res.status} ${url}: ${detail}`.slice(0, 4000));
+                }
+
+                const payload = data.data || data;
+                const messageId = payload.messageId || payload.id || null;
+                console.log('[OpenWA] Envío OK', {
+                    mode: attempt.mode,
+                    ...(logMeta || {}),
+                    messageId,
                     chatId: maskChatId(chatId),
                     media,
-                    mediaUrl: mediaPayload?.downloadUrl || null,
-                    attachmentPath: attachmentPath || null,
-                    ...(logMeta || {})
+                    mediaUrl
                 });
-                throw new Error(msg);
+                return { messageId, raw: data };
+            } catch (e) {
+                if (e.response?.data) {
+                    const detail = extractApiError(e.response.data, e.response.status, e.message);
+                    lastError = new Error(detail.slice(0, 4000));
+                    if (i < attempts.length - 1) continue;
+                    throw lastError;
+                }
+                if (e.code === 'ENOTFOUND' || e.code === 'EAI_AGAIN') {
+                    throw new Error(`No se pudo conectar con OpenWA (${e.code}). Revise OPENWA_BASE_URL y red.`);
+                }
+                lastError = e;
+                if (i < attempts.length - 1) continue;
+                throw e;
             }
-            const payload = data.data || data;
-            const messageId = payload.messageId || payload.id || null;
-            console.log('[OpenWA] Envío OK', {
-                ...(logMeta || {}),
-                messageId,
-                chatId: maskChatId(chatId),
-                media,
-                mediaUrl: mediaPayload?.downloadUrl || null
-            });
-            return { messageId, raw: data };
-        } catch (e) {
-            if (e.response?.data) {
-                const detail = extractApiError(e.response.data, e.response.status, e.message);
-                throw new Error(detail.slice(0, 4000));
-            }
-            if (e.code === 'ENOTFOUND' || e.code === 'EAI_AGAIN') {
-                throw new Error(`No se pudo conectar con OpenWA (${e.code}). Revise OPENWA_BASE_URL y red.`);
-            }
-            throw e;
         }
+
+        throw lastError || new Error('OpenWA: envío fallido sin detalle');
     }
 }
 
