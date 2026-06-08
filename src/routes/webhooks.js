@@ -5,6 +5,7 @@ const OpenWAWebhookController = require('../controllers/OpenWAWebhookController'
 const router = express.Router();
 
 router.post('/mailgun', MailgunWebhookController.handle);
+router.get('/openwa', OpenWAWebhookController.ping);
 router.post('/openwa', OpenWAWebhookController.handle);
 
 module.exports = router;

@@ -86,7 +86,7 @@ class WhatsAppQueueModel {
     static async getNextPending() {
         const pool = await connectDB();
         const r = await pool.request().query(`
-            SELECT TOP 1 q.*, n.attachment_original_name
+            SELECT TOP 1 q.*, n.attachment_original_name, n.attachment_mime
             FROM WhatsAppOutboundQueue q
             LEFT JOIN InAppNotifications n ON n.id = q.in_app_notification_id
             WHERE q.status = 'PENDING'

@@ -2288,7 +2288,9 @@
                 const st = document.getElementById('wa-openwa-platform-status');
                 if (st) {
                     st.textContent = d.openwaConfigured
-                        ? (d.signatureConfigured ? 'OpenWA configurado en .env · firma webhook activa' : 'OpenWA configurado en .env · sin OPENWA_WEBHOOK_SECRET')
+                        ? (d.signatureConfigured
+                            ? 'OpenWA configurado · firma HMAC activa (OPENWA_WEBHOOK_SECRET)'
+                            : 'OpenWA configurado · webhooks sin firma (normal en dashboard OpenWA)')
                         : 'Configure OPENWA_BASE_URL y OPENWA_API_KEY en el servidor';
                 }
             } catch (e) {

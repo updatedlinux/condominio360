@@ -2,11 +2,11 @@ const crypto = require('crypto');
 const WhatsAppWebhookModel = require('../models/WhatsAppWebhookModel');
 const OpenWAWhatsAppService = require('../services/OpenWAWhatsAppService');
 
-function verifyWebhookSignature(payload, signature, secret) {
-    if (!secret || !signature) return !secret;
+function verifyWebhookSignature(rawBody, signature, secret) {
+    if (!secret) return true;
+    if (!signature) return false;
     try {
-        const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
-        const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(body).digest('hex');
+        const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody || '').digest('hex');
         const sigBuf = Buffer.from(String(signature));
         const expBuf = Buffer.from(expected);
         if (sigBuf.length !== expBuf.length) return false;
@@ -32,15 +32,33 @@ function mapAckName(ackName, ack) {
 
 class OpenWAWebhookController {
     /**
+     * GET /api/webhooks/openwa — comprobar que la URL es alcanzable (OpenWA usa POST).
+     */
+    static ping(req, res) {
+        res.json({
+            success: true,
+            message: 'Webhook OpenWA activo. OpenWA debe enviar eventos con POST.',
+            method: 'POST',
+            signatureHeader: 'X-OpenWA-Signature',
+            signatureRequired: !!(process.env.OPENWA_WEBHOOK_SECRET || '').trim(),
+            note: 'El dashboard OpenWA estándar no pide secret. Si OPENWA_WEBHOOK_SECRET está en .env pero OpenWA no firma, quita esa variable y reinicia.'
+        });
+    }
+
+    /**
      * POST /api/webhooks/openwa
      * Eventos: message.sent, message.ack, session.connected, session.disconnected, session.qr, message.received
      */
     static async handle(req, res) {
         const secret = (process.env.OPENWA_WEBHOOK_SECRET || '').trim();
         const signature = req.headers['x-openwa-signature'] || req.headers['x-webhook-signature'];
+        const rawBody = req.rawBody || JSON.stringify(req.body || {});
 
-        if (secret && !verifyWebhookSignature(req.body, signature, secret)) {
-            console.warn('[OpenWA webhook] Firma inválida');
+        if (secret && !verifyWebhookSignature(rawBody, signature, secret)) {
+            console.warn('[OpenWA webhook] Firma inválida', {
+                hasSignature: !!signature,
+                bodyLength: rawBody.length
+            });
             return res.status(401).json({ success: false, error: 'Invalid signature' });
         }
 
@@ -118,6 +136,8 @@ class OpenWAWebhookController {
                 ],
                 signatureHeader: 'X-OpenWA-Signature',
                 signatureConfigured: !!(process.env.OPENWA_WEBHOOK_SECRET || '').trim(),
+                openwaDashboardHasWebhookSecret: false,
+                note: 'OpenWA solo pide URL y eventos. Deja OPENWA_WEBHOOK_SECRET vacío salvo que tu instancia envíe firma HMAC.',
                 openwaConfigured: !!OpenWAWhatsAppService.getPlatformConfig()
             }
         });

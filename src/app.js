@@ -66,7 +66,13 @@ const morganFormat =
     process.env.MORGAN_FORMAT ||
     ':remote-addr :method :url :status :response-time ms - :res[content-length]';
 app.use(morgan(morganFormat));
-app.use(express.json());
+app.use(express.json({
+    verify: (req, res, buf) => {
+        if (req.originalUrl && req.originalUrl.startsWith('/api/webhooks/')) {
+            req.rawBody = buf.toString('utf8');
+        }
+    }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

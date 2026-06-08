@@ -136,6 +136,7 @@ class InAppWhatsAppQueueService {
                     text: outboundMessage,
                     mediaType,
                     attachmentPath: job.attachment_path,
+                    attachmentMime: job.attachment_mime,
                     attachmentOriginalName: job.attachment_original_name,
                     logMeta: {
                         jobId: job.id,
