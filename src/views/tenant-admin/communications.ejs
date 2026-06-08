@@ -121,6 +121,25 @@
                     </div>
                 </div>
 
+                <div id="building-selector-container" class="hidden">
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Alcance</label>
+                    <select id="msg-building" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                        <option value="">Todo el conjunto</option>
+                    </select>
+                    <p class="text-xs text-[#9AA0A6] mt-1">Opcional: limitar in-app y WhatsApp a un edificio/calle.</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Adjunto (opcional)</label>
+                    <input type="file" id="msg-attachment" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,image/*,application/pdf"
+                        class="w-full text-sm text-[#5F6368] file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#f97316]/10 file:text-[#ea580c]">
+                    <p class="text-xs text-[#9AA0A6] mt-1">Imagen o PDF (máx. 10 MB). En WhatsApp se envía como multimedia; en el panel del propietario aparece un enlace.</p>
+                    <div id="msg-attachment-current" class="hidden mt-2 text-sm text-[#5F6368] flex items-center gap-2 flex-wrap">
+                        <span id="msg-attachment-name"></span>
+                        <button type="button" id="msg-attachment-remove" class="text-red-600 hover:underline text-xs">Quitar adjunto</button>
+                    </div>
+                </div>
+
                 <div id="schedule-container" class="hidden">
                     <label class="block text-sm font-medium text-[#5F6368] mb-2">Programar envío</label>
                     <input type="datetime-local" id="msg-scheduled-at" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316]">
@@ -157,6 +176,89 @@
         let pagination = { total: 0, page: 1, limit: 20, pages: 1 };
         let editingId = null;
         let whatsappUi = { whatsappAvailable: false, unavailableMessage: '' };
+        let pendingRemoveAttachment = false;
+
+        function getTargetBuilding() {
+            const sel = document.getElementById('msg-building');
+            if (!sel || sel.closest('.hidden')) return null;
+            const v = (sel.value || '').trim();
+            return v || null;
+        }
+
+        function buildNotificationFormData(extra = {}) {
+            const fd = new FormData();
+            fd.append('message', document.getElementById('msg-content').value.trim());
+            const tb = getTargetBuilding();
+            if (tb) fd.append('targetBuilding', tb);
+            if (extra.status) fd.append('status', extra.status);
+            if (extra.scheduledAt) fd.append('scheduledAt', extra.scheduledAt);
+            if (extra.sendNow) fd.append('sendNow', 'true');
+            if (extra.sendWhatsapp !== undefined) fd.append('sendWhatsapp', extra.sendWhatsapp ? 'true' : 'false');
+            if (pendingRemoveAttachment) fd.append('removeAttachment', 'true');
+            const fileInput = document.getElementById('msg-attachment');
+            if (fileInput?.files?.[0]) fd.append('attachment', fileInput.files[0]);
+            return fd;
+        }
+
+        async function submitNotification({ method, url, jsonBody, formExtra }) {
+            const fileInput = document.getElementById('msg-attachment');
+            const hasNewFile = !!(fileInput?.files?.[0]);
+            const useMultipart = hasNewFile || pendingRemoveAttachment;
+            const opts = { method, headers: { 'Authorization': `Bearer ${token}` } };
+            if (useMultipart) {
+                opts.body = buildNotificationFormData(formExtra || {});
+            } else {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(jsonBody);
+            }
+            const r = await fetch(url, opts);
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || 'Error');
+            return d;
+        }
+
+        function resetAttachmentUi() {
+            pendingRemoveAttachment = false;
+            const fileInput = document.getElementById('msg-attachment');
+            if (fileInput) fileInput.value = '';
+            const cur = document.getElementById('msg-attachment-current');
+            if (cur) cur.classList.add('hidden');
+        }
+
+        function showExistingAttachment(n) {
+            const cur = document.getElementById('msg-attachment-current');
+            const nameEl = document.getElementById('msg-attachment-name');
+            if (!n?.attachment_url) {
+                cur?.classList.add('hidden');
+                return;
+            }
+            if (cur) cur.classList.remove('hidden');
+            if (nameEl) {
+                nameEl.innerHTML = `<a href="${n.attachment_url}" target="_blank" rel="noopener" class="text-[#f97316] hover:underline">${escapeHtml(n.attachment_original_name || 'Adjunto actual')}</a>`;
+            }
+        }
+
+        async function loadBuildings() {
+            try {
+                const res = await fetch('/api/tenant-admin/buildings', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const select = document.getElementById('msg-building');
+                const container = document.getElementById('building-selector-container');
+                if (!select || !container) return;
+                if (data.success && data.isMultiBuilding && data.buildings.length > 1) {
+                    container.classList.remove('hidden');
+                    select.innerHTML = '<option value="">Todo el conjunto</option>' +
+                        data.buildings.map(b => `<option value="${escapeHtml(b.name)}">${escapeHtml(b.name)}</option>`).join('');
+                } else {
+                    container.classList.add('hidden');
+                    select.innerHTML = '<option value="">Todo el conjunto</option>';
+                }
+            } catch (e) {
+                console.error('loadBuildings', e);
+            }
+        }
 
         function getSendWhatsappFlag() {
             const wa = document.getElementById('msg-whatsapp');
@@ -193,7 +295,7 @@
                 cb.title = hint.textContent;
             } else {
                 cb.disabled = false;
-                hint.textContent = 'Envía el mensaje a cada propietario con teléfono venezolano válido (números internacionales son omitidos).';
+                hint.textContent = 'Envía el mensaje a propietarios con teléfono válido (Venezuela +58, España +34, EE.UU. +1).';
                 cb.title = '';
             }
         }
@@ -256,8 +358,11 @@
                     <div class="card p-4 card-hover">
                         <div class="flex justify-between items-start">
                             <p class="text-[#3C4043] flex-1">${escapeHtml(n.message)}</p>
-                            <div class="flex items-center gap-2 ml-4">
+                            <div class="flex items-center gap-2 ml-4 flex-wrap justify-end">
                                 <span class="px-2 py-1 rounded-full text-xs font-medium status-${n.status.toLowerCase()}">${n.status === 'DRAFT' ? 'Borrador' : n.status === 'SCHEDULED' ? 'Programado' : 'Enviado'}</span>
+                            ${n.target_building ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">${escapeHtml(n.target_building)}</span>` : ''}
+                            ${n.has_attachment ? `<span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">Adjunto</span>` : ''}
+                            ${n.send_whatsapp ? `<span class="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded">WhatsApp</span>` : ''}
                                 ${n.status !== 'SENT' ? `
                                     <button onclick="editMsg('${n.id}')" class="p-2 rounded-lg hover:bg-[#F5F5F5]" title="Editar"><span class="material-icons-round text-[#5F6368] text-lg">edit</span></button>
                                     ${n.status === 'SCHEDULED' ? `<button onclick="sendMsgNow('${n.id}')" class="p-2 rounded-lg hover:bg-orange-50" title="Enviar ahora"><span class="material-icons-round text-[#f97316] text-lg">send</span></button>` : ''}
@@ -337,6 +442,8 @@
             document.getElementById('btn-schedule').classList.remove('hidden');
             document.getElementById('btn-schedule').textContent = 'Programar';
             document.getElementById('msg-char-count').textContent = '0/250';
+            resetAttachmentUi();
+            await loadBuildings();
             await refreshWhatsAppStatus();
             document.getElementById('msg-whatsapp').checked = false;
             document.getElementById('msg-modal').classList.remove('hidden');
@@ -352,6 +459,7 @@
             editingId = id;
             (async () => {
                 await refreshWhatsAppStatus();
+                await loadBuildings();
                 try {
                     const r = await fetch(`/api/tenant-admin/in-app-notifications/${id}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
@@ -363,6 +471,11 @@
                     document.getElementById('msg-id').value = n.id;
                     document.getElementById('msg-content').value = n.message;
                     document.getElementById('msg-char-count').textContent = n.message.length + '/' + MAX_LEN;
+                    pendingRemoveAttachment = false;
+                    resetAttachmentUi();
+                    showExistingAttachment(n);
+                    const buildingSel = document.getElementById('msg-building');
+                    if (buildingSel && n.target_building) buildingSel.value = n.target_building;
                     const waEl = document.getElementById('msg-whatsapp');
                     waEl.checked = !!(n.send_whatsapp && whatsappUi.whatsappAvailable);
                     if (n.scheduled_at) {
@@ -382,19 +495,23 @@
 
         async function saveDraft() {
             const msg = document.getElementById('msg-content').value.trim();
-            if (!msg) { showPageToast('Escribe un mensaje', 'info'); return; }
+            const hasFile = !!document.getElementById('msg-attachment')?.files?.[0];
+            if (!msg && !hasFile) { showPageToast('Escribe un mensaje o adjunta un archivo', 'info'); return; }
             const id = document.getElementById('msg-id').value;
             try {
-                const body = { message: msg, status: 'DRAFT', sendWhatsapp: getSendWhatsappFlag() };
                 const url = id ? `/api/tenant-admin/in-app-notifications/${id}` : '/api/tenant-admin/in-app-notifications';
                 const method = id ? 'PUT' : 'POST';
-                const r = await fetch(url, {
+                await submitNotification({
                     method,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(body)
+                    url,
+                    jsonBody: {
+                        message: msg,
+                        status: 'DRAFT',
+                        sendWhatsapp: getSendWhatsappFlag(),
+                        targetBuilding: getTargetBuilding()
+                    },
+                    formExtra: { status: 'DRAFT', sendWhatsapp: getSendWhatsappFlag() }
                 });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error || 'Error');
                 showPageToast('Borrador guardado', 'success');
                 closeModal();
                 loadNotifications();
@@ -405,26 +522,27 @@
 
         async function scheduleSend() {
             const msg = document.getElementById('msg-content').value.trim();
-            if (!msg) { showPageToast('Escribe un mensaje', 'info'); return; }
+            const hasFile = !!document.getElementById('msg-attachment')?.files?.[0];
+            if (!msg && !hasFile) { showPageToast('Escribe un mensaje o adjunta un archivo', 'info'); return; }
             const scheduledAt = document.getElementById('msg-scheduled-at').value;
             if (!scheduledAt) { showPageToast('Selecciona fecha y hora para programar', 'info'); return; }
             const id = document.getElementById('msg-id').value;
+            const iso = new Date(scheduledAt).toISOString();
             try {
-                const body = {
-                    message: msg,
-                    status: 'SCHEDULED',
-                    scheduledAt: new Date(scheduledAt).toISOString(),
-                    sendWhatsapp: getSendWhatsappFlag()
-                };
                 const url = id ? `/api/tenant-admin/in-app-notifications/${id}` : '/api/tenant-admin/in-app-notifications';
                 const method = id ? 'PUT' : 'POST';
-                const r = await fetch(url, {
+                await submitNotification({
                     method,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(body)
+                    url,
+                    jsonBody: {
+                        message: msg,
+                        status: 'SCHEDULED',
+                        scheduledAt: iso,
+                        sendWhatsapp: getSendWhatsappFlag(),
+                        targetBuilding: getTargetBuilding()
+                    },
+                    formExtra: { status: 'SCHEDULED', scheduledAt: iso, sendWhatsapp: getSendWhatsappFlag() }
                 });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error || 'Error');
                 showPageToast('Mensaje programado', 'success');
                 closeModal();
                 loadNotifications();
@@ -435,28 +553,29 @@
 
         async function sendNow() {
             const msg = document.getElementById('msg-content').value.trim();
-            if (!msg) { showPageToast('Escribe un mensaje', 'info'); return; }
+            const hasFile = !!document.getElementById('msg-attachment')?.files?.[0];
+            if (!msg && !hasFile) { showPageToast('Escribe un mensaje o adjunta un archivo', 'info'); return; }
             const id = document.getElementById('msg-id').value;
             try {
                 if (id) {
-                    const r = await fetch(`/api/tenant-admin/in-app-notifications/${id}/send`, {
+                    await submitNotification({
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ sendWhatsapp: getSendWhatsappFlag() })
+                        url: `/api/tenant-admin/in-app-notifications/${id}/send`,
+                        jsonBody: { sendWhatsapp: getSendWhatsappFlag() },
+                        formExtra: { sendWhatsapp: getSendWhatsappFlag() }
                     });
-                    const d = await r.json();
-                    if (!r.ok) throw new Error(d.error || 'Error');
                 } else {
-                    const r = await fetch('/api/tenant-admin/in-app-notifications', {
+                    await submitNotification({
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ message: msg, sendNow: true, sendWhatsapp: getSendWhatsappFlag() })
+                        url: '/api/tenant-admin/in-app-notifications',
+                        jsonBody: {
+                            message: msg,
+                            sendNow: true,
+                            sendWhatsapp: getSendWhatsappFlag(),
+                            targetBuilding: getTargetBuilding()
+                        },
+                        formExtra: { sendNow: true, sendWhatsapp: getSendWhatsappFlag() }
                     });
-                    const d = await r.json();
-                    if (!r.ok) throw new Error(d.error || 'Error');
                 }
                 showPageToast('Mensaje enviado', 'success');
                 closeModal();
@@ -509,6 +628,13 @@
                 scheduleSend();
             }
         };
+
+        document.getElementById('msg-attachment-remove')?.addEventListener('click', () => {
+            pendingRemoveAttachment = true;
+            document.getElementById('msg-attachment-current')?.classList.add('hidden');
+            const fileInput = document.getElementById('msg-attachment');
+            if (fileInput) fileInput.value = '';
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             loadTenantInfo();

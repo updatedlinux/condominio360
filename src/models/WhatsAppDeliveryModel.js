@@ -17,7 +17,8 @@ class WhatsAppDeliveryModel {
             const thirtyR = await pool.request().query(`
                 SELECT
                     SUM(CASE WHEN status = N'SENT' THEN 1 ELSE 0 END) AS sent_n,
-                    SUM(CASE WHEN status = N'FAILED' THEN 1 ELSE 0 END) AS failed_n
+                    SUM(CASE WHEN status = N'FAILED' THEN 1 ELSE 0 END) AS failed_n,
+                    SUM(CASE WHEN delivery_status IN (N'DELIVERED', N'READ') THEN 1 ELSE 0 END) AS delivered_n
                 FROM WhatsAppOutboundQueue
                 WHERE created_at >= DATEADD(DAY, -30, SYSUTCDATETIME())
             `);
@@ -28,7 +29,8 @@ class WhatsAppDeliveryModel {
                 rate_window_seconds: WINDOW_SECONDS,
                 rate_max_per_window: MAX_SENDS_PER_WINDOW,
                 sent_last_30d: Number(row.sent_n) || 0,
-                failed_last_30d: Number(row.failed_n) || 0
+                failed_last_30d: Number(row.failed_n) || 0,
+                delivered_last_30d: Number(row.delivered_n) || 0
             };
         } catch (e) {
             console.warn('[WhatsAppDeliveryModel.getMetricsSnapshot]', e.message);
@@ -38,7 +40,8 @@ class WhatsAppDeliveryModel {
                 rate_window_seconds: WINDOW_SECONDS,
                 rate_max_per_window: MAX_SENDS_PER_WINDOW,
                 sent_last_30d: 0,
-                failed_last_30d: 0
+                failed_last_30d: 0,
+                delivered_last_30d: 0
             };
         }
     }
@@ -82,19 +85,27 @@ class WhatsAppDeliveryModel {
                 q.tenant_id,
                 q.in_app_notification_id,
                 q.user_id,
+                q.chat_id,
                 q.phone_national,
                 q.message_body,
+                q.message_type,
+                q.attachment_path,
                 q.status,
+                q.delivery_status,
+                q.openwa_message_id,
                 q.error_message,
                 q.created_at,
                 q.sent_at,
+                q.delivered_at,
                 t.name AS tenant_name,
                 t.slug AS tenant_slug,
+                t.whatsapp_openwa_session_id,
                 u.first_name,
                 u.last_name,
                 u.email AS owner_email,
                 u.phone AS owner_phone_raw,
                 n.message AS notification_message,
+                n.target_building,
                 n.sent_at AS notification_sent_at
             FROM WhatsAppOutboundQueue q
             INNER JOIN Tenants t ON t.id = q.tenant_id

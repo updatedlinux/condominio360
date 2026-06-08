@@ -74,24 +74,17 @@
                         <span class="material-symbols-rounded text-teal-600">chat</span>
                         WhatsApp — Mensajes
                     </h3>
-                    <p class="text-sm text-slate-600 mb-4">API externa por condominio. La junta verá el toggle en <strong>Mensajes</strong> solo si está activo y configurado.</p>
+                    <p class="text-sm text-slate-600 mb-4">OpenWA: sesión por condominio. URL/API key en <code class="bg-slate-100 px-1 rounded">.env</code> del servidor.</p>
                     <div class="space-y-4 max-w-2xl">
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" id="wa-enabled" class="w-5 h-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500">
                             <span class="font-medium text-slate-900">Servicio contratado / habilitado</span>
                         </label>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">URL base del API</label>
-                            <input type="url" id="wa-base-url" placeholder="https://wsapiback.arsystech.net/api"
-                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm">
-                            <p class="text-xs text-slate-500 mt-1">Incluya <code class="bg-slate-100 px-1 rounded">/api</code> si el proveedor lo requiere.</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                            <input type="password" id="wa-api-key" autocomplete="new-password"
-                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
-                                placeholder="Dejar vacío para no cambiar la clave actual">
-                            <p class="text-xs text-slate-500 mt-1" id="wa-key-hint"></p>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Session ID OpenWA</label>
+                            <input type="text" id="wa-session-id" placeholder="sess_abc123 o c360-demo"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm font-mono">
+                            <p class="text-xs text-slate-500 mt-1">Sesión con QR escaneado en el dashboard OpenWA.</p>
                         </div>
                         <button type="button" onclick="saveWhatsAppSettings()" class="md-button md-button-filled">
                             <span class="material-symbols-rounded">save</span>

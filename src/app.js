@@ -188,7 +188,7 @@ app.listen(PORT, () => {
 
     BillingReminderWorkerService.start();
 
-    // Cola WhatsApp (mensajes in-app): límite global 30 envíos / 2 min al API externo
+    // Cola WhatsApp (OpenWA): límite global 30 envíos / 2 min
     InAppWhatsAppQueueService.start();
 });
 

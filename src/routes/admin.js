@@ -12,6 +12,7 @@ const BuildingController = require('../controllers/BuildingController');
 const PropertyController = require('../controllers/PropertyController');
 const EmailAdminController = require('../controllers/EmailAdminController');
 const WhatsAppAdminController = require('../controllers/WhatsAppAdminController');
+const OpenWAWebhookController = require('../controllers/OpenWAWebhookController');
 const AdminMailgunBounceController = require('../controllers/AdminMailgunBounceController');
 const uploadCsv = require('../middleware/uploadCsv');
 
@@ -135,6 +136,8 @@ router.get('/balance/financial-summary', AdminBalanceController.getFinancialSumm
 // ==================== CORREO (Mailgun / jobs) ====================
 router.get('/outgoing-queues-summary', EmailAdminController.getOutgoingQueuesSummary);
 router.get('/whatsapp-deliveries', WhatsAppAdminController.listDeliveries);
+router.get('/whatsapp-webhook-events', WhatsAppAdminController.listWebhookEvents);
+router.get('/openwa-webhook-info', OpenWAWebhookController.getWebhookInfo);
 router.get('/email-metrics', EmailAdminController.getMetrics);
 router.get('/email-jobs', EmailAdminController.listJobs);
 router.get('/email-jobs/:id', EmailAdminController.getJob);

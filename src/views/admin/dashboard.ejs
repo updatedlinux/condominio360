@@ -1187,7 +1187,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div>
                             <h3 class="text-2xl font-medium text-gray-900">Mensajería masiva</h3>
-                            <p class="text-gray-500 mt-1">Envíos WhatsApp por mensaje in-app (junta → propietarios). Cola global 30 / 2 min.</p>
+                            <p class="text-gray-500 mt-1">OpenWA · cola interna 30 / 2 min · webhook de entrega</p>
                         </div>
                         <button type="button" onclick="loadMassWhatsAppPanel()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">
                             <span class="material-symbols-rounded">refresh</span>
@@ -1215,10 +1215,21 @@
                             </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div id="wa-openwa-config" class="md-card p-4 border border-teal-100 bg-teal-50/40 text-sm text-gray-700">
+                        <p class="font-medium text-gray-900 mb-2">Webhook OpenWA (configurar en dashboard OpenWA → Webhooks)</p>
+                        <p class="text-xs text-gray-500 mb-2">URL destino:</p>
+                        <code id="wa-webhook-url" class="block bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs break-all">—</code>
+                        <p class="text-xs text-gray-500 mt-3">Eventos recomendados: <code>message.sent</code>, <code>message.ack</code>, <code>session.connected</code>, <code>session.disconnected</code>, <code>session.qr</code></p>
+                        <p class="text-xs text-gray-500 mt-1" id="wa-openwa-platform-status">—</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div class="md-card p-4">
                             <p class="text-xs text-gray-500 uppercase">Enviados (30 d)</p>
                             <p class="text-2xl font-semibold text-emerald-700" id="wa-metric-sent">—</p>
+                        </div>
+                        <div class="md-card p-4">
+                            <p class="text-xs text-gray-500 uppercase">Entregados / leídos</p>
+                            <p class="text-2xl font-semibold text-teal-700" id="wa-metric-delivered">—</p>
                         </div>
                         <div class="md-card p-4">
                             <p class="text-xs text-gray-500 uppercase">Cola pendiente</p>
@@ -1260,15 +1271,15 @@
                     </div>
                     <div class="md-card overflow-hidden">
                         <div class="md-table-container overflow-x-auto">
-                            <table class="md-table min-w-[960px]">
+                            <table class="md-table min-w-[1100px]">
                                 <thead>
                                     <tr>
                                         <th>Fecha / estado</th>
                                         <th>Condominio</th>
                                         <th>Propietario</th>
-                                        <th>Tel. normalizado (+58)</th>
-                                        <th>Mensaje</th>
-                                        <th>Resultado</th>
+                                        <th>Chat ID</th>
+                                        <th>Mensaje / tipo</th>
+                                        <th>Cola / entrega</th>
                                     </tr>
                                 </thead>
                                 <tbody id="wa-deliveries-tbody">
@@ -1280,6 +1291,42 @@
                             <button type="button" onclick="waDeliveriesPagePrev()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Anterior</button>
                             <span class="text-sm text-gray-500" id="wa-deliveries-page-info">—</span>
                             <button type="button" onclick="waDeliveriesPageNext()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Siguiente</button>
+                        </div>
+                    </div>
+                    <div class="md-card overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                            <h4 class="font-medium text-gray-900">Eventos webhook OpenWA</h4>
+                            <select id="wa-webhook-event-filter" onchange="waWebhookPage=1;loadWhatsAppWebhookEvents()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                <option value="">Todos los eventos</option>
+                                <option value="message.sent">message.sent</option>
+                                <option value="message.ack">message.ack</option>
+                                <option value="session.connected">session.connected</option>
+                                <option value="session.disconnected">session.disconnected</option>
+                                <option value="session.qr">session.qr</option>
+                                <option value="message.received">message.received</option>
+                            </select>
+                        </div>
+                        <div class="md-table-container overflow-x-auto">
+                            <table class="md-table min-w-[900px]">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Evento</th>
+                                        <th>Sesión</th>
+                                        <th>Condominio</th>
+                                        <th>Message ID</th>
+                                        <th>Estado cola</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wa-webhook-tbody">
+                                    <tr><td colspan="6" class="text-center py-8 text-gray-500">Cargando…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                            <button type="button" onclick="waWebhookPagePrev()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Anterior</button>
+                            <span class="text-sm text-gray-500" id="wa-webhook-page-info">—</span>
+                            <button type="button" onclick="waWebhookPageNext()" class="text-sm px-3 py-1 rounded border border-gray-200 hover:bg-gray-50">Siguiente</button>
                         </div>
                     </div>
                 </section>
@@ -1906,6 +1953,8 @@
         let emailJobsPage = 1;
         let waDeliveriesPage = 1;
         let waDeliveriesTotalPages = 1;
+        let waWebhookPage = 1;
+        let waWebhookTotalPages = 1;
         let outgoingQueuesPollId = null;
 
         // Initialize
@@ -2170,6 +2219,7 @@
                 const waSec = document.getElementById('section-mass-whatsapp');
                 if (waSec && !waSec.classList.contains('hidden')) {
                     loadWhatsAppDeliveries();
+                    loadWhatsAppWebhookEvents();
                 }
             }, 15000);
         }
@@ -2227,11 +2277,32 @@
             }
         }
 
+        async function loadOpenWAWebhookInfo() {
+            try {
+                const res = await fetch('/api/admin/openwa-webhook-info', { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+                const d = json.data;
+                const urlEl = document.getElementById('wa-webhook-url');
+                if (urlEl) urlEl.textContent = d.webhookUrl || '—';
+                const st = document.getElementById('wa-openwa-platform-status');
+                if (st) {
+                    st.textContent = d.openwaConfigured
+                        ? (d.signatureConfigured ? 'OpenWA configurado en .env · firma webhook activa' : 'OpenWA configurado en .env · sin OPENWA_WEBHOOK_SECRET')
+                        : 'Configure OPENWA_BASE_URL y OPENWA_API_KEY en el servidor';
+                }
+            } catch (e) {
+                console.error('loadOpenWAWebhookInfo', e);
+            }
+        }
+
         async function loadMassWhatsAppPanel() {
             if (!user.isSuperAdmin) return;
             await loadOutgoingQueuesSummary();
             await loadWaTenantFilter();
+            await loadOpenWAWebhookInfo();
             await loadWhatsAppDeliveries();
+            await loadWhatsAppWebhookEvents();
         }
 
         async function loadWhatsAppDeliveries() {
@@ -2250,7 +2321,7 @@
                     tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-600">${escapeHtml(json.error || 'Error')}</td></tr>`;
                     return;
                 }
-                const { metrics, rows, pagination } = json.data;
+                const { metrics, rows, pagination, openwa } = json.data;
                 waDeliveriesTotalPages = Math.max(1, pagination.pages || 1);
                 if (waDeliveriesPage > waDeliveriesTotalPages) {
                     waDeliveriesPage = waDeliveriesTotalPages;
@@ -2259,9 +2330,14 @@
                 const m = metrics || {};
                 const el = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
                 el('wa-metric-sent', m.sent_last_30d ?? '—');
+                el('wa-metric-delivered', m.delivered_last_30d ?? '—');
                 el('wa-metric-pending', m.pending_queue ?? '—');
                 el('wa-metric-failed', m.failed_last_30d ?? '—');
                 el('wa-metric-rate', `${m.sends_in_rate_window ?? 0} / ${m.rate_max_per_window ?? 30}`);
+                if (openwa?.webhookUrl) {
+                    const urlEl = document.getElementById('wa-webhook-url');
+                    if (urlEl && urlEl.textContent === '—') urlEl.textContent = openwa.webhookUrl;
+                }
                 const pi = document.getElementById('wa-deliveries-page-info');
                 if (pi) {
                     pi.textContent = `Página ${pagination.page} de ${pagination.pages} · ${pagination.total} registros`;
@@ -2273,31 +2349,83 @@
                 tbody.innerHTML = rows.map((r) => {
                     const owner = [r.first_name, r.last_name].filter(Boolean).join(' ') || '—';
                     const condo = escapeHtml(r.tenant_name || '—');
-                    const phoneDisp = r.phone_national ? ('+58' + String(r.phone_national)) : '—';
-                    const msg = escapeHtml((r.message_body || r.notification_message || '').slice(0, 120));
-                    const msgMore = (r.message_body || r.notification_message || '').length > 120 ? '…' : '';
-                    let statusHtml = '';
+                    const chatDisp = escapeHtml(r.chat_id || r.phone_national || '—');
+                    const msg = escapeHtml((r.message_body || r.notification_message || '').slice(0, 100));
+                    const msgMore = (r.message_body || r.notification_message || '').length > 100 ? '…' : '';
+                    const typeBadge = r.message_type && r.message_type !== 'TEXT'
+                        ? `<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">${escapeHtml(r.message_type)}</span> `
+                        : '';
+                    const scope = r.target_building ? `<div class="text-xs text-gray-400">${escapeHtml(r.target_building)}</div>` : '';
+                    let queueHtml = '';
                     if (r.status === 'SENT') {
-                        statusHtml = '<span class="text-emerald-700 font-medium">Enviado</span>';
+                        queueHtml = '<span class="text-emerald-700 font-medium">Cola: enviado</span>';
                     } else if (r.status === 'FAILED') {
-                        statusHtml = '<span class="text-red-600 font-medium">Fallido</span>';
+                        queueHtml = '<span class="text-red-600 font-medium">Cola: fallido</span>';
                     } else {
-                        statusHtml = '<span class="text-amber-700 font-medium">Pendiente</span>';
+                        queueHtml = '<span class="text-amber-700 font-medium">Cola: pendiente</span>';
                     }
+                    const del = r.delivery_status
+                        ? `<div class="text-xs text-teal-700 mt-1">Webhook: ${escapeHtml(r.delivery_status)}</div>`
+                        : '';
                     const err = r.error_message ? `<div class="text-xs text-red-600 mt-1 max-w-xs">${escapeHtml(String(r.error_message).slice(0, 200))}</div>` : '';
                     const dt = r.sent_at || r.created_at;
                     const when = dt ? formatOutgoingQueuesTime(dt) : '—';
                     return `<tr class="border-t border-gray-100">
                         <td class="py-3 px-2 align-top text-sm"><div>${when}</div><div class="text-xs text-gray-500">${escapeHtml(r.status || '')}</div></td>
-                        <td class="py-3 px-2 align-top text-sm">${condo}</td>
+                        <td class="py-3 px-2 align-top text-sm">${condo}${scope}</td>
                         <td class="py-3 px-2 align-top text-sm"><div>${escapeHtml(owner)}</div><div class="text-xs text-gray-500">${escapeHtml(r.owner_email || '')}</div></td>
-                        <td class="py-3 px-2 align-top font-mono text-xs">${escapeHtml(phoneDisp)}</td>
-                        <td class="py-3 px-2 align-top text-sm max-w-[220px]">${msg}${msgMore}</td>
-                        <td class="py-3 px-2 align-top text-sm">${statusHtml}${err}</td>
+                        <td class="py-3 px-2 align-top font-mono text-xs">${chatDisp}</td>
+                        <td class="py-3 px-2 align-top text-sm max-w-[220px]">${typeBadge}${msg}${msgMore}</td>
+                        <td class="py-3 px-2 align-top text-sm">${queueHtml}${del}${err}</td>
                     </tr>`;
                 }).join('');
             } catch (e) {
                 console.error('loadWhatsAppDeliveries', e);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-600">Error de red</td></tr>';
+            }
+        }
+
+        async function loadWhatsAppWebhookEvents() {
+            const tbody = document.getElementById('wa-webhook-tbody');
+            if (!tbody) return;
+            const days = document.getElementById('wa-table-days')?.value || 30;
+            const tid = (document.getElementById('wa-filter-tenant')?.value || '').trim();
+            const ev = (document.getElementById('wa-webhook-event-filter')?.value || '').trim();
+            let url = `/api/admin/whatsapp-webhook-events?page=${waWebhookPage}&limit=20&days=${encodeURIComponent(days)}`;
+            if (tid) url += `&tenantId=${encodeURIComponent(tid)}`;
+            if (ev) url += `&eventType=${encodeURIComponent(ev)}`;
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await res.json();
+                if (!json.success || !json.data) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-red-600">${escapeHtml(json.error || 'Error')}</td></tr>`;
+                    return;
+                }
+                const { rows, pagination } = json.data;
+                waWebhookTotalPages = Math.max(1, pagination.pages || 1);
+                if (waWebhookPage > waWebhookTotalPages) {
+                    waWebhookPage = waWebhookTotalPages;
+                    return loadWhatsAppWebhookEvents();
+                }
+                const pi = document.getElementById('wa-webhook-page-info');
+                if (pi) pi.textContent = `Página ${pagination.page} de ${pagination.pages} · ${pagination.total} eventos`;
+                if (!rows || rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Sin eventos webhook en este periodo.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map((r) => {
+                    const when = r.created_at ? formatOutgoingQueuesTime(r.created_at) : '—';
+                    return `<tr class="border-t border-gray-100">
+                        <td class="py-2 px-2 text-sm">${when}</td>
+                        <td class="py-2 px-2 text-sm font-mono text-xs">${escapeHtml(r.event_type || '')}</td>
+                        <td class="py-2 px-2 text-sm font-mono text-xs">${escapeHtml(r.session_id || '—')}</td>
+                        <td class="py-2 px-2 text-sm">${escapeHtml(r.tenant_name || '—')}</td>
+                        <td class="py-2 px-2 text-xs font-mono max-w-[180px] truncate" title="${escapeHtml(r.openwa_message_id || '')}">${escapeHtml((r.openwa_message_id || '—').slice(0, 28))}</td>
+                        <td class="py-2 px-2 text-sm">${escapeHtml(r.queue_delivery_status || r.queue_status || '—')}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error('loadWhatsAppWebhookEvents', e);
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-600">Error de red</td></tr>';
             }
         }
@@ -2313,6 +2441,20 @@
             if (waDeliveriesPage < waDeliveriesTotalPages) {
                 waDeliveriesPage++;
                 loadWhatsAppDeliveries();
+            }
+        }
+
+        function waWebhookPagePrev() {
+            if (waWebhookPage > 1) {
+                waWebhookPage--;
+                loadWhatsAppWebhookEvents();
+            }
+        }
+
+        function waWebhookPageNext() {
+            if (waWebhookPage < waWebhookTotalPages) {
+                waWebhookPage++;
+                loadWhatsAppWebhookEvents();
             }
         }
 

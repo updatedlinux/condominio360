@@ -3171,13 +3171,13 @@ class AdminController {
 
     /**
      * PUT /api/admin/tenants/:id/whatsapp-messaging
-     * body: { enabled, apiBaseUrl, apiKey? } — apiKey vacío mantiene la clave anterior.
+     * body: { enabled, openwaSessionId }
      */
     static async updateTenantWhatsAppMessaging(req, res) {
         try {
             const { id } = req.params;
-            const { enabled, apiBaseUrl, apiKey } = req.body || {};
-            await TenantModel.updateWhatsAppSettings(id, { enabled, apiBaseUrl, apiKey });
+            const { enabled, openwaSessionId } = req.body || {};
+            await TenantModel.updateWhatsAppSettings(id, { enabled, openwaSessionId });
             const data = await TenantModel.getWhatsAppSettingsPublic(id);
             await AdminController.logAudit(req, 'UPDATE', 'TENANT', id, 'Configuración API WhatsApp (Mensajes)', id);
             res.json({ success: true, data });

@@ -46,20 +46,28 @@ class WhatsAppQueueModel {
             tenantId,
             inAppNotificationId,
             userId,
+            chatId,
             phoneNational,
-            messageBody
+            messageBody,
+            messageType = 'TEXT',
+            attachmentPath = null
         } = data;
         const result = await pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .input('in_app_notification_id', sql.UniqueIdentifier, inAppNotificationId)
             .input('user_id', sql.UniqueIdentifier, userId)
+            .input('chat_id', sql.NVarChar, chatId)
             .input('phone_national', sql.NVarChar, phoneNational)
             .input('message_body', sql.NVarChar, messageBody)
+            .input('message_type', sql.NVarChar, messageType)
+            .input('attachment_path', sql.NVarChar, attachmentPath)
             .query(`
                 INSERT INTO WhatsAppOutboundQueue
-                (tenant_id, in_app_notification_id, user_id, phone_national, message_body, status)
+                (tenant_id, in_app_notification_id, user_id, chat_id, phone_national, message_body,
+                 message_type, attachment_path, status)
                 OUTPUT INSERTED.*
-                VALUES (@tenant_id, @in_app_notification_id, @user_id, @phone_national, @message_body, 'PENDING')
+                VALUES (@tenant_id, @in_app_notification_id, @user_id, @chat_id, @phone_national, @message_body,
+                        @message_type, @attachment_path, 'PENDING')
             `);
         return result.recordset[0] || null;
     }
@@ -78,20 +86,26 @@ class WhatsAppQueueModel {
     static async getNextPending() {
         const pool = await connectDB();
         const r = await pool.request().query(`
-            SELECT TOP 1 * FROM WhatsAppOutboundQueue
-            WHERE status = 'PENDING'
-            ORDER BY created_at ASC
+            SELECT TOP 1 q.*, n.attachment_original_name
+            FROM WhatsAppOutboundQueue q
+            LEFT JOIN InAppNotifications n ON n.id = q.in_app_notification_id
+            WHERE q.status = 'PENDING'
+            ORDER BY q.created_at ASC
         `);
         return r.recordset[0] || null;
     }
 
-    static async markSent(id) {
+    static async markSent(id, openwaMessageId = null) {
         const pool = await connectDB();
         await pool.request()
             .input('id', sql.UniqueIdentifier, id)
+            .input('mid', sql.NVarChar, openwaMessageId)
             .query(`
                 UPDATE WhatsAppOutboundQueue
-                SET status = 'SENT', sent_at = SYSUTCDATETIME()
+                SET status = 'SENT',
+                    sent_at = SYSUTCDATETIME(),
+                    openwa_message_id = COALESCE(@mid, openwa_message_id),
+                    delivery_status = COALESCE(delivery_status, 'QUEUED_SENT')
                 WHERE id = @id
             `);
     }
@@ -103,7 +117,7 @@ class WhatsAppQueueModel {
             .input('err', sql.NVarChar, (errorMessage || '').slice(0, 4000))
             .query(`
                 UPDATE WhatsAppOutboundQueue
-                SET status = 'FAILED', error_message = @err
+                SET status = 'FAILED', error_message = @err, delivery_status = 'FAILED'
                 WHERE id = @id
             `);
     }

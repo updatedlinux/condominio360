@@ -11,20 +11,32 @@ function coerceScheduledAt(value) {
     return d;
 }
 
+function coerceBool(value) {
+    if (value === true || value === 1 || value === '1' || value === 'true') return true;
+    if (value === false || value === 0 || value === '0' || value === 'false') return false;
+    return undefined;
+}
+
 class InAppNotificationModel {
-    /**
-     * Crear notificación (DRAFT o SCHEDULED)
-     */
     static async create(data) {
         const pool = await connectDB();
-        const { tenantId, createdBy, message, status = 'DRAFT', scheduledAt = null, sendWhatsapp = false } = data;
+        const {
+            tenantId,
+            createdBy,
+            message,
+            status = 'DRAFT',
+            scheduledAt = null,
+            sendWhatsapp = false,
+            targetBuilding = null,
+            attachmentPath = null,
+            attachmentMime = null,
+            attachmentOriginalName = null
+        } = data;
 
-        if (!message || message.trim().length === 0) {
-            throw new Error('El mensaje es requerido');
-        }
-        const trimmed = message.trim().slice(0, MAX_MESSAGE_LENGTH);
-        if (trimmed.length === 0) {
-            throw new Error('El mensaje no puede estar vacío');
+        const trimmed = (message || '').trim().slice(0, MAX_MESSAGE_LENGTH);
+        const hasAttachment = !!(attachmentPath && attachmentMime);
+        if (!trimmed && !hasAttachment) {
+            throw new Error('El mensaje o un adjunto es requerido');
         }
 
         const scheduledAtSql = coerceScheduledAt(scheduledAt);
@@ -36,28 +48,41 @@ class InAppNotificationModel {
             .input('status', sql.NVarChar, status)
             .input('scheduled_at', sql.DateTime2, scheduledAtSql)
             .input('send_whatsapp', sql.Bit, sendWhatsapp)
+            .input('target_building', sql.NVarChar, targetBuilding || null)
+            .input('attachment_path', sql.NVarChar, attachmentPath)
+            .input('attachment_mime', sql.NVarChar, attachmentMime)
+            .input('attachment_original_name', sql.NVarChar, attachmentOriginalName)
             .query(`
-                INSERT INTO InAppNotifications (tenant_id, created_by, message, status, scheduled_at, send_whatsapp)
+                INSERT INTO InAppNotifications
+                (tenant_id, created_by, message, status, scheduled_at, send_whatsapp,
+                 target_building, attachment_path, attachment_mime, attachment_original_name)
                 OUTPUT INSERTED.*
-                VALUES (@tenant_id, @created_by, @message, @status, @scheduled_at, @send_whatsapp)
+                VALUES (@tenant_id, @created_by, @message, @status, @scheduled_at, @send_whatsapp,
+                        @target_building, @attachment_path, @attachment_mime, @attachment_original_name)
             `);
 
         return result.recordset[0];
     }
 
-    /**
-     * Actualizar notificación (solo DRAFT o SCHEDULED, antes de enviarse)
-     */
     static async update(id, data) {
         const pool = await connectDB();
-        const { message, status, scheduledAt, sendWhatsapp } = data;
+        const {
+            message,
+            status,
+            scheduledAt,
+            sendWhatsapp,
+            targetBuilding,
+            attachmentPath,
+            attachmentMime,
+            attachmentOriginalName,
+            clearAttachment
+        } = data;
 
         const updates = [];
         const request = pool.request().input('id', sql.UniqueIdentifier, id);
 
         if (message !== undefined) {
-            const trimmed = message.trim().slice(0, MAX_MESSAGE_LENGTH);
-            if (trimmed.length === 0) throw new Error('El mensaje no puede estar vacío');
+            const trimmed = (message || '').trim().slice(0, MAX_MESSAGE_LENGTH);
             updates.push('message = @message');
             request.input('message', sql.NVarChar, trimmed);
         }
@@ -72,6 +97,20 @@ class InAppNotificationModel {
         if (sendWhatsapp !== undefined) {
             updates.push('send_whatsapp = @send_whatsapp');
             request.input('send_whatsapp', sql.Bit, sendWhatsapp);
+        }
+        if (targetBuilding !== undefined) {
+            updates.push('target_building = @target_building');
+            request.input('target_building', sql.NVarChar, targetBuilding || null);
+        }
+        if (clearAttachment) {
+            updates.push('attachment_path = NULL, attachment_mime = NULL, attachment_original_name = NULL');
+        } else if (attachmentPath !== undefined) {
+            updates.push('attachment_path = @attachment_path');
+            updates.push('attachment_mime = @attachment_mime');
+            updates.push('attachment_original_name = @attachment_original_name');
+            request.input('attachment_path', sql.NVarChar, attachmentPath);
+            request.input('attachment_mime', sql.NVarChar, attachmentMime);
+            request.input('attachment_original_name', sql.NVarChar, attachmentOriginalName);
         }
 
         if (updates.length === 0) return null;
@@ -88,9 +127,6 @@ class InAppNotificationModel {
         return result.recordset[0] || null;
     }
 
-    /**
-     * Marcar como enviada
-     */
     static async markAsSent(id) {
         const pool = await connectDB();
         const result = await pool.request()
@@ -104,9 +140,6 @@ class InAppNotificationModel {
         return result.recordset[0] || null;
     }
 
-    /**
-     * Listar por tenant (admin)
-     */
     static async findByTenant(tenantId, options = {}) {
         const pool = await connectDB();
         const { status, page = 1, limit = 20 } = options;
@@ -132,11 +165,11 @@ class InAppNotificationModel {
                 FROM InAppNotifications n
                 LEFT JOIN TenantAdmins ta ON n.created_by = ta.id
                 ${whereClause}
-                ORDER BY 
-                    CASE n.status 
-                        WHEN 'DRAFT' THEN 1 
-                        WHEN 'SCHEDULED' THEN 2 
-                        WHEN 'SENT' THEN 3 
+                ORDER BY
+                    CASE n.status
+                        WHEN 'DRAFT' THEN 1
+                        WHEN 'SCHEDULED' THEN 2
+                        WHEN 'SENT' THEN 3
                     END,
                     COALESCE(n.sent_at, n.scheduled_at, n.created_at) DESC
                 OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
@@ -148,9 +181,6 @@ class InAppNotificationModel {
         };
     }
 
-    /**
-     * Obtener por ID
-     */
     static async findById(id, tenantId) {
         const pool = await connectDB();
         const result = await pool.request()
@@ -166,27 +196,34 @@ class InAppNotificationModel {
     }
 
     /**
-     * Últimas N notificaciones enviadas para propietarios (por tenant)
+     * Últimas N notificaciones enviadas visibles para un edificio (NULL = todo el conjunto).
      */
-    static async getLatestForTenant(tenantId, limit = 4) {
+    static async getLatestForTenant(tenantId, limit = 4, buildingName = null) {
         const pool = await connectDB();
-        const result = await pool.request()
+        const req = pool.request()
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
-            .input('limit', sql.Int, limit)
-            .query(`
-                SELECT TOP (@limit) n.id, n.message, n.sent_at,
-                    ISNULL(ta.first_name + ' ' + ISNULL(ta.last_name, ''), 'Administración') as author_name
-                FROM InAppNotifications n
-                LEFT JOIN TenantAdmins ta ON n.created_by = ta.id
-                WHERE n.tenant_id = @tenant_id AND n.status = 'SENT'
-                ORDER BY n.sent_at DESC
-            `);
+            .input('limit', sql.Int, limit);
+
+        let buildingClause = '';
+        if (buildingName) {
+            buildingClause = ' AND (n.target_building IS NULL OR n.target_building = @building)';
+            req.input('building', sql.NVarChar, buildingName);
+        }
+
+        const result = await req.query(`
+            SELECT TOP (@limit)
+                n.id, n.message, n.sent_at, n.target_building,
+                n.attachment_path, n.attachment_mime, n.attachment_original_name,
+                ISNULL(ta.first_name + ' ' + ISNULL(ta.last_name, ''), 'Administración') as author_name
+            FROM InAppNotifications n
+            LEFT JOIN TenantAdmins ta ON n.created_by = ta.id
+            WHERE n.tenant_id = @tenant_id AND n.status = 'SENT'
+            ${buildingClause}
+            ORDER BY n.sent_at DESC
+        `);
         return result.recordset || [];
     }
 
-    /**
-     * Obtener programadas pendientes de enviar (para cron)
-     */
     static async getScheduledDue() {
         const pool = await connectDB();
         const result = await pool.request().query(`
@@ -203,9 +240,6 @@ class InAppNotificationModel {
         });
     }
 
-    /**
-     * Eliminar (solo draft/scheduled)
-     */
     static async delete(id, tenantId) {
         const pool = await connectDB();
         const result = await pool.request()
@@ -222,5 +256,7 @@ class InAppNotificationModel {
         return MAX_MESSAGE_LENGTH;
     }
 }
+
+InAppNotificationModel.coerceBool = coerceBool;
 
 module.exports = InAppNotificationModel;

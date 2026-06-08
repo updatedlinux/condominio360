@@ -174,46 +174,31 @@ class TenantModel {
     }
 
     /**
-     * URL base del API externo (ej. https://host.../api), sin barra final.
-     */
-    static normalizeWhatsAppApiBaseUrl(input) {
-        const t = (input || '').trim();
-        if (!t) return null;
-        let u = t;
-        if (!/^https?:\/\//i.test(u)) {
-            u = `https://${u.replace(/^\/+/, '')}`;
-        }
-        u = u.replace(/\/+$/, '');
-        try {
-            const parsed = new URL(u);
-            // Solo origen (p. ej. https://host) → el API suele estar bajo /api (evita 404 en …/send-message)
-            if (!parsed.pathname || parsed.pathname === '/') {
-                u = `${u}/api`;
-            }
-        } catch {
-            /* mantener u */
-        }
-        return u.replace(/\/+$/, '');
-    }
-
-    /**
-     * Configuración para envío (incluye secret). null si no está contratado/configurado.
+     * Configuración OpenWA para envío. null si no está contratado/configurado.
+     * Plataforma: OPENWA_BASE_URL + OPENWA_API_KEY (.env). Por tenant: whatsapp_openwa_session_id.
      */
     static async getWhatsAppDeliveryConfig(tenantId) {
         try {
+            const OpenWAWhatsAppService = require('../services/OpenWAWhatsAppService');
+            const platform = OpenWAWhatsAppService.getPlatformConfig();
+            if (!platform) return null;
+
             const pool = await connectDB();
             const result = await pool.request()
                 .input('id', sql.UniqueIdentifier, tenantId)
                 .query(`
-                    SELECT whatsapp_api_base_url, whatsapp_api_secret, whatsapp_messaging_enabled
+                    SELECT whatsapp_messaging_enabled, whatsapp_openwa_session_id
                     FROM Tenants WHERE id = @id
                 `);
             const t = result.recordset[0];
             if (!t || !t.whatsapp_messaging_enabled) return null;
-            const baseUrl = TenantModel.normalizeWhatsAppApiBaseUrl(t.whatsapp_api_base_url);
-            const secretKey = (t.whatsapp_api_secret || '').trim();
-            if (!baseUrl || !secretKey) return null;
-            return { baseUrl, secretKey };
+            const sessionId = (t.whatsapp_openwa_session_id || '').trim();
+            if (!sessionId) return null;
+            return {
+                sessionId,
+                baseUrl: platform.baseUrl,
+                apiKey: platform.apiKey
+            };
         } catch (error) {
             console.error('getWhatsAppDeliveryConfig error:', error);
             return null;
@@ -221,39 +206,35 @@ class TenantModel {
     }
 
     /**
-     * Superadmin / UI: sin secret; indica si hay clave guardada.
+     * Superadmin / UI: session id OpenWA por condominio.
      */
     static async getWhatsAppSettingsPublic(tenantId) {
         const pool = await connectDB();
         const result = await pool.request()
             .input('id', sql.UniqueIdentifier, tenantId)
             .query(`
-                SELECT whatsapp_api_base_url, whatsapp_messaging_enabled,
-                    CASE WHEN whatsapp_api_secret IS NOT NULL AND LEN(LTRIM(RTRIM(whatsapp_api_secret))) > 0
-                        THEN 1 ELSE 0 END AS has_api_secret
+                SELECT whatsapp_messaging_enabled, whatsapp_openwa_session_id
                 FROM Tenants WHERE id = @id
             `);
         const row = result.recordset[0];
         if (!row) return null;
+        const sessionId = (row.whatsapp_openwa_session_id || '').trim();
         return {
             enabled: !!row.whatsapp_messaging_enabled,
-            apiBaseUrl: row.whatsapp_api_base_url || '',
-            hasApiSecret: !!row.has_api_secret
+            openwaSessionId: sessionId,
+            hasSessionId: sessionId.length > 0
         };
     }
 
     /**
-     * @param {Object} data - enabled?, apiBaseUrl?, apiKey? (vacío = mantener clave anterior)
+     * @param {Object} data - enabled?, openwaSessionId?
      */
     static async updateWhatsAppSettings(tenantId, data) {
         const pool = await connectDB();
-        const cur = await pool.request()
+        const ex = await pool.request()
             .input('id', sql.UniqueIdentifier, tenantId)
-            .query(`
-                SELECT whatsapp_api_base_url, whatsapp_api_secret FROM Tenants WHERE id = @id
-            `);
-        const ex = cur.recordset[0];
-        if (!ex) throw new Error('Condominio no encontrado');
+            .query(`SELECT id FROM Tenants WHERE id = @id`);
+        if (!ex.recordset[0]) throw new Error('Condominio no encontrado');
 
         const request = pool.request().input('id', sql.UniqueIdentifier, tenantId);
         const parts = [];
@@ -262,19 +243,10 @@ class TenantModel {
             parts.push('whatsapp_messaging_enabled = @w_en');
             request.input('w_en', sql.Bit, data.enabled ? 1 : 0);
         }
-        if (data.apiBaseUrl !== undefined) {
-            const normalized = TenantModel.normalizeWhatsAppApiBaseUrl(data.apiBaseUrl);
-            parts.push('whatsapp_api_base_url = @w_url');
-            request.input('w_url', sql.NVarChar, normalized || null);
-        }
-        if (data.apiKey !== undefined) {
-            const k = String(data.apiKey || '').trim();
-            parts.push('whatsapp_api_secret = @w_sec');
-            if (k.length > 0) {
-                request.input('w_sec', sql.NVarChar, k);
-            } else {
-                request.input('w_sec', sql.NVarChar, ex.whatsapp_api_secret || null);
-            }
+        if (data.openwaSessionId !== undefined) {
+            const sid = String(data.openwaSessionId || '').trim();
+            parts.push('whatsapp_openwa_session_id = @w_sid');
+            request.input('w_sid', sql.NVarChar, sid || null);
         }
 
         if (parts.length === 0) {

@@ -860,17 +860,22 @@
                 if (d.success && d.data && d.data.length > 0) {
                     listEl.classList.remove('hidden');
                     emptyEl.classList.add('hidden');
-                    listEl.innerHTML = d.data.map(n => `
+                    listEl.innerHTML = d.data.map(n => {
+                        const attachLink = n.has_attachment && n.attachment_url
+                            ? `<p class="mt-1"><a href="${escapeHtml(n.attachment_url)}" target="_blank" rel="noopener" class="text-[#f97316] text-xs hover:underline inline-flex items-center gap-1"><span class="material-icons-round text-sm">attach_file</span>${escapeHtml(n.attachment_label || 'Ver adjunto')}</a></p>`
+                            : '';
+                        return `
                         <div class="flex gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
                             <div class="w-10 h-10 rounded-full bg-[#f97316]/10 flex items-center justify-center flex-shrink-0">
                                 <span class="material-icons-round text-[#f97316] text-lg">campaign</span>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-[#3C4043] text-sm">${escapeHtml(n.message)}</p>
+                                <p class="text-[#3C4043] text-sm whitespace-pre-wrap">${escapeHtml(n.message || '')}</p>
+                                ${attachLink}
                                 <p class="text-[#9AA0A6] text-xs mt-1">${n.author_name || 'Administración'} · ${timeAgoVenezuela(n.sent_at)}</p>
                             </div>
-                        </div>
-                    `).join('');
+                        </div>`;
+                    }).join('');
                 } else {
                     listEl.classList.add('hidden');
                     emptyEl.classList.remove('hidden');

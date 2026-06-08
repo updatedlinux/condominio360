@@ -67,13 +67,14 @@ router.get('/portal-features', async (req, res) => {
 
 // ==================== NOTIFICACIONES IN-APP (MENSAJES CORTOS) ====================
 const InAppNotificationController = require('../controllers/InAppNotificationController');
+const { conditionalInAppNotificationUpload } = require('../middleware/uploadInAppNotificationAttachment');
 router.get('/whatsapp-messaging-status', InAppNotificationController.getWhatsAppMessagingStatus);
 router.get('/in-app-notifications', InAppNotificationController.list);
 router.get('/in-app-notifications/max-length', (req, res) => res.json({ maxLength: 250 }));
 router.get('/in-app-notifications/:id', InAppNotificationController.getById);
-router.post('/in-app-notifications', InAppNotificationController.create);
-router.put('/in-app-notifications/:id', InAppNotificationController.update);
-router.post('/in-app-notifications/:id/send', InAppNotificationController.sendNow);
+router.post('/in-app-notifications', conditionalInAppNotificationUpload, InAppNotificationController.create);
+router.put('/in-app-notifications/:id', conditionalInAppNotificationUpload, InAppNotificationController.update);
+router.post('/in-app-notifications/:id/send', conditionalInAppNotificationUpload, InAppNotificationController.sendNow);
 router.delete('/in-app-notifications/:id', InAppNotificationController.delete);
 
 // ==================== COMUNICADOS / CARTAS ====================
