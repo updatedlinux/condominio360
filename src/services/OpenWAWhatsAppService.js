@@ -4,9 +4,8 @@ const path = require('path');
 const sharp = require('sharp');
 
 /**
- * Cliente OpenWA — POST /api/sessions/:sessionId/messages/send-{text|image|document}
- * Multimedia: URL pública (OpenWA descarga). Formato API: { image: { url } } sin campos extra.
- * PNG/grandes → JPEG optimizado en cache local (-openwa.jpg) para URL más liviana.
+ * Cliente OpenWA — API unificada POST /api/sessions/:sessionId/messages
+ * (phone, type, body|media). PNG/grandes → JPEG optimizado (-openwa.jpg).
  */
 
 const MIME_BY_EXT = {
@@ -129,12 +128,9 @@ function extIs(relativePath, ext) {
     return path.extname(relativePath || '').toLowerCase() === ext;
 }
 
-function buildUrlMediaPayload(relativePath, kind) {
+function buildUrlMediaPayload(relativePath) {
     const url = buildPublicUploadUrl(relativePath);
-    if (kind === 'document') {
-        return { document: { url }, mode: 'url', downloadUrl: url, servePath: relativePath };
-    }
-    return { image: { url }, mode: 'url', downloadUrl: url, servePath: relativePath };
+    return { media: { url }, downloadUrl: url, servePath: relativePath };
 }
 
 async function postOpenWA(platform, apiPath, body) {
@@ -184,37 +180,51 @@ class OpenWAWhatsAppService {
 
         const media = (mediaType || 'TEXT').toUpperCase();
         const caption = truncateCaption(text);
-        let apiPath;
+        const apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages`;
         let body;
         let mediaPayload = null;
 
         if (media === 'IMAGE' && attachmentPath) {
-            apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-image`;
             const servePath = await resolveImageRelativePath(attachmentPath, attachmentMime);
-            mediaPayload = buildUrlMediaPayload(servePath, 'image');
-            body = { chatId, image: mediaPayload.image };
+            mediaPayload = buildUrlMediaPayload(servePath);
+            body = {
+                phone: chatId,
+                type: 'image',
+                media: mediaPayload.media
+            };
             if (caption) body.caption = caption;
-            console.log('[OpenWA] send-image vía URL', {
+            console.log('[OpenWA] send message (image) vía URL', {
                 url: mediaPayload.downloadUrl,
                 servePath,
                 ...(logMeta || {})
             });
         } else if (media === 'DOCUMENT' && attachmentPath) {
-            apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-document`;
             const abs = localUploadPath(attachmentPath);
             if (!fs.existsSync(abs)) throw new Error(`Adjunto no encontrado: ${abs}`);
-            mediaPayload = buildUrlMediaPayload(attachmentPath, 'document');
+            mediaPayload = buildUrlMediaPayload(attachmentPath);
             const filename = attachmentOriginalName || path.basename(attachmentPath) || 'documento.pdf';
-            body = { chatId, document: mediaPayload.document, filename };
+            body = {
+                phone: chatId,
+                type: 'document',
+                media: mediaPayload.media,
+                filename
+            };
             if (caption) body.caption = caption;
-            console.log('[OpenWA] send-document vía URL', {
+            console.log('[OpenWA] send message (document) vía URL', {
                 url: mediaPayload.downloadUrl,
                 filename,
                 ...(logMeta || {})
             });
         } else {
-            apiPath = `/sessions/${encodeURIComponent(sessionId)}/messages/send-text`;
-            body = { chatId, text: text || ' ' };
+            body = {
+                phone: chatId,
+                type: 'text',
+                body: text || ' '
+            };
+            console.log('[OpenWA] send message (text)', {
+                chatId: maskChatId(chatId),
+                ...(logMeta || {})
+            });
         }
 
         try {
