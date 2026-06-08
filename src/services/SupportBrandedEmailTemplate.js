@@ -41,21 +41,23 @@ class SupportBrandedEmailTemplate {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(opts.title || 'Condominio360')}</title>
+<style>
+.email-body img { max-width: 100% !important; height: auto !important; display: block; }
+</style>
 </head>
 <body style="margin:0;padding:0;background:#F8FAFC;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;">
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(15,23,42,0.08);">
 <tr>
-<td style="background:${COLORS.slate900};padding:0;">
+<td style="background:${COLORS.slate900};padding:18px 24px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 <tr>
-<td style="padding:18px 24px;width:48%;vertical-align:middle;">
+<td align="left" valign="middle" style="vertical-align:middle;">
 <img src="${condoLogo}" alt="Condominio360" width="190" style="display:block;max-width:190px;height:auto;border:0;" />
 </td>
-<td style="width:1px;background:rgba(255,255,255,0.35);"></td>
-<td style="padding:18px 24px;width:48%;vertical-align:middle;">
-<img src="${intelaLogo}" alt="Arsys Intela" width="220" style="display:block;max-width:220px;height:auto;border:0;" />
+<td align="right" valign="middle" style="vertical-align:middle;">
+<img src="${intelaLogo}" alt="Arsys Intela" width="220" style="display:block;max-width:220px;height:auto;border:0;margin-left:auto;" />
 </td>
 </tr>
 </table>

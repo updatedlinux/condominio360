@@ -275,6 +275,148 @@
                 }
             }
         });
+        setupJuntaEmailImageResize(juntaEmailQuill);
+    }
+
+    function setupJuntaEmailImageResize(quill) {
+        const container = quill.root.parentElement;
+        if (!container) return;
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'junta-img-resize-toolbar hidden';
+        toolbar.innerHTML = `
+            <span>Ancho</span>
+            <input type="range" min="80" max="576" step="4" data-role="range">
+            <span data-role="label">100%</span>
+            <button type="button" data-pct="25">25%</button>
+            <button type="button" data-pct="50">50%</button>
+            <button type="button" data-pct="75">75%</button>
+            <button type="button" data-pct="100">100%</button>
+        `;
+        const handle = document.createElement('div');
+        handle.className = 'junta-img-resize-handle hidden';
+        container.appendChild(toolbar);
+        container.appendChild(handle);
+
+        const rangeEl = toolbar.querySelector('[data-role="range"]');
+        const labelEl = toolbar.querySelector('[data-role="label"]');
+        let activeImg = null;
+        let dragState = null;
+
+        function editorMaxWidth() {
+            return Math.max(160, Math.min(576, quill.root.clientWidth - 8));
+        }
+
+        function syncRangeMax() {
+            rangeEl.max = String(editorMaxWidth());
+        }
+
+        function applyImageWidth(img, widthPx) {
+            const maxW = editorMaxWidth();
+            const w = Math.max(80, Math.min(maxW, Math.round(widthPx)));
+            img.style.width = w + 'px';
+            img.style.height = 'auto';
+            img.style.maxWidth = '100%';
+            img.setAttribute('width', String(w));
+            img.removeAttribute('height');
+            rangeEl.value = String(w);
+            labelEl.textContent = Math.round((w / maxW) * 100) + '%';
+            positionUi(img);
+        }
+
+        function positionUi(img) {
+            if (!img) return;
+            syncRangeMax();
+            const containerRect = container.getBoundingClientRect();
+            const imgRect = img.getBoundingClientRect();
+            const top = imgRect.bottom - containerRect.top + 8;
+            const left = Math.max(8, imgRect.left - containerRect.left);
+            toolbar.style.top = top + 'px';
+            toolbar.style.left = left + 'px';
+            handle.style.top = (imgRect.bottom - containerRect.top - 6) + 'px';
+            handle.style.left = (imgRect.right - containerRect.left - 6) + 'px';
+        }
+
+        function clearSelection() {
+            if (activeImg) activeImg.classList.remove('junta-img-selected');
+            activeImg = null;
+            toolbar.classList.add('hidden');
+            handle.classList.add('hidden');
+        }
+
+        function selectImage(img) {
+            if (activeImg === img) return;
+            clearSelection();
+            activeImg = img;
+            img.classList.add('junta-img-selected');
+            toolbar.classList.remove('hidden');
+            handle.classList.remove('hidden');
+            const current = img.getBoundingClientRect().width || parseInt(img.getAttribute('width'), 10) || editorMaxWidth();
+            applyImageWidth(img, current);
+        }
+
+        rangeEl.addEventListener('input', () => {
+            if (!activeImg) return;
+            applyImageWidth(activeImg, parseInt(rangeEl.value, 10));
+        });
+
+        toolbar.querySelectorAll('[data-pct]').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!activeImg) return;
+                const pct = parseInt(btn.getAttribute('data-pct'), 10) / 100;
+                applyImageWidth(activeImg, editorMaxWidth() * pct);
+            });
+        });
+
+        handle.addEventListener('mousedown', (e) => {
+            if (!activeImg) return;
+            e.preventDefault();
+            e.stopPropagation();
+            dragState = {
+                startX: e.clientX,
+                startWidth: activeImg.getBoundingClientRect().width
+            };
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!dragState || !activeImg) return;
+            const delta = e.clientX - dragState.startX;
+            applyImageWidth(activeImg, dragState.startWidth + delta);
+        });
+
+        document.addEventListener('mouseup', () => {
+            dragState = null;
+        });
+
+        quill.root.addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                selectImage(e.target);
+                return;
+            }
+            if (!toolbar.contains(e.target) && e.target !== handle) {
+                clearSelection();
+            }
+        });
+
+        quill.on('text-change', () => {
+            if (activeImg && !quill.root.contains(activeImg)) clearSelection();
+        });
+
+        window.addEventListener('resize', () => {
+            if (activeImg) positionUi(activeImg);
+        });
+    }
+
+    function styleJuntaInsertedImage(img) {
+        if (!img) return;
+        const maxW = Math.max(160, Math.min(576, (document.querySelector('#junta-email-editor .ql-editor')?.clientWidth || 576) - 8));
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.width = maxW + 'px';
+        img.setAttribute('width', String(maxW));
     }
 
     function juntaEmailImageHandler() {
@@ -289,6 +431,9 @@
                 const range = juntaEmailQuill.getSelection(true);
                 juntaEmailQuill.insertEmbed(range.index, 'image', url, Quill.sources.USER);
                 juntaEmailQuill.setSelection(range.index + 1);
+                const imgs = juntaEmailQuill.root.querySelectorAll('img');
+                const inserted = imgs[imgs.length - 1];
+                styleJuntaInsertedImage(inserted);
             } catch (e) {
                 showPageToast(e.message || 'Error al subir imagen', 'error');
             }
