@@ -136,7 +136,8 @@ router.get('/balance/financial-summary', AdminBalanceController.getFinancialSumm
 // ==================== CORREO (Mailgun / jobs) ====================
 router.get('/outgoing-queues-summary', EmailAdminController.getOutgoingQueuesSummary);
 router.get('/whatsapp-deliveries', WhatsAppAdminController.listDeliveries);
-router.get('/whatsapp-webhook-events', WhatsAppAdminController.listWebhookEvents);
+router.get('/whatsapp-blacklist', WhatsAppAdminController.listBlacklist);
+router.get('/whatsapp-blacklist/export', WhatsAppAdminController.exportBlacklistExcel);
 router.get('/openwa-webhook-info', OpenWAWebhookController.getWebhookInfo);
 router.get('/email-metrics', EmailAdminController.getMetrics);
 router.get('/email-jobs', EmailAdminController.listJobs);
