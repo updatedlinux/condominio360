@@ -1,0 +1,447 @@
+<!-- Modal: Correo Support → Junta -->
+<div id="junta-support-email-modal" class="modal-overlay p-4" onclick="if(event.target===this) closeJuntaSupportEmailModal()">
+    <div class="modal-content modal-content-lg modal-content-xl w-full flex flex-col overflow-hidden" role="dialog" aria-labelledby="junta-support-email-title" onclick="event.stopPropagation()">
+        <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 text-white shrink-0">
+            <div class="flex items-start gap-3 min-w-0">
+                <span class="material-symbols-rounded text-2xl text-orange-400 shrink-0">support_agent</span>
+                <div>
+                    <h2 id="junta-support-email-title" class="text-lg font-bold">Correo a la Junta (Support)</h2>
+                    <p class="text-sm text-slate-300 mt-0.5">Mensaje con encabezado corporativo · destinatarios y contactos frecuentes del condominio</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeJuntaSupportEmailModal()" class="p-2 rounded-lg hover:bg-white/10 shrink-0" aria-label="Cerrar">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                <div class="xl:col-span-3 space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1.5">Asunto</label>
+                        <input type="text" id="junta-email-subject" maxlength="200" placeholder="Asunto del correo"
+                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1.5">Mensaje</label>
+                        <div id="junta-email-editor"></div>
+                    </div>
+                </div>
+                <div class="xl:col-span-2 space-y-4">
+                    <label class="block text-xs font-medium text-slate-500">Destinatarios</label>
+                    <div id="junta-email-recipients-loading" class="text-sm text-slate-400 py-4">Cargando…</div>
+                    <div id="junta-email-recipients-panel" class="hidden space-y-5 max-h-[420px] overflow-y-auto pr-1">
+
+                        <div>
+                            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Administradores de junta</p>
+                            <div id="junta-email-admins-empty" class="hidden text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-lg p-3">Sin administradores activos.</div>
+                            <div id="junta-email-admins-list" class="hidden space-y-1 border border-slate-100 rounded-xl p-2 bg-slate-50/50"></div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Contactos frecuentes</p>
+                            <div id="junta-email-contacts-empty" class="hidden text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-lg p-3">Aún no hay contactos guardados en este condominio.</div>
+                            <div id="junta-email-contacts-list" class="hidden space-y-1 border border-slate-100 rounded-xl p-2 bg-slate-50/50"></div>
+                            <div class="mt-2 grid grid-cols-1 gap-2">
+                                <input type="text" id="junta-new-contact-name" maxlength="120" placeholder="Nombre (opcional)"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <div class="flex gap-2">
+                                    <input type="email" id="junta-new-contact-email" maxlength="320" placeholder="correo@ejemplo.com"
+                                        class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <button type="button" onclick="addJuntaFrequentContact()" class="shrink-0 px-3 py-2 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700" title="Guardar contacto frecuente">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Otros destinatarios</p>
+                            <p class="text-xs text-slate-400 mb-2">Correos puntuales (miembros sin cuenta de admin).</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="junta-extra-email-input" maxlength="500" placeholder="correo@ejemplo.com"
+                                    class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();addJuntaExtraEmail();}">
+                                <button type="button" onclick="addJuntaExtraEmail()" class="shrink-0 px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Agregar</button>
+                            </div>
+                            <div id="junta-extra-email-chips" class="flex flex-wrap gap-2 mt-2"></div>
+                            <label class="flex items-start gap-2 mt-3 text-xs text-slate-600 cursor-pointer">
+                                <input type="checkbox" id="junta-save-extra-as-frequent" class="mt-0.5 rounded border-slate-300">
+                                <span>Guardar los otros destinatarios como contactos frecuentes al enviar</span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">Pie del correo: Support Team · Condominio360 // Arsys Intela</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 shrink-0">
+            <button type="button" onclick="closeJuntaSupportEmailModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-white">Cancelar</button>
+            <button type="button" onclick="previewJuntaSupportEmail()" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-white">
+                <span class="material-symbols-rounded text-lg">visibility</span>
+                Vista previa
+            </button>
+            <button type="button" id="junta-email-send-btn" onclick="sendJuntaSupportEmail()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800">
+                <span class="material-symbols-rounded text-lg">send</span>
+                Enviar correo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Vista previa -->
+<div id="junta-email-preview-modal" class="modal-overlay p-4" style="z-index:110" onclick="if(event.target===this) closeJuntaEmailPreviewModal()">
+    <div class="modal-content modal-content-lg w-full flex flex-col overflow-hidden max-h-[92vh]" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+            <h2 class="text-lg font-semibold text-slate-900">Vista previa del correo</h2>
+            <button type="button" onclick="closeJuntaEmailPreviewModal()" class="p-2 rounded-lg hover:bg-slate-100">
+                <span class="material-symbols-rounded text-slate-600">close</span>
+            </button>
+        </div>
+        <div class="flex-1 overflow-hidden bg-slate-100 p-4 min-h-[50vh]">
+            <iframe id="junta-email-preview-frame" title="Vista previa correo" class="w-full h-full min-h-[50vh] border-0 bg-white rounded-lg"></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+(function initJuntaSupportEmailModule() {
+    const tenantId = '<%= tenant.id %>';
+    function authHeaders(extra) {
+        return Object.assign({ 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }, extra || {});
+    }
+    let juntaEmailQuill = null;
+    let juntaEmailAdmins = [];
+    let juntaEmailContacts = [];
+    let juntaExtraEmails = [];
+    let juntaEmailModalReady = false;
+
+    function isValidJuntaEmail(email) {
+        const e = String(email || '').trim().toLowerCase();
+        return e.length >= 5 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+    }
+
+    function parseJuntaEmailInput(str) {
+        return String(str || '')
+            .split(/[,;\s]+/)
+            .map((s) => s.trim().toLowerCase())
+            .filter((e) => isValidJuntaEmail(e));
+    }
+
+    function escapeHtmlJunta(t) {
+        const d = document.createElement('div');
+        d.textContent = t || '';
+        return d.innerHTML;
+    }
+
+    function renderJuntaExtraEmailChips() {
+        const wrap = document.getElementById('junta-extra-email-chips');
+        if (!wrap) return;
+        if (!juntaExtraEmails.length) {
+            wrap.innerHTML = '';
+            return;
+        }
+        wrap.innerHTML = juntaExtraEmails.map((e, i) =>
+            `<span class="junta-email-chip"><span>${escapeHtmlJunta(e)}</span><button type="button" onclick="removeJuntaExtraEmail(${i})" aria-label="Quitar">&times;</button></span>`
+        ).join('');
+    }
+
+    window.addJuntaExtraEmail = function addJuntaExtraEmail() {
+        const input = document.getElementById('junta-extra-email-input');
+        const parsed = parseJuntaEmailInput(input?.value || '');
+        if (!parsed.length) {
+            showPageToast('Indica un correo válido', 'error');
+            return;
+        }
+        const seen = new Set(juntaExtraEmails);
+        parsed.forEach((e) => { if (!seen.has(e)) { seen.add(e); juntaExtraEmails.push(e); } });
+        if (input) input.value = '';
+        renderJuntaExtraEmailChips();
+    };
+
+    window.removeJuntaExtraEmail = function removeJuntaExtraEmail(index) {
+        juntaExtraEmails.splice(index, 1);
+        renderJuntaExtraEmailChips();
+    };
+
+    function renderJuntaAdminRecipients() {
+        const empty = document.getElementById('junta-email-admins-empty');
+        const list = document.getElementById('junta-email-admins-list');
+        if (!juntaEmailAdmins.length) {
+            if (empty) empty.classList.remove('hidden');
+            if (list) { list.classList.add('hidden'); list.innerHTML = ''; }
+            return;
+        }
+        if (empty) empty.classList.add('hidden');
+        if (list) {
+            list.classList.remove('hidden');
+            list.innerHTML = juntaEmailAdmins.map((a) => {
+                const name = [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email;
+                return `<label class="flex items-start gap-2 p-2 rounded-lg hover:bg-white cursor-pointer">
+                    <input type="checkbox" class="junta-email-admin-recipient mt-1 rounded border-slate-300" value="${a.id}" checked>
+                    <span class="text-sm min-w-0"><span class="font-medium text-slate-800">${escapeHtmlJunta(name)}</span><br><span class="text-slate-500 break-all">${escapeHtmlJunta(a.email)}</span></span>
+                </label>`;
+            }).join('');
+        }
+    }
+
+    function renderJuntaContactRecipients() {
+        const empty = document.getElementById('junta-email-contacts-empty');
+        const list = document.getElementById('junta-email-contacts-list');
+        if (!juntaEmailContacts.length) {
+            if (empty) empty.classList.remove('hidden');
+            if (list) { list.classList.add('hidden'); list.innerHTML = ''; }
+            return;
+        }
+        if (empty) empty.classList.add('hidden');
+        if (list) {
+            list.classList.remove('hidden');
+            list.innerHTML = juntaEmailContacts.map((c) => {
+                const label = c.display_name || c.email;
+                return `<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-white group">
+                    <label class="flex items-start gap-2 flex-1 min-w-0 cursor-pointer">
+                        <input type="checkbox" class="junta-email-contact-recipient mt-1 rounded border-slate-300" value="${c.id}" checked>
+                        <span class="text-sm min-w-0"><span class="font-medium text-slate-800">${escapeHtmlJunta(label)}</span><br><span class="text-slate-500 break-all">${escapeHtmlJunta(c.email)}</span></span>
+                    </label>
+                    <button type="button" onclick="deleteJuntaFrequentContact('${c.id}')" class="opacity-60 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 shrink-0" title="Eliminar contacto">
+                        <span class="material-symbols-rounded text-base">delete</span>
+                    </button>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    window.addJuntaFrequentContact = async function addJuntaFrequentContact() {
+        const nameEl = document.getElementById('junta-new-contact-name');
+        const emailEl = document.getElementById('junta-new-contact-email');
+        const email = (emailEl?.value || '').trim();
+        if (!isValidJuntaEmail(email)) {
+            showPageToast('Indica un correo válido para el contacto', 'error');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/admin/tenants/${tenantId}/junta-email/contacts`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    email,
+                    display_name: (nameEl?.value || '').trim() || null
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo guardar');
+            if (nameEl) nameEl.value = '';
+            if (emailEl) emailEl.value = '';
+            showPageToast('Contacto frecuente guardado', 'success');
+            await loadJuntaEmailRecipients();
+        } catch (e) {
+            showPageToast(e.message || 'Error al guardar contacto', 'error');
+        }
+    };
+
+    window.deleteJuntaFrequentContact = async function deleteJuntaFrequentContact(contactId) {
+        if (!confirm('¿Eliminar este contacto frecuente del condominio?')) return;
+        try {
+            const res = await fetch(`/api/admin/tenants/${tenantId}/junta-email/contacts/${contactId}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo eliminar');
+            showPageToast('Contacto eliminado', 'success');
+            await loadJuntaEmailRecipients();
+        } catch (e) {
+            showPageToast(e.message || 'Error al eliminar contacto', 'error');
+        }
+    };
+
+    function initJuntaSupportEmailEditor() {
+        const el = document.getElementById('junta-email-editor');
+        if (!el || typeof Quill === 'undefined' || juntaEmailQuill) return;
+        juntaEmailQuill = new Quill('#junta-email-editor', {
+            theme: 'snow',
+            placeholder: 'Escribe el mensaje para la junta de condominio…',
+            modules: {
+                toolbar: {
+                    container: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ color: [] }, { background: [] }],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ align: [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ],
+                    handlers: { image: juntaEmailImageHandler }
+                }
+            }
+        });
+    }
+
+    function juntaEmailImageHandler() {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp');
+        input.onchange = async () => {
+            const file = input.files && input.files[0];
+            if (!file || !juntaEmailQuill) return;
+            try {
+                const url = await uploadJuntaEmailEditorImage(file);
+                const range = juntaEmailQuill.getSelection(true);
+                juntaEmailQuill.insertEmbed(range.index, 'image', url, Quill.sources.USER);
+                juntaEmailQuill.setSelection(range.index + 1);
+            } catch (e) {
+                showPageToast(e.message || 'Error al subir imagen', 'error');
+            }
+        };
+        input.click();
+    }
+
+    async function uploadJuntaEmailEditorImage(file) {
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await fetch(`/api/admin/tenants/${tenantId}/junta-email/upload-image`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo subir la imagen');
+        return data.data.url;
+    }
+
+    async function loadJuntaEmailRecipients() {
+        const loading = document.getElementById('junta-email-recipients-loading');
+        const panel = document.getElementById('junta-email-recipients-panel');
+        if (loading) {
+            loading.classList.remove('hidden');
+            loading.textContent = 'Cargando…';
+        }
+        if (panel) panel.classList.add('hidden');
+        try {
+            const res = await fetch(`/api/admin/tenants/${tenantId}/junta-email/recipients`, {
+                headers: authHeaders()
+            });
+            const data = await res.json();
+            if (loading) loading.classList.add('hidden');
+            if (!data.success || !data.data) {
+                showPageToast('Error al cargar destinatarios', 'error');
+                return;
+            }
+            juntaEmailAdmins = data.data.admins || [];
+            juntaEmailContacts = data.data.frequent_contacts || [];
+            if (panel) panel.classList.remove('hidden');
+            renderJuntaAdminRecipients();
+            renderJuntaContactRecipients();
+        } catch (e) {
+            console.error(e);
+            if (loading) loading.classList.add('hidden');
+            showPageToast('Error de red al cargar destinatarios', 'error');
+        }
+    }
+
+    function getSelectedJuntaAdminIds() {
+        return Array.from(document.querySelectorAll('.junta-email-admin-recipient:checked')).map((el) => el.value);
+    }
+
+    function getSelectedJuntaContactIds() {
+        return Array.from(document.querySelectorAll('.junta-email-contact-recipient:checked')).map((el) => el.value);
+    }
+
+    function hasAnyJuntaRecipientSelected() {
+        return getSelectedJuntaAdminIds().length > 0
+            || getSelectedJuntaContactIds().length > 0
+            || juntaExtraEmails.length > 0;
+    }
+
+    function getJuntaEmailHtmlBody() {
+        return juntaEmailQuill ? juntaEmailQuill.root.innerHTML : '';
+    }
+
+    window.previewJuntaSupportEmail = async function previewJuntaSupportEmail() {
+        try {
+            const htmlBody = getJuntaEmailHtmlBody();
+            const res = await fetch(`/api/admin/tenants/${tenantId}/junta-email/preview`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ html_body: htmlBody })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo generar la vista previa');
+            const frame = document.getElementById('junta-email-preview-frame');
+            if (frame) frame.srcdoc = data.data.html;
+            document.getElementById('junta-email-preview-modal')?.classList.add('active');
+        } catch (e) {
+            showPageToast(e.message || 'Error en vista previa', 'error');
+        }
+    };
+
+    window.closeJuntaEmailPreviewModal = function closeJuntaEmailPreviewModal() {
+        document.getElementById('junta-email-preview-modal')?.classList.remove('active');
+        const frame = document.getElementById('junta-email-preview-frame');
+        if (frame) frame.srcdoc = '';
+    };
+
+    window.sendJuntaSupportEmail = async function sendJuntaSupportEmail() {
+        const subject = (document.getElementById('junta-email-subject')?.value || '').trim();
+        const htmlBody = getJuntaEmailHtmlBody();
+        const adminIds = getSelectedJuntaAdminIds();
+        const contactIds = getSelectedJuntaContactIds();
+        const extraEmails = [...juntaExtraEmails];
+        const saveExtraAsFrequent = !!document.getElementById('junta-save-extra-as-frequent')?.checked;
+        if (!subject) {
+            showPageToast('Indica el asunto del correo', 'error');
+            return;
+        }
+        if (!htmlBody || htmlBody === '<p><br></p>') {
+            showPageToast('Escribe el contenido del mensaje', 'error');
+            return;
+        }
+        if (!hasAnyJuntaRecipientSelected()) {
+            showPageToast('Selecciona al menos un destinatario', 'error');
+            return;
+        }
+        const btn = document.getElementById('junta-email-send-btn');
+        if (btn) btn.disabled = true;
+        try {
+            const res = await fetch(`/api/admin/tenants/${tenantId}/junta-email/send`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    subject,
+                    html_body: htmlBody,
+                    admin_ids: adminIds,
+                    contact_ids: contactIds,
+                    extra_emails: extraEmails,
+                    save_extra_as_frequent: saveExtraAsFrequent
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Error al enviar');
+            showPageToast(data.message || 'Correo enviado', data.data?.failed ? 'info' : 'success');
+            if (saveExtraAsFrequent && extraEmails.length) {
+                juntaExtraEmails = [];
+                renderJuntaExtraEmailChips();
+                await loadJuntaEmailRecipients();
+            }
+        } catch (e) {
+            showPageToast(e.message || 'Error al enviar correo', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    };
+
+    window.openJuntaSupportEmailModal = async function openJuntaSupportEmailModal() {
+        if (!juntaEmailModalReady) {
+            initJuntaSupportEmailEditor();
+            juntaEmailModalReady = true;
+        }
+        document.getElementById('junta-support-email-modal')?.classList.add('active');
+        await loadJuntaEmailRecipients();
+    };
+
+    window.closeJuntaSupportEmailModal = function closeJuntaSupportEmailModal() {
+        document.getElementById('junta-support-email-modal')?.classList.remove('active');
+        closeJuntaEmailPreviewModal();
+    };
+})();
+</script>

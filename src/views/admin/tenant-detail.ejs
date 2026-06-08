@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
     <style>
         * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         :root {
@@ -187,6 +188,18 @@
             max-width: 920px;
             max-height: 92vh;
         }
+
+        .modal-content.modal-content-xl {
+            max-width: min(1100px, 96vw);
+            max-height: 94vh;
+        }
+
+        #junta-email-editor .ql-editor { min-height: 200px; font-size: 15px; line-height: 1.65; }
+        #junta-email-editor .ql-toolbar.ql-snow { border-radius: 12px 12px 0 0; border-color: #e2e8f0; background: #f8fafc; }
+        #junta-email-editor .ql-container.ql-snow { border-radius: 0 0 12px 12px; border-color: #e2e8f0; background: #fff; }
+        .junta-email-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 9999px; font-size: 12px; color: #334155; }
+        .junta-email-chip button { line-height: 1; padding: 0 2px; color: #94a3b8; background: none; border: none; cursor: pointer; }
+        .junta-email-chip button:hover { color: #ef4444; }
 
         .tenant-admin-section {
             padding: 1.25rem 0;
@@ -466,6 +479,16 @@
                                     <p class="text-sm text-slate-500">Configurar tipo y modo</p>
                                 </div>
                                 <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-orange-500">chevron_right</span>
+                            </button>
+                            <button type="button" onclick="openJuntaSupportEmailModal()" class="w-full flex items-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition text-left group">
+                                <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center group-hover:bg-slate-900 transition flex-shrink-0">
+                                    <span class="material-symbols-rounded text-2xl text-white">mail</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-slate-900">Correo Support</p>
+                                    <p class="text-sm text-slate-500">Enviar mensaje a junta y contactos</p>
+                                </div>
+                                <span class="material-symbols-rounded text-slate-400 ml-auto group-hover:text-slate-600">open_in_new</span>
                             </button>
                         </div>
                     </div>
@@ -777,6 +800,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <%- include('partials/junta-support-email-modal') %>
     <%- include('../partials/page-notifications') %>
     <script src="/js/page-notifications.js?v=2"></script>
 
