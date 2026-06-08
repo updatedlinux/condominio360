@@ -1,15 +1,15 @@
 <!-- Modal: Correo Support → Junta -->
 <div id="junta-support-email-modal" class="modal-overlay p-4" onclick="if(event.target===this) closeJuntaSupportEmailModal()">
     <div class="modal-content modal-content-lg modal-content-xl w-full flex flex-col overflow-hidden" role="dialog" aria-labelledby="junta-support-email-title" onclick="event.stopPropagation()">
-        <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 text-white shrink-0">
+        <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-800 bg-slate-900 text-white shrink-0">
             <div class="flex items-start gap-3 min-w-0">
-                <span class="material-symbols-rounded text-2xl text-orange-400 shrink-0">support_agent</span>
+                <span class="material-symbols-rounded text-2xl text-orange-200 shrink-0">support_agent</span>
                 <div>
-                    <h2 id="junta-support-email-title" class="text-lg font-bold">Correo a la Junta (Support)</h2>
-                    <p class="text-sm text-slate-300 mt-0.5">Mensaje con encabezado corporativo · destinatarios y contactos frecuentes del condominio</p>
+                    <h2 id="junta-support-email-title" class="text-lg font-bold text-white">Correo a la Junta (Support)</h2>
+                    <p class="text-sm text-white/80 mt-0.5">Mensaje con encabezado corporativo · destinatarios y contactos frecuentes del condominio</p>
                 </div>
             </div>
-            <button type="button" onclick="closeJuntaSupportEmailModal()" class="p-2 rounded-lg hover:bg-white/10 shrink-0" aria-label="Cerrar">
+            <button type="button" onclick="closeJuntaSupportEmailModal()" class="p-2 rounded-lg text-white hover:bg-slate-50 shrink-0" aria-label="Cerrar">
                 <span class="material-symbols-rounded">close</span>
             </button>
         </div>
@@ -48,7 +48,7 @@
                                 <div class="flex gap-2">
                                     <input type="email" id="junta-new-contact-email" maxlength="320" placeholder="correo@ejemplo.com"
                                         class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <button type="button" onclick="addJuntaFrequentContact()" class="shrink-0 px-3 py-2 bg-slate-800 text-white rounded-lg text-sm hover:bg-slate-700" title="Guardar contacto frecuente">+</button>
+                                    <button type="button" onclick="addJuntaFrequentContact()" class="shrink-0 px-3 py-2 bg-slate-900 text-white rounded-lg text-sm" title="Guardar contacto frecuente">+</button>
                                 </div>
                             </div>
                         </div>
@@ -64,7 +64,7 @@
                             </div>
                             <div id="junta-extra-email-chips" class="flex flex-wrap gap-2 mt-2"></div>
                             <label class="flex items-start gap-2 mt-3 text-xs text-slate-600 cursor-pointer">
-                                <input type="checkbox" id="junta-save-extra-as-frequent" class="mt-0.5 rounded border-slate-300">
+                                <input type="checkbox" id="junta-save-extra-as-frequent" class="mt-0.5 rounded border-slate-200">
                                 <span>Guardar los otros destinatarios como contactos frecuentes al enviar</span>
                             </label>
                         </div>
@@ -74,13 +74,13 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/80 shrink-0">
+        <div class="flex flex-wrap items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
             <button type="button" onclick="closeJuntaSupportEmailModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-white">Cancelar</button>
             <button type="button" onclick="previewJuntaSupportEmail()" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-white">
                 <span class="material-symbols-rounded text-lg">visibility</span>
                 Vista previa
             </button>
-            <button type="button" id="junta-email-send-btn" onclick="sendJuntaSupportEmail()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800">
+            <button type="button" id="junta-email-send-btn" onclick="sendJuntaSupportEmail()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold">
                 <span class="material-symbols-rounded text-lg">send</span>
                 Enviar correo
             </button>
@@ -177,8 +177,8 @@
             list.innerHTML = juntaEmailAdmins.map((a) => {
                 const name = [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email;
                 return `<label class="flex items-start gap-2 p-2 rounded-lg hover:bg-white cursor-pointer">
-                    <input type="checkbox" class="junta-email-admin-recipient mt-1 rounded border-slate-300" value="${a.id}" checked>
-                    <span class="text-sm min-w-0"><span class="font-medium text-slate-800">${escapeHtmlJunta(name)}</span><br><span class="text-slate-500 break-all">${escapeHtmlJunta(a.email)}</span></span>
+                    <input type="checkbox" class="junta-email-admin-recipient mt-1 rounded border-slate-200" value="${a.id}" checked>
+                    <span class="text-sm min-w-0"><span class="font-medium text-slate-900">${escapeHtmlJunta(name)}</span><br><span class="text-slate-500 break-all">${escapeHtmlJunta(a.email)}</span></span>
                 </label>`;
             }).join('');
         }
@@ -199,8 +199,8 @@
                 const label = c.display_name || c.email;
                 return `<div class="flex items-start gap-2 p-2 rounded-lg hover:bg-white group">
                     <label class="flex items-start gap-2 flex-1 min-w-0 cursor-pointer">
-                        <input type="checkbox" class="junta-email-contact-recipient mt-1 rounded border-slate-300" value="${c.id}" checked>
-                        <span class="text-sm min-w-0"><span class="font-medium text-slate-800">${escapeHtmlJunta(label)}</span><br><span class="text-slate-500 break-all">${escapeHtmlJunta(c.email)}</span></span>
+                        <input type="checkbox" class="junta-email-contact-recipient mt-1 rounded border-slate-200" value="${c.id}" checked>
+                        <span class="text-sm min-w-0"><span class="font-medium text-slate-900">${escapeHtmlJunta(label)}</span><br><span class="text-slate-500 break-all">${escapeHtmlJunta(c.email)}</span></span>
                     </label>
                     <button type="button" onclick="deleteJuntaFrequentContact('${c.id}')" class="opacity-60 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 shrink-0" title="Eliminar contacto">
                         <span class="material-symbols-rounded text-base">delete</span>
