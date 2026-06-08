@@ -231,7 +231,11 @@ class InAppWhatsAppQueueService {
                 });
                 await WhatsAppQueueModel.markSent(job.id, result.messageId);
                 await WhatsAppQueueModel.logGlobalSend();
-                await WhatsAppPhoneBlacklistModel.recordSuccess(job.tenant_id, chatId);
+                try {
+                    await WhatsAppPhoneBlacklistModel.recordSuccess(job.tenant_id, chatId);
+                } catch (blErr) {
+                    console.warn('[WhatsApp] recordSuccess falló (envío ya OK)', blErr.message);
+                }
             } catch (e) {
                 const errText = e.message || 'Error de envío';
                 if (isOpenWAServerError(errText)) {

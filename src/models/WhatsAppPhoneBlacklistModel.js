@@ -41,19 +41,15 @@ class WhatsAppPhoneBlacklistModel {
             .input('tenant_id', sql.UniqueIdentifier, tenantId)
             .input('chat_id', sql.NVarChar, chatId)
             .query(`
-                MERGE WhatsAppPhoneBlacklist AS t
-                USING (SELECT @tenant_id AS tenant_id, @chat_id AS chat_id) AS s
-                ON t.tenant_id = s.tenant_id AND t.chat_id = s.chat_id
-                WHEN MATCHED AND (t.consecutive_failures > 0 OR t.is_blocked = 1) THEN
-                    UPDATE SET
-                        consecutive_failures = 0,
-                        is_blocked = 0,
-                        blocked_at = NULL,
-                        owner_notified_at = NULL,
-                        last_success_at = SYSUTCDATETIME(),
-                        updated_at = SYSUTCDATETIME()
-                WHEN MATCHED THEN
-                    UPDATE SET last_success_at = SYSUTCDATETIME(), updated_at = SYSUTCDATETIME();
+                UPDATE WhatsAppPhoneBlacklist
+                SET
+                    consecutive_failures = 0,
+                    is_blocked = 0,
+                    blocked_at = NULL,
+                    owner_notified_at = NULL,
+                    last_success_at = SYSUTCDATETIME(),
+                    updated_at = SYSUTCDATETIME()
+                WHERE tenant_id = @tenant_id AND chat_id = @chat_id
             `);
     }
 
