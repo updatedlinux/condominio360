@@ -4,9 +4,8 @@ const path = require('path');
 const sharp = require('sharp');
 
 /**
- * Cliente OpenWA — endpoints legacy send-{text|image|document} (spec 06).
- * Imagen: JPEG optimizado en base64 (data URI); fallback URL pública si falla.
- * PNG/grandes → cache local (-openwa.jpg).
+ * Cliente OpenWA — send-{text|image|document} (DTO real: campos planos chatId/url/base64/mimetype).
+ * La doc 06 muestra image:{url} pero el API espera { chatId, url, caption } o { chatId, base64, mimetype }.
  */
 
 const MIME_BY_EXT = {
@@ -142,16 +141,16 @@ async function resolveImageRelativePath(relativePath, explicitMime) {
     return optimized;
 }
 
-function readFileAsDataUri(relativePath, mime) {
+function readFileAsBase64(relativePath) {
     const abs = localUploadPath(relativePath);
-    const buf = fs.readFileSync(abs);
-    return `data:${mime};base64,${buf.toString('base64')}`;
+    return fs.readFileSync(abs).toString('base64');
 }
 
 function buildImageSendAttempts(servePath, mime) {
     const abs = localUploadPath(servePath);
     const size = fs.statSync(abs).size;
     const url = buildPublicUploadUrl(servePath);
+    const filename = path.basename(servePath);
     const attempts = [];
 
     if (size <= parseMaxBase64Bytes()) {
@@ -160,7 +159,9 @@ function buildImageSendAttempts(servePath, mime) {
             buildBody: (chatId, caption) => {
                 const body = {
                     chatId,
-                    image: { base64: readFileAsDataUri(servePath, mime) }
+                    base64: readFileAsBase64(servePath),
+                    mimetype: mime,
+                    filename
                 };
                 if (caption) body.caption = caption;
                 return body;
@@ -171,10 +172,7 @@ function buildImageSendAttempts(servePath, mime) {
     attempts.push({
         mode: 'url',
         buildBody: (chatId, caption) => {
-            const body = {
-                chatId,
-                image: { url, mimetype: mime }
-            };
+            const body = { chatId, url };
             if (caption) body.caption = caption;
             return body;
         }
@@ -195,7 +193,8 @@ function buildDocumentSendAttempts(relativePath, mime, filename) {
             buildBody: (chatId, caption) => {
                 const body = {
                     chatId,
-                    document: { base64: readFileAsDataUri(relativePath, mime) },
+                    base64: readFileAsBase64(relativePath),
+                    mimetype: mime,
                     filename
                 };
                 if (caption) body.caption = caption;
@@ -207,11 +206,7 @@ function buildDocumentSendAttempts(relativePath, mime, filename) {
     attempts.push({
         mode: 'url',
         buildBody: (chatId, caption) => {
-            const body = {
-                chatId,
-                document: { url, mimetype: mime },
-                filename
-            };
+            const body = { chatId, url, filename };
             if (caption) body.caption = caption;
             return body;
         }
@@ -334,7 +329,7 @@ class OpenWAWhatsAppService {
                         detail: detail.slice(0, 800),
                         response: JSON.stringify(data).slice(0, 500),
                         requestBodyPreview: attempt.mode === 'base64'
-                            ? `{ chatId, image|document: { base64: "<${body.image?.base64?.length || body.document?.base64?.length || 0} chars>" }, caption? }`
+                            ? `{ chatId, base64: "<${body.base64?.length || 0} chars>", mimetype: "${body.mimetype}", caption? }`
                             : JSON.stringify(body).slice(0, 400),
                         chatId: maskChatId(chatId),
                         media,
