@@ -14,7 +14,9 @@ const EmailAdminController = require('../controllers/EmailAdminController');
 const WhatsAppAdminController = require('../controllers/WhatsAppAdminController');
 const OpenWAWebhookController = require('../controllers/OpenWAWebhookController');
 const AdminMailgunBounceController = require('../controllers/AdminMailgunBounceController');
+const AdminJuntaEmailController = require('../controllers/AdminJuntaEmailController');
 const uploadCsv = require('../middleware/uploadCsv');
+const uploadJuntaEmailImage = require('../middleware/uploadJuntaEmailImage');
 
 // Middleware to ensure user is SuperAdmin
 const { authenticate } = require('../middleware/auth');
@@ -106,6 +108,12 @@ router.post('/owners/:id/send-password-reset', AdminController.sendOwnerPassword
 router.post('/tenants/:id/mailgun-bounces/analyze', uploadCsv.single('csv'), AdminMailgunBounceController.analyze);
 router.post('/tenants/:id/mailgun-bounces/pdf', AdminMailgunBounceController.downloadPdf);
 router.post('/tenants/:id/mailgun-bounces/excel', AdminMailgunBounceController.downloadExcel);
+router.get('/tenants/:id/junta-email/recipients', AdminJuntaEmailController.listRecipients);
+router.post('/tenants/:id/junta-email/contacts', AdminJuntaEmailController.createContact);
+router.delete('/tenants/:id/junta-email/contacts/:contactId', AdminJuntaEmailController.deleteContact);
+router.post('/tenants/:id/junta-email/preview', AdminJuntaEmailController.preview);
+router.post('/tenants/:id/junta-email/send', AdminJuntaEmailController.send);
+router.post('/tenants/:id/junta-email/upload-image', uploadJuntaEmailImage.single('image'), AdminJuntaEmailController.uploadImage);
 
 // ==================== FACTURACIÓN SAAS (Condominio360 → Condominios) ====================
 router.get('/saas-billing/rate', AdminSaaSBillingController.getRate);

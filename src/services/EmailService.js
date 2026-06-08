@@ -64,6 +64,36 @@ class EmailService {
     }
 
     /**
+     * Envío transaccional con adjuntos inline explícitos (p. ej. imágenes WYSIWYG + logos).
+     */
+    async sendTransactionalWithInline(to, subject, html, text = null, inline = [], meta = {}) {
+        await ensureEmailBrandAssetsOnce();
+        const plain = text || this._htmlToText(html);
+        const logoInline = await buildInlineLogoAttachmentsForHtml(html);
+        const merged = [...logoInline];
+        const seen = new Set(merged.map((x) => x.filename));
+        for (const att of inline || []) {
+            if (!att?.filename || seen.has(att.filename)) continue;
+            seen.add(att.filename);
+            merged.push(att);
+        }
+        return EmailOrchestrator.dispatchMail({
+            to,
+            subject,
+            html,
+            text: plain,
+            inline: merged,
+            tenantId: meta.tenantId ?? null,
+            messageType: meta.messageType || 'generic',
+            pipeline: meta.pipeline || 'transactional',
+            createdBy: meta.createdBy || null,
+            idempotencyKey: meta.idempotencyKey || null,
+            sourceBatchId: meta.sourceBatchId || null,
+            metadata: meta.metadata || null
+        });
+    }
+
+    /**
      * Enviar invitación a propietario nuevo (con link para confirmar registro y asignar contraseña)
      * @param {string} propertyLabel - Ej: "Edificio A, Apt 101" o "Casa 5"
      */

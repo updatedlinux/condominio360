@@ -3,6 +3,9 @@ const path = require('path');
 const sharp = require('sharp');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'public', 'assets', 'images');
+const CONDO_BOUNCE_SVG = fs.existsSync(path.join(ASSETS_DIR, 'CONDOMINIO360-blacklogo.svg'))
+    ? path.join(ASSETS_DIR, 'CONDOMINIO360-blacklogo.svg')
+    : path.join(ASSETS_DIR, 'logo.svg');
 
 const BRAND_ASSETS = {
     condominio360: {
@@ -10,6 +13,12 @@ const BRAND_ASSETS = {
         png: path.join(ASSETS_DIR, 'png', 'isotipo-naranja.png'),
         publicPngPath: '/assets/images/png/isotipo-naranja.png',
         width: 128
+    },
+    condominio360Bounce: {
+        svg: CONDO_BOUNCE_SVG,
+        png: path.join(ASSETS_DIR, 'png', 'condominio360-bounce-header.png'),
+        publicPngPath: '/assets/images/png/condominio360-bounce-header.png',
+        width: 380
     },
     arsysIntela: {
         svg: path.join(ASSETS_DIR, 'main-intelawhite.svg'),
