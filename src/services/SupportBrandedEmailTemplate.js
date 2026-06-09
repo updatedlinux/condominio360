@@ -10,8 +10,11 @@ const COLORS = {
     slate200: '#E2E8F0'
 };
 
+/** Ancho del contenedor principal del correo (px). */
+const EMAIL_WIDTH = 720;
+
 const FOOTER_HTML = `
-<div style="padding:28px 32px 32px;border-top:1px solid ${COLORS.slate200};font-family:'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.65;color:${COLORS.slate500};">
+<div style="padding:28px 40px 32px;border-top:1px solid ${COLORS.slate200};font-family:'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.65;color:${COLORS.slate500};">
     <p style="margin:0 0 4px;color:#334155;">Atte -</p>
     <p style="margin:0 0 4px;color:#334155;font-weight:600;">Support Team</p>
     <p style="margin:0 0 8px;color:#334155;">Condominio360 // Arsys Intela</p>
@@ -42,15 +45,19 @@ class SupportBrandedEmailTemplate {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(opts.title || 'Condominio360')}</title>
 <style>
-.email-body img { max-width: 100% !important; height: auto !important; display: block; }
+.email-body img { max-width: 100% !important; height: auto !important; }
+.email-body .ql-align-center { text-align: center !important; }
+.email-body .ql-align-right { text-align: right !important; }
+.email-body .ql-align-justify { text-align: justify !important; }
+.email-body .ql-align-left { text-align: left !important; }
 </style>
 </head>
 <body style="margin:0;padding:0;background:#F8FAFC;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;">
-<tr><td align="center" style="padding:24px 12px;">
-<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(15,23,42,0.08);">
+<tr><td align="center" style="padding:20px 16px;">
+<table role="presentation" width="${EMAIL_WIDTH}" cellpadding="0" cellspacing="0" style="max-width:${EMAIL_WIDTH}px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(15,23,42,0.08);">
 <tr>
-<td style="background:${COLORS.slate900};padding:18px 24px;">
+<td style="background:${COLORS.slate900};padding:20px 28px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td align="left" valign="middle" style="vertical-align:middle;">
@@ -65,7 +72,7 @@ class SupportBrandedEmailTemplate {
 </tr>
 <tr><td style="height:4px;line-height:4px;font-size:4px;background:${COLORS.orange500};">&nbsp;</td></tr>
 <tr>
-<td style="padding:32px 32px 8px;font-family:'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.7;color:#334155;">
+<td style="padding:36px 40px 12px;font-family:'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.7;color:#334155;">
 ${tenantLine}
 <div class="email-body">${bodyHtml || ''}</div>
 </td>

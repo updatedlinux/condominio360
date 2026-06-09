@@ -4,17 +4,17 @@ const TenantAdminModel = require('../models/TenantAdminModel');
 const TenantJuntaEmailContactModel = require('../models/TenantJuntaEmailContactModel');
 const TenantModel = require('../models/TenantModel');
 const { buildInlineLogoAttachmentsForHtml } = require('../utils/emailBrandAssets');
-const { prepareEmbeddedImagesForMailgun, sanitizeRichHtml } = require('../utils/emailEmbeddedImages');
+const { prepareEmbeddedImagesForMailgun, prepareRichHtmlForEmail } = require('../utils/emailEmbeddedImages');
 
 class SupportJuntaEmailService {
     static buildPreviewHtml(bodyHtml, tenantName) {
-        const safe = sanitizeRichHtml(bodyHtml);
+        const safe = prepareRichHtmlForEmail(bodyHtml);
         const embedded = prepareEmbeddedImagesForMailgun(safe);
         return SupportBrandedEmailTemplate.wrap(embedded.html, { tenantName });
     }
 
     static async buildSendPayload(bodyHtml, tenantName) {
-        const safe = sanitizeRichHtml(bodyHtml);
+        const safe = prepareRichHtmlForEmail(bodyHtml);
         const embedded = prepareEmbeddedImagesForMailgun(safe);
         const html = SupportBrandedEmailTemplate.wrap(embedded.html, { tenantName });
         const logoInline = await buildInlineLogoAttachmentsForHtml(html);
