@@ -2939,9 +2939,11 @@ class AdminController {
         try {
             const { id } = req.params;
             const { password } = req.body;
+            const { normalizePassword } = require('../utils/authCredentials');
+            const pwd = normalizePassword(password);
 
             // Validar que se proporcionó una contraseña
-            if (!password || password.length < 6) {
+            if (!pwd || pwd.length < 6) {
                 return res.status(400).json({ 
                     success: false,
                     error: 'La contraseña debe tener al menos 6 caracteres' 
@@ -2964,7 +2966,8 @@ class AdminController {
             const user = userResult.recordset[0];
 
             // Actualizar la contraseña
-            await UserModel.updatePassword(id, password);
+            await UserModel.updatePassword(id, pwd);
+            await PropertyModel.syncNicknamePasswordsForOwner(id, pwd);
 
             // Registrar en auditoría
             await AdminController.logAudit(

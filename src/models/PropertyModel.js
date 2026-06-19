@@ -1,4 +1,5 @@
 const { sql, connectDB } = require('../config/database');
+const bcrypt = require('bcrypt');
 const { normalizePropertyTypeOrDefault } = require('../utils/propertyType');
 
 /**
@@ -418,6 +419,31 @@ class PropertyModel {
                 AND (p.nickname_active = 1 OR p.nickname_active IS NULL)
             `);
         return result.recordset[0] || null;
+    }
+
+    /**
+     * Sincroniza nickname_password_hash de inmuebles del propietario
+     * cuando cambia su contraseña de cuenta (Users.password_hash).
+     */
+    static async syncNicknamePasswordsForOwner(userId, plainPassword) {
+        if (!userId || !plainPassword) return 0;
+        const nickname_password_hash = await bcrypt.hash(String(plainPassword), 10);
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('user_id', sql.UniqueIdentifier, userId)
+            .input('nickname_password_hash', sql.NVarChar, nickname_password_hash)
+            .query(`
+                UPDATE p
+                SET p.nickname_password_hash = @nickname_password_hash,
+                    p.updated_at = SYSDATETIME()
+                FROM Properties p
+                INNER JOIN PropertyOwners po ON po.property_id = p.id
+                WHERE po.user_id = @user_id
+                  AND p.nickname IS NOT NULL
+                  AND LTRIM(RTRIM(p.nickname)) <> ''
+                  AND (p.nickname_active = 1 OR p.nickname_active IS NULL)
+            `);
+        return result.rowsAffected?.[0] ?? 0;
     }
 
     /**

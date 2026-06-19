@@ -144,7 +144,7 @@
                             </div>
                             <div>
                                 <h2 class="text-lg font-medium text-[#3C4043]">Cambiar contraseña</h2>
-                                <p class="text-sm text-[#5F6368]">Actualiza tu clave cuando quieras. Mínimo 8 caracteres.</p>
+                                <p class="text-sm text-[#5F6368]">Actualiza tu clave cuando quieras. Mínimo 8 caracteres. Al ingresar de nuevo usa tu <strong>cédula o correo</strong>, no el código del inmueble.</p>
                             </div>
                         </div>
                         <form id="password-change-form" class="space-y-4">
@@ -282,9 +282,9 @@
             const btnText = document.getElementById('owner-pwd-btn-text');
             errEl.classList.add('hidden');
 
-            const current = document.getElementById('owner-pwd-current').value;
-            const newPwd = document.getElementById('owner-pwd-new').value;
-            const confirm = document.getElementById('owner-pwd-confirm').value;
+            const current = document.getElementById('owner-pwd-current').value.trim();
+            const newPwd = document.getElementById('owner-pwd-new').value.trim();
+            const confirm = document.getElementById('owner-pwd-confirm').value.trim();
 
             if (newPwd.length < 8) {
                 errEl.textContent = 'La nueva contraseña debe tener al menos 8 caracteres';
@@ -316,7 +316,7 @@
                 document.getElementById('owner-pwd-current').value = '';
                 document.getElementById('owner-pwd-new').value = '';
                 document.getElementById('owner-pwd-confirm').value = '';
-                showToast('Contraseña actualizada correctamente', 'success');
+                showToast('Contraseña actualizada. Para volver a entrar usa tu cédula o correo registrado con la nueva clave.', 'success');
             } catch (err) {
                 errEl.textContent = err.message || 'Error al cambiar contraseña';
                 errEl.classList.remove('hidden');

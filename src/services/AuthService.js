@@ -6,6 +6,11 @@ const TenantAdminModel = require('../models/TenantAdminModel');
 const PropertyModel = require('../models/PropertyModel');
 const TenantModel = require('../models/TenantModel');
 const EmailService = require('./EmailService');
+const {
+    normalizeLoginIdentifier,
+    normalizePassword,
+    looksLikeEmailOrDni
+} = require('../utils/authCredentials');
 
 /**
  * Servicio de Autenticación
@@ -24,7 +29,8 @@ class AuthService {
      * @returns {Promise<Object>}
      */
     static async loginByNickname(nickname, password) {
-        const normalized = (nickname || '').trim().toLowerCase();
+        const normalized = normalizeLoginIdentifier(nickname).toLowerCase();
+        const pwd = normalizePassword(password);
         if (!normalized) throw new Error('Credenciales inválidas');
 
         const property = await PropertyModel.findByNickname(normalized);
@@ -32,7 +38,7 @@ class AuthService {
             throw new Error('Credenciales inválidas');
         }
 
-        const isValid = await bcrypt.compare(password, property.nickname_password_hash);
+        const isValid = await bcrypt.compare(pwd, property.nickname_password_hash);
         if (!isValid) {
             throw new Error('Credenciales inválidas');
         }
@@ -80,7 +86,9 @@ class AuthService {
      * @returns {Promise<Object>}
      */
     static async loginOwner(identifier, password) {
-        const user = await UserModel.findByDniOrEmail(identifier);
+        const loginId = normalizeLoginIdentifier(identifier);
+        const pwd = normalizePassword(password);
+        const user = await UserModel.findByDniOrEmail(loginId);
         
         if (!user) {
             throw new Error('Credenciales inválidas');
@@ -93,7 +101,7 @@ class AuthService {
             throw new Error('Cuenta no activada. Verifica tu email o contacta al administrador.');
         }
 
-        const isValid = await UserModel.validatePassword(password, user.password_hash);
+        const isValid = await UserModel.validatePassword(pwd, user.password_hash);
         if (!isValid) {
             throw new Error('Credenciales inválidas');
         }
@@ -158,13 +166,15 @@ class AuthService {
      * @returns {Promise<Object>}
      */
     static async loginTenantAdmin(identifier, password) {
-        const admin = await TenantAdminModel.findByDniOrEmail(identifier);
+        const loginId = normalizeLoginIdentifier(identifier);
+        const pwd = normalizePassword(password);
+        const admin = await TenantAdminModel.findByDniOrEmail(loginId);
         
         if (!admin) {
             throw new Error('Credenciales inválidas');
         }
 
-        const isValid = await TenantAdminModel.validatePassword(password, admin.password_hash);
+        const isValid = await TenantAdminModel.validatePassword(pwd, admin.password_hash);
         if (!isValid) {
             throw new Error('Credenciales inválidas');
         }
@@ -214,13 +224,15 @@ class AuthService {
      * @returns {Promise<Object>}
      */
     static async loginSuperAdmin(identifier, password) {
-        const user = await UserModel.findByDniOrEmail(identifier);
+        const loginId = normalizeLoginIdentifier(identifier);
+        const pwd = normalizePassword(password);
+        const user = await UserModel.findByDniOrEmail(loginId);
         
         if (!user || !user.is_superadmin) {
             throw new Error('Credenciales inválidas');
         }
 
-        const isValid = await UserModel.validatePassword(password, user.password_hash);
+        const isValid = await UserModel.validatePassword(pwd, user.password_hash);
         if (!isValid) {
             throw new Error('Credenciales inválidas');
         }
@@ -247,6 +259,37 @@ class AuthService {
                 isSuperAdmin: true
             }
         };
+    }
+
+    /**
+     * Login unificado (sin tipo explícito).
+     * Si el identificador parece cédula/correo, evita login por nickname de inmueble
+     * (colisiones y contraseñas desincronizadas tras cambio de clave).
+     */
+    static async loginUnified(loginId, password) {
+        const id = normalizeLoginIdentifier(loginId);
+        const pwd = normalizePassword(password);
+        const skipNickname = looksLikeEmailOrDni(id);
+
+        try {
+            return await AuthService.loginSuperAdmin(id, pwd);
+        } catch (_) { /* continuar */ }
+
+        try {
+            return await AuthService.loginTenantAdmin(id, pwd);
+        } catch (_) { /* continuar */ }
+
+        if (!skipNickname) {
+            try {
+                return await AuthService.loginByNickname(id, pwd);
+            } catch (_) { /* continuar */ }
+        }
+
+        try {
+            return await AuthService.loginOwner(id, pwd);
+        } catch (_) { /* continuar */ }
+
+        throw new Error('Credenciales inválidas');
     }
 
     // ==================== REGISTRO DESDE INVITACIÓN ====================
@@ -384,10 +427,11 @@ class AuthService {
     static async resetPassword(token, newPassword) {
         const reset = await this.verifyResetToken(token);
         const userType = reset.user_type || reset.type;
+        const pwd = normalizePassword(newPassword);
 
         if (userType === 'OWNER') {
-            // UserModel.update no acepta "password"; hay que hashear con updatePassword.
-            await UserModel.updatePassword(reset.user_id, newPassword);
+            await UserModel.updatePassword(reset.user_id, pwd);
+            await PropertyModel.syncNicknamePasswordsForOwner(reset.user_id, pwd);
             const user = await UserModel.findById(reset.user_id);
             if (user) {
                 const props = await PropertyModel.getByOwner(user.id);
@@ -395,7 +439,7 @@ class AuthService {
                 await EmailService.sendPasswordChanged(user.email, AuthService._displayNameForEmail(user), { tenantId });
             }
         } else {
-            await TenantAdminModel.update(reset.user_id, { password: newPassword });
+            await TenantAdminModel.update(reset.user_id, { password: pwd });
             const admin = await TenantAdminModel.findById(reset.user_id);
             await EmailService.sendPasswordChanged(admin.email, AuthService._displayNameForEmail(admin), {
                 tenantId: admin.tenant_id || null
@@ -469,7 +513,8 @@ class AuthService {
      * Cambiar contraseña (usuario logueado)
      */
     static async changePassword(userId, type, currentPassword, newPassword) {
-        let user;
+        const currentPwd = normalizePassword(currentPassword);
+        const newPwd = normalizePassword(newPassword);
         let isValid;
 
         if (type === 'OWNER' || type === 'SUPERADMIN') {
@@ -477,11 +522,14 @@ class AuthService {
             if (!user) {
                 throw new Error('Usuario no encontrado');
             }
-            isValid = await UserModel.validatePassword(currentPassword, user.password_hash);
+            isValid = await UserModel.validatePassword(currentPwd, user.password_hash);
             if (!isValid) {
                 throw new Error('Contraseña actual incorrecta');
             }
-            await UserModel.updatePassword(userId, newPassword);
+            await UserModel.updatePassword(userId, newPwd);
+            if (type === 'OWNER') {
+                await PropertyModel.syncNicknamePasswordsForOwner(userId, newPwd);
+            }
             const refreshed = await UserModel.findById(userId);
             let tenantId = null;
             if (type === 'OWNER') {
@@ -494,11 +542,11 @@ class AuthService {
             });
         } else {
             const admin = await TenantAdminModel.findById(userId);
-            isValid = await TenantAdminModel.validatePassword(currentPassword, admin.password_hash);
+            isValid = await TenantAdminModel.validatePassword(currentPwd, admin.password_hash);
             if (!isValid) {
                 throw new Error('Contraseña actual incorrecta');
             }
-            await TenantAdminModel.update(userId, { password: newPassword });
+            await TenantAdminModel.update(userId, { password: newPwd });
             await EmailService.sendPasswordChanged(admin.email, AuthService._displayNameForEmail(admin), {
                 tenantId: admin.tenant_id || null
             });

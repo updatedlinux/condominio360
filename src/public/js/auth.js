@@ -60,8 +60,8 @@ const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const identifier = document.getElementById('identifier')?.value || document.getElementById('email')?.value;
-        const password = document.getElementById('password').value;
+        const identifier = (document.getElementById('identifier')?.value || document.getElementById('email')?.value || '').trim();
+        const password = (document.getElementById('password')?.value || '').trim();
         const type = document.getElementById('loginType')?.value || '';
         const errorMessage = document.getElementById('errorMessage');
         const submitBtn = loginForm.querySelector('button[type="submit"]');
@@ -154,6 +154,9 @@ if (loginForm) {
             } else {
                 errorMessage.textContent = data.error || 'Error al iniciar sesión';
                 errorMessage.classList.remove('hidden');
+                const pwEl = document.getElementById('password');
+                if (pwEl) pwEl.value = '';
+                pwEl?.focus();
             }
         } catch (error) {
             console.error('Login error:', error);

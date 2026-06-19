@@ -1,5 +1,6 @@
 const AuthService = require('../services/AuthService');
 const { verifyRecaptcha } = require('../services/RecaptchaService');
+const { normalizeLoginIdentifier, normalizePassword } = require('../utils/authCredentials');
 
 function isMobileUserAgent(ua) {
     const s = String(ua || '');
@@ -85,7 +86,7 @@ class AuthController {
                 }
             }
 
-            const loginId = String(identifier || email || '').trim(); // DNI o correo electrónico
+            const loginId = normalizeLoginIdentifier(identifier || email);
 
             if (!loginId || !password) {
                 return res.status(400).json({ 
@@ -93,46 +94,35 @@ class AuthController {
                 });
             }
 
+            const normalizedPassword = normalizePassword(password);
+
             let result;
 
             // Si se especifica tipo, usarlo; si no, intentar detectar
             if (type === 'TENANT_ADMIN') {
-                result = await AuthService.loginTenantAdmin(loginId, password);
+                result = await AuthService.loginTenantAdmin(loginId, normalizedPassword);
             } else if (type === 'SUPERADMIN') {
-                result = await AuthService.loginSuperAdmin(loginId, password);
+                result = await AuthService.loginSuperAdmin(loginId, normalizedPassword);
             } else if (type === 'SECURITY') {
                 const SecurityUserController = require('./SecurityUserController');
-                req.body = { email: loginId, identifier: loginId, password };
+                req.body = { email: loginId, identifier: loginId, password: normalizedPassword };
                 await SecurityUserController.login(req, res);
                 return;
+            } else if (type === 'OWNER') {
+                result = await AuthService.loginOwner(loginId, normalizedPassword);
             } else {
-                // Por defecto, intentar detectar tipo automáticamente
-                // Orden: SuperAdmin → TenantAdmin → Owner → Security
                 try {
-                    result = await AuthService.loginSuperAdmin(loginId, password);
-                } catch (superAdminError) {
+                    result = await AuthService.loginUnified(loginId, normalizedPassword);
+                } catch (unifiedError) {
                     try {
-                        result = await AuthService.loginTenantAdmin(loginId, password);
-                    } catch (adminError) {
-                        try {
-                            result = await AuthService.loginByNickname(loginId, password);
-                        } catch (nicknameError) {
-                            try {
-                                result = await AuthService.loginOwner(loginId, password);
-                            } catch (ownerError) {
-                                try {
-                                    const SecurityUserController = require('./SecurityUserController');
-                                    req.body = { email: loginId, identifier: loginId, password };
-                                    await SecurityUserController.login(req, res);
-                                    return;
-                                } catch (securityError) {
-                                    // Si todos fallan, devolver error genérico
-                                    return res.status(401).json({ 
-                                        error: 'Credenciales inválidas' 
-                                    });
-                                }
-                            }
-                        }
+                        const SecurityUserController = require('./SecurityUserController');
+                        req.body = { email: loginId, identifier: loginId, password: normalizedPassword };
+                        await SecurityUserController.login(req, res);
+                        return;
+                    } catch (securityError) {
+                        return res.status(401).json({
+                            error: unifiedError.message || 'Credenciales inválidas'
+                        });
                     }
                 }
             }
@@ -544,20 +534,22 @@ class AuthController {
         try {
             const { currentPassword, newPassword } = req.body;
             const { userId, type } = req.user;
+            const currentPwd = normalizePassword(currentPassword);
+            const newPwd = normalizePassword(newPassword);
 
-            if (!currentPassword || !newPassword) {
+            if (!currentPwd || !newPwd) {
                 return res.status(400).json({ 
                     error: 'Contraseña actual y nueva son requeridas' 
                 });
             }
 
-            if (newPassword.length < 8) {
+            if (newPwd.length < 8) {
                 return res.status(400).json({ 
                     error: 'La nueva contraseña debe tener al menos 8 caracteres' 
                 });
             }
 
-            await AuthService.changePassword(userId, type, currentPassword, newPassword);
+            await AuthService.changePassword(userId, type, currentPwd, newPwd);
 
             res.json({
                 success: true,

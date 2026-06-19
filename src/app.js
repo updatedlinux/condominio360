@@ -84,6 +84,26 @@ app.use(
 
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '100kb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Evitar caché en login y scripts de autenticación (PWA/SW y navegadores agresivos).
+app.use((req, res, next) => {
+    const p = req.path || '';
+    if (
+        p === '/login'
+        || p === '/js/auth.js'
+        || p === '/sw.js'
+        || p.startsWith('/api/auth')
+        || p === '/select-property'
+        || p === '/owner-nickname-flow'
+        || p === '/auth/reset-password'
+    ) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 

@@ -1,9 +1,17 @@
 /* Minimal SW for PWA/TWA. */
-const CACHE = 'condominio360-static-v1';
+const CACHE = 'condominio360-static-v2';
 const ASSETS = [
   '/manifest.webmanifest',
   '/assets/images/isotipo-naranja.svg'
 ];
+
+/** Rutas que nunca deben servirse desde caché del SW. */
+function isAuthSensitivePath(pathname) {
+  return pathname === '/js/auth.js'
+    || pathname === '/sw.js'
+    || pathname === '/login'
+    || pathname.startsWith('/api/auth');
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -20,10 +28,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  // Only GET cache-first for same-origin static assets.
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (isAuthSensitivePath(url.pathname)) return;
   if (!url.pathname.startsWith('/assets/') && !url.pathname.endsWith('.css') && !url.pathname.endsWith('.js') && url.pathname !== '/manifest.webmanifest') return;
   event.respondWith(
     caches.match(req).then((cached) => cached || fetch(req).then((res) => {
@@ -33,4 +41,3 @@ self.addEventListener('fetch', (event) => {
     }))
   );
 });
-

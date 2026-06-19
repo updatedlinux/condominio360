@@ -28,7 +28,7 @@
                 <div class="space-y-4">
                     <div>
                         <label for="identifier" class="sr-only">Cédula de ID o Correo Electrónico</label>
-                        <input id="identifier" name="identifier" type="text" autocomplete="username" required
+                        <input id="identifier" name="identifier" type="text" autocomplete="username" required autocapitalize="off" autocorrect="off" spellcheck="false"
                             class="block w-full px-4 py-3 border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
                             placeholder="Cédula de ID o Correo Electrónico">
                     </div>
@@ -37,6 +37,7 @@
                         <input id="password" name="password" type="password" autocomplete="current-password" required
                             class="block w-full px-4 py-3 border border-slate-200 rounded-xl placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
                             placeholder="Contraseña">
+                        <p class="mt-2 text-xs text-slate-500 leading-relaxed">Ingresa con tu <strong>cédula o correo</strong> y la contraseña de tu cuenta. Si cambiaste la clave recientemente, usa la nueva contraseña (no el código temporal del inmueble).</p>
                     </div>
                 </div>
 
@@ -116,4 +117,4 @@ function openChatwootHelp() {
 
 document.getElementById('btn-chatwoot-help')?.addEventListener('click', openChatwootHelp);
 </script>
-<script src="/js/auth.js"></script>
+<script src="/js/auth.js?v=3"></script>
