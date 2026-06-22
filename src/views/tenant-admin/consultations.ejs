@@ -838,6 +838,19 @@
             currentResults = null;
         }
 
+        /** Barras compatibles con impresión/PDF (evita perder fondos CSS en Chrome). */
+        function renderConsultationPdfBar(pct) {
+            const n = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+            const rest = Math.max(0, 100 - n);
+            const label = n > 12 ? `${n}%` : '';
+            const barCellStyle = 'background-color:#f97316;height:24px;padding:0 8px;color:#ffffff;font-size:9pt;font-weight:bold;text-align:right;vertical-align:middle;-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+            const trackStyle = 'background-color:#e5e7eb;height:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+            if (n <= 0) {
+                return `<table class="bar-table" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;height:24px;border:1px solid #d1d5db;border-radius:4px;"><tr><td style="${trackStyle}">&nbsp;</td></tr></table>`;
+            }
+            return `<table class="bar-table" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;height:24px;border:1px solid #d1d5db;border-radius:4px;overflow:hidden;"><tr><td width="${n}%" style="width:${n}%;${barCellStyle}">${label}</td><td width="${rest}%" style="width:${rest}%;${trackStyle}">&nbsp;</td></tr></table>`;
+        }
+
         function downloadResultsPDF() {
             if (!currentResults) return;
             
@@ -1009,24 +1022,7 @@
         }
         .option-label .text { color: #333; }
         .option-label .votes { color: #666; font-weight: 500; }
-        .bar-container { 
-            background: #e0e0e0; 
-            height: 24px; 
-            border-radius: 4px; 
-            overflow: hidden;
-        }
-        .bar-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #f97316 0%, #A67C52 100%);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 8px;
-            color: white;
-            font-size: 9pt;
-            font-weight: bold;
-        }
+        .bar-table { margin-top: 4px; }
         .voters-section { 
             margin-top: 40px;
             page-break-before: auto;
@@ -1071,6 +1067,11 @@
         .pdf-header .tenant-name { font-size: 16px; color: #555; }
         .footer img.intelalogo { height: 24px; margin-left: 8px; vertical-align: middle; }
         @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
             body { padding: 20px; }
             .question-section { page-break-inside: avoid; }
             .voters-section { page-break-before: auto; }
@@ -1130,11 +1131,7 @@
                         <span class="text">${opt.option_text}</span>
                         <span class="votes">${opt.votes} votos (${pct}%)</span>
                     </div>
-                    <div class="bar-container">
-                        <div class="bar-fill" style="width: ${pct}%">
-                            ${pct > 10 ? pct + '%' : ''}
-                        </div>
-                    </div>
+                    ${renderConsultationPdfBar(pct)}
                 </div>
                 `;
             }).join('')}
