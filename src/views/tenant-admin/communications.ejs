@@ -35,7 +35,7 @@
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div>
                         <h1 class="text-2xl font-medium text-[#3C4043]">Mensajes</h1>
-                        <p class="text-sm text-[#5F6368]" id="header-tenant">Mensajes cortos a propietarios (máx. 250 caracteres)</p>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Mensajes a propietarios (máx. 2000 caracteres)</p>
                     </div>
                     <button onclick="openModal()" class="fab text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-lg transition-all">
                         <span class="material-icons-round">add</span>
@@ -101,11 +101,11 @@
                 <input type="hidden" id="msg-id">
                 
                 <div>
-                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Mensaje * (máx. 250 caracteres)</label>
-                    <textarea id="msg-content" rows="4" maxlength="250" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-none" placeholder="Escribe un mensaje corto para los propietarios..."></textarea>
+                    <label class="block text-sm font-medium text-[#5F6368] mb-2">Mensaje * (máx. 2000 caracteres)</label>
+                    <textarea id="msg-content" rows="8" maxlength="2000" class="w-full px-4 py-3 border border-[#E5E5E5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-y min-h-[120px]" placeholder="Escribe el mensaje para los propietarios..."></textarea>
                     <div class="flex justify-between mt-1">
                         <span class="text-xs text-[#9AA0A6]">Emojis:</span>
-                        <span id="msg-char-count" class="text-xs text-[#5F6368]">0/250</span>
+                        <span id="msg-char-count" class="text-xs text-[#5F6368]">0/2000</span>
                     </div>
                     <div class="emoji-picker mt-2" id="emoji-picker">
                         <span class="emoji-btn" onclick="insertEmoji('😊')">😊</span>
@@ -169,7 +169,7 @@
 
     <script>
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const MAX_LEN = 250;
+        let MAX_LEN = 2000;
         const PAGE_SIZE = 20;
         let currentFilter = 'all';
         let currentPage = 1;
@@ -446,7 +446,7 @@
             document.getElementById('schedule-container').classList.add('hidden');
             document.getElementById('btn-schedule').classList.remove('hidden');
             document.getElementById('btn-schedule').textContent = 'Programar';
-            document.getElementById('msg-char-count').textContent = '0/250';
+            document.getElementById('msg-char-count').textContent = '0/' + MAX_LEN;
             resetAttachmentUi();
             await loadBuildings();
             await refreshWhatsAppStatus();
@@ -641,7 +641,24 @@
             if (fileInput) fileInput.value = '';
         });
 
+        async function loadMaxMessageLength() {
+            try {
+                const r = await fetch('/api/tenant-admin/in-app-notifications/max-length', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const d = await r.json();
+                if (d.maxLength && d.maxLength > 0) {
+                    MAX_LEN = d.maxLength;
+                    const ta = document.getElementById('msg-content');
+                    if (ta) ta.maxLength = MAX_LEN;
+                    document.getElementById('msg-char-count').textContent =
+                        (ta?.value?.length || 0) + '/' + MAX_LEN;
+                }
+            } catch (e) { /* usa 2000 por defecto */ }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            loadMaxMessageLength();
             loadTenantInfo();
             loadNotifications();
             refreshWhatsAppStatus();

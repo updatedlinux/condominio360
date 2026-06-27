@@ -1,6 +1,6 @@
 const { sql, connectDB } = require('../config/database');
 
-const MAX_MESSAGE_LENGTH = 250;
+const MAX_MESSAGE_LENGTH = 2000;
 
 function coerceScheduledAt(value) {
     if (value === null || value === undefined || value === '') return null;

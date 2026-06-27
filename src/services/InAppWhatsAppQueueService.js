@@ -1,5 +1,6 @@
 const { sql, connectDB } = require('../config/database');
 const TenantModel = require('../models/TenantModel');
+const InAppNotificationModel = require('../models/InAppNotificationModel');
 const WhatsAppQueueModel = require('../models/WhatsAppQueueModel');
 const WhatsAppPhoneBlacklistModel = require('../models/WhatsAppPhoneBlacklistModel');
 const UserModel = require('../models/UserModel');
@@ -140,7 +141,7 @@ class InAppWhatsAppQueueService {
                 userId: row.user_id,
                 chatId: norm.chatId,
                 phoneNational: norm.nationalNumber,
-                messageBody: message.slice(0, 500),
+                messageBody: message.slice(0, InAppNotificationModel.getMaxLength()),
                 messageType,
                 attachmentPath: n.attachment_path || null
             });
