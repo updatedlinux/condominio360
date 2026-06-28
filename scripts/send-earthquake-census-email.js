@@ -16,6 +16,7 @@
 
 const path = require('path');
 const readline = require('readline');
+const crypto = require('crypto');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
@@ -273,12 +274,13 @@ async function main() {
         }
     }
 
-    const batchId = `earthquake_census_${Date.now()}`;
+    const batchId = crypto.randomUUID();
+    const batchLabel = `earthquake_census_${Date.now()}`;
     let sent = 0;
     let failed = 0;
     let skippedDup = 0;
 
-    console.log(`\n📤 Enviando (lote ${batchId})…\n`);
+    console.log(`\n📤 Enviando (lote ${batchLabel}, id ${batchId})…\n`);
 
     for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
@@ -297,7 +299,7 @@ async function main() {
                     pipeline: 'transactional',
                     idempotencyKey,
                     sourceBatchId: batchId,
-                    metadata: { script: 'send-earthquake-census-email.js', userId: r.userId }
+                    metadata: { script: 'send-earthquake-census-email.js', userId: r.userId, batchLabel }
                 }
             );
 

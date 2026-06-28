@@ -1,5 +1,11 @@
 const { sql, connectDB } = require('../config/database');
 
+function asOptionalGuid(val) {
+    if (!val) return null;
+    const s = String(val).trim();
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s) ? s : null;
+}
+
 class EmailJobModel {
     static async findRecipientByProviderMessageId(providerMessageId) {
         if (!providerMessageId) return null;
@@ -36,7 +42,7 @@ class EmailJobModel {
             .input('created_by', sql.UniqueIdentifier, data.created_by || null)
             .input('status', sql.NVarChar(20), data.status)
             .input('total_recipients', sql.Int, data.total_recipients ?? 1)
-            .input('source_batch_id', sql.UniqueIdentifier, data.source_batch_id || null)
+            .input('source_batch_id', sql.UniqueIdentifier, asOptionalGuid(data.source_batch_id))
             .input('idempotency_key', sql.NVarChar(500), data.idempotency_key || null)
             .input('metadata', sql.NVarChar(sql.MAX), data.metadata ? JSON.stringify(data.metadata) : null)
             .query(`
