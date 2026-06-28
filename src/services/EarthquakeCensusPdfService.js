@@ -183,6 +183,13 @@ class EarthquakeCensusPdfService {
                     );
                     y += 14;
 
+                    doc.fillColor(COLORS.slate700).font('Helvetica-Bold').fontSize(8.5)
+                        .text(
+                            `Habita actualmente: ${s.currently_inhabiting !== false && s.currently_inhabiting !== 0 ? 'Sí' : 'No'}`,
+                            MARGINS.left, y, { width: pageWidth }
+                        );
+                    y += 14;
+
                     const damageLabels = formatDamageLabels(s.damage_types || []);
                     if (damageLabels.length || s.damage_notes) {
                         doc.fillColor(COLORS.rose600).font('Helvetica-Bold').fontSize(8.5)

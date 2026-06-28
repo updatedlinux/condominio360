@@ -189,6 +189,15 @@ class EarthquakeCensusController {
             const maxPhotos = parseInt(process.env.EARTHQUAKE_CENSUS_PHOTO_MAX_COUNT || '10', 10);
             const newPhotoCount = req.files?.length || 0;
 
+            const inhabitingRaw = body.currently_inhabiting ?? body.currentlyInhabiting;
+            const currentlyInhabiting = inhabitingRaw === true
+                || inhabitingRaw === 'true'
+                || inhabitingRaw === 1
+                || inhabitingRaw === '1'
+                || inhabitingRaw === 'yes'
+                || inhabitingRaw === 'si'
+                || inhabitingRaw === 'sí';
+
             if (!tenantId) {
                 return res.status(400).json({ success: false, error: 'Seleccione el conjunto residencial' });
             }
@@ -243,7 +252,8 @@ class EarthquakeCensusController {
                 contact_email: contactEmail,
                 notes: notes || null,
                 damage_types: damageTypes,
-                damage_notes: damageNotes || null
+                damage_notes: damageNotes || null,
+                currently_inhabiting: currentlyInhabiting
             }, members);
 
             if (removedPhotoIds.length) {

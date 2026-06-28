@@ -57,6 +57,7 @@
                                     <th class="px-4 py-3 font-medium">Edificio / Calle</th>
                                     <th class="px-4 py-3 font-medium">Apartamento</th>
                                     <th class="px-4 py-3 font-medium hidden sm:table-cell">Personas</th>
+                                    <th class="px-4 py-3 font-medium hidden md:table-cell">Habita</th>
                                     <th class="px-4 py-3 font-medium hidden lg:table-cell">Daños</th>
                                     <th class="px-4 py-3 font-medium hidden md:table-cell">Teléfono</th>
                                     <th class="px-4 py-3 font-medium hidden lg:table-cell">Fotos</th>
@@ -205,6 +206,7 @@
                     <td class="px-4 py-3 text-[#3C4043]">${escapeHtml(s.building_label)}</td>
                     <td class="px-4 py-3 font-medium">${escapeHtml(s.apartment_label)}</td>
                     <td class="px-4 py-3 hidden sm:table-cell">${s.member_count || 0}</td>
+                    <td class="px-4 py-3 hidden md:table-cell">${s.currently_inhabiting !== false && s.currently_inhabiting !== 0 ? 'Sí' : 'No'}</td>
                     <td class="px-4 py-3 hidden lg:table-cell">
                         ${(s.damage_types && s.damage_types.length) ? `<span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full">${s.damage_types.length} reportado(s)</span>` : '<span class="text-[#9AA0A6]">—</span>'}
                     </td>
@@ -225,6 +227,7 @@
             if (!json.success) return;
             const d = json.data;
             document.getElementById('detailTitle').textContent = `${d.building_label} — ${d.apartment_label}`;
+            const inhabitingLabel = d.currently_inhabiting !== false && d.currently_inhabiting !== 0 ? 'Sí' : 'No';
             const membersHtml = (d.members || []).map((m, i) => `
                 <div class="border border-[#E5E5E5] rounded-xl p-4 mb-3">
                     <p class="font-medium text-[#3C4043]">${i + 1}. ${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}</p>
@@ -243,7 +246,8 @@
                 ? `${zipLink}<div class="flex flex-wrap gap-2 mt-2">${d.photos.map((ph) => `<a href="/uploads/${ph.file_path}" target="_blank"><img src="/uploads/${ph.file_path}" class="w-20 h-20 object-cover rounded-lg border" alt=""></a>`).join('')}</div>`
                 : '<p class="text-sm text-[#9AA0A6]">Sin fotos</p>';
             document.getElementById('detailContent').innerHTML = `
-                <p class="text-sm text-[#5F6368] mb-4">Teléfono: <strong>${escapeHtml(d.contact_phone)}</strong></p>
+                <p class="text-sm text-[#5F6368] mb-2">Teléfono: <strong>${escapeHtml(d.contact_phone)}</strong></p>
+                <p class="text-sm text-[#5F6368] mb-4">Habita actualmente: <strong>${inhabitingLabel}</strong></p>
                 ${d.notes ? `<p class="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">${escapeHtml(d.notes)}</p>` : ''}
                 ${(d.damage_types && d.damage_types.length) || d.damage_notes ? `<h4 class="font-medium text-[#3C4043] mb-2">Daños al inmueble</h4>${damageHtml}` : ''}
                 <h4 class="font-medium text-[#3C4043] mb-2">Grupo familiar (${(d.members || []).length})</h4>

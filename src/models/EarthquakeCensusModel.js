@@ -17,7 +17,10 @@ function enrichSubmission(row) {
     return {
         ...row,
         damage_types: parseDamageTypesFromRow(row),
-        damage_notes: row.damage_notes || null
+        damage_notes: row.damage_notes || null,
+        currently_inhabiting: row.currently_inhabiting === true
+            || row.currently_inhabiting === 1
+            || row.currently_inhabiting === '1'
     };
 }
 
@@ -140,8 +143,11 @@ class EarthquakeCensusModel {
         try {
             const {
                 tenant_id, property_id, building_label, apartment_label,
-                contact_phone, contact_email, notes, damage_types, damage_notes
+                contact_phone, contact_email, notes, damage_types, damage_notes,
+                currently_inhabiting
             } = data;
+
+            const inhabitingBit = currently_inhabiting ? 1 : 0;
 
             const damageTypesJson = JSON.stringify(normalizeDamageTypes(damage_types || []));
             const emailNorm = contact_email ? String(contact_email).trim().toLowerCase() : null;
@@ -164,6 +170,7 @@ class EarthquakeCensusModel {
                     .input('notes', sql.NVarChar, notes || null)
                     .input('damage_types', sql.NVarChar, damageTypesJson)
                     .input('damage_notes', sql.NVarChar, damage_notes || null)
+                    .input('currently_inhabiting', sql.Bit, inhabitingBit)
                     .query(`
                         UPDATE EarthquakeCensusSubmissions
                         SET building_label = @building_label,
@@ -173,6 +180,7 @@ class EarthquakeCensusModel {
                             notes = @notes,
                             damage_types = @damage_types,
                             damage_notes = @damage_notes,
+                            currently_inhabiting = @currently_inhabiting,
                             updated_at = SYSDATETIME()
                         WHERE id = @id
                     `);
@@ -191,11 +199,12 @@ class EarthquakeCensusModel {
                     .input('notes', sql.NVarChar, notes || null)
                     .input('damage_types', sql.NVarChar, damageTypesJson)
                     .input('damage_notes', sql.NVarChar, damage_notes || null)
+                    .input('currently_inhabiting', sql.Bit, inhabitingBit)
                     .query(`
                         INSERT INTO EarthquakeCensusSubmissions
-                            (tenant_id, property_id, building_label, apartment_label, contact_phone, contact_email, notes, damage_types, damage_notes)
+                            (tenant_id, property_id, building_label, apartment_label, contact_phone, contact_email, notes, damage_types, damage_notes, currently_inhabiting)
                         OUTPUT INSERTED.id
-                        VALUES (@tenant_id, @property_id, @building_label, @apartment_label, @contact_phone, @contact_email, @notes, @damage_types, @damage_notes)
+                        VALUES (@tenant_id, @property_id, @building_label, @apartment_label, @contact_phone, @contact_email, @notes, @damage_types, @damage_notes, @currently_inhabiting)
                     `);
                 submissionId = insertResult.recordset[0].id;
             }

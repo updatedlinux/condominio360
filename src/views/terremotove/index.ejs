@@ -321,6 +321,16 @@
                 </button>
 
                 <div class="mt-6 pt-6 border-t border-[#E5E5E5]">
+                    <label class="damage-check flex items-start gap-3 px-4 py-3 cursor-pointer touch-btn" for="currentlyInhabiting">
+                        <input type="checkbox" id="currentlyInhabiting" class="mt-1 flex-shrink-0">
+                        <span class="text-base text-[#3C4043] leading-snug flex-1">
+                            <strong class="font-semibold">Actualmente habito este inmueble</strong>
+                            <span class="block text-sm text-[#5F6368] mt-1 font-normal">Marque si vive en el apartamento ahora. Si no habita (propietario ausente u otro), déjelo sin marcar.</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-[#E5E5E5]">
                     <label class="field-label" for="contactPhone">Teléfono de contacto *</label>
                     <input type="tel" id="contactPhone" placeholder="Ej: 0414-1234567" inputmode="tel" autocomplete="tel"
                         class="field-input">
@@ -609,6 +619,7 @@
             document.getElementById('contactEmail').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('damageNotes').value = '';
+            document.getElementById('currentlyInhabiting').checked = false;
             resetSelectedPhotos();
             document.getElementById('existingNotice').classList.add('hidden');
 
@@ -804,6 +815,8 @@
             document.getElementById('contactEmail').value = d.contact_email || '';
             document.getElementById('notes').value = d.notes || '';
             document.getElementById('damageNotes').value = d.damage_notes || '';
+            const inhabitingEl = document.getElementById('currentlyInhabiting');
+            inhabitingEl.checked = d.currently_inhabiting !== false && d.currently_inhabiting !== 0;
             if (Array.isArray(d.damage_types)) {
                 state.selectedDamages = new Set(d.damage_types);
                 renderDamageChecks();
@@ -1043,6 +1056,8 @@
             state.isSubmitting = true;
             setSubmitLoading(true);
 
+            const currentlyInhabiting = document.getElementById('currentlyInhabiting').checked;
+
             const p = state.property;
             const payload = {
                 tenant_id: state.tenant.id,
@@ -1054,6 +1069,7 @@
                 notes: document.getElementById('notes').value.trim(),
                 damage_types: [...state.selectedDamages],
                 damage_notes: document.getElementById('damageNotes').value.trim(),
+                currently_inhabiting: currentlyInhabiting,
                 members: state.members,
                 removed_photo_ids: [...state.removedExistingPhotoIds]
             };
