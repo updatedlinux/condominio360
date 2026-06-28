@@ -326,7 +326,7 @@
                         <span class="material-icons-round text-base align-middle mr-1 text-[#f97316]">photo_camera</span>
                         Fotos de daños <span class="font-normal text-[#9AA0A6]">(opcional, recomendado)</span>
                     </p>
-                    <p class="text-sm text-[#5F6368] mb-3 leading-snug">Use la cámara de su teléfono para documentar los daños.</p>
+                    <p class="text-sm text-[#5F6368] mb-3 leading-snug">Use la cámara de su teléfono para documentar los daños. Máximo 10 fotos, 8 MB c/u.</p>
                     <div class="photo-upload-zone relative">
                         <input type="file" id="damagePhotos" accept="image/*" multiple capture="environment">
                         <label for="damagePhotos" class="photo-upload-btn">
@@ -387,6 +387,10 @@
             damageTypes: [],
             selectedDamages: new Set()
         };
+
+        const PHOTO_MAX_COUNT = 10;
+        const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
+        const SUBMIT_TIMEOUT_MS = 3 * 60 * 1000;
 
         let searchTimeout = null;
         let propertiesCache = [];
@@ -799,6 +803,20 @@
             const countEl = document.getElementById('photoCount');
             preview.innerHTML = '';
             const files = Array.from(input.files || []);
+            if (files.length > PHOTO_MAX_COUNT) {
+                showToast(`Máximo ${PHOTO_MAX_COUNT} fotos por envío`, true);
+                input.value = '';
+                countEl.classList.add('hidden');
+                return;
+            }
+            const tooLarge = files.find((f) => f.size > PHOTO_MAX_BYTES);
+            if (tooLarge) {
+                const mb = (tooLarge.size / (1024 * 1024)).toFixed(1);
+                showToast(`"${tooLarge.name || 'Una foto'}" pesa ${mb} MB. Máximo 8 MB por imagen.`, true);
+                input.value = '';
+                countEl.classList.add('hidden');
+                return;
+            }
             files.forEach((file) => {
                 const img = document.createElement('img');
                 img.src = URL.createObjectURL(file);
@@ -807,10 +825,30 @@
                 preview.appendChild(img);
             });
             if (files.length) {
-                countEl.textContent = `${files.length} foto${files.length !== 1 ? 's' : ''} seleccionada${files.length !== 1 ? 's' : ''}`;
+                const totalMb = (files.reduce((n, f) => n + f.size, 0) / (1024 * 1024)).toFixed(1);
+                countEl.textContent = `${files.length} foto${files.length !== 1 ? 's' : ''} (${totalMb} MB)`;
                 countEl.classList.remove('hidden');
             } else {
                 countEl.classList.add('hidden');
+            }
+        }
+
+        function validatePhotosBeforeSubmit(files) {
+            if (!files.length) return;
+            if (files.length > PHOTO_MAX_COUNT) {
+                throw new Error(`Máximo ${PHOTO_MAX_COUNT} fotos por envío`);
+            }
+            for (const file of files) {
+                if (file.size > PHOTO_MAX_BYTES) {
+                    const mb = (file.size / (1024 * 1024)).toFixed(1);
+                    throw new Error(`"${file.name || 'Foto'}" pesa ${mb} MB. Máximo 8 MB por imagen.`);
+                }
+                const name = file.name || '';
+                const typeOk = (file.type || '').startsWith('image/');
+                const extOk = /\.(jpe?g|png|webp|heic|heif)$/i.test(name);
+                if (!typeOk && !extOk) {
+                    throw new Error(`"${name || 'Archivo'}" no es una imagen válida`);
+                }
             }
         }
 
@@ -847,13 +885,33 @@
 
             const formData = new FormData();
             formData.append('data', JSON.stringify(payload));
-            const photos = document.getElementById('damagePhotos').files;
-            for (let i = 0; i < photos.length; i++) {
-                formData.append('photos', photos[i]);
-            }
+            const photoInput = document.getElementById('damagePhotos');
+            const photos = photoInput.files;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
 
             try {
-                const res = await fetch('/api/terremotove/submit', { method: 'POST', body: formData });
+                validatePhotosBeforeSubmit(Array.from(photos || []));
+                for (let i = 0; i < photos.length; i++) {
+                    formData.append('photos', photos[i]);
+                }
+
+                const res = await fetch('/api/terremotove/submit', {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    throw new Error(
+                        res.status === 413
+                            ? 'Las fotos son demasiado pesadas. Intente con menos imágenes o menor resolución.'
+                            : 'El servidor no respondió a tiempo. Verifique su conexión e intente de nuevo.'
+                    );
+                }
+
                 const json = await res.json();
                 if (!json.success) throw new Error(json.error || 'Error al enviar');
                 document.getElementById('successTitle').textContent = json.is_update ? '¡Registro actualizado!' : '¡Registro enviado!';
@@ -864,8 +922,13 @@
                     : '';
                 goToStep('success');
             } catch (e) {
-                showToast(e.message || 'Error al enviar el censo', true);
+                if (e.name === 'AbortError') {
+                    showToast('La subida tardó demasiado. Intente con menos fotos o mejor conexión WiFi.', true);
+                } else {
+                    showToast(e.message || 'Error al enviar el censo', true);
+                }
             } finally {
+                clearTimeout(timeoutId);
                 setSubmitLoading(false);
             }
         }

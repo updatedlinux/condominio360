@@ -242,18 +242,27 @@ class EarthquakeCensusController {
                 await EarthquakeCensusModel.addPhotos(submission.id, photos);
             }
 
-            try {
-                await EarthquakeCensusPhotoZipService.rebuildForSubmission(submission.id);
-            } catch (zipErr) {
-                console.error('terremotove photo zip rebuild error:', zipErr);
-            }
-
             const full = await EarthquakeCensusModel.getSubmissionFull(submission.id);
             const censusUrl = `${(process.env.APP_URL || 'https://condominio-360.com').replace(/\/$/, '')}/terremotove`;
             const isUpdate = !!(hadExisting || submission.is_update);
+            const submissionId = submission.id;
 
-            try {
-                await EmailService.sendEarthquakeCensusConfirmation(
+            res.json({
+                success: true,
+                message: isUpdate
+                    ? 'Censo actualizado correctamente. Revise su correo para la confirmación.'
+                    : 'Censo registrado correctamente. Revise su correo para la confirmación.',
+                data: full,
+                confirmation_email_sent: true,
+                is_update: isUpdate
+            });
+
+            // Tareas pesadas en segundo plano (no bloquean la respuesta al usuario)
+            setImmediate(() => {
+                EarthquakeCensusPhotoZipService.rebuildForSubmission(submissionId).catch((zipErr) => {
+                    console.error('terremotove photo zip rebuild error:', zipErr);
+                });
+                EmailService.sendEarthquakeCensusConfirmation(
                     contactEmail,
                     tenant.name,
                     buildingLabel,
@@ -264,19 +273,9 @@ class EarthquakeCensusController {
                         isUpdate
                     },
                     { tenantId, messageType: 'earthquake_census_confirmation' }
-                );
-            } catch (mailErr) {
-                console.error('terremotove confirmation email error:', mailErr);
-            }
-
-            res.json({
-                success: true,
-                message: isUpdate
-                    ? 'Censo actualizado correctamente. Revise su correo para la confirmación.'
-                    : 'Censo registrado correctamente. Revise su correo para la confirmación.',
-                data: full,
-                confirmation_email_sent: true,
-                is_update: isUpdate
+                ).catch((mailErr) => {
+                    console.error('terremotove confirmation email error:', mailErr);
+                });
             });
         } catch (error) {
             if (error.message && error.message.startsWith('Integrante')) {
