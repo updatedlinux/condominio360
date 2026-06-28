@@ -80,6 +80,39 @@ class EarthquakeCensusPdfService {
     }
 
     /**
+     * Dibuja texto con ancho limitado y avanza y según la altura real (evita solapamientos).
+     */
+    static _drawWrappedText(doc, text, x, y, width, ensureSpace, options = {}) {
+        const {
+            fontSize = 8.5,
+            bold = false,
+            color = COLORS.slate700,
+            lineGap = 2,
+            afterGap = 6,
+            link = null,
+            underline = false
+        } = options;
+
+        const content = String(text || '').trim();
+        if (!content) return y;
+
+        doc.font(bold ? 'Helvetica-Bold' : 'Helvetica')
+            .fontSize(fontSize)
+            .fillColor(color);
+
+        const textOpts = { width, lineGap };
+        if (link) {
+            textOpts.link = link;
+            textOpts.underline = underline;
+        }
+
+        const blockHeight = doc.heightOfString(content, textOpts);
+        ensureSpace(blockHeight + afterGap);
+        doc.text(content, x, y, textOpts);
+        return y + blockHeight + afterGap;
+    }
+
+    /**
      * @param {{ tenantName: string, submissions: Array, baseUrl?: string }} payload
      * @returns {Promise<Buffer>}
      */
@@ -168,56 +201,82 @@ class EarthquakeCensusPdfService {
                 y += 18;
 
                 for (const s of units) {
-                    const memberCount = s.members?.length || 0;
-                    const blockMin = 70 + Math.max(memberCount, 1) * 16 + 20;
-                    ensureSpace(blockMin);
+                    ensureSpace(40);
 
                     doc.fillColor(COLORS.orange500).fontSize(11).font('Helvetica-Bold')
                         .text(`Apartamento ${s.apartment_label}`, MARGINS.left, y);
-                    y += 16;
+                    y += 18;
 
-                    doc.fillColor(COLORS.slate700).fontSize(8.5).font('Helvetica');
-                    doc.text(
+                    y = this._drawWrappedText(
+                        doc,
                         `Tel: ${s.contact_phone || '—'}  |  Email: ${s.contact_email || '—'}  |  Actualizado: ${formatDateEs(s.updated_at || s.submitted_at)}`,
-                        MARGINS.left, y, { width: pageWidth }
+                        MARGINS.left, y, pageWidth, ensureSpace,
+                        { fontSize: 8.5, afterGap: 4 }
                     );
-                    y += 14;
 
-                    doc.fillColor(COLORS.slate700).font('Helvetica-Bold').fontSize(8.5)
-                        .text(
-                            `Habita actualmente: ${s.currently_inhabiting !== false && s.currently_inhabiting !== 0 ? 'Sí' : 'No'}`,
-                            MARGINS.left, y, { width: pageWidth }
-                        );
-                    y += 14;
+                    y = this._drawWrappedText(
+                        doc,
+                        `Habita actualmente: ${s.currently_inhabiting !== false && s.currently_inhabiting !== 0 ? 'Sí' : 'No'}`,
+                        MARGINS.left, y, pageWidth, ensureSpace,
+                        { fontSize: 8.5, bold: true, afterGap: 4 }
+                    );
 
                     const damageLabels = formatDamageLabels(s.damage_types || []);
-                    if (damageLabels.length || s.damage_notes) {
-                        doc.fillColor(COLORS.rose600).font('Helvetica-Bold').fontSize(8.5)
-                            .text(`Daños: ${damageLabels.join('; ') || '—'}${s.damage_notes ? ` — ${s.damage_notes}` : ''}`, MARGINS.left, y, { width: pageWidth });
-                        y += doc.heightOfString('x', { width: pageWidth }) + 4;
+                    if (damageLabels.length) {
+                        y = this._drawWrappedText(
+                            doc,
+                            `Daños reportados: ${damageLabels.join('; ')}`,
+                            MARGINS.left, y, pageWidth, ensureSpace,
+                            { fontSize: 8.5, bold: true, color: COLORS.rose600, afterGap: 4 }
+                        );
                     }
 
-                    if (s.notes) {
-                        doc.fillColor(COLORS.slate500).font('Helvetica').fontSize(8)
-                            .text(`Notas: ${s.notes}`, MARGINS.left, y, { width: pageWidth });
-                        y += doc.heightOfString(`Notas: ${s.notes}`, { width: pageWidth }) + 4;
+                    const damageNotes = String(s.damage_notes || '').trim();
+                    if (damageNotes) {
+                        y = this._drawWrappedText(
+                            doc,
+                            `Detalle de daños: ${damageNotes}`,
+                            MARGINS.left, y, pageWidth, ensureSpace,
+                            { fontSize: 8.5, color: COLORS.rose600, afterGap: 4 }
+                        );
+                    }
+
+                    const unitNotes = String(s.notes || '').trim();
+                    if (unitNotes) {
+                        y = this._drawWrappedText(
+                            doc,
+                            `Notas: ${unitNotes}`,
+                            MARGINS.left, y, pageWidth, ensureSpace,
+                            { fontSize: 8, color: COLORS.slate500, afterGap: 4 }
+                        );
                     }
 
                     const photoCount = s.photo_count || s.photos?.length || 0;
                     if (photoCount > 0 && s.photos_zip_token) {
                         const url = EarthquakeCensusPhotoZipService.getPublicUrl(s.photos_zip_token);
-                        doc.fillColor(COLORS.rose600).font('Helvetica-Bold').fontSize(8.5)
-                            .text(`Fotos de daños (${photoCount}): descargar ZIP — ${url}`, MARGINS.left, y, { width: pageWidth, link: url, underline: true });
-                        y += doc.heightOfString(url, { width: pageWidth }) + 6;
+                        y = this._drawWrappedText(
+                            doc,
+                            `Fotos de daños (${photoCount}): descargar ZIP — ${url}`,
+                            MARGINS.left, y, pageWidth, ensureSpace,
+                            {
+                                fontSize: 8.5,
+                                bold: true,
+                                color: COLORS.rose600,
+                                link: url,
+                                underline: true,
+                                afterGap: 8
+                            }
+                        );
                     }
 
                     // Tabla integrantes
                     y = this._drawMembersTable(doc, s.members || [], MARGINS.left, y, pageWidth, ensureSpace);
-                    y += 16;
+                    y += 12;
 
+                    ensureSpace(8);
                     doc.moveTo(MARGINS.left, y).lineTo(MARGINS.left + pageWidth, y)
                         .strokeColor(COLORS.slate200).lineWidth(0.5).stroke();
-                    y += 12;
+                    y += 14;
                 }
             }
 

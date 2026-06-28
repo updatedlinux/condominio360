@@ -204,7 +204,10 @@
             tbody.innerHTML = json.data.map((s) => `
                 <tr class="hover:bg-[#FAFAFA]">
                     <td class="px-4 py-3 text-[#3C4043]">${escapeHtml(s.building_label)}</td>
-                    <td class="px-4 py-3 font-medium">${escapeHtml(s.apartment_label)}</td>
+                    <td class="px-4 py-3 font-medium">
+                        ${escapeHtml(s.apartment_label)}
+                        ${!s.property_id ? '<span class="ml-1 text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded" title="Registro sin inmueble vinculado del catálogo">Manual</span>' : ''}
+                    </td>
                     <td class="px-4 py-3 hidden sm:table-cell">${s.member_count || 0}</td>
                     <td class="px-4 py-3 hidden md:table-cell">${s.currently_inhabiting !== false && s.currently_inhabiting !== 0 ? 'Sí' : 'No'}</td>
                     <td class="px-4 py-3 hidden lg:table-cell">

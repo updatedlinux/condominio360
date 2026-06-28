@@ -50,6 +50,39 @@ class EarthquakeCensusModel {
         return result.recordset;
     }
 
+    static async countPropertiesByTenant(tenantId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .query('SELECT COUNT(*) AS cnt FROM Properties WHERE tenant_id = @tenant_id');
+        return Number(result.recordset[0]?.cnt) || 0;
+    }
+
+    /**
+     * Resuelve inmueble del censo desde el catálogo (ignora etiquetas enviadas por el cliente).
+     * @returns {Promise<{ property_id: string, building_label: string, apartment_label: string } | null>}
+     */
+    static async resolveCensusProperty(tenantId, propertyId, tenantName = '') {
+        if (!propertyId) return null;
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('property_id', sql.UniqueIdentifier, propertyId)
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT p.id, p.name, b.name AS building_name
+                FROM Properties p
+                LEFT JOIN Buildings b ON p.building_id = b.id
+                WHERE p.id = @property_id AND p.tenant_id = @tenant_id
+            `);
+        const row = result.recordset[0];
+        if (!row) return null;
+        return {
+            property_id: row.id,
+            building_label: (row.building_name || tenantName || 'Condominio').trim(),
+            apartment_label: String(row.name || '').trim()
+        };
+    }
+
     static async listProperties(tenantId, { buildingId = null, search = '' } = {}) {
         const pool = await connectDB();
         let whereClause = 'WHERE p.tenant_id = @tenant_id';

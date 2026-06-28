@@ -1,7 +1,5 @@
 const EarthquakeCensusModel = require('../models/EarthquakeCensusModel');
 const TenantModel = require('../models/TenantModel');
-const PropertyModel = require('../models/PropertyModel');
-const BuildingModel = require('../models/BuildingModel');
 const EmailService = require('../services/EmailService');
 const EarthquakeCensusPhotoZipService = require('../services/EarthquakeCensusPhotoZipService');
 const { EARTHQUAKE_DAMAGE_TYPES, normalizeDamageTypes } = require('../constants/earthquakeCensusDamages');
@@ -177,8 +175,6 @@ class EarthquakeCensusController {
 
             const tenantId = body.tenant_id || body.tenantId;
             const propertyId = body.property_id || body.propertyId || null;
-            let buildingLabel = String(body.building_label || body.buildingLabel || '').trim();
-            let apartmentLabel = String(body.apartment_label || body.apartmentLabel || '').trim();
             const contactPhone = String(body.contact_phone || body.contactPhone || '').trim();
             const contactEmail = String(body.contact_email || body.contactEmail || '').trim().toLowerCase();
             const notes = String(body.notes || '').trim();
@@ -206,23 +202,30 @@ class EarthquakeCensusController {
                 return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
             }
 
-            if (propertyId) {
-                const property = await PropertyModel.findById(propertyId);
-                if (!property || String(property.tenant_id) !== String(tenantId)) {
-                    return res.status(400).json({ success: false, error: 'Inmueble no válido para este condominio' });
+            const propertyCount = await EarthquakeCensusModel.countPropertiesByTenant(tenantId);
+            if (!propertyId) {
+                if (propertyCount > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Debe seleccionar su apartamento de la lista. Busque por edificio y toque su unidad.'
+                    });
                 }
-                if (!buildingLabel) {
-                    if (property.building_id) {
-                        const building = await BuildingModel.findById(property.building_id);
-                        buildingLabel = building?.name || 'Edificio';
-                    } else {
-                        buildingLabel = tenant.name;
-                    }
-                }
-                if (!apartmentLabel) {
-                    apartmentLabel = property.name;
-                }
+                return res.status(400).json({
+                    success: false,
+                    error: 'No hay inmuebles registrados para este condominio. Contacte a la junta directiva.'
+                });
             }
+
+            const resolved = await EarthquakeCensusModel.resolveCensusProperty(
+                tenantId, propertyId, tenant.name
+            );
+            if (!resolved || !resolved.apartment_label) {
+                return res.status(400).json({ success: false, error: 'Inmueble no válido para este condominio' });
+            }
+
+            const canonicalPropertyId = resolved.property_id;
+            const buildingLabel = resolved.building_label;
+            const apartmentLabel = resolved.apartment_label;
 
             if (!buildingLabel || !apartmentLabel) {
                 return res.status(400).json({ success: false, error: 'Indique edificio/calle y número de apartamento' });
@@ -239,13 +242,11 @@ class EarthquakeCensusController {
 
             const members = membersRaw.map((m, i) => normalizeMember(m, i));
 
-            const hadExisting = propertyId
-                ? await EarthquakeCensusModel.findSubmissionByProperty(tenantId, propertyId)
-                : await EarthquakeCensusModel.findSubmissionByManualUnit(tenantId, buildingLabel, apartmentLabel);
+            const hadExisting = await EarthquakeCensusModel.findSubmissionByProperty(tenantId, canonicalPropertyId);
 
             const submission = await EarthquakeCensusModel.upsertSubmission({
                 tenant_id: tenantId,
-                property_id: propertyId,
+                property_id: canonicalPropertyId,
                 building_label: buildingLabel,
                 apartment_label: apartmentLabel,
                 contact_phone: contactPhone,

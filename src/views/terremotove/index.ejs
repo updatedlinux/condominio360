@@ -278,22 +278,9 @@
 
                 <div id="propertiesList" class="space-y-2 properties-scroll"></div>
 
-                <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
-                    <button type="button" onclick="toggleManualEntry()" class="touch-btn w-full text-left text-[#f97316] font-medium py-3 px-1" id="manualToggleBtn">
-                        Mi unidad no aparece en la lista
-                    </button>
-                    <div id="manualEntry" class="hidden mt-2 space-y-3">
-                        <div>
-                            <label class="field-label" for="manualBuilding">Nombre del edificio o calle *</label>
-                            <input type="text" id="manualBuilding" autocomplete="off" class="field-input">
-                        </div>
-                        <div>
-                            <label class="field-label" for="manualApartment">Número de apartamento *</label>
-                            <input type="text" id="manualApartment" autocomplete="off" enterkeyhint="done" class="field-input">
-                        </div>
-                        <button type="button" onclick="confirmManualProperty()" class="touch-btn w-full py-4 bg-[#3C4043] text-white rounded-xl font-medium">Continuar con esta unidad</button>
-                    </div>
-                </div>
+                <p id="propertyHelpNote" class="mt-4 pt-4 border-t border-[#E5E5E5] text-sm text-[#5F6368] leading-snug hidden">
+                    Si no encuentra su unidad, filtre por edificio arriba o busque por número de apartamento. Debe <strong>tocar su unidad en la lista</strong> para continuar.
+                </p>
 
                 <button type="button" onclick="goToStep(1)" class="back-link mt-4 text-[#5F6368]">← Cambiar conjunto</button>
             </div>
@@ -430,7 +417,6 @@
             tenant: null,
             building: null,
             property: null,
-            manual: false,
             members: [],
             selectedPhotos: [],
             existingPhotos: [],
@@ -518,14 +504,13 @@
             state.tenant = { id, name, building_type: buildingType, building_count: buildingCount };
             state.building = null;
             state.property = null;
-            state.manual = false;
             goToStep(2);
         }
 
         async function initPropertyStep() {
             document.getElementById('selectedTenantLabel').textContent = state.tenant.name;
-            document.getElementById('manualEntry').classList.add('hidden');
             document.getElementById('propertySearch').value = '';
+            document.getElementById('propertyHelpNote').classList.remove('hidden');
 
             const buildingSection = document.getElementById('buildingSection');
             const buildingSelect = document.getElementById('buildingSelect');
@@ -566,7 +551,7 @@
             const json = await res.json();
             if (!json.success || !json.data.length) {
                 propertiesCache = [];
-                list.innerHTML = '<p class="text-sm text-[#9AA0A6] py-4 text-center">No se encontraron unidades. Use la opción manual abajo.</p>';
+                list.innerHTML = '<p class="text-sm text-[#9AA0A6] py-4 text-center leading-snug">No se encontraron unidades con ese criterio. Pruebe otro edificio o número de apartamento.</p>';
                 return;
             }
             propertiesCache = json.data;
@@ -584,24 +569,11 @@
         }
 
         function selectProperty(p) {
-            state.property = p;
-            state.manual = false;
-            goToStep(3);
-        }
-
-        function toggleManualEntry() {
-            document.getElementById('manualEntry').classList.toggle('hidden');
-        }
-
-        function confirmManualProperty() {
-            const building = document.getElementById('manualBuilding').value.trim();
-            const apartment = document.getElementById('manualApartment').value.trim();
-            if (!building || !apartment) {
-                showToast('Complete edificio y apartamento', true);
+            if (!p || !p.id) {
+                showToast('Seleccione un apartamento de la lista', true);
                 return;
             }
-            state.manual = true;
-            state.property = { id: null, building_name: building, name: apartment, label: `${building} — ${apartment}` };
+            state.property = p;
             goToStep(3);
         }
 
@@ -623,18 +595,9 @@
             resetSelectedPhotos();
             document.getElementById('existingNotice').classList.add('hidden');
 
-            if (state.tenant) {
+            if (state.tenant && p.id) {
                 try {
-                    let res;
-                    if (p.id) {
-                        res = await fetch(`/api/terremotove/tenants/${state.tenant.id}/properties/${p.id}/submission`);
-                    } else if (state.manual) {
-                        const qs = new URLSearchParams({
-                            building_label: p.building_name || document.getElementById('manualBuilding')?.value?.trim() || '',
-                            apartment_label: p.name || document.getElementById('manualApartment')?.value?.trim() || ''
-                        });
-                        res = await fetch(`/api/terremotove/tenants/${state.tenant.id}/submission?${qs}`);
-                    }
+                    const res = await fetch(`/api/terremotove/tenants/${state.tenant.id}/properties/${p.id}/submission`);
                     if (res) {
                         const json = await res.json();
                         if (json.success && json.data) {
@@ -1059,10 +1022,18 @@
             const currentlyInhabiting = document.getElementById('currentlyInhabiting').checked;
 
             const p = state.property;
+            if (!p?.id) {
+                showToast('Seleccione su apartamento de la lista antes de enviar', true);
+                state.isSubmitting = false;
+                setSubmitLoading(false);
+                goToStep(2);
+                return;
+            }
+
             const payload = {
                 tenant_id: state.tenant.id,
-                property_id: p.id || null,
-                building_label: p.building_name || (state.manual ? document.getElementById('manualBuilding').value.trim() : state.tenant.name),
+                property_id: p.id,
+                building_label: p.building_name || state.tenant.name,
                 apartment_label: p.name,
                 contact_phone: document.getElementById('contactPhone').value.trim(),
                 contact_email: document.getElementById('contactEmail').value.trim(),
@@ -1130,7 +1101,6 @@
         function resetForm() {
             state.tenant = null;
             state.property = null;
-            state.manual = false;
             goToStep(0);
         }
 
