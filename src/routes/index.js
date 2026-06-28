@@ -78,6 +78,13 @@ router.get('/auth/reset-password', (req, res) => {
     });
 });
 
+router.get('/terremotove', (req, res) => {
+    res.render('terremotove/index', {
+        title: 'Censo de Emergencia — Protección Civil',
+        layout: false
+    });
+});
+
 // Panels
 // Owner Panel Routes
 router.get('/owner/dashboard', (req, res) => {

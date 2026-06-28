@@ -158,4 +158,13 @@ router.get('/reconciliation', (req, res) => {
     });
 });
 
+router.get('/earthquake-census', (req, res) => {
+    res.render('tenant-admin/earthquake-census', {
+        title: 'Censo de Emergencia',
+        layout: false,
+        tenant: req.tenant || { name: 'Condominio' },
+        activePage: 'earthquake-census'
+    });
+});
+
 module.exports = router;

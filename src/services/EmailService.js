@@ -1314,6 +1314,78 @@ class EmailService {
     }
 
     /**
+     * Alerta urgente: censo terremoto / Protección Civil (formulario público sin contraseña).
+     */
+    async sendEarthquakeCensusAlert(email, firstName, tenantName, censusUrl, meta = {}) {
+        const subject = `URGENTE: Censo de emergencia — ${tenantName}`;
+        const safeName = firstName || 'Propietario';
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Censo de Emergencia</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%); color: white; padding: 28px 24px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 28px 24px; border-radius: 0 0 8px 8px; }
+        .urgent { background: #fef2f2; border-left: 4px solid #dc2626; padding: 14px 16px; margin: 16px 0; border-radius: 4px; color: #991b1b; }
+        .highlight { background: #fff7ed; border: 1px solid #fed7aa; padding: 14px 16px; border-radius: 8px; margin: 16px 0; }
+        .button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white !important; padding: 16px 36px;
+                  text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 700; font-size: 16px; }
+        .footer { margin-top: 24px; font-size: 12px; color: #6b7280; text-align: center; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0;font-size:22px;">🚨 Censo de Emergencia</h1>
+            <p style="margin:8px 0 0;opacity:0.95;">Protección Civil — ${tenantName}</p>
+        </div>
+        <div class="content">
+            <h2 style="margin-top:0;">Hola ${safeName},</h2>
+            <div class="urgent">
+                <strong>Acción urgente requerida.</strong> Ante la emergencia por el sismo, la junta de condominio y Protección Civil necesitan un censo actualizado de las personas que habitan cada unidad.
+            </div>
+            <div class="highlight">
+                <strong>✅ No necesita contraseña ni iniciar sesión.</strong><br>
+                Entre al enlace, seleccione su conjunto residencial y apartamento, y complete los datos de su grupo familiar.
+            </div>
+            <p>Deberá indicar, por cada persona del hogar:</p>
+            <ul>
+                <li>Nombres, apellidos y cédula</li>
+                <li>Edad y fecha de nacimiento</li>
+                <li>Ocupación o grado de instrucción</li>
+                <li>Si existe alguna discapacidad</li>
+                <li>Teléfono de contacto</li>
+            </ul>
+            <p>También puede reportar daños al inmueble y adjuntar fotos (opcional pero recomendado).</p>
+            <center>
+                <a href="${censusUrl}" class="button">Completar censo ahora</a>
+            </center>
+            <p style="word-break:break-all;background:#e5e7eb;padding:10px;border-radius:4px;font-size:13px;">
+                ${censusUrl}
+            </p>
+            <p style="font-size:13px;color:#6b7280;">Si el botón no funciona, copie y pegue el enlace en su navegador. Puede completarlo desde el celular.</p>
+        </div>
+        <div class="footer">
+            <p>Condominio360 — Mensaje enviado por la administración de ${tenantName}</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+        return await this.send(email, subject, html, null, {
+            ...meta,
+            messageType: meta.messageType || 'earthquake_census_alert',
+            pipeline: meta.pipeline || 'bulk'
+        });
+    }
+
+    /**
      * Convertir HTML a texto plano básico
      */
     _htmlToText(html) {

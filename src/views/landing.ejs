@@ -14,12 +14,45 @@
     <% } %>
     <style>
         body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        #site-header { padding-top: env(safe-area-inset-top, 0); }
     </style>
 </head>
 <body class="bg-white text-slate-900 antialiased overflow-x-hidden">
 
+    <!-- ==================== HEADER: ALERTA + NAVBAR ==================== -->
+    <header id="site-header" class="fixed w-full z-50 top-0 left-0 right-0">
+        <!-- Banner emergencia terremoto -->
+        <div class="bg-gradient-to-r from-red-800 via-red-700 to-red-800 text-white border-b border-red-900/30 shadow-md" role="alert">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-2.5">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                    <div class="flex items-start gap-3 min-w-0 flex-1">
+                        <span class="flex-shrink-0 mt-0.5 sm:mt-0 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </span>
+                        <p class="text-sm sm:text-[0.9375rem] leading-snug text-red-50">
+                            <span class="font-bold text-white">Emergencia por terremoto.</span>
+                            Los equipos de <span class="font-semibold text-white">Arsys Intela</span> y <span class="font-semibold text-white">Condominio360</span> están abocados a apoyar a las comunidades y juntas de condominio en la recopilación de datos para Protección Civil.
+                            <span class="hidden md:inline"> Si habita una unidad registrada en la plataforma, complete el censo — <strong class="text-white">no requiere contraseña</strong>.</span>
+                        </p>
+                    </div>
+                    <a href="/terremotove"
+                        class="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 bg-white text-red-800 rounded-full text-sm font-bold hover:bg-red-50 transition shadow-sm w-full sm:w-auto min-h-[44px]">
+                        Completar censo
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </a>
+                </div>
+                <p class="md:hidden text-xs text-red-100/90 mt-2 pl-12 leading-snug">
+                    Acceso libre, sin contraseña. Desde el teléfono en pocos minutos.
+                </p>
+            </div>
+        </div>
+
     <!-- ==================== NAVBAR ==================== -->
-    <nav class="fixed w-full z-50 transition-all duration-300" id="navbar">
+    <nav class="w-full transition-all duration-300 bg-white/95 backdrop-blur-lg border-b border-slate-100/80" id="navbar">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <a href="/" class="flex items-center gap-3 group">
@@ -28,6 +61,13 @@
                 </a>
                 
                 <div class="hidden lg:flex items-center gap-10">
+                    <a href="/terremotove" class="text-red-700 hover:text-red-800 font-semibold transition flex items-center gap-1.5">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                        </span>
+                        Censo terremoto
+                    </a>
                     <a href="#features" class="text-slate-600 hover:text-orange-600 font-medium transition">Funciones</a>
                     <a href="#how-it-works" class="text-slate-600 hover:text-orange-600 font-medium transition">Cómo funciona</a>
                     <a href="#pricing" class="text-slate-600 hover:text-orange-600 font-medium transition">Precios</a>
@@ -55,15 +95,19 @@
                 <a href="#how-it-works" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Cómo funciona</a>
                 <a href="#pricing" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Precios</a>
                 <a href="#faq" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">FAQ</a>
+                <a href="/terremotove" class="block py-3 px-4 rounded-lg bg-red-50 text-red-800 font-semibold border border-red-200 hover:bg-red-100">
+                    Censo de emergencia (terremoto)
+                </a>
                 <hr class="border-slate-100 my-4">
                 <a href="/login" class="block py-3 px-4 rounded-lg text-slate-900 font-semibold hover:bg-slate-50">Iniciar Sesión</a>
                 <a href="#demo" class="block py-4 px-4 bg-orange-500 text-white text-center rounded-full font-semibold">Solicitar Demo</a>
             </div>
         </div>
     </nav>
+    </header>
 
     <!-- ==================== HERO ==================== -->
-    <section class="relative pt-28 pb-16 lg:pt-40 lg:pb-24 min-h-[90vh] flex items-center">
+    <section class="relative pt-52 sm:pt-48 lg:pt-56 pb-16 lg:pb-24 min-h-[90vh] flex items-center">
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-40 -right-40 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl"></div>
             <div class="absolute top-1/2 -left-20 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"></div>
@@ -735,9 +779,9 @@
         window.addEventListener('scroll', () => {
             const navbar = document.getElementById('navbar');
             if (window.scrollY > 50) {
-                navbar.classList.add('bg-white/95', 'backdrop-blur-lg', 'shadow-sm');
+                navbar.classList.add('shadow-sm');
             } else {
-                navbar.classList.remove('bg-white/95', 'backdrop-blur-lg', 'shadow-sm');
+                navbar.classList.remove('shadow-sm');
             }
         });
     </script>

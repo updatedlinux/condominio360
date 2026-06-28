@@ -38,6 +38,10 @@
                 <span class="material-icons-round mr-3 <%= activePage === 'dashboard' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">dashboard</span>
                 Panel Principal
             </a>
+            <a href="/tenant-admin/earthquake-census" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'earthquake-census' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %> bg-red-50 border border-red-100">
+                <span class="material-icons-round mr-3 text-red-600">emergency</span>
+                <span class="text-red-700 font-semibold">Censo Terremoto</span>
+            </a>
             <a href="/tenant-admin/requests" class="sidebar-item flex items-center px-3 py-3 text-sm font-medium rounded-lg <%= activePage === 'requests' ? 'active text-[#3C4043]' : 'text-[#5F6368] hover:text-[#3C4043]' %>">
                 <span class="material-icons-round mr-3 <%= activePage === 'requests' ? 'text-[#f97316]' : 'text-[#5F6368]' %>">assignment</span>
                 Solicitudes

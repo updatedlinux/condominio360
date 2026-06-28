@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Censo Terremoto - <%= tenant.name %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .sidebar-item { transition: all 0.2s; }
+        .sidebar-item:hover { background: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 100%); }
+        .sidebar-item.active { background: linear-gradient(90deg, rgba(249,115,22,0.15) 0%, transparent 100%); border-right: 3px solid #f97316; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-[#FAFAFA]">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('partials/sidebar', { activePage: 'earthquake-census' }) %>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm sticky top-0 z-40">
+                <div class="px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-medium text-[#3C4043] flex items-center gap-2">
+                            <span class="material-icons-round text-red-600">emergency</span>
+                            Censo de Emergencia
+                        </h1>
+                        <p class="text-sm text-[#5F6368]" id="header-tenant">Protección Civil — Terremoto</p>
+                    </div>
+                    <button onclick="downloadPdf()" id="pdfBtn" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium text-sm transition-colors">
+                        <span class="material-icons-round text-lg">picture_as_pdf</span>
+                        Descargar PDF
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 md:p-8">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6" id="stats-container"></div>
+
+                <div class="card p-4 mb-6 flex flex-col sm:flex-row gap-3">
+                    <input type="search" id="searchInput" placeholder="Buscar apartamento, edificio o teléfono..."
+                        oninput="debouncedLoad()"
+                        class="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    <button onclick="loadSubmissions()" class="px-4 py-2.5 border border-[#E5E5E5] rounded-xl text-sm text-[#5F6368] hover:bg-[#F5F5F5]">Actualizar</button>
+                </div>
+
+                <div class="card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-[#F5F5F5] text-[#5F6368] text-left">
+                                <tr>
+                                    <th class="px-4 py-3 font-medium">Edificio / Calle</th>
+                                    <th class="px-4 py-3 font-medium">Apartamento</th>
+                                    <th class="px-4 py-3 font-medium hidden sm:table-cell">Personas</th>
+                                    <th class="px-4 py-3 font-medium hidden lg:table-cell">Daños</th>
+                                    <th class="px-4 py-3 font-medium hidden md:table-cell">Teléfono</th>
+                                    <th class="px-4 py-3 font-medium hidden lg:table-cell">Fotos</th>
+                                    <th class="px-4 py-3 font-medium hidden md:table-cell">Actualizado</th>
+                                    <th class="px-4 py-3 font-medium"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="submissions-table" class="divide-y divide-[#E5E5E5]"></tbody>
+                        </table>
+                    </div>
+                    <div id="empty-state" class="hidden text-center py-16 px-4">
+                        <span class="material-icons-round text-5xl text-[#9AA0A6]">inventory_2</span>
+                        <p class="mt-3 text-[#5F6368]">Aún no hay registros de censo</p>
+                        <p class="text-sm text-[#9AA0A6] mt-1">Comparta el enlace público: <strong>/terremotove</strong></p>
+                    </div>
+                </div>
+            </main>
+            <%- include('../partials/panels-footer') %>
+        </div>
+    </div>
+
+    <!-- Detail modal -->
+    <div id="detailModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="closeDetail()"></div>
+        <div class="absolute inset-x-4 top-[5%] bottom-[5%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <h3 class="font-semibold text-[#3C4043]" id="detailTitle">Detalle del censo</h3>
+                <button onclick="closeDetail()" class="text-[#5F6368] hover:text-[#3C4043]"><span class="material-icons-round">close</span></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6" id="detailContent"></div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        let searchTimeout = null;
+
+        function debouncedLoad() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadSubmissions, 300);
+        }
+
+        function formatDate(val) {
+            if (!val) return '—';
+            const d = new Date(val);
+            return d.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        const DAMAGE_LABELS = {
+            gas_failure: 'Falla de gas',
+            electrical_failure: 'Falla de electricidad',
+            cracked_walls: 'Paredes agrietadas',
+            water_pipe_failure: 'Falla de agua (tubería rota)',
+            wall_displacement: 'Desplazamiento de pared',
+            ceiling_damage: 'Daño en techo o losa',
+            floor_damage: 'Daño en piso',
+            broken_windows: 'Ventanas o puertas rotas',
+            sewage_failure: 'Falla de desagüe / aguas negras',
+            structural_instability: 'Inestabilidad estructural visible'
+        };
+        function damageLabel(key) { return DAMAGE_LABELS[key] || key; }
+
+        async function apiFetch(url, opts = {}) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(url, {
+                ...opts,
+                headers: { Authorization: `Bearer ${token}`, ...(opts.headers || {}) }
+            });
+            if (res.status === 401) { window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname); return null; }
+            return res;
+        }
+
+        async function loadStats() {
+            const res = await apiFetch('/api/tenant-admin/earthquake-census/stats');
+            if (!res) return;
+            const json = await res.json();
+            if (!json.success) return;
+            const s = json.data;
+            document.getElementById('stats-container').innerHTML = `
+                <div class="card p-4"><p class="text-xs text-[#9AA0A6] uppercase">Unidades</p><p class="text-2xl font-bold text-[#3C4043]">${s.submissions || 0}</p></div>
+                <div class="card p-4"><p class="text-xs text-[#9AA0A6] uppercase">Personas</p><p class="text-2xl font-bold text-[#3C4043]">${s.members || 0}</p></div>
+                <div class="card p-4"><p class="text-xs text-[#9AA0A6] uppercase">Con discapacidad</p><p class="text-2xl font-bold text-red-600">${s.with_disability || 0}</p></div>
+                <div class="card p-4"><p class="text-xs text-[#9AA0A6] uppercase">Fotos de daños</p><p class="text-2xl font-bold text-[#3C4043]">${s.photos || 0}</p></div>
+            `;
+        }
+
+        async function loadSubmissions() {
+            const search = document.getElementById('searchInput').value;
+            const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+            const res = await apiFetch('/api/tenant-admin/earthquake-census' + qs);
+            if (!res) return;
+            const json = await res.json();
+            const tbody = document.getElementById('submissions-table');
+            const empty = document.getElementById('empty-state');
+            if (!json.success || !json.data.length) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            tbody.innerHTML = json.data.map((s) => `
+                <tr class="hover:bg-[#FAFAFA]">
+                    <td class="px-4 py-3 text-[#3C4043]">${escapeHtml(s.building_label)}</td>
+                    <td class="px-4 py-3 font-medium">${escapeHtml(s.apartment_label)}</td>
+                    <td class="px-4 py-3 hidden sm:table-cell">${s.member_count || 0}</td>
+                    <td class="px-4 py-3 hidden lg:table-cell">
+                        ${(s.damage_types && s.damage_types.length) ? `<span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full">${s.damage_types.length} reportado(s)</span>` : '<span class="text-[#9AA0A6]">—</span>'}
+                    </td>
+                    <td class="px-4 py-3 hidden md:table-cell">${escapeHtml(s.contact_phone)}</td>
+                    <td class="px-4 py-3 hidden lg:table-cell">${s.photo_count || 0}</td>
+                    <td class="px-4 py-3 hidden md:table-cell text-[#9AA0A6] text-xs">${formatDate(s.updated_at || s.submitted_at)}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="showDetail('${s.id}')" class="text-[#f97316] text-sm font-medium hover:underline">Ver</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function showDetail(id) {
+            const res = await apiFetch('/api/tenant-admin/earthquake-census/' + id);
+            if (!res) return;
+            const json = await res.json();
+            if (!json.success) return;
+            const d = json.data;
+            document.getElementById('detailTitle').textContent = `${d.building_label} — ${d.apartment_label}`;
+            const membersHtml = (d.members || []).map((m, i) => `
+                <div class="border border-[#E5E5E5] rounded-xl p-4 mb-3">
+                    <p class="font-medium text-[#3C4043]">${i + 1}. ${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}</p>
+                    <p class="text-sm text-[#5F6368] mt-1">Cédula: ${escapeHtml(m.cedula)} | Edad: ${m.age ?? '—'} | Nac: ${m.birth_date ? String(m.birth_date).slice(0, 10) : '—'}</p>
+                    <p class="text-sm text-[#5F6368]">Ocupación: ${escapeHtml(m.occupation_education || '—')}</p>
+                    <p class="text-sm ${m.has_disability ? 'text-red-600 font-medium' : 'text-[#5F6368]'}">Discapacidad: ${m.has_disability ? 'Sí' + (m.disability_notes ? ' — ' + escapeHtml(m.disability_notes) : '') : 'No'}</p>
+                </div>
+            `).join('');
+            const damageHtml = (d.damage_types && d.damage_types.length)
+                ? `<div class="flex flex-wrap gap-1.5 mb-4">${d.damage_types.map((k) => `<span class="text-xs bg-red-50 text-red-800 border border-red-100 px-2 py-1 rounded-lg">${escapeHtml(damageLabel(k))}</span>`).join('')}</div>${d.damage_notes ? `<p class="text-sm text-[#5F6368] mb-4">Detalle daños: ${escapeHtml(d.damage_notes)}</p>` : ''}`
+                : (d.damage_notes ? `<p class="text-sm text-[#5F6368] mb-4">Detalle daños: ${escapeHtml(d.damage_notes)}</p>` : '');
+            const photosHtml = (d.photos || []).length
+                ? `<div class="flex flex-wrap gap-2 mt-2">${d.photos.map((ph) => `<a href="/uploads/${ph.file_path}" target="_blank"><img src="/uploads/${ph.file_path}" class="w-20 h-20 object-cover rounded-lg border" alt=""></a>`).join('')}</div>`
+                : '<p class="text-sm text-[#9AA0A6]">Sin fotos</p>';
+            document.getElementById('detailContent').innerHTML = `
+                <p class="text-sm text-[#5F6368] mb-4">Teléfono: <strong>${escapeHtml(d.contact_phone)}</strong></p>
+                ${d.notes ? `<p class="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">${escapeHtml(d.notes)}</p>` : ''}
+                ${(d.damage_types && d.damage_types.length) || d.damage_notes ? `<h4 class="font-medium text-[#3C4043] mb-2">Daños al inmueble</h4>${damageHtml}` : ''}
+                <h4 class="font-medium text-[#3C4043] mb-2">Grupo familiar (${(d.members || []).length})</h4>
+                ${membersHtml}
+                <h4 class="font-medium text-[#3C4043] mt-4 mb-2">Fotos de daños</h4>
+                ${photosHtml}
+            `;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        async function downloadPdf() {
+            const btn = document.getElementById('pdfBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Generando...';
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/tenant-admin/earthquake-census/pdf', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) throw new Error('Error al generar PDF');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `censo-terremoto-${new Date().toISOString().slice(0, 10)}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert(e.message || 'Error al descargar PDF');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-icons-round text-lg">picture_as_pdf</span> Descargar PDF';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof loadTenantHeader === 'function') {
+                await loadTenantHeader('header-tenant');
+            }
+            await loadStats();
+            await loadSubmissions();
+        });
+    </script>
+</body>
+</html>

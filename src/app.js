@@ -96,6 +96,8 @@ app.use((req, res, next) => {
         || p === '/select-property'
         || p === '/owner-nickname-flow'
         || p === '/auth/reset-password'
+        || p === '/terremotove'
+        || p.startsWith('/api/terremotove')
     ) {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         res.setHeader('Pragma', 'no-cache');
@@ -150,6 +152,9 @@ app.use('/api/tenant-admin/nfc', nfcAdminRoutes);
 // Demo request desde landing (público)
 const DemoController = require('./controllers/DemoController');
 app.post('/api/demo-request', DemoController.requestDemo);
+
+// Censo de emergencia terremoto (público, sin autenticación)
+app.use('/api/terremotove', require('./routes/earthquakeCensus'));
 
 // Configurar layouts para el resto de rutas
 app.use(expressLayouts);

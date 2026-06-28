@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#b91c1c">
+    <link rel="icon" type="image/svg+xml" href="/assets/images/isotipo-naranja.svg">
+    <title>Censo de Emergencia — Protección Civil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-text-size-adjust: 100%;
+            scroll-behavior: smooth;
+        }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            -webkit-tap-highlight-color: rgba(249, 115, 22, 0.15);
+        }
+        /* Evita zoom automático en iOS al enfocar inputs (mín. 16px) */
+        input, select, textarea, button { font-size: 16px; }
+        input[type="checkbox"] { width: 1.25rem; height: 1.25rem; min-width: 1.25rem; flex-shrink: 0; }
+        .step-dot { width: 10px; height: 10px; border-radius: 9999px; background: #E5E5E5; transition: all 0.2s; flex-shrink: 0; }
+        @media (min-width: 380px) { .step-dot { width: 12px; height: 12px; } }
+        .step-dot.active { background: #f97316; transform: scale(1.15); }
+        .step-dot.done { background: #22c55e; }
+        .step-line { flex: 1; height: 2px; background: #E5E5E5; max-width: 2rem; }
+        .step-line.done { background: #22c55e; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .member-card { border: 1px solid #E5E5E5; border-radius: 12px; }
+        .add-member-btn { border: 2px dashed #fdba74; background: #FFF7ED; min-height: 52px; touch-action: manipulation; }
+        .add-member-btn:active { border-color: #f97316; background: #ffedd5; transform: scale(0.99); }
+        .damage-check {
+            border: 1px solid #E5E5E5; border-radius: 12px; transition: all 0.15s;
+            min-height: 48px; touch-action: manipulation;
+        }
+        .damage-check:has(input:checked) { border-color: #f97316; background: #FFF7ED; }
+        .damage-check:active { background: #FFF7ED; }
+        .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 1px solid #E5E5E5; }
+        /* Botones táctiles grandes */
+        .touch-btn {
+            min-height: 48px;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .touch-btn:active { transform: scale(0.98); opacity: 0.92; }
+        .list-btn {
+            min-height: 52px;
+            touch-action: manipulation;
+            word-break: break-word;
+        }
+        .list-btn:active { background: #FFF7ED !important; border-color: #f97316 !important; }
+        /* Campos de formulario móvil */
+        .field-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 14px;
+            border: 1px solid #E5E5E5;
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.4;
+            background: #fff;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .field-input:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+        }
+        .field-label { display: block; font-size: 14px; font-weight: 500; color: #5F6368; margin-bottom: 6px; }
+        /* Barra fija enviar (solo móvil, paso formulario) */
+        .mobile-submit-bar {
+            display: none;
+            position: fixed;
+            left: 0; right: 0; bottom: 0;
+            z-index: 40;
+            padding: 12px 16px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+            background: rgba(255,255,255,0.97);
+            border-top: 1px solid #E5E5E5;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        @media (max-width: 639px) {
+            .mobile-submit-bar.visible { display: block; }
+            body.form-step-active { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0)); }
+            .desktop-submit { display: none; }
+        }
+        @media (min-width: 640px) {
+            .mobile-submit-bar { display: none !important; }
+        }
+        /* Input archivo oculto + botón cámara */
+        .photo-upload-zone input[type="file"] {
+            position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
+        }
+        .photo-upload-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; min-height: 56px; padding: 14px 16px;
+            border: 2px dashed #fdba74; border-radius: 14px;
+            background: #FFF7ED; color: #ea580c; font-weight: 600; font-size: 16px;
+            cursor: pointer; touch-action: manipulation;
+        }
+        .photo-upload-btn:active { background: #ffedd5; border-color: #f97316; }
+        /* Lista propiedades scrollable en móvil */
+        .properties-scroll {
+            max-height: min(50vh, 320px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        @media (min-width: 640px) {
+            .properties-scroll { max-height: 16rem; }
+        }
+        /* Toast safe area */
+        #toast {
+            left: 16px; right: 16px;
+            transform: none;
+            max-width: none;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0));
+        }
+        body.form-step-active #toast {
+            bottom: calc(96px + env(safe-area-inset-bottom, 0));
+        }
+        .back-link {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 4px;
+            font-size: 15px;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="bg-[#FAFAFA] min-h-screen">
+    <header class="bg-gradient-to-r from-red-700 to-red-600 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-3xl mx-auto px-4 py-4 sm:py-6" style="padding-top: max(1rem, env(safe-area-inset-top));">
+            <div class="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-3">
+                <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-9 w-9 sm:h-10 sm:w-10 bg-white rounded-lg p-1 flex-shrink-0">
+                <span class="font-bold text-base sm:text-lg">Condominio360</span>
+            </div>
+            <h1 class="text-xl sm:text-3xl font-bold leading-tight">Censo de Emergencia</h1>
+            <p class="text-red-100 mt-1.5 sm:mt-2 text-sm sm:text-base leading-snug">
+                Protección Civil — Sin contraseña. Complete desde su teléfono.
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-8">
+        <!-- Progress -->
+        <div class="flex items-center justify-center gap-1 sm:gap-2 mb-4 sm:mb-6 px-1" id="stepIndicators" aria-label="Progreso del formulario">
+            <div class="step-dot active" data-step="0" title="Inicio"></div>
+            <div class="step-line" data-line="0"></div>
+            <div class="step-dot" data-step="1" title="Condominio"></div>
+            <div class="step-line" data-line="1"></div>
+            <div class="step-dot" data-step="2" title="Inmueble"></div>
+            <div class="step-line" data-line="2"></div>
+            <div class="step-dot" data-step="3" title="Datos"></div>
+        </div>
+
+        <!-- Step 0: Welcome -->
+        <section id="step-0" class="step-panel">
+            <div class="card p-4 sm:p-8">
+                <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <span class="material-icons-round text-amber-600">warning_amber</span>
+                    <div class="text-sm text-amber-900">
+                        <p class="font-semibold">Información importante</p>
+                        <p class="mt-1">Complete el censo de su unidad habitacional con los datos de todas las personas que viven en el apartamento. La información será entregada a la junta de condominio para Protección Civil.</p>
+                    </div>
+                </div>
+                <h2 class="text-xl font-semibold text-[#3C4043] mb-4">¿Qué necesitamos?</h2>
+                <ul class="space-y-2 text-sm text-[#5F6368] mb-6">
+                    <li class="flex gap-2"><span class="material-icons-round text-[#f97316] text-base">check_circle</span> Grupo familiar dinámico: agregue todos los integrantes del hogar</li>
+                    <li class="flex gap-2"><span class="material-icons-round text-[#f97316] text-base">check_circle</span> Nombres, cédula, edad, fecha de nacimiento, ocupación/instrucción</li>
+                    <li class="flex gap-2"><span class="material-icons-round text-[#f97316] text-base">check_circle</span> Personas con discapacidad y teléfono de contacto</li>
+                    <li class="flex gap-2"><span class="material-icons-round text-[#f97316] text-base">check_circle</span> Daños al inmueble (checks opcionales)</li>
+                    <li class="flex gap-2"><span class="material-icons-round text-[#f97316] text-base">photo_camera</span> Fotos de daños (opcional, recomendado)</li>
+                </ul>
+                <button type="button" onclick="goToStep(1)" class="touch-btn w-full py-4 bg-[#f97316] active:bg-[#ea580c] text-white font-semibold rounded-xl transition-colors text-base">
+                    Comenzar registro
+                </button>
+            </div>
+        </section>
+
+        <!-- Step 1: Select tenant -->
+        <section id="step-1" class="step-panel hidden">
+            <div class="card p-4 sm:p-8">
+                <h2 class="text-lg sm:text-xl font-semibold text-[#3C4043] mb-1">Seleccione su conjunto residencial</h2>
+                <p class="text-sm text-[#5F6368] mb-4 sm:mb-5">Elija el condominio o urbanización donde vive</p>
+                <div id="tenantsLoading" class="text-center py-8 text-[#5F6368]">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#f97316] border-t-transparent"></div>
+                    <p class="mt-2 text-sm">Cargando...</p>
+                </div>
+                <div id="tenantsList" class="space-y-2 hidden properties-scroll"></div>
+                <button type="button" onclick="goToStep(0)" class="back-link mt-4 text-[#5F6368]">← Volver</button>
+            </div>
+        </section>
+
+        <!-- Step 2: Select building & property -->
+        <section id="step-2" class="step-panel hidden">
+            <div class="card p-4 sm:p-8">
+                <h2 class="text-lg sm:text-xl font-semibold text-[#3C4043] mb-1">Seleccione su inmueble</h2>
+                <p class="text-sm text-[#5F6368] mb-4 sm:mb-5 break-words" id="selectedTenantLabel"></p>
+
+                <div id="buildingSection" class="hidden mb-4">
+                    <label class="field-label" for="buildingSelect">Edificio / Calle / Torre</label>
+                    <select id="buildingSelect" onchange="onBuildingChange()" class="field-input"></select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="field-label" for="propertySearch">Buscar apartamento</label>
+                    <input type="search" id="propertySearch" placeholder="Ej: 4-A, piso 3..." enterkeyhint="search" autocomplete="off"
+                        oninput="debouncedPropertySearch()"
+                        class="field-input">
+                </div>
+
+                <div id="propertiesList" class="space-y-2 properties-scroll"></div>
+
+                <div class="mt-4 pt-4 border-t border-[#E5E5E5]">
+                    <button type="button" onclick="toggleManualEntry()" class="touch-btn w-full text-left text-[#f97316] font-medium py-3 px-1" id="manualToggleBtn">
+                        Mi unidad no aparece en la lista
+                    </button>
+                    <div id="manualEntry" class="hidden mt-2 space-y-3">
+                        <div>
+                            <label class="field-label" for="manualBuilding">Nombre del edificio o calle *</label>
+                            <input type="text" id="manualBuilding" autocomplete="off" class="field-input">
+                        </div>
+                        <div>
+                            <label class="field-label" for="manualApartment">Número de apartamento *</label>
+                            <input type="text" id="manualApartment" autocomplete="off" enterkeyhint="done" class="field-input">
+                        </div>
+                        <button type="button" onclick="confirmManualProperty()" class="touch-btn w-full py-4 bg-[#3C4043] text-white rounded-xl font-medium">Continuar con esta unidad</button>
+                    </div>
+                </div>
+
+                <button type="button" onclick="goToStep(1)" class="back-link mt-4 text-[#5F6368]">← Cambiar conjunto</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Census form -->
+        <section id="step-3" class="step-panel hidden">
+            <div class="card p-4 sm:p-8">
+                <div class="bg-[#FFF7ED] border border-orange-200 rounded-xl p-3 sm:p-4 mb-5 sm:mb-6">
+                    <p class="text-sm font-medium text-[#3C4043] break-words leading-snug" id="propertySummary"></p>
+                    <button type="button" onclick="goToStep(2)" class="back-link text-[#f97316] text-sm mt-1 p-0 min-h-0">Cambiar inmueble</button>
+                </div>
+
+                <div id="existingNotice" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800 leading-snug"></div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                    <h2 class="text-base sm:text-lg font-semibold text-[#3C4043]">Grupo familiar</h2>
+                    <span id="memberCountBadge" class="text-xs font-medium bg-[#FFF7ED] text-[#ea580c] px-2.5 py-1.5 rounded-full whitespace-nowrap">1 integrante</span>
+                </div>
+                <p class="text-sm text-[#5F6368] mb-4 leading-snug">Toque <strong>Agregar otro integrante</strong> por cada persona que vive en el apartamento.</p>
+                <div id="membersContainer" class="space-y-4"></div>
+                <button type="button" onclick="addMember()" class="add-member-btn mt-4 w-full py-4 rounded-xl flex items-center justify-center gap-2 text-[#ea580c] font-semibold text-base transition-colors">
+                    <span class="material-icons-round">person_add</span>
+                    Agregar otro integrante
+                </button>
+
+                <div class="mt-6 pt-6 border-t border-[#E5E5E5]">
+                    <label class="field-label" for="contactPhone">Teléfono de contacto *</label>
+                    <input type="tel" id="contactPhone" placeholder="Ej: 0414-1234567" inputmode="tel" autocomplete="tel"
+                        class="field-input">
+                </div>
+
+                <div class="mt-4">
+                    <label class="field-label" for="notes">Notas adicionales (opcional)</label>
+                    <textarea id="notes" rows="3" class="field-input min-h-[88px] resize-y" placeholder="Información relevante para Protección Civil"></textarea>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-[#E5E5E5]">
+                    <h3 class="text-base font-semibold text-[#3C4043] mb-1 flex items-center gap-2">
+                        <span class="material-icons-round text-red-600 text-xl">report_problem</span>
+                        Daños al inmueble (opcional)
+                    </h3>
+                    <p class="text-sm text-[#5F6368] mb-3 leading-snug">Toque para marcar los daños que observe.</p>
+                    <div id="damageTypesContainer" class="grid grid-cols-1 gap-2"></div>
+                    <div class="mt-3">
+                        <label class="field-label" for="damageNotes">Detalle adicional (opcional)</label>
+                        <input type="text" id="damageNotes" placeholder="Ej: grieta en muro del baño"
+                            class="field-input">
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-[#E5E5E5]">
+                    <p class="field-label mb-2">
+                        <span class="material-icons-round text-base align-middle mr-1 text-[#f97316]">photo_camera</span>
+                        Fotos de daños <span class="font-normal text-[#9AA0A6]">(opcional, recomendado)</span>
+                    </p>
+                    <p class="text-sm text-[#5F6368] mb-3 leading-snug">Use la cámara de su teléfono para documentar los daños.</p>
+                    <div class="photo-upload-zone relative">
+                        <input type="file" id="damagePhotos" accept="image/*" multiple capture="environment">
+                        <label for="damagePhotos" class="photo-upload-btn">
+                            <span class="material-icons-round text-2xl">add_a_photo</span>
+                            Tomar o elegir fotos
+                        </label>
+                    </div>
+                    <p id="photoCount" class="text-xs text-[#9AA0A6] mt-2 hidden"></p>
+                    <div id="photoPreview" class="flex flex-wrap gap-2 mt-3"></div>
+                </div>
+
+                <button type="button" onclick="submitCensus()" id="submitBtn"
+                    class="desktop-submit touch-btn w-full mt-8 py-4 bg-red-600 active:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base">
+                    <span class="material-icons-round">send</span>
+                    Enviar censo
+                </button>
+            </div>
+        </section>
+
+        <!-- Barra fija enviar (móvil) -->
+        <div id="mobileSubmitBar" class="mobile-submit-bar" aria-hidden="true">
+            <button type="button" onclick="submitCensus()" id="mobileSubmitBtn"
+                class="touch-btn w-full py-4 bg-red-600 active:bg-red-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-base">
+                <span class="material-icons-round">send</span>
+                Enviar censo
+            </button>
+        </div>
+
+        <!-- Success -->
+        <section id="step-success" class="step-panel hidden">
+            <div class="card p-6 sm:p-8 text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="material-icons-round text-4xl text-green-600">check_circle</span>
+                </div>
+                <h2 class="text-xl font-bold text-[#3C4043] mb-2">¡Registro enviado!</h2>
+                <p class="text-[#5F6368] text-sm mb-6">Gracias por colaborar. La junta de condominio consolidará la información para Protección Civil.</p>
+                <button type="button" onclick="resetForm()" class="touch-btn inline-flex items-center justify-center min-h-[48px] px-4 text-[#f97316] font-medium text-base">Registrar otra unidad</button>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="fixed hidden z-50 text-center text-sm px-4 py-3 rounded-xl shadow-lg"></div>
+
+    <script>
+        const state = {
+            step: 0,
+            tenant: null,
+            building: null,
+            property: null,
+            manual: false,
+            members: [],
+            damageTypes: [],
+            selectedDamages: new Set()
+        };
+
+        let searchTimeout = null;
+        let propertiesCache = [];
+
+        function showToast(msg, isError) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'fixed hidden z-50 text-center text-sm px-4 py-3.5 rounded-xl shadow-lg leading-snug ' +
+                (isError ? 'bg-red-600 text-white' : 'bg-[#3C4043] text-white');
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 4500);
+        }
+
+        function updateMobileSubmitBar(step) {
+            const bar = document.getElementById('mobileSubmitBar');
+            const isFormStep = step === 3;
+            document.body.classList.toggle('form-step-active', isFormStep);
+            if (bar) {
+                bar.classList.toggle('visible', isFormStep);
+                bar.setAttribute('aria-hidden', isFormStep ? 'false' : 'true');
+            }
+        }
+
+        function goToStep(n) {
+            state.step = n;
+            document.querySelectorAll('.step-panel').forEach((el) => el.classList.add('hidden'));
+            const panel = document.getElementById(n === 'success' ? 'step-success' : `step-${n}`);
+            if (panel) panel.classList.remove('hidden');
+
+            document.querySelectorAll('.step-dot').forEach((dot) => {
+                const s = parseInt(dot.dataset.step, 10);
+                dot.classList.remove('active', 'done');
+                if (n === 'success' || s < n) dot.classList.add('done');
+                else if (s === n) dot.classList.add('active');
+            });
+            document.querySelectorAll('.step-line').forEach((line) => {
+                const s = parseInt(line.dataset.line, 10);
+                line.classList.toggle('done', n === 'success' || s < n);
+            });
+
+            updateMobileSubmitBar(n === 'success' ? -1 : n);
+
+            if (n === 1) loadTenants();
+            if (n === 2 && state.tenant) initPropertyStep();
+            if (n === 3) initFormStep();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function loadTenants() {
+            const loading = document.getElementById('tenantsLoading');
+            const list = document.getElementById('tenantsList');
+            loading.classList.remove('hidden');
+            list.classList.add('hidden');
+            try {
+                const res = await fetch('/api/terremotove/tenants');
+                const json = await res.json();
+                if (!json.success) throw new Error(json.error);
+                list.innerHTML = json.data.map((t) => `
+                    <button type="button" onclick="selectTenant('${t.id}', '${escapeAttr(t.name)}', '${t.building_type}', ${t.building_count})"
+                        class="list-btn w-full text-left px-4 py-3.5 border border-[#E5E5E5] rounded-xl transition-colors">
+                        <span class="font-medium text-[#3C4043] text-base leading-snug">${escapeHtml(t.name)}</span>
+                    </button>
+                `).join('');
+                loading.classList.add('hidden');
+                list.classList.remove('hidden');
+            } catch (e) {
+                showToast(e.message || 'Error al cargar condominios', true);
+            }
+        }
+
+        function selectTenant(id, name, buildingType, buildingCount) {
+            state.tenant = { id, name, building_type: buildingType, building_count: buildingCount };
+            state.building = null;
+            state.property = null;
+            state.manual = false;
+            goToStep(2);
+        }
+
+        async function initPropertyStep() {
+            document.getElementById('selectedTenantLabel').textContent = state.tenant.name;
+            document.getElementById('manualEntry').classList.add('hidden');
+            document.getElementById('propertySearch').value = '';
+
+            const buildingSection = document.getElementById('buildingSection');
+            const buildingSelect = document.getElementById('buildingSelect');
+
+            if (state.tenant.building_type === 'MULTIPLE' || state.tenant.building_count > 0) {
+                buildingSection.classList.remove('hidden');
+                const res = await fetch(`/api/terremotove/tenants/${state.tenant.id}/buildings`);
+                const json = await res.json();
+                buildingSelect.innerHTML = '<option value="">— Todos los edificios —</option>' +
+                    (json.data || []).map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
+            } else {
+                buildingSection.classList.add('hidden');
+                buildingSelect.innerHTML = '';
+            }
+            loadProperties();
+        }
+
+        function onBuildingChange() {
+            const sel = document.getElementById('buildingSelect');
+            state.building = sel.value ? { id: sel.value, name: sel.options[sel.selectedIndex].text } : null;
+            loadProperties();
+        }
+
+        function debouncedPropertySearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadProperties, 300);
+        }
+
+        async function loadProperties() {
+            const list = document.getElementById('propertiesList');
+            list.innerHTML = '<p class="text-sm text-[#5F6368] py-4 text-center">Cargando...</p>';
+            const buildingId = state.building?.id || '';
+            const search = document.getElementById('propertySearch').value;
+            const qs = new URLSearchParams();
+            if (buildingId) qs.set('buildingId', buildingId);
+            if (search) qs.set('search', search);
+            const res = await fetch(`/api/terremotove/tenants/${state.tenant.id}/properties?${qs}`);
+            const json = await res.json();
+            if (!json.success || !json.data.length) {
+                propertiesCache = [];
+                list.innerHTML = '<p class="text-sm text-[#9AA0A6] py-4 text-center">No se encontraron unidades. Use la opción manual abajo.</p>';
+                return;
+            }
+            propertiesCache = json.data;
+            list.innerHTML = propertiesCache.map((p, idx) => `
+                <button type="button" onclick="selectPropertyByIndex(${idx})"
+                    class="list-btn w-full text-left px-4 py-3.5 border border-[#E5E5E5] rounded-xl transition-colors">
+                    <span class="font-medium text-[#3C4043] text-base leading-snug block">${escapeHtml(p.label || p.name)}</span>
+                    ${p.floor ? `<span class="text-sm text-[#9AA0A6] mt-0.5 block">Piso ${escapeHtml(p.floor)}</span>` : ''}
+                </button>
+            `).join('');
+        }
+
+        function selectPropertyByIndex(idx) {
+            selectProperty(propertiesCache[idx]);
+        }
+
+        function selectProperty(p) {
+            state.property = p;
+            state.manual = false;
+            goToStep(3);
+        }
+
+        function toggleManualEntry() {
+            document.getElementById('manualEntry').classList.toggle('hidden');
+        }
+
+        function confirmManualProperty() {
+            const building = document.getElementById('manualBuilding').value.trim();
+            const apartment = document.getElementById('manualApartment').value.trim();
+            if (!building || !apartment) {
+                showToast('Complete edificio y apartamento', true);
+                return;
+            }
+            state.manual = true;
+            state.property = { id: null, building_name: building, name: apartment, label: `${building} — ${apartment}` };
+            goToStep(3);
+        }
+
+        async function initFormStep() {
+            const p = state.property;
+            document.getElementById('propertySummary').textContent = p.label || `${p.building_name || ''} — ${p.name}`;
+
+            state.members = [createEmptyMember()];
+            state.selectedDamages = new Set();
+            renderMembers();
+            await loadDamageTypes();
+            renderDamageChecks();
+
+            document.getElementById('contactPhone').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('damageNotes').value = '';
+            document.getElementById('damagePhotos').value = '';
+            document.getElementById('photoPreview').innerHTML = '';
+            document.getElementById('photoCount').classList.add('hidden');
+            document.getElementById('existingNotice').classList.add('hidden');
+
+            if (p.id && state.tenant) {
+                try {
+                    const res = await fetch(`/api/terremotove/tenants/${state.tenant.id}/properties/${p.id}/submission`);
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        const d = json.data;
+                        document.getElementById('existingNotice').classList.remove('hidden');
+                        document.getElementById('existingNotice').textContent =
+                            'Esta unidad ya tiene un registro. Puede actualizarlo enviando el formulario nuevamente.';
+                        document.getElementById('contactPhone').value = d.contact_phone || '';
+                        document.getElementById('notes').value = d.notes || '';
+                        document.getElementById('damageNotes').value = d.damage_notes || '';
+                        if (Array.isArray(d.damage_types)) {
+                            state.selectedDamages = new Set(d.damage_types);
+                            renderDamageChecks();
+                        }
+                        if (d.members && d.members.length) {
+                            state.members = d.members.map((m) => ({
+                                first_name: m.first_name,
+                                last_name: m.last_name,
+                                cedula: m.cedula,
+                                age: m.age,
+                                birth_date: m.birth_date ? String(m.birth_date).slice(0, 10) : '',
+                                occupation_education: m.occupation_education || '',
+                                has_disability: !!m.has_disability,
+                                disability_notes: m.disability_notes || ''
+                            }));
+                            renderMembers();
+                        }
+                    }
+                } catch (_) { /* ignore */ }
+            }
+
+            document.getElementById('damagePhotos').onchange = previewPhotos;
+        }
+
+        async function loadDamageTypes() {
+            if (state.damageTypes.length) return;
+            try {
+                const res = await fetch('/api/terremotove/damage-types');
+                const json = await res.json();
+                if (json.success) state.damageTypes = json.data || [];
+            } catch (_) { /* ignore */ }
+        }
+
+        function renderDamageChecks() {
+            const container = document.getElementById('damageTypesContainer');
+            if (!state.damageTypes.length) {
+                container.innerHTML = '<p class="text-sm text-[#9AA0A6]">Cargando opciones...</p>';
+                return;
+            }
+            container.innerHTML = state.damageTypes.map((d) => `
+                <label class="damage-check flex items-center gap-3 px-4 py-3 cursor-pointer">
+                    <input type="checkbox" value="${d.key}" ${state.selectedDamages.has(d.key) ? 'checked' : ''}
+                        onchange="toggleDamage('${d.key}', this.checked)">
+                    <span class="text-base text-[#3C4043] leading-snug flex-1">${escapeHtml(d.label)}</span>
+                </label>
+            `).join('');
+        }
+
+        function toggleDamage(key, checked) {
+            if (checked) state.selectedDamages.add(key);
+            else state.selectedDamages.delete(key);
+        }
+
+        function updateMemberCountBadge() {
+            const n = state.members.length;
+            const badge = document.getElementById('memberCountBadge');
+            badge.textContent = `${n} integrante${n !== 1 ? 's' : ''}`;
+        }
+
+        function createEmptyMember() {
+            return {
+                first_name: '', last_name: '', cedula: '', age: '', birth_date: '',
+                occupation_education: '', has_disability: false, disability_notes: ''
+            };
+        }
+
+        function syncMembersFromDom() {
+            state.members.forEach((m, i) => {
+                const card = document.querySelector(`[data-member-card="${i}"]`);
+                if (!card) return;
+                m.first_name = card.querySelector('[data-field="first_name"]')?.value ?? m.first_name;
+                m.last_name = card.querySelector('[data-field="last_name"]')?.value ?? m.last_name;
+                m.cedula = card.querySelector('[data-field="cedula"]')?.value ?? m.cedula;
+                m.age = card.querySelector('[data-field="age"]')?.value ?? m.age;
+                m.birth_date = card.querySelector('[data-field="birth_date"]')?.value ?? m.birth_date;
+                m.occupation_education = card.querySelector('[data-field="occupation_education"]')?.value ?? m.occupation_education;
+                m.has_disability = card.querySelector('[data-field="has_disability"]')?.checked ?? m.has_disability;
+                m.disability_notes = card.querySelector('[data-field="disability_notes"]')?.value ?? m.disability_notes;
+            });
+        }
+
+        function addMember() {
+            syncMembersFromDom();
+            state.members.push(createEmptyMember());
+            renderMembers();
+            const cards = document.querySelectorAll('[data-member-card]');
+            cards[cards.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function removeMember(i) {
+            if (state.members.length <= 1) {
+                showToast('Debe haber al menos un integrante', true);
+                return;
+            }
+            syncMembersFromDom();
+            state.members.splice(i, 1);
+            renderMembers();
+        }
+
+        function renderMembers() {
+            updateMemberCountBadge();
+            const container = document.getElementById('membersContainer');
+            container.innerHTML = state.members.map((m, i) => `
+                <div class="member-card p-3 sm:p-4" data-member-card="${i}">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <span class="text-base font-semibold text-[#3C4043] flex items-center gap-2 min-w-0">
+                            <span class="w-7 h-7 rounded-full bg-[#FFF7ED] text-[#ea580c] text-sm flex items-center justify-center font-bold flex-shrink-0">${i + 1}</span>
+                            <span class="truncate">Integrante ${i + 1}</span>
+                        </span>
+                        ${state.members.length > 1 ? `
+                            <button type="button" onclick="removeMember(${i})"
+                                class="touch-btn flex items-center gap-1 text-red-600 text-sm font-medium bg-red-50 px-3 py-2 rounded-lg flex-shrink-0">
+                                <span class="material-icons-round text-lg">remove_circle_outline</span>
+                                Quitar
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="field-label">Nombres *</label>
+                            <input type="text" data-field="first_name" value="${escapeAttr(m.first_name)}"
+                                oninput="updateMember(${i}, 'first_name', this.value)"
+                                autocomplete="given-name" enterkeyhint="next" class="field-input">
+                        </div>
+                        <div>
+                            <label class="field-label">Apellidos *</label>
+                            <input type="text" data-field="last_name" value="${escapeAttr(m.last_name)}"
+                                oninput="updateMember(${i}, 'last_name', this.value)"
+                                autocomplete="family-name" enterkeyhint="next" class="field-input">
+                        </div>
+                        <div>
+                            <label class="field-label">Cédula *</label>
+                            <input type="text" inputmode="numeric" data-field="cedula" value="${escapeAttr(m.cedula)}"
+                                oninput="updateMember(${i}, 'cedula', this.value)"
+                                autocomplete="off" enterkeyhint="next" class="field-input">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="field-label">Edad</label>
+                                <input type="number" min="0" max="130" inputmode="numeric" data-field="age" value="${m.age ?? ''}"
+                                    oninput="updateMember(${i}, 'age', this.value)" enterkeyhint="next" class="field-input">
+                            </div>
+                            <div>
+                                <label class="field-label">Nacimiento</label>
+                                <input type="date" data-field="birth_date" value="${m.birth_date || ''}"
+                                    oninput="updateMember(${i}, 'birth_date', this.value)" class="field-input">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="field-label">Ocupación / instrucción *</label>
+                            <input type="text" data-field="occupation_education" value="${escapeAttr(m.occupation_education)}"
+                                oninput="updateMember(${i}, 'occupation_education', this.value)"
+                                placeholder="Ej: Ingeniero, Bachiller" enterkeyhint="done" class="field-input">
+                        </div>
+                    </div>
+                    <label class="mt-4 flex items-center gap-3 min-h-[48px] cursor-pointer touch-btn py-1" for="disability-${i}">
+                        <input type="checkbox" id="disability-${i}" data-field="has_disability" ${m.has_disability ? 'checked' : ''}
+                            onchange="toggleDisability(${i}, this.checked)">
+                        <span class="text-base text-[#5F6368] leading-snug">Persona con discapacidad</span>
+                    </label>
+                    <div id="disability-notes-${i}" class="${m.has_disability ? '' : 'hidden'} mt-2">
+                        <input type="text" data-field="disability_notes" placeholder="Tipo o detalle (opcional)" value="${escapeAttr(m.disability_notes)}"
+                            oninput="updateMember(${i}, 'disability_notes', this.value)" class="field-input">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleDisability(i, checked) {
+            state.members[i].has_disability = checked;
+            const el = document.getElementById(`disability-notes-${i}`);
+            if (el) el.classList.toggle('hidden', !checked);
+        }
+
+        function updateMember(i, field, value) {
+            state.members[i][field] = value;
+        }
+
+        function previewPhotos() {
+            const input = document.getElementById('damagePhotos');
+            const preview = document.getElementById('photoPreview');
+            const countEl = document.getElementById('photoCount');
+            preview.innerHTML = '';
+            const files = Array.from(input.files || []);
+            files.forEach((file) => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'photo-preview';
+                img.alt = 'Vista previa';
+                preview.appendChild(img);
+            });
+            if (files.length) {
+                countEl.textContent = `${files.length} foto${files.length !== 1 ? 's' : ''} seleccionada${files.length !== 1 ? 's' : ''}`;
+                countEl.classList.remove('hidden');
+            } else {
+                countEl.classList.add('hidden');
+            }
+        }
+
+        function setSubmitLoading(loading) {
+            const label = loading
+                ? '<span class="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span> Enviando...'
+                : '<span class="material-icons-round">send</span> Enviar censo';
+            ['submitBtn', 'mobileSubmitBtn'].forEach((id) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.disabled = loading;
+                    btn.innerHTML = label;
+                }
+            });
+        }
+
+        async function submitCensus() {
+            syncMembersFromDom();
+            setSubmitLoading(true);
+
+            const p = state.property;
+            const payload = {
+                tenant_id: state.tenant.id,
+                property_id: p.id || null,
+                building_label: p.building_name || (state.manual ? document.getElementById('manualBuilding').value.trim() : state.tenant.name),
+                apartment_label: p.name,
+                contact_phone: document.getElementById('contactPhone').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+                damage_types: [...state.selectedDamages],
+                damage_notes: document.getElementById('damageNotes').value.trim(),
+                members: state.members
+            };
+
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(payload));
+            const photos = document.getElementById('damagePhotos').files;
+            for (let i = 0; i < photos.length; i++) {
+                formData.append('photos', photos[i]);
+            }
+
+            try {
+                const res = await fetch('/api/terremotove/submit', { method: 'POST', body: formData });
+                const json = await res.json();
+                if (!json.success) throw new Error(json.error || 'Error al enviar');
+                goToStep('success');
+            } catch (e) {
+                showToast(e.message || 'Error al enviar el censo', true);
+            } finally {
+                setSubmitLoading(false);
+            }
+        }
+
+        function resetForm() {
+            state.tenant = null;
+            state.property = null;
+            state.manual = false;
+            goToStep(0);
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function escapeAttr(s) { return escapeHtml(s).replace(/'/g, '&#39;'); }
+    </script>
+</body>
+</html>

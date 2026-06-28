@@ -358,4 +358,11 @@ router.get('/billing/stats', TenantAdminBillingController.getStats);
 // Exportación
 router.get('/billing/export/:preliminary_id', TenantAdminBillingController.exportPreliminary);
 
+// Censo de emergencia (terremoto — Protección Civil)
+const TenantAdminEarthquakeCensusController = require('../controllers/TenantAdminEarthquakeCensusController');
+router.get('/earthquake-census/stats', TenantAdminEarthquakeCensusController.getStats);
+router.get('/earthquake-census/pdf', TenantAdminEarthquakeCensusController.downloadPdf);
+router.get('/earthquake-census/:id', TenantAdminEarthquakeCensusController.getDetail);
+router.get('/earthquake-census', TenantAdminEarthquakeCensusController.list);
+
 module.exports = router;
