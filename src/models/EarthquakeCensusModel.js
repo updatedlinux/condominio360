@@ -143,6 +143,149 @@ class EarthquakeCensusModel {
         return result.recordset[0] || null;
     }
 
+    static async findSubmissionByPropertyExcluding(submissionId, tenantId, propertyId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .input('property_id', sql.UniqueIdentifier, propertyId)
+            .input('exclude_id', sql.UniqueIdentifier, submissionId)
+            .query(`
+                SELECT TOP 1 id, apartment_label, building_label
+                FROM EarthquakeCensusSubmissions
+                WHERE tenant_id = @tenant_id AND property_id = @property_id AND id <> @exclude_id
+            `);
+        return result.recordset[0] || null;
+    }
+
+    /**
+     * Actualización administrativa de un registro de censo (junta).
+     */
+    static async adminUpdateSubmission(submissionId, tenantId, data, members = null) {
+        const pool = await connectDB();
+        const existing = enrichSubmission(await this.findSubmissionById(submissionId));
+        if (!existing || String(existing.tenant_id) !== String(tenantId)) {
+            return null;
+        }
+
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        try {
+            let propertyId = data.property_id !== undefined ? (data.property_id || null) : existing.property_id;
+            let buildingLabel = String(data.building_label ?? existing.building_label ?? '').trim();
+            let apartmentLabel = String(data.apartment_label ?? existing.apartment_label ?? '').trim();
+
+            if (propertyId) {
+                const resolved = await this.resolveCensusProperty(tenantId, propertyId);
+                if (!resolved) {
+                    const err = new Error('Inmueble no válido para este condominio');
+                    err.code = 'PROPERTY_INVALID';
+                    throw err;
+                }
+                const conflict = await this.findSubmissionByPropertyExcluding(
+                    submissionId, tenantId, propertyId
+                );
+                if (conflict) {
+                    const err = new Error(
+                        `Ese apartamento ya tiene un censo (${conflict.building_label} — ${conflict.apartment_label})`
+                    );
+                    err.code = 'PROPERTY_TAKEN';
+                    throw err;
+                }
+                propertyId = resolved.property_id;
+                buildingLabel = resolved.building_label;
+                apartmentLabel = resolved.apartment_label;
+            }
+
+            if (!buildingLabel || !apartmentLabel) {
+                const err = new Error('Indique edificio y apartamento');
+                err.code = 'VALIDATION';
+                throw err;
+            }
+
+            const contactPhone = String(data.contact_phone ?? existing.contact_phone ?? '').trim();
+            const contactEmail = String(data.contact_email ?? existing.contact_email ?? '').trim().toLowerCase();
+            const notes = data.notes !== undefined
+                ? (String(data.notes || '').trim() || null)
+                : existing.notes;
+            const damageNotes = data.damage_notes !== undefined
+                ? (String(data.damage_notes || '').trim() || null)
+                : existing.damage_notes;
+            const damageTypesJson = data.damage_types !== undefined
+                ? JSON.stringify(normalizeDamageTypes(data.damage_types || []))
+                : (existing.damage_types ? JSON.stringify(normalizeDamageTypes(existing.damage_types)) : '[]');
+
+            const inhabitingRaw = data.currently_inhabiting ?? existing.currently_inhabiting;
+            const inhabitingBit = inhabitingRaw === true
+                || inhabitingRaw === 1
+                || inhabitingRaw === '1'
+                ? 1
+                : 0;
+
+            await new sql.Request(transaction)
+                .input('id', sql.UniqueIdentifier, submissionId)
+                .input('property_id', sql.UniqueIdentifier, propertyId)
+                .input('building_label', sql.NVarChar, buildingLabel)
+                .input('apartment_label', sql.NVarChar, apartmentLabel)
+                .input('contact_phone', sql.NVarChar, contactPhone)
+                .input('contact_email', sql.NVarChar, contactEmail || null)
+                .input('notes', sql.NVarChar, notes)
+                .input('damage_types', sql.NVarChar, damageTypesJson)
+                .input('damage_notes', sql.NVarChar, damageNotes)
+                .input('currently_inhabiting', sql.Bit, inhabitingBit)
+                .query(`
+                    UPDATE EarthquakeCensusSubmissions
+                    SET property_id = @property_id,
+                        building_label = @building_label,
+                        apartment_label = @apartment_label,
+                        contact_phone = @contact_phone,
+                        contact_email = @contact_email,
+                        notes = @notes,
+                        damage_types = @damage_types,
+                        damage_notes = @damage_notes,
+                        currently_inhabiting = @currently_inhabiting,
+                        updated_at = SYSDATETIME()
+                    WHERE id = @id
+                `);
+
+            if (Array.isArray(members)) {
+                await new sql.Request(transaction)
+                    .input('submission_id', sql.UniqueIdentifier, submissionId)
+                    .query('DELETE FROM EarthquakeCensusMembers WHERE submission_id = @submission_id');
+
+                for (let i = 0; i < members.length; i++) {
+                    const m = members[i];
+                    await new sql.Request(transaction)
+                        .input('submission_id', sql.UniqueIdentifier, submissionId)
+                        .input('first_name', sql.NVarChar, m.first_name)
+                        .input('last_name', sql.NVarChar, m.last_name)
+                        .input('cedula', sql.NVarChar, m.cedula || null)
+                        .input('no_cedula', sql.Bit, m.no_cedula ? 1 : 0)
+                        .input('age', sql.Int, m.age ?? null)
+                        .input('birth_date', sql.Date, m.birth_date || null)
+                        .input('occupation_education', sql.NVarChar, m.occupation_education || null)
+                        .input('has_disability', sql.Bit, m.has_disability ? 1 : 0)
+                        .input('disability_notes', sql.NVarChar, m.disability_notes || null)
+                        .input('sort_order', sql.Int, i)
+                        .query(`
+                            INSERT INTO EarthquakeCensusMembers
+                                (submission_id, first_name, last_name, cedula, no_cedula, age, birth_date,
+                                 occupation_education, has_disability, disability_notes, sort_order)
+                            VALUES
+                                (@submission_id, @first_name, @last_name, @cedula, @no_cedula, @age, @birth_date,
+                                 @occupation_education, @has_disability, @disability_notes, @sort_order)
+                        `);
+                }
+            }
+
+            await transaction.commit();
+            return this.getSubmissionFull(submissionId);
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    }
+
     static async getMembers(submissionId) {
         const pool = await connectDB();
         const result = await pool.request()

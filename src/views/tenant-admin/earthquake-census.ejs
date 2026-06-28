@@ -83,17 +83,100 @@
     <div id="detailModal" class="fixed inset-0 z-50 hidden">
         <div class="modal-overlay absolute inset-0" onclick="closeDetail()"></div>
         <div class="absolute inset-x-4 top-[5%] bottom-[5%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
-            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between gap-3">
                 <h3 class="font-semibold text-[#3C4043]" id="detailTitle">Detalle del censo</h3>
-                <button onclick="closeDetail()" class="text-[#5F6368] hover:text-[#3C4043]"><span class="material-icons-round">close</span></button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="openEditFromDetail()" id="detailEditBtn" class="text-sm font-medium text-[#f97316] hover:underline hidden">Editar</button>
+                    <button onclick="closeDetail()" class="text-[#5F6368] hover:text-[#3C4043]"><span class="material-icons-round">close</span></button>
+                </div>
             </div>
             <div class="flex-1 overflow-y-auto p-6" id="detailContent"></div>
+        </div>
+    </div>
+
+    <!-- Edit modal -->
+    <div id="editModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="closeEdit()"></div>
+        <div class="absolute inset-x-3 top-[3%] bottom-[3%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#E5E5E5] flex items-center justify-between">
+                <h3 class="font-semibold text-[#3C4043]">Editar registro de censo</h3>
+                <button type="button" onclick="closeEdit()" class="text-[#5F6368] hover:text-[#3C4043]"><span class="material-icons-round">close</span></button>
+            </div>
+            <form id="editForm" class="flex-1 overflow-y-auto p-6 space-y-5" onsubmit="saveEdit(event)">
+                <input type="hidden" id="editSubmissionId">
+
+                <div id="editManualWarning" class="hidden bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-4 py-3 text-sm leading-relaxed">
+                    Este registro no está vinculado a un inmueble del catálogo. Seleccione el apartamento correcto abajo.
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#3C4043] mb-1.5">Inmueble (catálogo) *</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <select id="editBuildingFilter" onchange="loadEditProperties()" class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                            <option value="">— Todos los edificios —</option>
+                        </select>
+                        <input type="search" id="editPropertySearch" placeholder="Buscar apartamento..." oninput="debouncedEditPropertySearch()"
+                            class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                    <select id="editPropertyId" required class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                        <option value="">— Seleccione un apartamento —</option>
+                    </select>
+                    <p class="text-xs text-[#9AA0A6] mt-1.5">Edificio y apartamento se tomarán del inmueble seleccionado.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1.5" for="editContactPhone">Teléfono *</label>
+                        <input type="tel" id="editContactPhone" required class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#3C4043] mb-1.5" for="editContactEmail">Correo *</label>
+                        <input type="email" id="editContactEmail" required class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                    </div>
+                </div>
+
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" id="editCurrentlyInhabiting" class="mt-1">
+                    <span class="text-sm text-[#3C4043]">Actualmente habita este inmueble</span>
+                </label>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#3C4043] mb-1.5" for="editNotes">Notas</label>
+                    <textarea id="editNotes" rows="2" class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] resize-y"></textarea>
+                </div>
+
+                <div>
+                    <p class="text-sm font-medium text-[#3C4043] mb-2">Daños reportados</p>
+                    <div id="editDamageTypes" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                    <label class="block text-sm font-medium text-[#3C4043] mt-3 mb-1.5" for="editDamageNotes">Detalle de daños</label>
+                    <input type="text" id="editDamageNotes" class="w-full px-3 py-2.5 border border-[#E5E5E5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316]">
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-[#3C4043]">Grupo familiar</p>
+                        <button type="button" onclick="addEditMember()" class="text-sm text-[#f97316] font-medium hover:underline">+ Agregar</button>
+                    </div>
+                    <div id="editMembersContainer" class="space-y-3"></div>
+                </div>
+
+                <p id="editFormError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3"></p>
+
+                <div class="flex flex-col-reverse sm:flex-row gap-3 pt-2 border-t border-[#E5E5E5]">
+                    <button type="button" onclick="closeEdit()" class="flex-1 px-4 py-3 border border-[#E5E5E5] rounded-xl text-sm text-[#5F6368] hover:bg-[#F5F5F5]">Cancelar</button>
+                    <button type="submit" id="editSaveBtn" class="flex-1 px-4 py-3 bg-[#f97316] hover:bg-[#ea580c] text-white rounded-xl text-sm font-medium">Guardar cambios</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script src="/js/auth.js"></script>
     <script>
         let searchTimeout = null;
+        let editPropertySearchTimeout = null;
+        let currentDetailId = null;
+        let editSubmissionData = null;
+        let editPropertiesCache = [];
 
         function debouncedLoad() {
             clearTimeout(searchTimeout);
@@ -217,7 +300,10 @@
                     <td class="px-4 py-3 hidden lg:table-cell">${s.photo_count || 0}</td>
                     <td class="px-4 py-3 hidden md:table-cell text-[#9AA0A6] text-xs">${formatDate(s.updated_at || s.submitted_at)}</td>
                     <td class="px-4 py-3">
-                        <button onclick="showDetail('${s.id}')" class="text-[#f97316] text-sm font-medium hover:underline">Ver</button>
+                        <div class="flex items-center gap-3">
+                            <button onclick="showDetail('${s.id}')" class="text-[#f97316] text-sm font-medium hover:underline">Ver</button>
+                            <button onclick="openEdit('${s.id}')" class="text-[#5F6368] text-sm font-medium hover:underline">Editar</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -229,6 +315,8 @@
             const json = await res.json();
             if (!json.success) return;
             const d = json.data;
+            currentDetailId = id;
+            document.getElementById('detailEditBtn').classList.remove('hidden');
             document.getElementById('detailTitle').textContent = `${d.building_label} — ${d.apartment_label}`;
             const inhabitingLabel = d.currently_inhabiting !== false && d.currently_inhabiting !== 0 ? 'Sí' : 'No';
             const membersHtml = (d.members || []).map((m, i) => `
@@ -263,6 +351,221 @@
 
         function closeDetail() {
             document.getElementById('detailModal').classList.add('hidden');
+            currentDetailId = null;
+        }
+
+        function openEditFromDetail() {
+            if (!currentDetailId) return;
+            closeDetail();
+            openEdit(currentDetailId);
+        }
+
+        function debouncedEditPropertySearch() {
+            clearTimeout(editPropertySearchTimeout);
+            editPropertySearchTimeout = setTimeout(loadEditProperties, 300);
+        }
+
+        function renderEditDamageChecks(selected = []) {
+            const selectedSet = new Set(selected || []);
+            document.getElementById('editDamageTypes').innerHTML = Object.entries(DAMAGE_LABELS).map(([key, label]) => `
+                <label class="flex items-center gap-2 text-sm text-[#3C4043] border border-[#E5E5E5] rounded-lg px-3 py-2 cursor-pointer hover:bg-[#FAFAFA]">
+                    <input type="checkbox" name="editDamage" value="${key}" ${selectedSet.has(key) ? 'checked' : ''} class="rounded">
+                    <span>${escapeHtml(label)}</span>
+                </label>
+            `).join('');
+        }
+
+        function renderEditMembers(members) {
+            const container = document.getElementById('editMembersContainer');
+            container.innerHTML = (members || []).map((m, i) => `
+                <div class="border border-[#E5E5E5] rounded-xl p-4 edit-member" data-index="${i}">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-medium text-[#3C4043]">Integrante ${i + 1}</span>
+                        ${members.length > 1 ? `<button type="button" onclick="removeEditMember(${i})" class="text-xs text-red-600 hover:underline">Quitar</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" data-field="first_name" value="${escapeAttr(m.first_name)}" placeholder="Nombres *" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                        <input type="text" data-field="last_name" value="${escapeAttr(m.last_name)}" placeholder="Apellidos *" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                        <input type="text" data-field="cedula" value="${escapeAttr(m.no_cedula ? '' : (m.cedula || ''))}" placeholder="Cédula" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                        <label class="flex items-center gap-2 text-sm text-[#5F6368] px-1">
+                            <input type="checkbox" data-field="no_cedula" ${m.no_cedula ? 'checked' : ''}> Sin CI
+                        </label>
+                        <input type="number" data-field="age" value="${m.age != null ? m.age : ''}" placeholder="Edad" min="0" max="130" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                        <input type="date" data-field="birth_date" value="${m.birth_date ? String(m.birth_date).slice(0, 10) : ''}" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm">
+                        <input type="text" data-field="occupation_education" value="${escapeAttr(m.occupation_education || '')}" placeholder="Ocupación / instrucción" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm sm:col-span-2">
+                        <label class="flex items-center gap-2 text-sm text-[#5F6368] px-1 sm:col-span-2">
+                            <input type="checkbox" data-field="has_disability" ${m.has_disability ? 'checked' : ''}> Tiene discapacidad
+                        </label>
+                        <input type="text" data-field="disability_notes" value="${escapeAttr(m.disability_notes || '')}" placeholder="Detalle discapacidad" class="px-3 py-2 border border-[#E5E5E5] rounded-lg text-sm sm:col-span-2">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeAttr(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function collectEditMembers() {
+            return [...document.querySelectorAll('#editMembersContainer .edit-member')].map((card) => {
+                const get = (field) => {
+                    const el = card.querySelector(`[data-field="${field}"]`);
+                    if (!el) return '';
+                    if (el.type === 'checkbox') return el.checked;
+                    return el.value.trim();
+                };
+                return {
+                    first_name: get('first_name'),
+                    last_name: get('last_name'),
+                    cedula: get('cedula'),
+                    no_cedula: get('no_cedula'),
+                    age: get('age') !== '' ? get('age') : null,
+                    birth_date: get('birth_date') || null,
+                    occupation_education: get('occupation_education') || null,
+                    has_disability: get('has_disability'),
+                    disability_notes: get('disability_notes') || null
+                };
+            });
+        }
+
+        function addEditMember() {
+            const members = collectEditMembers();
+            members.push({
+                first_name: '', last_name: '', cedula: '', no_cedula: false,
+                age: null, birth_date: null, occupation_education: null,
+                has_disability: false, disability_notes: null
+            });
+            renderEditMembers(members);
+        }
+
+        function removeEditMember(index) {
+            const members = collectEditMembers();
+            members.splice(index, 1);
+            renderEditMembers(members);
+        }
+
+        async function loadEditBuildings() {
+            const res = await apiFetch('/api/tenant-admin/earthquake-census/buildings');
+            if (!res) return;
+            const json = await res.json();
+            const sel = document.getElementById('editBuildingFilter');
+            sel.innerHTML = '<option value="">— Todos los edificios —</option>' +
+                (json.data || []).map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
+        }
+
+        async function loadEditProperties() {
+            const buildingId = document.getElementById('editBuildingFilter').value;
+            const search = document.getElementById('editPropertySearch').value;
+            const qs = new URLSearchParams();
+            if (buildingId) qs.set('buildingId', buildingId);
+            if (search) qs.set('search', search);
+            const res = await apiFetch('/api/tenant-admin/earthquake-census/properties?' + qs);
+            if (!res) return;
+            const json = await res.json();
+            editPropertiesCache = json.data || [];
+            const sel = document.getElementById('editPropertyId');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">— Seleccione un apartamento —</option>' +
+                editPropertiesCache.map((p) => `<option value="${p.id}">${escapeHtml(p.label || p.name)}</option>`).join('');
+            if (current && editPropertiesCache.some((p) => String(p.id) === String(current))) {
+                sel.value = current;
+            } else if (editSubmissionData?.property_id) {
+                sel.value = editSubmissionData.property_id;
+            }
+        }
+
+        async function openEdit(id) {
+            const res = await apiFetch('/api/tenant-admin/earthquake-census/' + id);
+            if (!res) return;
+            const json = await res.json();
+            if (!json.success) {
+                alert(json.error || 'No se pudo cargar el registro');
+                return;
+            }
+
+            editSubmissionData = json.data;
+            document.getElementById('editSubmissionId').value = id;
+            document.getElementById('editManualWarning').classList.toggle('hidden', !!editSubmissionData.property_id);
+            document.getElementById('editContactPhone').value = editSubmissionData.contact_phone || '';
+            document.getElementById('editContactEmail').value = editSubmissionData.contact_email || '';
+            document.getElementById('editCurrentlyInhabiting').checked =
+                editSubmissionData.currently_inhabiting !== false && editSubmissionData.currently_inhabiting !== 0;
+            document.getElementById('editNotes').value = editSubmissionData.notes || '';
+            document.getElementById('editDamageNotes').value = editSubmissionData.damage_notes || '';
+            document.getElementById('editFormError').classList.add('hidden');
+            renderEditDamageChecks(editSubmissionData.damage_types || []);
+            renderEditMembers(editSubmissionData.members || []);
+
+            document.getElementById('editBuildingFilter').value = '';
+            document.getElementById('editPropertySearch').value = '';
+            await loadEditBuildings();
+            await loadEditProperties();
+            if (editSubmissionData.property_id) {
+                document.getElementById('editPropertyId').value = editSubmissionData.property_id;
+            }
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEdit() {
+            document.getElementById('editModal').classList.add('hidden');
+            editSubmissionData = null;
+        }
+
+        async function saveEdit(event) {
+            event.preventDefault();
+            const id = document.getElementById('editSubmissionId').value;
+            const propertyId = document.getElementById('editPropertyId').value;
+            const errEl = document.getElementById('editFormError');
+            const saveBtn = document.getElementById('editSaveBtn');
+
+            if (!propertyId) {
+                errEl.textContent = 'Seleccione un apartamento del catálogo.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            const damageTypes = [...document.querySelectorAll('#editDamageTypes input[name="editDamage"]:checked')]
+                .map((el) => el.value);
+
+            const payload = {
+                property_id: propertyId,
+                contact_phone: document.getElementById('editContactPhone').value.trim(),
+                contact_email: document.getElementById('editContactEmail').value.trim(),
+                currently_inhabiting: document.getElementById('editCurrentlyInhabiting').checked,
+                notes: document.getElementById('editNotes').value.trim(),
+                damage_notes: document.getElementById('editDamageNotes').value.trim(),
+                damage_types: damageTypes,
+                members: collectEditMembers()
+            };
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Guardando...';
+            errEl.classList.add('hidden');
+
+            try {
+                const res = await apiFetch('/api/tenant-admin/earthquake-census/' + id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res) return;
+                const json = await res.json();
+                if (!json.success) {
+                    errEl.textContent = json.error || 'Error al guardar';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                closeEdit();
+                await loadStats();
+                await loadSubmissions();
+            } catch (e) {
+                errEl.textContent = e.message || 'Error al guardar';
+                errEl.classList.remove('hidden');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Guardar cambios';
+            }
         }
 
         async function downloadPdf() {

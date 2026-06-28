@@ -362,6 +362,9 @@ router.get('/billing/export/:preliminary_id', TenantAdminBillingController.expor
 const TenantAdminEarthquakeCensusController = require('../controllers/TenantAdminEarthquakeCensusController');
 router.get('/earthquake-census/stats', TenantAdminEarthquakeCensusController.getStats);
 router.get('/earthquake-census/pdf', TenantAdminEarthquakeCensusController.downloadPdf);
+router.get('/earthquake-census/buildings', TenantAdminEarthquakeCensusController.listBuildings);
+router.get('/earthquake-census/properties', TenantAdminEarthquakeCensusController.listProperties);
+router.patch('/earthquake-census/:id', TenantAdminEarthquakeCensusController.updateSubmission);
 router.get('/earthquake-census/:id', TenantAdminEarthquakeCensusController.getDetail);
 router.get('/earthquake-census', TenantAdminEarthquakeCensusController.list);
 
