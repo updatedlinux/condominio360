@@ -10,6 +10,15 @@ function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
 }
 
+function isValidGuid(val) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(val || '').trim());
+}
+
+function normalizeRemovedPhotoIds(raw) {
+    const list = Array.isArray(raw) ? raw : [];
+    return [...new Set(list.map((id) => String(id || '').trim()).filter(isValidGuid))];
+}
+
 function normalizeMember(raw, index) {
     const first_name = String(raw.first_name || raw.firstName || '').trim();
     const last_name = String(raw.last_name || raw.lastName || '').trim();
@@ -176,6 +185,9 @@ class EarthquakeCensusController {
             const damageTypes = normalizeDamageTypes(body.damage_types || body.damageTypes || []);
             const damageNotes = String(body.damage_notes || body.damageNotes || '').trim();
             const membersRaw = Array.isArray(body.members) ? body.members : [];
+            const removedPhotoIds = normalizeRemovedPhotoIds(body.removed_photo_ids || body.removedPhotoIds);
+            const maxPhotos = parseInt(process.env.EARTHQUAKE_CENSUS_PHOTO_MAX_COUNT || '10', 10);
+            const newPhotoCount = req.files?.length || 0;
 
             if (!tenantId) {
                 return res.status(400).json({ success: false, error: 'Seleccione el conjunto residencial' });
@@ -233,6 +245,18 @@ class EarthquakeCensusController {
                 damage_types: damageTypes,
                 damage_notes: damageNotes || null
             }, members);
+
+            if (removedPhotoIds.length) {
+                await EarthquakeCensusModel.removePhotos(submission.id, removedPhotoIds);
+            }
+
+            const currentPhotoCount = await EarthquakeCensusModel.countPhotos(submission.id);
+            if (currentPhotoCount + newPhotoCount > maxPhotos) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Máximo ${maxPhotos} fotos por inmueble. Conserva ${currentPhotoCount} y está intentando agregar ${newPhotoCount}. Quite algunas antes de enviar.`
+                });
+            }
 
             if (req.files && req.files.length) {
                 const photos = req.files.map((f) => ({

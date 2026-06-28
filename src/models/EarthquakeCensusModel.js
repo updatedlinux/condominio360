@@ -275,6 +275,53 @@ class EarthquakeCensusModel {
         return inserted;
     }
 
+    static async countPhotos(submissionId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('submission_id', sql.UniqueIdentifier, submissionId)
+            .query(`
+                SELECT COUNT(*) AS total FROM EarthquakeCensusPhotos
+                WHERE submission_id = @submission_id
+            `);
+        return Number(result.recordset[0]?.total) || 0;
+    }
+
+    static async removePhotos(submissionId, photoIds) {
+        if (!photoIds?.length) return 0;
+
+        const pool = await connectDB();
+        const fs = require('fs');
+        const path = require('path');
+        const uploadsRoot = path.join(process.cwd(), 'uploads');
+
+        const uniqueIds = [...new Set(photoIds.filter(Boolean))];
+        let removed = 0;
+
+        for (const photoId of uniqueIds) {
+            const found = await pool.request()
+                .input('id', sql.UniqueIdentifier, photoId)
+                .input('submission_id', sql.UniqueIdentifier, submissionId)
+                .query(`
+                    SELECT id, file_path FROM EarthquakeCensusPhotos
+                    WHERE id = @id AND submission_id = @submission_id
+                `);
+            const row = found.recordset[0];
+            if (!row) continue;
+
+            await pool.request()
+                .input('id', sql.UniqueIdentifier, photoId)
+                .query('DELETE FROM EarthquakeCensusPhotos WHERE id = @id');
+
+            if (row.file_path) {
+                const abs = path.join(uploadsRoot, row.file_path);
+                fs.unlink(abs, () => {});
+            }
+            removed += 1;
+        }
+
+        return removed;
+    }
+
     static async getSubmissionFull(submissionId) {
         const submission = enrichSubmission(await this.findSubmissionById(submissionId));
         if (!submission) return null;

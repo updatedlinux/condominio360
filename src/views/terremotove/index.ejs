@@ -43,7 +43,38 @@
         }
         .damage-check:has(input:checked) { border-color: #f97316; background: #FFF7ED; }
         .damage-check:active { background: #FFF7ED; }
-        .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 1px solid #E5E5E5; }
+        .photo-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 1px solid #E5E5E5; display: block; }
+        .photo-preview-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+        .photo-remove-btn {
+            position: absolute; top: -8px; right: -8px;
+            width: 28px; height: 28px; min-width: 28px; min-height: 28px;
+            border: 2px solid #fff; border-radius: 9999px;
+            background: #dc2626; color: #fff; font-size: 18px; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            touch-action: manipulation; padding: 0;
+        }
+        .photo-saved-badge {
+            position: absolute; left: 4px; bottom: 4px;
+            font-size: 9px; font-weight: 700; letter-spacing: 0.02em;
+            background: rgba(15, 23, 42, 0.72); color: #fff;
+            padding: 2px 5px; border-radius: 6px;
+        }
+        .photo-upload-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .photo-input-hidden {
+            position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
+            clip: rect(0, 0, 0, 0); white-space: nowrap;
+        }
+        .photo-upload-btn--half { min-height: 52px; font-size: 15px; }
+        .photo-upload-btn.is-disabled {
+            opacity: 0.45;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
         /* Botones táctiles grandes */
         .touch-btn {
             min-height: 48px;
@@ -326,13 +357,20 @@
                         <span class="material-icons-round text-base align-middle mr-1 text-[#f97316]">photo_camera</span>
                         Fotos de daños <span class="font-normal text-[#9AA0A6]">(opcional, recomendado)</span>
                     </p>
-                    <p class="text-sm text-[#5F6368] mb-3 leading-snug">Use la cámara de su teléfono para documentar los daños. Máximo 10 fotos, 8 MB c/u.</p>
+                    <p class="text-sm text-[#5F6368] mb-3 leading-snug">Puede agregar varias fotos (máximo 10, 8 MB c/u). Tome una a una o elija varias de la galería.</p>
                     <div class="photo-upload-zone relative">
-                        <input type="file" id="damagePhotos" accept="image/*" multiple capture="environment">
-                        <label for="damagePhotos" class="photo-upload-btn">
-                            <span class="material-icons-round text-2xl">add_a_photo</span>
-                            Tomar o elegir fotos
-                        </label>
+                        <div class="photo-upload-actions">
+                            <input type="file" id="damagePhotosCamera" accept="image/*" capture="environment" class="photo-input-hidden">
+                            <input type="file" id="damagePhotosGallery" accept="image/*,.heic,.heif" multiple class="photo-input-hidden">
+                            <label for="damagePhotosCamera" id="btnPhotoCamera" class="photo-upload-btn photo-upload-btn--half">
+                                <span class="material-icons-round text-2xl">photo_camera</span>
+                                Tomar foto
+                            </label>
+                            <label for="damagePhotosGallery" id="btnPhotoGallery" class="photo-upload-btn photo-upload-btn--half">
+                                <span class="material-icons-round text-2xl">photo_library</span>
+                                Galería
+                            </label>
+                        </div>
                     </div>
                     <p id="photoCount" class="text-xs text-[#9AA0A6] mt-2 hidden"></p>
                     <div id="photoPreview" class="flex flex-wrap gap-2 mt-3"></div>
@@ -384,6 +422,11 @@
             property: null,
             manual: false,
             members: [],
+            selectedPhotos: [],
+            existingPhotos: [],
+            removedExistingPhotoIds: new Set(),
+            photoPreviewUrls: [],
+            isSubmitting: false,
             damageTypes: [],
             selectedDamages: new Set()
         };
@@ -566,9 +609,7 @@
             document.getElementById('contactEmail').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('damageNotes').value = '';
-            document.getElementById('damagePhotos').value = '';
-            document.getElementById('photoPreview').innerHTML = '';
-            document.getElementById('photoCount').classList.add('hidden');
+            resetSelectedPhotos();
             document.getElementById('existingNotice').classList.add('hidden');
 
             if (state.tenant) {
@@ -591,8 +632,168 @@
                     }
                 } catch (_) { /* ignore */ }
             }
+        }
 
-            document.getElementById('damagePhotos').onchange = previewPhotos;
+        function revokePhotoPreviewUrls() {
+            (state.photoPreviewUrls || []).forEach((url) => URL.revokeObjectURL(url));
+            state.photoPreviewUrls = [];
+        }
+
+        function resetSelectedPhotos() {
+            revokePhotoPreviewUrls();
+            state.selectedPhotos = [];
+            state.existingPhotos = [];
+            state.removedExistingPhotoIds = new Set();
+            ['damagePhotosCamera', 'damagePhotosGallery'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            renderPhotoPreview();
+        }
+
+        function getActivePhotoCount() {
+            const keptExisting = state.existingPhotos.filter(
+                (p) => !state.removedExistingPhotoIds.has(p.id)
+            ).length;
+            return keptExisting + state.selectedPhotos.length;
+        }
+
+        function getNewPhotosTotalBytes() {
+            return state.selectedPhotos.reduce((n, f) => n + (f.size || 0), 0);
+        }
+
+        function isValidPhotoFile(file) {
+            const name = file.name || '';
+            const typeOk = (file.type || '').startsWith('image/');
+            const extOk = /\.(jpe?g|png|webp|heic|heif)$/i.test(name);
+            return typeOk || extOk || !name;
+        }
+
+        function addPhotosFromInput(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const incoming = Array.from(input.files || []);
+            input.value = '';
+            if (!incoming.length) return;
+
+            const remaining = PHOTO_MAX_COUNT - getActivePhotoCount();
+            if (remaining <= 0) {
+                showToast(`Ya tiene ${PHOTO_MAX_COUNT} fotos. Quite alguna para agregar otra.`, true);
+                return;
+            }
+
+            let added = 0;
+            const batch = incoming.slice(0, remaining);
+            if (incoming.length > remaining) {
+                showToast(`Solo se agregaron ${remaining} foto(s). Máximo ${PHOTO_MAX_COUNT} en total.`, true);
+            }
+
+            for (const file of batch) {
+                if (file.size > PHOTO_MAX_BYTES) {
+                    const mb = (file.size / (1024 * 1024)).toFixed(1);
+                    showToast(`"${file.name || 'Foto'}" pesa ${mb} MB. Máximo 8 MB por imagen.`, true);
+                    continue;
+                }
+                if (!isValidPhotoFile(file)) {
+                    showToast(`"${file.name || 'Archivo'}" no es una imagen válida`, true);
+                    continue;
+                }
+                state.selectedPhotos.push(file);
+                added += 1;
+            }
+
+            if (added) {
+                renderPhotoPreview();
+            }
+        }
+
+        function removeNewPhoto(index) {
+            if (index < 0 || index >= state.selectedPhotos.length) return;
+            state.selectedPhotos.splice(index, 1);
+            renderPhotoPreview();
+        }
+
+        function removeExistingPhoto(photoId) {
+            state.removedExistingPhotoIds.add(photoId);
+            renderPhotoPreview();
+        }
+
+        function renderPhotoPreview() {
+            revokePhotoPreviewUrls();
+            const preview = document.getElementById('photoPreview');
+            const countEl = document.getElementById('photoCount');
+            preview.innerHTML = '';
+
+            state.existingPhotos.forEach((photo) => {
+                if (state.removedExistingPhotoIds.has(photo.id)) return;
+
+                const wrap = document.createElement('div');
+                wrap.className = 'photo-preview-wrap';
+
+                const img = document.createElement('img');
+                img.src = photo.url || `/uploads/${photo.file_path}`;
+                img.className = 'photo-preview';
+                img.alt = photo.original_name || 'Foto guardada';
+
+                const badge = document.createElement('span');
+                badge.className = 'photo-saved-badge';
+                badge.textContent = 'Guardada';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'photo-remove-btn';
+                btn.setAttribute('aria-label', 'Quitar foto guardada');
+                btn.textContent = '×';
+                btn.onclick = () => removeExistingPhoto(photo.id);
+
+                wrap.appendChild(img);
+                wrap.appendChild(badge);
+                wrap.appendChild(btn);
+                preview.appendChild(wrap);
+            });
+
+            state.selectedPhotos.forEach((file, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'photo-preview-wrap';
+                const url = URL.createObjectURL(file);
+                state.photoPreviewUrls.push(url);
+
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'photo-preview';
+                img.alt = `Foto nueva ${i + 1}`;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'photo-remove-btn';
+                btn.setAttribute('aria-label', 'Quitar foto');
+                btn.textContent = '×';
+                btn.onclick = () => removeNewPhoto(i);
+
+                wrap.appendChild(img);
+                wrap.appendChild(btn);
+                preview.appendChild(wrap);
+            });
+
+            const total = getActivePhotoCount();
+            const atMax = total >= PHOTO_MAX_COUNT;
+            ['btnPhotoCamera', 'btnPhotoGallery'].forEach((id) => {
+                const btn = document.getElementById(id);
+                if (btn) btn.classList.toggle('is-disabled', atMax);
+            });
+
+            if (total) {
+                const newMb = (getNewPhotosTotalBytes() / (1024 * 1024)).toFixed(1);
+                const savedCount = state.existingPhotos.filter((p) => !state.removedExistingPhotoIds.has(p.id)).length;
+                const newCount = state.selectedPhotos.length;
+                let label = `${total} de ${PHOTO_MAX_COUNT} fotos`;
+                if (newCount) label += ` (${newMb} MB nuevas)`;
+                if (savedCount) label += savedCount === total ? '' : ` · ${savedCount} guardada${savedCount !== 1 ? 's' : ''}`;
+                countEl.textContent = label;
+                countEl.classList.remove('hidden');
+            } else {
+                countEl.classList.add('hidden');
+            }
         }
 
         function applyExistingSubmission(d) {
@@ -620,6 +821,16 @@
                     disability_notes: m.disability_notes || ''
                 }));
                 renderMembers();
+            }
+            if (Array.isArray(d.photos) && d.photos.length) {
+                state.existingPhotos = d.photos.map((p) => ({
+                    id: p.id,
+                    file_path: p.file_path,
+                    original_name: p.original_name || '',
+                    url: `/uploads/${p.file_path}`
+                }));
+                state.removedExistingPhotoIds = new Set();
+                renderPhotoPreview();
             }
         }
 
@@ -797,42 +1008,6 @@
             state.members[i][field] = value;
         }
 
-        function previewPhotos() {
-            const input = document.getElementById('damagePhotos');
-            const preview = document.getElementById('photoPreview');
-            const countEl = document.getElementById('photoCount');
-            preview.innerHTML = '';
-            const files = Array.from(input.files || []);
-            if (files.length > PHOTO_MAX_COUNT) {
-                showToast(`Máximo ${PHOTO_MAX_COUNT} fotos por envío`, true);
-                input.value = '';
-                countEl.classList.add('hidden');
-                return;
-            }
-            const tooLarge = files.find((f) => f.size > PHOTO_MAX_BYTES);
-            if (tooLarge) {
-                const mb = (tooLarge.size / (1024 * 1024)).toFixed(1);
-                showToast(`"${tooLarge.name || 'Una foto'}" pesa ${mb} MB. Máximo 8 MB por imagen.`, true);
-                input.value = '';
-                countEl.classList.add('hidden');
-                return;
-            }
-            files.forEach((file) => {
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
-                img.className = 'photo-preview';
-                img.alt = 'Vista previa';
-                preview.appendChild(img);
-            });
-            if (files.length) {
-                const totalMb = (files.reduce((n, f) => n + f.size, 0) / (1024 * 1024)).toFixed(1);
-                countEl.textContent = `${files.length} foto${files.length !== 1 ? 's' : ''} (${totalMb} MB)`;
-                countEl.classList.remove('hidden');
-            } else {
-                countEl.classList.add('hidden');
-            }
-        }
-
         function validatePhotosBeforeSubmit(files) {
             if (!files.length) return;
             if (files.length > PHOTO_MAX_COUNT) {
@@ -843,11 +1018,8 @@
                     const mb = (file.size / (1024 * 1024)).toFixed(1);
                     throw new Error(`"${file.name || 'Foto'}" pesa ${mb} MB. Máximo 8 MB por imagen.`);
                 }
-                const name = file.name || '';
-                const typeOk = (file.type || '').startsWith('image/');
-                const extOk = /\.(jpe?g|png|webp|heic|heif)$/i.test(name);
-                if (!typeOk && !extOk) {
-                    throw new Error(`"${name || 'Archivo'}" no es una imagen válida`);
+                if (!isValidPhotoFile(file)) {
+                    throw new Error(`"${file.name || 'Archivo'}" no es una imagen válida`);
                 }
             }
         }
@@ -866,7 +1038,9 @@
         }
 
         async function submitCensus() {
+            if (state.isSubmitting) return;
             syncMembersFromDom();
+            state.isSubmitting = true;
             setSubmitLoading(true);
 
             const p = state.property;
@@ -880,19 +1054,22 @@
                 notes: document.getElementById('notes').value.trim(),
                 damage_types: [...state.selectedDamages],
                 damage_notes: document.getElementById('damageNotes').value.trim(),
-                members: state.members
+                members: state.members,
+                removed_photo_ids: [...state.removedExistingPhotoIds]
             };
 
             const formData = new FormData();
             formData.append('data', JSON.stringify(payload));
-            const photoInput = document.getElementById('damagePhotos');
-            const photos = photoInput.files;
+            const photos = state.selectedPhotos;
 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
 
             try {
-                validatePhotosBeforeSubmit(Array.from(photos || []));
+                if (getActivePhotoCount() > PHOTO_MAX_COUNT) {
+                    throw new Error(`Máximo ${PHOTO_MAX_COUNT} fotos por envío`);
+                }
+                validatePhotosBeforeSubmit(photos);
                 for (let i = 0; i < photos.length; i++) {
                     formData.append('photos', photos[i]);
                 }
@@ -929,6 +1106,7 @@
                 }
             } finally {
                 clearTimeout(timeoutId);
+                state.isSubmitting = false;
                 setSubmitLoading(false);
             }
         }
@@ -944,6 +1122,9 @@
             return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
         function escapeAttr(s) { return escapeHtml(s).replace(/'/g, '&#39;'); }
+
+        document.getElementById('damagePhotosCamera').addEventListener('change', () => addPhotosFromInput('damagePhotosCamera'));
+        document.getElementById('damagePhotosGallery').addEventListener('change', () => addPhotosFromInput('damagePhotosGallery'));
     </script>
 </body>
 </html>
