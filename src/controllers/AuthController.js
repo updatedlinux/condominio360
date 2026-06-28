@@ -621,10 +621,13 @@ class AuthController {
 
             // Para otros tipos de usuario, usar el servicio
             const result = await AuthService.selectTenant(userId, type, tenantId);
+            const TenantModel = require('../models/TenantModel');
+            const tenant = await TenantModel.findById(tenantId);
 
             res.json({
                 success: true,
-                ...result
+                ...result,
+                tenant: tenant ? { id: tenant.id, name: tenant.name, slug: tenant.slug } : null
             });
 
         } catch (error) {

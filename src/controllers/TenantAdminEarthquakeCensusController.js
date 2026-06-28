@@ -3,10 +3,23 @@ const EarthquakeCensusPdfService = require('../services/EarthquakeCensusPdfServi
 const EarthquakeCensusPhotoZipService = require('../services/EarthquakeCensusPhotoZipService');
 const TenantModel = require('../models/TenantModel');
 
+function resolveTenantId(req, res) {
+    const tenantId = req.user?.tenantId || req.user?.tenant_id;
+    if (!tenantId) {
+        res.status(400).json({
+            success: false,
+            error: 'No hay condominio en la sesión. Si entró como superadmin, abra el panel de junta desde el detalle del condominio (suplantar). Si es junta, cierre sesión y vuelva a entrar.'
+        });
+        return null;
+    }
+    return tenantId;
+}
+
 class TenantAdminEarthquakeCensusController {
     static async getStats(req, res) {
         try {
-            const tenantId = req.user.tenantId;
+            const tenantId = resolveTenantId(req, res);
+            if (!tenantId) return;
             const stats = await EarthquakeCensusModel.getStats(tenantId);
             res.json({ success: true, data: stats });
         } catch (error) {
@@ -17,7 +30,8 @@ class TenantAdminEarthquakeCensusController {
 
     static async list(req, res) {
         try {
-            const tenantId = req.user.tenantId;
+            const tenantId = resolveTenantId(req, res);
+            if (!tenantId) return;
             const { building, search } = req.query;
             const submissions = await EarthquakeCensusModel.listByTenant(tenantId, {
                 buildingLabel: building || null,
@@ -32,7 +46,8 @@ class TenantAdminEarthquakeCensusController {
 
     static async getDetail(req, res) {
         try {
-            const tenantId = req.user.tenantId;
+            const tenantId = resolveTenantId(req, res);
+            if (!tenantId) return;
             let submission = await EarthquakeCensusModel.getSubmissionFull(req.params.id);
             if (!submission || String(submission.tenant_id) !== String(tenantId)) {
                 return res.status(404).json({ success: false, error: 'Registro no encontrado' });
@@ -60,7 +75,8 @@ class TenantAdminEarthquakeCensusController {
 
     static async downloadPdf(req, res) {
         try {
-            const tenantId = req.user.tenantId;
+            const tenantId = resolveTenantId(req, res);
+            if (!tenantId) return;
             const tenant = await TenantModel.findById(tenantId);
             if (!tenant) {
                 return res.status(404).json({ success: false, error: 'Condominio no encontrado' });

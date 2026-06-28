@@ -42,6 +42,7 @@
                 // Guardar en sessionStorage (solo esta pestaña) - NO tocar localStorage para mantener sesión superadmin en pestaña original
                 sessionStorage.setItem('token', data.token);
                 if (data.user) sessionStorage.setItem('user', JSON.stringify(data.user));
+                if (data.tenant) sessionStorage.setItem('tenant', JSON.stringify(data.tenant));
                 sessionStorage.setItem('impersonating', '1');
                 window.location.replace('/tenant-admin');
             } catch (e) {

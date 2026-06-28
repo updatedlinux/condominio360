@@ -39,6 +39,7 @@
             </header>
 
             <main class="flex-1 overflow-y-auto p-4 md:p-8">
+                <div id="apiErrorBanner" class="hidden mb-4 bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm leading-relaxed"></div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6" id="stats-container"></div>
 
                 <div class="card p-4 mb-6 flex flex-col sm:flex-row gap-3">
@@ -122,8 +123,36 @@
         };
         function damageLabel(key) { return DAMAGE_LABELS[key] || key; }
 
+        function getAuthToken() {
+            return sessionStorage.getItem('token') || localStorage.getItem('token');
+        }
+
+        function getTenantInfo() {
+            try {
+                return JSON.parse(sessionStorage.getItem('tenant') || localStorage.getItem('tenant') || '{}');
+            } catch {
+                return {};
+            }
+        }
+
+        function showApiError(message) {
+            const el = document.getElementById('apiErrorBanner');
+            if (!el) return;
+            el.textContent = message;
+            el.classList.remove('hidden');
+        }
+
+        function clearApiError() {
+            const el = document.getElementById('apiErrorBanner');
+            if (el) el.classList.add('hidden');
+        }
+
         async function apiFetch(url, opts = {}) {
-            const token = localStorage.getItem('token');
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                return null;
+            }
             const res = await fetch(url, {
                 ...opts,
                 headers: { Authorization: `Bearer ${token}`, ...(opts.headers || {}) }
@@ -136,7 +165,11 @@
             const res = await apiFetch('/api/tenant-admin/earthquake-census/stats');
             if (!res) return;
             const json = await res.json();
-            if (!json.success) return;
+            if (!json.success) {
+                showApiError(json.error || 'No se pudieron cargar las estadísticas del censo.');
+                return;
+            }
+            clearApiError();
             const s = json.data;
             document.getElementById('stats-container').innerHTML = `
                 <div class="card p-4"><p class="text-xs text-[#9AA0A6] uppercase">Unidades</p><p class="text-2xl font-bold text-[#3C4043]">${s.submissions || 0}</p></div>
@@ -154,7 +187,14 @@
             const json = await res.json();
             const tbody = document.getElementById('submissions-table');
             const empty = document.getElementById('empty-state');
-            if (!json.success || !json.data.length) {
+            if (!json.success) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                showApiError(json.error || 'No se pudieron cargar los registros del censo.');
+                return;
+            }
+            clearApiError();
+            if (!json.data.length) {
                 tbody.innerHTML = '';
                 empty.classList.remove('hidden');
                 return;
@@ -223,7 +263,7 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Generando...';
             try {
-                const token = localStorage.getItem('token');
+                const token = getAuthToken();
                 const res = await fetch('/api/tenant-admin/earthquake-census/pdf', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -245,8 +285,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            if (typeof loadTenantHeader === 'function') {
-                await loadTenantHeader('header-tenant');
+            if (!getAuthToken()) {
+                window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            const tenant = getTenantInfo();
+            if (tenant.name) {
+                document.getElementById('header-tenant').textContent = `Protección Civil — ${tenant.name}`;
             }
             await loadStats();
             await loadSubmissions();
