@@ -1333,6 +1333,7 @@ class EmailService {
         .content { background: #f9fafb; padding: 28px 24px; border-radius: 0 0 8px 8px; }
         .urgent { background: #fef2f2; border-left: 4px solid #dc2626; padding: 14px 16px; margin: 16px 0; border-radius: 4px; color: #991b1b; }
         .highlight { background: #fff7ed; border: 1px solid #fed7aa; padding: 14px 16px; border-radius: 8px; margin: 16px 0; }
+        .info { background: #eff6ff; border: 1px solid #bfdbfe; padding: 14px 16px; border-radius: 8px; margin: 16px 0; color: #1e40af; }
         .button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white !important; padding: 16px 36px;
                   text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 700; font-size: 16px; }
         .footer { margin-top: 24px; font-size: 12px; color: #6b7280; text-align: center; }
@@ -1353,6 +1354,9 @@ class EmailService {
             <div class="highlight">
                 <strong>✅ No necesita contraseña ni iniciar sesión.</strong><br>
                 Entre al enlace, seleccione su conjunto residencial y apartamento, y complete los datos de su grupo familiar.
+            </div>
+            <div class="info">
+                <strong>¿Ya completó el censo?</strong> Si ya envió el formulario para su unidad, <strong>no hace falta hacerlo de nuevo</strong>, a menos que desee agregar o corregir datos (integrantes, daños, fotos, etc.). En ese caso, entre de nuevo al enlace, seleccione la misma unidad y actualice la información.
             </div>
             <p>Deberá indicar, por cada persona del hogar:</p>
             <ul>
