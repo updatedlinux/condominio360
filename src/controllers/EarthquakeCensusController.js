@@ -2,7 +2,13 @@ const EarthquakeCensusModel = require('../models/EarthquakeCensusModel');
 const TenantModel = require('../models/TenantModel');
 const PropertyModel = require('../models/PropertyModel');
 const BuildingModel = require('../models/BuildingModel');
+const EmailService = require('../services/EmailService');
+const EarthquakeCensusPhotoZipService = require('../services/EarthquakeCensusPhotoZipService');
 const { EARTHQUAKE_DAMAGE_TYPES, normalizeDamageTypes } = require('../constants/earthquakeCensusDamages');
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
 
 function normalizeMember(raw, index) {
     const first_name = String(raw.first_name || raw.firstName || '').trim();
@@ -128,6 +134,28 @@ class EarthquakeCensusController {
         }
     }
 
+    static async getExistingManualSubmission(req, res) {
+        try {
+            const { tenantId } = req.params;
+            const buildingLabel = String(req.query.building_label || '').trim();
+            const apartmentLabel = String(req.query.apartment_label || '').trim();
+            if (!buildingLabel || !apartmentLabel) {
+                return res.json({ success: true, data: null });
+            }
+            const submission = await EarthquakeCensusModel.findSubmissionByManualUnit(
+                tenantId, buildingLabel, apartmentLabel
+            );
+            if (!submission) {
+                return res.json({ success: true, data: null });
+            }
+            const full = await EarthquakeCensusModel.getSubmissionFull(submission.id);
+            res.json({ success: true, data: full });
+        } catch (error) {
+            console.error('terremotove getExistingManualSubmission error:', error);
+            res.status(500).json({ success: false, error: 'Error al consultar registro previo' });
+        }
+    }
+
     static async submit(req, res) {
         try {
             let body = req.body;
@@ -144,6 +172,7 @@ class EarthquakeCensusController {
             let buildingLabel = String(body.building_label || body.buildingLabel || '').trim();
             let apartmentLabel = String(body.apartment_label || body.apartmentLabel || '').trim();
             const contactPhone = String(body.contact_phone || body.contactPhone || '').trim();
+            const contactEmail = String(body.contact_email || body.contactEmail || '').trim().toLowerCase();
             const notes = String(body.notes || '').trim();
             const damageTypes = normalizeDamageTypes(body.damage_types || body.damageTypes || []);
             const damageNotes = String(body.damage_notes || body.damageNotes || '').trim();
@@ -181,11 +210,18 @@ class EarthquakeCensusController {
             if (!contactPhone || contactPhone.length < 7) {
                 return res.status(400).json({ success: false, error: 'Indique un teléfono de contacto válido' });
             }
+            if (!contactEmail || !isValidEmail(contactEmail)) {
+                return res.status(400).json({ success: false, error: 'Indique un correo electrónico válido para recibir la confirmación' });
+            }
             if (!membersRaw.length) {
                 return res.status(400).json({ success: false, error: 'Agregue al menos un integrante del grupo familiar' });
             }
 
             const members = membersRaw.map((m, i) => normalizeMember(m, i));
+
+            const hadExisting = propertyId
+                ? await EarthquakeCensusModel.findSubmissionByProperty(tenantId, propertyId)
+                : await EarthquakeCensusModel.findSubmissionByManualUnit(tenantId, buildingLabel, apartmentLabel);
 
             const submission = await EarthquakeCensusModel.upsertSubmission({
                 tenant_id: tenantId,
@@ -193,6 +229,7 @@ class EarthquakeCensusController {
                 building_label: buildingLabel,
                 apartment_label: apartmentLabel,
                 contact_phone: contactPhone,
+                contact_email: contactEmail,
                 notes: notes || null,
                 damage_types: damageTypes,
                 damage_notes: damageNotes || null
@@ -206,11 +243,41 @@ class EarthquakeCensusController {
                 await EarthquakeCensusModel.addPhotos(submission.id, photos);
             }
 
+            try {
+                await EarthquakeCensusPhotoZipService.rebuildForSubmission(submission.id);
+            } catch (zipErr) {
+                console.error('terremotove photo zip rebuild error:', zipErr);
+            }
+
             const full = await EarthquakeCensusModel.getSubmissionFull(submission.id);
+            const censusUrl = `${(process.env.APP_URL || 'https://condominio-360.com').replace(/\/$/, '')}/terremotove`;
+            const isUpdate = !!(hadExisting || submission.is_update);
+
+            try {
+                await EmailService.sendEarthquakeCensusConfirmation(
+                    contactEmail,
+                    tenant.name,
+                    buildingLabel,
+                    apartmentLabel,
+                    censusUrl,
+                    {
+                        memberCount: members.length,
+                        isUpdate
+                    },
+                    { tenantId, messageType: 'earthquake_census_confirmation' }
+                );
+            } catch (mailErr) {
+                console.error('terremotove confirmation email error:', mailErr);
+            }
+
             res.json({
                 success: true,
-                message: 'Censo registrado correctamente. Gracias por colaborar con Protección Civil.',
-                data: full
+                message: isUpdate
+                    ? 'Censo actualizado correctamente. Revise su correo para la confirmación.'
+                    : 'Censo registrado correctamente. Revise su correo para la confirmación.',
+                data: full,
+                confirmation_email_sent: true,
+                is_update: isUpdate
             });
         } catch (error) {
             if (error.message && error.message.startsWith('Integrante')) {
@@ -218,6 +285,21 @@ class EarthquakeCensusController {
             }
             console.error('terremotove submit error:', error);
             res.status(500).json({ success: false, error: 'Error al guardar el censo' });
+        }
+    }
+
+    /** Descarga pública permanente de fotos comprimidas por inmueble (sin autenticación). */
+    static async downloadPhotoZip(req, res) {
+        try {
+            const result = await EarthquakeCensusPhotoZipService.streamZipByToken(req.params.token, res);
+            if (!result.found) {
+                return res.status(404).send('Archivo no encontrado');
+            }
+        } catch (error) {
+            console.error('terremotove downloadPhotoZip error:', error);
+            if (!res.headersSent) {
+                res.status(500).send('Error al descargar fotos');
+            }
         }
     }
 }

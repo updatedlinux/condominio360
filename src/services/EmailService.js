@@ -1386,6 +1386,70 @@ class EmailService {
     }
 
     /**
+     * Confirmación al residente tras enviar el censo terremoto.
+     */
+    async sendEarthquakeCensusConfirmation(email, tenantName, buildingLabel, apartmentLabel, censusUrl, opts = {}, meta = {}) {
+        const { memberCount = 0, isUpdate = false } = opts;
+        const subject = isUpdate
+            ? `Censo actualizado — ${buildingLabel}, ${apartmentLabel}`
+            : `Confirmación de censo de emergencia — ${tenantName}`;
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%); color: white; padding: 24px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 28px 24px; border-radius: 0 0 8px 8px; }
+        .box { background: #ecfdf5; border-left: 4px solid #059669; padding: 14px 16px; margin: 16px 0; border-radius: 4px; color: #065f46; }
+        .info { background: #fff7ed; border: 1px solid #fed7aa; padding: 14px 16px; border-radius: 8px; margin: 16px 0; font-size: 14px; }
+        .button { display: inline-block; background: #dc2626; color: white !important; padding: 14px 28px;
+                  text-decoration: none; border-radius: 8px; margin: 16px 0; font-weight: 700; }
+        .footer { margin-top: 24px; font-size: 12px; color: #6b7280; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0;font-size:20px;">${isUpdate ? 'Censo actualizado' : 'Censo recibido'}</h1>
+            <p style="margin:8px 0 0;opacity:0.95;">Protección Civil — ${tenantName}</p>
+        </div>
+        <div class="content">
+            <div class="box">
+                <strong>${isUpdate ? 'Su registro fue actualizado correctamente.' : 'Recibimos su censo de emergencia.'}</strong>
+            </div>
+            <p><strong>Unidad:</strong> ${buildingLabel} — Apartamento ${apartmentLabel}</p>
+            <p><strong>Personas registradas:</strong> ${memberCount}</p>
+            <p>La junta de condominio consolidará esta información para Protección Civil de Venezuela.</p>
+            <div class="info">
+                <strong>¿Le faltó algún dato o integrante del hogar?</strong><br>
+                Puede volver a entrar al formulario <strong>sin contraseña</strong>, seleccionar la misma unidad y enviar nuevamente.
+                Los datos anteriores serán <strong>reemplazados por la información más reciente</strong> (no se duplican registros).
+            </div>
+            <center>
+                <a href="${censusUrl}" class="button">Actualizar o completar censo</a>
+            </center>
+            <p style="word-break:break-all;font-size:13px;color:#6b7280;">${censusUrl}</p>
+            <p style="font-size:13px;color:#6b7280;">Gracias por colaborar. — Equipos de Arsys Intela y Condominio360</p>
+        </div>
+        <div class="footer">
+            <p>Este correo confirma el envío del censo. No requiere respuesta.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+        return await this.send(email, subject, html, null, {
+            ...meta,
+            messageType: meta.messageType || 'earthquake_census_confirmation',
+            pipeline: 'transactional'
+        });
+    }
+
+    /**
      * Convertir HTML a texto plano básico
      */
     _htmlToText(html) {

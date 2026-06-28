@@ -78,12 +78,16 @@ router.get('/auth/reset-password', (req, res) => {
     });
 });
 
+const EarthquakeCensusController = require('../controllers/EarthquakeCensusController');
+
 router.get('/terremotove', (req, res) => {
     res.render('terremotove/index', {
         title: 'Censo de Emergencia — Protección Civil',
         layout: false
     });
 });
+
+router.get('/terremotove/fotos/:token', EarthquakeCensusController.downloadPhotoZip);
 
 // Panels
 // Owner Panel Routes

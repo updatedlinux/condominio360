@@ -1,5 +1,6 @@
 const EarthquakeCensusModel = require('../models/EarthquakeCensusModel');
 const EarthquakeCensusPdfService = require('../services/EarthquakeCensusPdfService');
+const EarthquakeCensusPhotoZipService = require('../services/EarthquakeCensusPhotoZipService');
 const TenantModel = require('../models/TenantModel');
 
 class TenantAdminEarthquakeCensusController {
@@ -32,11 +33,25 @@ class TenantAdminEarthquakeCensusController {
     static async getDetail(req, res) {
         try {
             const tenantId = req.user.tenantId;
-            const submission = await EarthquakeCensusModel.getSubmissionFull(req.params.id);
+            let submission = await EarthquakeCensusModel.getSubmissionFull(req.params.id);
             if (!submission || String(submission.tenant_id) !== String(tenantId)) {
                 return res.status(404).json({ success: false, error: 'Registro no encontrado' });
             }
-            res.json({ success: true, data: submission });
+            if ((submission.photos || []).length && !submission.photos_zip_token) {
+                try {
+                    await EarthquakeCensusPhotoZipService.rebuildForSubmission(submission.id);
+                    submission = await EarthquakeCensusModel.getSubmissionFull(req.params.id);
+                } catch (zipErr) {
+                    console.error('tenant-admin earthquake-census zip rebuild error:', zipErr);
+                }
+            }
+            const data = {
+                ...submission,
+                photos_zip_url: submission.photos_zip_token
+                    ? EarthquakeCensusPhotoZipService.getPublicUrl(submission.photos_zip_token)
+                    : null
+            };
+            res.json({ success: true, data });
         } catch (error) {
             console.error('tenant-admin earthquake-census detail error:', error);
             res.status(500).json({ success: false, error: 'Error al cargar detalle' });
@@ -51,6 +66,7 @@ class TenantAdminEarthquakeCensusController {
                 return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
             }
 
+            await EarthquakeCensusPhotoZipService.ensureZipsForTenant(tenantId);
             const submissions = await EarthquakeCensusModel.getAllForPdf(tenantId);
             const buffer = await EarthquakeCensusPdfService.generate({
                 tenantName: tenant.name,

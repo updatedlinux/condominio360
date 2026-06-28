@@ -82,7 +82,21 @@ class EarthquakeCensusModel {
                 SELECT TOP 1 * FROM EarthquakeCensusSubmissions
                 WHERE tenant_id = @tenant_id AND property_id = @property_id
             `);
-        return result.recordset[0] || null;
+        return enrichSubmission(result.recordset[0] || null);
+    }
+
+    static async findSubmissionByManualUnit(tenantId, buildingLabel, apartmentLabel) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .input('building_label', sql.NVarChar, buildingLabel)
+            .input('apartment_label', sql.NVarChar, apartmentLabel)
+            .query(`
+                SELECT TOP 1 * FROM EarthquakeCensusSubmissions
+                WHERE tenant_id = @tenant_id AND property_id IS NULL
+                  AND building_label = @building_label AND apartment_label = @apartment_label
+            `);
+        return enrichSubmission(result.recordset[0] || null);
     }
 
     static async findSubmissionById(id) {
@@ -126,23 +140,27 @@ class EarthquakeCensusModel {
         try {
             const {
                 tenant_id, property_id, building_label, apartment_label,
-                contact_phone, notes, damage_types, damage_notes
+                contact_phone, contact_email, notes, damage_types, damage_notes
             } = data;
 
             const damageTypesJson = JSON.stringify(normalizeDamageTypes(damage_types || []));
+            const emailNorm = contact_email ? String(contact_email).trim().toLowerCase() : null;
 
             let submissionId;
+            let isUpdate = false;
             const existing = property_id
                 ? await this._findSubmissionInTx(transaction, tenant_id, property_id)
-                : null;
+                : await this._findManualSubmissionInTx(transaction, tenant_id, building_label, apartment_label);
 
             if (existing) {
+                isUpdate = true;
                 submissionId = existing.id;
                 await new sql.Request(transaction)
                     .input('id', sql.UniqueIdentifier, submissionId)
                     .input('building_label', sql.NVarChar, building_label)
                     .input('apartment_label', sql.NVarChar, apartment_label)
                     .input('contact_phone', sql.NVarChar, contact_phone)
+                    .input('contact_email', sql.NVarChar, emailNorm)
                     .input('notes', sql.NVarChar, notes || null)
                     .input('damage_types', sql.NVarChar, damageTypesJson)
                     .input('damage_notes', sql.NVarChar, damage_notes || null)
@@ -151,6 +169,7 @@ class EarthquakeCensusModel {
                         SET building_label = @building_label,
                             apartment_label = @apartment_label,
                             contact_phone = @contact_phone,
+                            contact_email = @contact_email,
                             notes = @notes,
                             damage_types = @damage_types,
                             damage_notes = @damage_notes,
@@ -168,14 +187,15 @@ class EarthquakeCensusModel {
                     .input('building_label', sql.NVarChar, building_label)
                     .input('apartment_label', sql.NVarChar, apartment_label)
                     .input('contact_phone', sql.NVarChar, contact_phone)
+                    .input('contact_email', sql.NVarChar, emailNorm)
                     .input('notes', sql.NVarChar, notes || null)
                     .input('damage_types', sql.NVarChar, damageTypesJson)
                     .input('damage_notes', sql.NVarChar, damage_notes || null)
                     .query(`
                         INSERT INTO EarthquakeCensusSubmissions
-                            (tenant_id, property_id, building_label, apartment_label, contact_phone, notes, damage_types, damage_notes)
+                            (tenant_id, property_id, building_label, apartment_label, contact_phone, contact_email, notes, damage_types, damage_notes)
                         OUTPUT INSERTED.id
-                        VALUES (@tenant_id, @property_id, @building_label, @apartment_label, @contact_phone, @notes, @damage_types, @damage_notes)
+                        VALUES (@tenant_id, @property_id, @building_label, @apartment_label, @contact_phone, @contact_email, @notes, @damage_types, @damage_notes)
                     `);
                 submissionId = insertResult.recordset[0].id;
             }
@@ -204,11 +224,25 @@ class EarthquakeCensusModel {
             }
 
             await transaction.commit();
-            return this.getSubmissionFull(submissionId);
+            const full = await this.getSubmissionFull(submissionId);
+            return { ...full, is_update: isUpdate };
         } catch (err) {
             await transaction.rollback();
             throw err;
         }
+    }
+
+    static async _findManualSubmissionInTx(transaction, tenantId, buildingLabel, apartmentLabel) {
+        const result = await new sql.Request(transaction)
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .input('building_label', sql.NVarChar, buildingLabel)
+            .input('apartment_label', sql.NVarChar, apartmentLabel)
+            .query(`
+                SELECT TOP 1 id FROM EarthquakeCensusSubmissions
+                WHERE tenant_id = @tenant_id AND property_id IS NULL
+                  AND building_label = @building_label AND apartment_label = @apartment_label
+            `);
+        return result.recordset[0] || null;
     }
 
     static async _findSubmissionInTx(transaction, tenantId, propertyId) {
@@ -303,9 +337,51 @@ class EarthquakeCensusModel {
         const full = [];
         for (const s of submissions) {
             const members = await this.getMembers(s.id);
-            full.push({ ...s, members });
+            const photos = await this.getPhotos(s.id);
+            full.push({ ...s, members, photos, photo_count: photos.length });
         }
         return full;
+    }
+
+    static async listSubmissionsWithPhotos(tenantId) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('tenant_id', sql.UniqueIdentifier, tenantId)
+            .query(`
+                SELECT s.id, s.building_label, s.apartment_label, s.photos_zip_token, s.photos_zip_path,
+                    (SELECT COUNT(*) FROM EarthquakeCensusPhotos ph WHERE ph.submission_id = s.id) AS photo_count
+                FROM EarthquakeCensusSubmissions s
+                WHERE s.tenant_id = @tenant_id
+                  AND EXISTS (SELECT 1 FROM EarthquakeCensusPhotos ph WHERE ph.submission_id = s.id)
+                ORDER BY s.building_label, s.apartment_label
+            `);
+        return result.recordset;
+    }
+
+    static async updatePhotoZipMeta(submissionId, token, zipPath) {
+        const pool = await connectDB();
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, submissionId)
+            .input('token', sql.NVarChar, token)
+            .input('path', sql.NVarChar, zipPath)
+            .query(`
+                UPDATE EarthquakeCensusSubmissions
+                SET photos_zip_token = @token,
+                    photos_zip_path = @path,
+                    photos_zip_updated_at = SYSDATETIME()
+                WHERE id = @id
+            `);
+    }
+
+    static async findSubmissionByPhotoToken(token) {
+        const pool = await connectDB();
+        const result = await pool.request()
+            .input('token', sql.NVarChar, token)
+            .query(`
+                SELECT TOP 1 * FROM EarthquakeCensusSubmissions
+                WHERE photos_zip_token = @token
+            `);
+        return enrichSubmission(result.recordset[0] || null);
     }
 }
 

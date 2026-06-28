@@ -7,6 +7,7 @@ router.get('/damage-types', EarthquakeCensusController.listDamageTypes);
 router.get('/tenants', EarthquakeCensusController.listTenants);
 router.get('/tenants/:tenantId/buildings', EarthquakeCensusController.listBuildings);
 router.get('/tenants/:tenantId/properties', EarthquakeCensusController.listProperties);
+router.get('/tenants/:tenantId/submission', EarthquakeCensusController.getExistingManualSubmission);
 router.get('/tenants/:tenantId/properties/:propertyId/submission', EarthquakeCensusController.getExistingSubmission);
 
 router.post(
