@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const archiver = require('archiver');
+const { ZipArchive } = require('archiver');
 const EarthquakeCensusModel = require('../models/EarthquakeCensusModel');
 
 const ZIP_DIR = path.join(process.cwd(), 'uploads', 'earthquake-census-zips');
@@ -57,7 +57,7 @@ class EarthquakeCensusPhotoZipService {
 
         await new Promise((resolve, reject) => {
             const output = fs.createWriteStream(zipAbsolutePath);
-            const archive = archiver('zip', { zlib: { level: 6 } });
+            const archive = new ZipArchive({ zlib: { level: 6 } });
             let filesAdded = 0;
 
             output.on('close', () => {

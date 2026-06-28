@@ -82,7 +82,11 @@ class TenantAdminEarthquakeCensusController {
                 return res.status(404).json({ success: false, error: 'Condominio no encontrado' });
             }
 
-            await EarthquakeCensusPhotoZipService.ensureZipsForTenant(tenantId);
+            try {
+                await EarthquakeCensusPhotoZipService.ensureZipsForTenant(tenantId);
+            } catch (zipErr) {
+                console.error('tenant-admin earthquake-census ensureZipsForTenant error:', zipErr);
+            }
             const submissions = await EarthquakeCensusModel.getAllForPdf(tenantId);
             const buffer = await EarthquakeCensusPdfService.generate({
                 tenantName: tenant.name,
