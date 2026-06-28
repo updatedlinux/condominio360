@@ -206,7 +206,8 @@ class EarthquakeCensusModel {
                     .input('submission_id', sql.UniqueIdentifier, submissionId)
                     .input('first_name', sql.NVarChar, m.first_name)
                     .input('last_name', sql.NVarChar, m.last_name)
-                    .input('cedula', sql.NVarChar, m.cedula)
+                    .input('cedula', sql.NVarChar, m.cedula || null)
+                    .input('no_cedula', sql.Bit, m.no_cedula ? 1 : 0)
                     .input('age', sql.Int, m.age ?? null)
                     .input('birth_date', sql.Date, m.birth_date || null)
                     .input('occupation_education', sql.NVarChar, m.occupation_education || null)
@@ -215,10 +216,10 @@ class EarthquakeCensusModel {
                     .input('sort_order', sql.Int, i)
                     .query(`
                         INSERT INTO EarthquakeCensusMembers
-                            (submission_id, first_name, last_name, cedula, age, birth_date,
+                            (submission_id, first_name, last_name, cedula, no_cedula, age, birth_date,
                              occupation_education, has_disability, disability_notes, sort_order)
                         VALUES
-                            (@submission_id, @first_name, @last_name, @cedula, @age, @birth_date,
+                            (@submission_id, @first_name, @last_name, @cedula, @no_cedula, @age, @birth_date,
                              @occupation_education, @has_disability, @disability_notes, @sort_order)
                     `);
             }

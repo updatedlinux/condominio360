@@ -267,7 +267,7 @@ class EarthquakeCensusPdfService {
             cx += TABLE_COLS.num;
             doc.text(`${m.first_name} ${m.last_name}`.trim(), cx, y + 3, { width: TABLE_COLS.name - 4, lineBreak: false, ellipsis: true });
             cx += TABLE_COLS.name;
-            doc.text(m.cedula || '—', cx, y + 3, { width: TABLE_COLS.cedula - 4, lineBreak: false, ellipsis: true });
+            doc.text(m.no_cedula || !m.cedula ? 'Sin CI' : m.cedula, cx, y + 3, { width: TABLE_COLS.cedula - 4, lineBreak: false, ellipsis: true });
             cx += TABLE_COLS.cedula;
             doc.text(m.age != null ? String(m.age) : '—', cx, y + 3, { width: TABLE_COLS.age - 4 });
             cx += TABLE_COLS.age;

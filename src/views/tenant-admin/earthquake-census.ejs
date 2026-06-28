@@ -188,7 +188,7 @@
             const membersHtml = (d.members || []).map((m, i) => `
                 <div class="border border-[#E5E5E5] rounded-xl p-4 mb-3">
                     <p class="font-medium text-[#3C4043]">${i + 1}. ${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}</p>
-                    <p class="text-sm text-[#5F6368] mt-1">Cédula: ${escapeHtml(m.cedula)} | Edad: ${m.age ?? '—'} | Nac: ${m.birth_date ? String(m.birth_date).slice(0, 10) : '—'}</p>
+                    <p class="text-sm text-[#5F6368] mt-1">Cédula: ${m.no_cedula || !m.cedula ? 'Sin CI' : escapeHtml(m.cedula)} | Edad: ${m.age ?? '—'} | Nac: ${m.birth_date ? String(m.birth_date).slice(0, 10) : '—'}</p>
                     <p class="text-sm text-[#5F6368]">Ocupación: ${escapeHtml(m.occupation_education || '—')}</p>
                     <p class="text-sm ${m.has_disability ? 'text-red-600 font-medium' : 'text-[#5F6368]'}">Discapacidad: ${m.has_disability ? 'Sí' + (m.disability_notes ? ' — ' + escapeHtml(m.disability_notes) : '') : 'No'}</p>
                 </div>

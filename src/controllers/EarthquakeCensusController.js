@@ -13,8 +13,9 @@ function isValidEmail(email) {
 function normalizeMember(raw, index) {
     const first_name = String(raw.first_name || raw.firstName || '').trim();
     const last_name = String(raw.last_name || raw.lastName || '').trim();
-    const cedula = String(raw.cedula || '').trim().replace(/\s/g, '');
-    const occupation_education = String(raw.occupation_education || raw.occupation || '').trim();
+    const no_cedula = !!(raw.no_cedula || raw.noCedula);
+    const cedula = no_cedula ? null : String(raw.cedula || '').trim().replace(/\s/g, '');
+    const occupation_education = String(raw.occupation_education || raw.occupation || '').trim() || null;
     const has_disability = !!(raw.has_disability || raw.hasDisability);
     const disability_notes = String(raw.disability_notes || raw.disabilityNotes || '').trim();
 
@@ -30,11 +31,8 @@ function normalizeMember(raw, index) {
     if (!first_name || !last_name) {
         throw new Error(`Integrante ${index + 1}: nombres y apellidos son obligatorios`);
     }
-    if (!cedula) {
-        throw new Error(`Integrante ${index + 1}: número de cédula es obligatorio`);
-    }
-    if (!occupation_education) {
-        throw new Error(`Integrante ${index + 1}: ocupación o grado de instrucción es obligatorio`);
+    if (!no_cedula && !cedula) {
+        throw new Error(`Integrante ${index + 1}: indique la cédula o marque que no tiene cédula de identidad`);
     }
     if (!age && !birth_date) {
         throw new Error(`Integrante ${index + 1}: indique edad o fecha de nacimiento`);
@@ -44,6 +42,7 @@ function normalizeMember(raw, index) {
         first_name,
         last_name,
         cedula,
+        no_cedula,
         age,
         birth_date,
         occupation_education,

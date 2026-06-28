@@ -76,6 +76,11 @@
             border-color: #f97316;
             box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
         }
+        .field-input:disabled {
+            background: #F8F9FA;
+            color: #9AA0A6;
+            cursor: not-allowed;
+        }
         .field-label { display: block; font-size: 14px; font-weight: 500; color: #5F6368; margin-bottom: 6px; }
         /* Barra fija enviar (solo móvil, paso formulario) */
         .mobile-submit-bar {
@@ -585,7 +590,8 @@
                 state.members = d.members.map((m) => ({
                     first_name: m.first_name,
                     last_name: m.last_name,
-                    cedula: m.cedula,
+                    cedula: m.cedula || '',
+                    no_cedula: !!(m.no_cedula ?? m.noCedula),
                     age: m.age,
                     birth_date: m.birth_date ? String(m.birth_date).slice(0, 10) : '',
                     occupation_education: m.occupation_education || '',
@@ -633,7 +639,7 @@
 
         function createEmptyMember() {
             return {
-                first_name: '', last_name: '', cedula: '', age: '', birth_date: '',
+                first_name: '', last_name: '', cedula: '', no_cedula: false, age: '', birth_date: '',
                 occupation_education: '', has_disability: false, disability_notes: ''
             };
         }
@@ -645,6 +651,7 @@
                 m.first_name = card.querySelector('[data-field="first_name"]')?.value ?? m.first_name;
                 m.last_name = card.querySelector('[data-field="last_name"]')?.value ?? m.last_name;
                 m.cedula = card.querySelector('[data-field="cedula"]')?.value ?? m.cedula;
+                m.no_cedula = card.querySelector('[data-field="no_cedula"]')?.checked ?? m.no_cedula;
                 m.age = card.querySelector('[data-field="age"]')?.value ?? m.age;
                 m.birth_date = card.querySelector('[data-field="birth_date"]')?.value ?? m.birth_date;
                 m.occupation_education = card.querySelector('[data-field="occupation_education"]')?.value ?? m.occupation_education;
@@ -703,10 +710,16 @@
                                 autocomplete="family-name" enterkeyhint="next" class="field-input">
                         </div>
                         <div>
-                            <label class="field-label">Cédula *</label>
+                            <label class="field-label">Cédula de identidad</label>
                             <input type="text" inputmode="numeric" data-field="cedula" value="${escapeAttr(m.cedula)}"
                                 oninput="updateMember(${i}, 'cedula', this.value)"
-                                autocomplete="off" enterkeyhint="next" class="field-input">
+                                autocomplete="off" enterkeyhint="next" class="field-input"
+                                ${m.no_cedula ? 'disabled' : ''}>
+                            <label class="mt-3 flex items-start gap-3 min-h-[44px] cursor-pointer touch-btn py-1" for="no-cedula-${i}">
+                                <input type="checkbox" id="no-cedula-${i}" data-field="no_cedula" ${m.no_cedula ? 'checked' : ''}
+                                    onchange="toggleNoCedula(${i}, this.checked)" class="mt-1 flex-shrink-0">
+                                <span class="text-sm text-[#5F6368] leading-snug">No tiene cédula de identidad <span class="text-[#9AA0A6]">(menor de edad u otro)</span></span>
+                            </label>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
@@ -721,10 +734,10 @@
                             </div>
                         </div>
                         <div>
-                            <label class="field-label">Ocupación / instrucción *</label>
+                            <label class="field-label">Ocupación / instrucción <span class="text-[#9AA0A6] font-normal">(opcional)</span></label>
                             <input type="text" data-field="occupation_education" value="${escapeAttr(m.occupation_education)}"
                                 oninput="updateMember(${i}, 'occupation_education', this.value)"
-                                placeholder="Ej: Ingeniero, Bachiller" enterkeyhint="done" class="field-input">
+                                placeholder="Ej: Estudiante, Bachiller, Ingeniero" enterkeyhint="done" class="field-input">
                         </div>
                     </div>
                     <label class="mt-4 flex items-center gap-3 min-h-[48px] cursor-pointer touch-btn py-1" for="disability-${i}">
@@ -744,6 +757,19 @@
             state.members[i].has_disability = checked;
             const el = document.getElementById(`disability-notes-${i}`);
             if (el) el.classList.toggle('hidden', !checked);
+        }
+
+        function toggleNoCedula(i, checked) {
+            state.members[i].no_cedula = checked;
+            if (checked) {
+                state.members[i].cedula = '';
+            }
+            const card = document.querySelector(`[data-member-card="${i}"]`);
+            const input = card?.querySelector('[data-field="cedula"]');
+            if (input) {
+                input.disabled = checked;
+                if (checked) input.value = '';
+            }
         }
 
         function updateMember(i, field, value) {
