@@ -82,6 +82,23 @@
             cursor: not-allowed;
         }
         .field-label { display: block; font-size: 14px; font-weight: 500; color: #5F6368; margin-bottom: 6px; }
+        /* Botón enviar en flujo del formulario (oculto en móvil; ahí usa barra fija) */
+        .desktop-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #dc2626;
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .desktop-submit:active { background: #b91c1c; }
         /* Barra fija enviar (solo móvil, paso formulario) */
         .mobile-submit-bar {
             display: none;
@@ -99,7 +116,7 @@
         @media (max-width: 639px) {
             .mobile-submit-bar.visible { display: block; }
             body.form-step-active { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0)); }
-            .desktop-submit { display: none; }
+            .desktop-submit { display: none !important; }
         }
         @media (min-width: 640px) {
             .mobile-submit-bar { display: none !important; }
@@ -322,7 +339,7 @@
                 </div>
 
                 <button type="button" onclick="submitCensus()" id="submitBtn"
-                    class="desktop-submit touch-btn w-full mt-8 py-4 bg-red-600 active:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base">
+                    class="desktop-submit touch-btn">
                     <span class="material-icons-round">send</span>
                     Enviar censo
                 </button>
