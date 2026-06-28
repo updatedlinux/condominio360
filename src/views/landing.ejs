@@ -75,6 +75,29 @@
             border: 1px solid #fecaca;
         }
         .emergency-nav-link:hover { background: #fee2e2; color: #991b1b; }
+
+        /* Hero — padding explícito (pt-44/pt-40 no están en output.css) */
+        .landing-hero {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 90vh;
+            /* banner apilado + navbar h-20 */
+            padding-top: calc(env(safe-area-inset-top, 0px) + 13.5rem);
+            padding-bottom: 4rem;
+        }
+        @media (min-width: 640px) {
+            .landing-hero {
+                /* banner en fila + navbar */
+                padding-top: calc(env(safe-area-inset-top, 0px) + 9.5rem);
+                padding-bottom: 6rem;
+            }
+        }
+        @media (min-width: 1024px) {
+            .landing-hero {
+                padding-top: calc(env(safe-area-inset-top, 0px) + 10rem);
+            }
+        }
     </style>
 </head>
 <body class="bg-white text-slate-900 antialiased overflow-x-hidden">
@@ -148,7 +171,7 @@
     </header>
 
     <!-- ==================== HERO ==================== -->
-    <section class="relative pt-44 sm:pt-40 lg:pt-44 pb-16 lg:pb-24 min-h-[90vh] flex items-center">
+    <section id="hero" class="landing-hero">
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-40 -right-40 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl"></div>
             <div class="absolute top-1/2 -left-20 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"></div>
