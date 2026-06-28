@@ -18,13 +18,19 @@ const MARGINS = { top: 44, left: 40, right: 40, bottom: 48 };
 
 const TABLE_COLS = {
     num: 22,
-    name: 118,
+    name: 112,
     cedula: 72,
     age: 32,
     birth: 58,
-    occupation: 100,
-    disability: 52
+    occupation: 88,
+    disability: 90
 };
+
+function formatDisabilityCell(member) {
+    if (!member.has_disability) return 'No';
+    const notes = String(member.disability_notes || '').trim();
+    return notes ? `Sí — ${notes}` : 'Sí';
+}
 
 function formatDateEs(val) {
     if (!val) return '—';
@@ -251,17 +257,22 @@ class EarthquakeCensusPdfService {
         cx += TABLE_COLS.birth;
         doc.text('Ocupación / instrucción', cx, y + 5, { width: TABLE_COLS.occupation - 4 });
         cx += TABLE_COLS.occupation;
-        doc.text('Disc.', cx, y + 5, { width: TABLE_COLS.disability - 4 });
+        doc.text('Discapacidad', cx, y + 5, { width: TABLE_COLS.disability - 4 });
         y += headerH;
 
         doc.font('Helvetica').fontSize(7.5).fillColor(COLORS.slate900);
         for (let i = 0; i < members.length; i++) {
+            const m = members[i];
+            const discText = formatDisabilityCell(m);
+            const discW = TABLE_COLS.disability - 4;
+            const rowH = Math.max(15, doc.heightOfString(discText, { width: discW, lineBreak: true }) + 8);
+
+            ensureSpace(rowH + 4);
             if (i % 2 === 1) {
                 doc.fillColor(COLORS.slate50).rect(x, y, pageWidth, rowH).fill();
             }
             doc.fillColor(COLORS.slate900);
-            ensureSpace(rowH + 4);
-            const m = members[i];
+
             cx = x + 4;
             doc.text(String(i + 1), cx, y + 3, { width: TABLE_COLS.num - 4 });
             cx += TABLE_COLS.num;
@@ -275,7 +286,11 @@ class EarthquakeCensusPdfService {
             cx += TABLE_COLS.birth;
             doc.text(m.occupation_education || '—', cx, y + 3, { width: TABLE_COLS.occupation - 4, lineBreak: false, ellipsis: true });
             cx += TABLE_COLS.occupation;
-            doc.text(m.has_disability ? 'Sí' : 'No', cx, y + 3, { width: TABLE_COLS.disability - 4 });
+            if (m.has_disability) {
+                doc.fillColor(COLORS.rose600);
+            }
+            doc.text(discText, cx, y + 3, { width: discW, lineBreak: true });
+            doc.fillColor(COLORS.slate900);
             y += rowH;
         }
 
