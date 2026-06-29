@@ -31,9 +31,9 @@
                         </h1>
                         <p class="text-sm text-[#5F6368]" id="header-tenant">Protección Civil — Terremoto</p>
                     </div>
-                    <button onclick="downloadPdf()" id="pdfBtn" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium text-sm transition-colors">
-                        <span class="material-icons-round text-lg">picture_as_pdf</span>
-                        Descargar PDF
+                    <button onclick="downloadExcel()" id="excelBtn" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm transition-colors">
+                        <span class="material-icons-round text-lg">table_chart</span>
+                        Descargar Excel
                     </button>
                 </div>
             </header>
@@ -568,29 +568,32 @@
             }
         }
 
-        async function downloadPdf() {
-            const btn = document.getElementById('pdfBtn');
+        async function downloadExcel() {
+            const btn = document.getElementById('excelBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Generando...';
             try {
                 const token = getAuthToken();
-                const res = await fetch('/api/tenant-admin/earthquake-census/pdf', {
+                const res = await fetch('/api/tenant-admin/earthquake-census/excel', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (res.status === 401) { window.location.href = '/login'; return; }
-                if (!res.ok) throw new Error('Error al generar PDF');
+                if (!res.ok) throw new Error('Error al generar Excel');
                 const blob = await res.blob();
+                const disposition = res.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="?([^";]+)"?/i);
+                const filename = match ? decodeURIComponent(match[1]) : `censo-terremoto-${new Date().toISOString().slice(0, 10)}.xlsx`;
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `censo-terremoto-${new Date().toISOString().slice(0, 10)}.pdf`;
+                a.download = filename;
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (e) {
-                alert(e.message || 'Error al descargar PDF');
+                alert(e.message || 'Error al descargar Excel');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span class="material-icons-round text-lg">picture_as_pdf</span> Descargar PDF';
+                btn.innerHTML = '<span class="material-icons-round text-lg">table_chart</span> Descargar Excel';
             }
         }
 

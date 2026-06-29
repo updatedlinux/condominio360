@@ -1,5 +1,5 @@
 const EarthquakeCensusModel = require('../models/EarthquakeCensusModel');
-const EarthquakeCensusPdfService = require('../services/EarthquakeCensusPdfService');
+const EarthquakeCensusExcelService = require('../services/EarthquakeCensusExcelService');
 const EarthquakeCensusPhotoZipService = require('../services/EarthquakeCensusPhotoZipService');
 const TenantModel = require('../models/TenantModel');
 const { normalizeDamageTypes } = require('../constants/earthquakeCensusDamages');
@@ -238,7 +238,7 @@ class TenantAdminEarthquakeCensusController {
         }
     }
 
-    static async downloadPdf(req, res) {
+    static async downloadExcel(req, res) {
         try {
             const tenantId = resolveTenantId(req, res);
             if (!tenantId) return;
@@ -252,19 +252,20 @@ class TenantAdminEarthquakeCensusController {
             } catch (zipErr) {
                 console.error('tenant-admin earthquake-census ensureZipsForTenant error:', zipErr);
             }
+
             const submissions = await EarthquakeCensusModel.getAllForPdf(tenantId);
-            const buffer = await EarthquakeCensusPdfService.generate({
+            const buffer = await EarthquakeCensusExcelService.generateBuffer({
                 tenantName: tenant.name,
                 submissions
             });
-            const filename = EarthquakeCensusPdfService.buildFilename(tenant.name);
+            const filename = EarthquakeCensusExcelService.buildFilename(tenant.name);
 
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
             res.send(buffer);
         } catch (error) {
-            console.error('tenant-admin earthquake-census pdf error:', error);
-            res.status(500).json({ success: false, error: 'Error al generar el PDF' });
+            console.error('tenant-admin earthquake-census excel error:', error);
+            res.status(500).json({ success: false, error: 'Error al generar el Excel' });
         }
     }
 }
