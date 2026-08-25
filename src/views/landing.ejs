@@ -16,65 +16,30 @@
         body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
         #site-header { padding-top: env(safe-area-inset-top, 0); }
 
-        /* Banner emergencia — colores explícitos (Tailwind no compila red-700/800 en output.css) */
-        .emergency-banner {
-            background: #991b1b;
+        /* Banner aviso cierre de servicio */
+        .service-closure-banner {
+            background: #92400e;
             color: #ffffff;
-            border-bottom: 3px solid #7f1d1d;
+            border-bottom: 3px solid #78350f;
         }
-        .emergency-banner__inner {
+        .service-closure-banner__inner {
             max-width: 72rem;
             margin: 0 auto;
             padding: 0.875rem 1rem;
         }
         @media (min-width: 640px) {
-            .emergency-banner__inner {
+            .service-closure-banner__inner {
                 padding: 0.75rem 1.5rem;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 1.25rem;
             }
         }
-        .emergency-banner__text {
+        .service-closure-banner__text {
             font-size: 0.875rem;
             line-height: 1.45;
-            color: #fecaca;
+            color: #fde68a;
             margin: 0;
+            text-align: center;
         }
-        .emergency-banner__text strong { color: #fff; font-weight: 700; }
-        .emergency-banner__cta {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
-            padding: 0.625rem 1.25rem;
-            background: #ffffff;
-            color: #991b1b;
-            font-size: 0.875rem;
-            font-weight: 700;
-            border-radius: 9999px;
-            text-decoration: none;
-            white-space: nowrap;
-            min-height: 44px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        @media (min-width: 640px) {
-            .emergency-banner__cta { margin-top: 0; flex-shrink: 0; }
-        }
-        .emergency-banner__cta:hover { background: #fef2f2; }
-        .emergency-nav-link {
-            color: #b91c1c;
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-decoration: none;
-            padding: 0.375rem 0.75rem;
-            border-radius: 9999px;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-        }
-        .emergency-nav-link:hover { background: #fee2e2; color: #991b1b; }
+        .service-closure-banner__text strong { color: #fff; font-weight: 700; }
 
         /* Hero — padding explícito (pt-44/pt-40 no están en output.css) */
         .landing-hero {
@@ -104,20 +69,14 @@
 
     <!-- ==================== HEADER: ALERTA + NAVBAR ==================== -->
     <header id="site-header" class="fixed w-full z-50 top-0 left-0 right-0">
-        <!-- Banner emergencia terremoto -->
-        <div class="emergency-banner" role="alert">
-            <div class="emergency-banner__inner">
-                <p class="emergency-banner__text">
-                    <strong>Emergencia por terremoto.</strong>
-                    Arsys Intela y Condominio360 apoyan a las comunidades en la recopilación de datos para Protección Civil.
-                    Complete el censo de su unidad — <strong>sin contraseña</strong>, desde el teléfono.
+        <!-- Banner cierre de servicio -->
+        <div class="service-closure-banner" role="alert">
+            <div class="service-closure-banner__inner">
+                <p class="service-closure-banner__text">
+                    <strong>Aviso importante:</strong>
+                    El servicio de Condominio360 finalizará el <strong>30 de agosto de 2026</strong>.
+                    Para más información, comuníquese con la junta de condominio.
                 </p>
-                <a href="/terremotove" class="emergency-banner__cta">
-                    Completar censo
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                    </svg>
-                </a>
             </div>
         </div>
 
@@ -131,7 +90,6 @@
                 </a>
                 
                 <div class="hidden lg:flex items-center gap-8">
-                    <a href="/terremotove" class="emergency-nav-link">Censo terremoto</a>
                     <a href="#features" class="text-slate-600 hover:text-orange-600 font-medium transition">Funciones</a>
                     <a href="#how-it-works" class="text-slate-600 hover:text-orange-600 font-medium transition">Cómo funciona</a>
                     <a href="#pricing" class="text-slate-600 hover:text-orange-600 font-medium transition">Precios</a>
@@ -159,9 +117,6 @@
                 <a href="#how-it-works" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Cómo funciona</a>
                 <a href="#pricing" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Precios</a>
                 <a href="#faq" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">FAQ</a>
-                <a href="/terremotove" class="block py-3 px-4 rounded-lg font-semibold text-center" style="background:#991b1b;color:#fff;">
-                    Censo de emergencia (terremoto)
-                </a>
                 <hr class="border-slate-100 my-4">
                 <a href="/login" class="block py-3 px-4 rounded-lg text-slate-900 font-semibold hover:bg-slate-50">Iniciar Sesión</a>
                 <a href="#demo" class="block py-4 px-4 bg-orange-500 text-white text-center rounded-full font-semibold">Solicitar Demo</a>

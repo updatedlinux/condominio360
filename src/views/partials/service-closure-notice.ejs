@@ -1,0 +1,68 @@
+<%# Aviso de cierre de servicio — paneles propietario y junta %>
+<div id="service-closure-banner" class="service-closure-banner" role="alert">
+    <div class="service-closure-banner__inner">
+        <p class="service-closure-banner__text">
+            <strong>Aviso importante:</strong>
+            El servicio de Condominio360 finalizará el <strong>30 de agosto de 2026</strong>.
+            Para más información, comuníquese con la junta de condominio.
+        </p>
+    </div>
+</div>
+
+<div id="service-closure-modal" class="fixed inset-0 z-[10020] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm" aria-hidden="true">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-slate-100" role="dialog" aria-modal="true" aria-labelledby="service-closure-modal-title" onclick="event.stopPropagation()">
+        <div class="flex items-start gap-4 mb-5">
+            <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <span class="material-icons-round text-amber-600 text-2xl">info</span>
+            </div>
+            <div>
+                <h2 id="service-closure-modal-title" class="text-xl font-semibold text-[#3C4043]">Fin del servicio Condominio360</h2>
+                <p class="text-sm text-[#5F6368] mt-1">Comunicado a la comunidad</p>
+            </div>
+        </div>
+        <div class="text-sm text-[#3C4043] leading-relaxed space-y-3">
+            <p>
+                Les informamos que la plataforma <strong>Condominio360</strong> dejará de estar disponible a partir del
+                <strong>30 de agosto de 2026</strong>.
+            </p>
+            <p>
+                Agradecemos su confianza durante el tiempo que utilizaron la plataforma. Para más información sobre este proceso,
+                por favor comuníquese con la <strong>junta de condominio</strong>.
+            </p>
+        </div>
+        <button type="button" id="service-closure-modal-close" class="mt-6 w-full px-4 py-3 rounded-xl bg-[#f97316] text-white font-semibold hover:bg-[#ea580c] transition-colors shadow-lg shadow-orange-500/25">
+            Entendido
+        </button>
+    </div>
+</div>
+
+<style>
+    .service-closure-banner {
+        background: #92400e;
+        color: #ffffff;
+        border-bottom: 3px solid #78350f;
+        flex-shrink: 0;
+    }
+    .service-closure-banner__inner {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 0.75rem 1rem;
+    }
+    @media (min-width: 640px) {
+        .service-closure-banner__inner {
+            padding: 0.625rem 1.5rem;
+        }
+    }
+    .service-closure-banner__text {
+        font-size: 0.8125rem;
+        line-height: 1.45;
+        color: #fde68a;
+        margin: 0;
+        text-align: center;
+    }
+    @media (min-width: 640px) {
+        .service-closure-banner__text { font-size: 0.875rem; }
+    }
+    .service-closure-banner__text strong { color: #fff; font-weight: 700; }
+</style>
+<script src="/js/service-closure-notice.js" defer></script>
