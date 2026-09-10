@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <% if (typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) { %>
+    <% if (!serviceClosed && typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) { %>
     <script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>"></script>
     <% } %>
     <style>
@@ -63,19 +63,35 @@
                 padding-top: calc(env(safe-area-inset-top, 0px) + 10rem);
             }
         }
+        .landing-hero--closed {
+            min-height: calc(100vh - 8rem);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 9rem);
+            padding-bottom: 5rem;
+        }
+        .landing-closure-card {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #fed7aa;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 50px -12px rgba(249, 115, 22, 0.15);
+        }
     </style>
 </head>
 <body class="bg-white text-slate-900 antialiased overflow-x-hidden">
 
     <!-- ==================== HEADER: ALERTA + NAVBAR ==================== -->
     <header id="site-header" class="fixed w-full z-50 top-0 left-0 right-0">
-        <!-- Banner cierre de servicio -->
+        <!-- Banner estado del servicio -->
         <div class="service-closure-banner" role="alert">
             <div class="service-closure-banner__inner">
                 <p class="service-closure-banner__text">
+                    <% if (serviceClosed) { %>
+                    <strong>Servicio cerrado.</strong>
+                    Condominio360 no está disponible hasta nuevo aviso.
+                    <% } else { %>
                     <strong>Aviso importante:</strong>
                     El servicio de Condominio360 finalizará el <strong>30 de agosto de 2026</strong>.
                     Para más información, comuníquese con la junta de condominio.
+                    <% } %>
                 </p>
             </div>
         </div>
@@ -89,6 +105,7 @@
                     <span class="text-xl sm:text-2xl text-slate-900 tracking-tight" style="font-weight: 800;">Condominio360</span>
                 </a>
                 
+                <% if (!serviceClosed) { %>
                 <div class="hidden lg:flex items-center gap-8">
                     <a href="#features" class="text-slate-600 hover:text-orange-600 font-medium transition">Funciones</a>
                     <a href="#how-it-works" class="text-slate-600 hover:text-orange-600 font-medium transition">Cómo funciona</a>
@@ -102,15 +119,19 @@
                         Solicitar Demo
                     </a>
                 </div>
+                <% } %>
 
+                <% if (!serviceClosed) { %>
                 <button class="lg:hidden p-3 rounded-lg hover:bg-slate-100 transition" onclick="toggleMobileMenu()" aria-label="Menú">
                     <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
+                <% } %>
             </div>
         </div>
 
+        <% if (!serviceClosed) { %>
         <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-slate-100 shadow-lg">
             <div class="px-4 py-6 space-y-1">
                 <a href="#features" class="block py-3 px-4 rounded-lg text-slate-600 font-medium hover:bg-orange-50 hover:text-orange-600">Funciones</a>
@@ -122,17 +143,45 @@
                 <a href="#demo" class="block py-4 px-4 bg-orange-500 text-white text-center rounded-full font-semibold">Solicitar Demo</a>
             </div>
         </div>
+        <% } %>
     </nav>
     </header>
 
     <!-- ==================== HERO ==================== -->
-    <section id="hero" class="landing-hero">
+    <section id="hero" class="landing-hero<%= serviceClosed ? ' landing-hero--closed' : '' %>">
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-40 -right-40 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl"></div>
             <div class="absolute top-1/2 -left-20 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"></div>
         </div>
 
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <% if (serviceClosed) { %>
+            <div class="max-w-3xl mx-auto text-center">
+                <div class="landing-closure-card px-6 py-10 sm:px-10 sm:py-12">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 mb-6">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-5">
+                        Gracias por haber confiado en nosotros
+                    </h1>
+                    <p class="text-lg text-slate-600 leading-relaxed mb-4">
+                        Condominio360 se encuentra <strong class="text-slate-800">cerrado hasta nuevo aviso</strong>.
+                        Agradecemos profundamente a las juntas de condominio, administradores y propietarios que nos acompañaron en este camino.
+                    </p>
+                    <p class="text-base text-slate-600 leading-relaxed mb-4">
+                        Esperamos que la situación en Venezuela mejore pronto, especialmente tras los recientes eventos sísmicos que han afectado a tantas familias y comunidades.
+                    </p>
+                    <p class="text-base text-slate-700 leading-relaxed font-medium">
+                        Cuando Dios lo permita, volveremos más fuertes que nunca para seguir digitalizando la gestión de condominios y acompañar a quienes crean en comunidades más organizadas, transparentes y humanas.
+                    </p>
+                    <p class="mt-8 text-sm text-slate-500">
+                        — El equipo de <strong class="text-slate-700">Arsys Intela</strong> y <strong class="text-slate-700">Condominio360</strong>
+                    </p>
+                </div>
+            </div>
+            <% } else { %>
             <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                 <div>
                     <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6">
@@ -232,11 +281,12 @@
                     </div>
                 </div>
             </div>
+            <% } %>
         </div>
     </section>
 
     <!-- ==================== FEATURES - ¿Por qué elegir Condominio360? ==================== -->
-    <section id="features" class="py-20 lg:py-28 bg-slate-50">
+    <section id="features" class="py-20 lg:py-28 bg-slate-50<%= serviceClosed ? ' hidden' : '' %>" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-2xl mx-auto mb-16">
                 <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Funciones</span>
@@ -340,7 +390,7 @@
     </section>
 
     <!-- ==================== HOW IT WORKS - 4 pasos ==================== -->
-    <section id="how-it-works" class="py-20 lg:py-28">
+    <section id="how-it-works" class="py-20 lg:py-28<%= serviceClosed ? ' hidden' : '' %>" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-2xl mx-auto mb-16">
                 <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Implementación</span>
@@ -374,7 +424,7 @@
     </section>
 
     <!-- ==================== PRICING ==================== -->
-    <section id="pricing" class="py-20 lg:py-28 bg-slate-50">
+    <section id="pricing" class="py-20 lg:py-28 bg-slate-50<%= serviceClosed ? ' hidden' : '' %>" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-2xl mx-auto mb-16">
                 <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Precios</span>
@@ -418,7 +468,7 @@
     </section>
 
     <!-- ==================== TESTIMONIOS ==================== -->
-    <section class="py-20 lg:py-28">
+    <section class="py-20 lg:py-28<%= serviceClosed ? ' hidden' : '' %>" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-2xl mx-auto mb-16">
                 <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">Testimonios</span>
@@ -484,7 +534,7 @@
     </section>
 
     <!-- ==================== FAQ ==================== -->
-    <section id="faq" class="py-20 lg:py-28 bg-slate-50">
+    <section id="faq" class="py-20 lg:py-28 bg-slate-50<%= serviceClosed ? ' hidden' : '' %>" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <span class="text-orange-600 font-bold text-sm tracking-wide uppercase">FAQ</span>
@@ -539,7 +589,7 @@
     </section>
 
     <!-- ==================== CTA FINAL ==================== -->
-    <section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-orange-500 to-orange-600">
+    <section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-orange-500 to-orange-600<%= serviceClosed ? ' hidden' : '' %>" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl lg:text-4xl font-extrabold text-white mb-6">¿Listo para modernizar tu condominio?</h2>
             <p class="text-lg text-orange-100 mb-8">Únete a cientos de administradores que han simplificado su gestión. Prueba gratuita de 14 días.</p>
@@ -591,8 +641,9 @@
                     <a href="/" class="flex items-center gap-3 mb-4">
                         <img src="/assets/images/CONDOMINIO360-blacklogo.svg" alt="Condominio360" class="h-12 sm:h-14 w-auto max-w-[220px] sm:max-w-[260px]" style="object-fit: contain;">
                     </a>
-                    <p class="text-sm leading-relaxed">Gestión inteligente de condominios. Moderniza tu comunidad con tecnología de punta.</p>
+                    <p class="text-sm leading-relaxed"><%= serviceClosed ? 'Plataforma de gestión de condominios. Servicio cerrado hasta nuevo aviso.' : 'Gestión inteligente de condominios. Moderniza tu comunidad con tecnología de punta.' %></p>
                 </div>
+                <% if (!serviceClosed) { %>
                 <div>
                     <h5 class="text-white font-semibold mb-4">Producto</h5>
                     <ul class="space-y-3 text-sm">
@@ -601,6 +652,7 @@
                         <li><a href="/login" class="hover:text-white transition">Iniciar Sesión</a></li>
                     </ul>
                 </div>
+                <% } %>
                 <div>
                     <h5 class="text-white font-semibold mb-4">Empresa</h5>
                     <ul class="space-y-3 text-sm">
@@ -627,8 +679,8 @@
         </div>
     </footer>
 
-    <!-- Modal estilizado (reemplaza alert) -->
-    <div id="demo-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="closeDemoModal(event)">
+    <!-- Modal estilizado (reemplaza alert) — desactivado con servicio cerrado -->
+    <div id="demo-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden<%= serviceClosed ? ' pointer-events-none' : '' %>" onclick="closeDemoModal(event)" aria-hidden="<%= serviceClosed ? 'true' : 'false' %>">
         <div id="demo-modal" class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-[fadeIn_0.2s_ease-out]" onclick="event.stopPropagation()">
             <div id="demo-modal-icon" class="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center text-white bg-orange-500">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="demo-modal-icon-check">
@@ -646,8 +698,11 @@
     </div>
     <style>@keyframes fadeIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}</style>
 
+    <% if (!serviceClosed) { %>
     <script>window.RECAPTCHA_SITE_KEY = '<%= typeof recaptchaSiteKey !== "undefined" ? (recaptchaSiteKey || "") : "" %>';</script>
+    <% } %>
     <script>
+        window.SERVICE_CLOSED = <%= serviceClosed ? 'true' : 'false' %>;
         /** Misma lógica que login (auth.js): reCAPTCHA v3 con acción distinta para el backend */
         function getRecaptchaTokenDemo() {
             const siteKey = (window.RECAPTCHA_SITE_KEY || '').trim();
@@ -742,6 +797,7 @@
 
         async function handleDemoRequest(e) {
             e.preventDefault();
+            if (window.SERVICE_CLOSED) return;
             const form = e.target;
             const emailInput = form.querySelector('input[name="email"]');
             const email = (emailInput?.value || '').trim();

@@ -47,6 +47,10 @@ morgan.token('remote-addr', (req) => {
 const BASE_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 app.locals.baseUrl = BASE_URL;
 
+const { SERVICE_CLOSED } = require('./config/siteStatus');
+const { rejectIfServiceClosed } = require('./middleware/serviceClosed');
+app.locals.serviceClosed = SERVICE_CLOSED;
+
 // Conectar a BD al inicio
 connectDB();
 
@@ -151,7 +155,7 @@ app.use('/api/tenant-admin/nfc', nfcAdminRoutes);
 
 // Demo request desde landing (público)
 const DemoController = require('./controllers/DemoController');
-app.post('/api/demo-request', DemoController.requestDemo);
+app.post('/api/demo-request', rejectIfServiceClosed, DemoController.requestDemo);
 
 // Censo de emergencia terremoto (público, sin autenticación)
 app.use('/api/terremotove', require('./routes/earthquakeCensus'));

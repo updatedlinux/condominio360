@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AuthController = require('../controllers/AuthController');
 const { authenticate, requireOwner, requireOwnerNickname, requireTenantAdmin, requireSuperAdmin } = require('../middleware/auth');
+const { rejectIfServiceClosed } = require('../middleware/serviceClosed');
 
 /**
  * Rutas de Autenticación
@@ -11,16 +12,16 @@ const { authenticate, requireOwner, requireOwnerNickname, requireTenantAdmin, re
 // ==================== LOGIN ====================
 
 // Login unificado (detecta tipo automáticamente)
-router.post('/login', AuthController.login);
+router.post('/login', rejectIfServiceClosed, AuthController.login);
 
 // Login específico por tipo
-router.post('/login/owner', AuthController.loginOwner);
-router.post('/login/admin', AuthController.loginTenantAdmin);
-router.post('/login/superadmin', AuthController.loginSuperAdmin);
+router.post('/login/owner', rejectIfServiceClosed, AuthController.loginOwner);
+router.post('/login/admin', rejectIfServiceClosed, AuthController.loginTenantAdmin);
+router.post('/login/superadmin', rejectIfServiceClosed, AuthController.loginSuperAdmin);
 
 // Login para seguridad
 const SecurityUserController = require('../controllers/SecurityUserController');
-router.post('/login/security', SecurityUserController.login);
+router.post('/login/security', rejectIfServiceClosed, SecurityUserController.login);
 
 // ==================== REGISTRO E INVITACIONES ====================
 

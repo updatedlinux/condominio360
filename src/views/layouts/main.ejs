@@ -29,10 +29,12 @@
                 </a>
                 <div class="flex items-center gap-4">
                     <a href="/" class="text-slate-600 hover:text-orange-600 font-medium transition">Inicio</a>
+                    <% if (!serviceClosed) { %>
                     <% if (typeof loginPage === 'undefined' || !loginPage) { %>
                     <a href="/login" class="text-slate-700 font-semibold hover:text-orange-600 transition">Iniciar Sesión</a>
                     <% } %>
                     <a href="/#demo" class="px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-full hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">Solicitar Demo</a>
+                    <% } %>
                 </div>
             </div>
         </div>
@@ -54,6 +56,7 @@
                     La plataforma integral para la gestión inteligente de condominios residenciales y comerciales.
                 </p>
             </div>
+            <% if (!serviceClosed) { %>
             <div>
                 <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Producto</h3>
                 <ul class="space-y-2">
@@ -61,6 +64,7 @@
                     <li><a href="/#pricing" class="text-slate-300 hover:text-white transition">Precios</a></li>
                 </ul>
             </div>
+            <% } %>
             <div>
                 <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Legal</h3>
                 <ul class="space-y-2">

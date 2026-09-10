@@ -3,7 +3,7 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
     res.render('landing', {
-        title: 'Gestión Inteligente de Condominios',
+        title: req.app.locals.serviceClosed ? 'Servicio cerrado' : 'Gestión Inteligente de Condominios',
         layout: false, // Landing autocontenida con su propio diseño
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || ''
     });

@@ -4,11 +4,30 @@
 <div class="min-h-[80vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full">
         <div class="bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
-            <div class="flex flex-col items-center">
+            <div class="flex flex-col items-center text-center">
                 <a href="/" class="flex items-center gap-2 mb-6">
                     <img src="/assets/images/isotipo-naranja.svg" alt="" class="h-12 w-12" style="object-fit: contain;">
                     <span class="text-xl text-slate-900 tracking-tight" style="font-weight: 800;">Condominio360</span>
                 </a>
+
+                <% if (serviceClosed) { %>
+                <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-5">
+                    <svg class="h-8 w-8 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.74-3L13.74 4a2 2 0 00-3.48 0L3.33 16a2 2 0 001.74 3z"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-900">Acceso deshabilitado</h2>
+                <p class="mt-4 text-sm text-slate-600 leading-relaxed">
+                    El servicio de Condominio360 está <strong>cerrado hasta nuevo aviso</strong>.
+                    El inicio de sesión no está disponible en este momento.
+                </p>
+                <p class="mt-3 text-sm text-slate-500 leading-relaxed">
+                    Para más información, comuníquese con la junta de condominio de su comunidad.
+                </p>
+                <a href="/" class="mt-8 inline-flex items-center justify-center w-full py-3 px-4 text-sm font-semibold rounded-xl text-white bg-orange-500 hover:bg-orange-600 transition shadow-lg shadow-orange-500/25">
+                    Volver al inicio
+                </a>
+                <% } else { %>
                 <h2 class="text-2xl font-extrabold text-slate-900">
                     Iniciar Sesión
                 </h2>
@@ -65,13 +84,17 @@
 
                 <div id="errorMessage" class="hidden text-red-600 text-sm text-center py-3 bg-red-50 px-4 rounded-xl"></div>
             </form>
+                <% } %>
         </div>
+        <% if (!serviceClosed) { %>
         <p class="mt-6 text-center">
             <a href="/" class="text-slate-600 hover:text-orange-600 font-medium text-sm transition">← Volver al inicio</a>
         </p>
+        <% } %>
     </div>
 </div>
 
+<% if (!serviceClosed) { %>
 <script>window.RECAPTCHA_SITE_KEY = '<%= typeof recaptchaSiteKey !== "undefined" ? (recaptchaSiteKey || "") : "" %>';</script>
 <script>
 (function (d, t) {
@@ -118,3 +141,4 @@ function openChatwootHelp() {
 document.getElementById('btn-chatwoot-help')?.addEventListener('click', openChatwootHelp);
 </script>
 <script src="/js/auth.js?v=3"></script>
+<% } %>
