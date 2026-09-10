@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <% if (serviceClosed) { %>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0" rel="stylesheet">
+    <% } %>
     <% if (!serviceClosed && typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey) { %>
     <script src="https://www.google.com/recaptcha/api.js?render=<%= recaptchaSiteKey %>"></script>
     <% } %>
@@ -40,6 +43,13 @@
             text-align: center;
         }
         .service-closure-banner__text strong { color: #fff; font-weight: 700; }
+        .service-closure-banner--closed .service-closure-banner__text {
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 500;
+        }
+        .service-closure-banner--closed .service-closure-banner__text strong {
+            font-weight: 800;
+        }
 
         /* Hero — padding explícito (pt-44/pt-40 no están en output.css) */
         .landing-hero {
@@ -64,15 +74,159 @@
             }
         }
         .landing-hero--closed {
-            min-height: calc(100vh - 8rem);
-            padding-top: calc(env(safe-area-inset-top, 0px) + 9rem);
-            padding-bottom: 5rem;
+            min-height: calc(100vh - 7rem);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 8.5rem);
+            padding-bottom: 4rem;
+            align-items: flex-start;
+            background: linear-gradient(165deg, #fff7ed 0%, #ffffff 38%, #fef3c7 100%);
         }
-        .landing-closure-card {
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid #fed7aa;
-            border-radius: 1.5rem;
-            box-shadow: 0 20px 50px -12px rgba(249, 115, 22, 0.15);
+        .service-closure-banner--closed {
+            background: linear-gradient(90deg, #c2410c 0%, #ea580c 50%, #d97706 100%);
+            border-bottom: none;
+        }
+        .closure-expressive {
+            position: relative;
+            width: 100%;
+            max-width: 44rem;
+            margin: 0 auto;
+            padding: 0.5rem 0 2rem;
+        }
+        .closure-shape {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 9999px;
+            filter: blur(0px);
+        }
+        .closure-shape--1 {
+            width: 14rem;
+            height: 14rem;
+            top: -2rem;
+            right: -4rem;
+            background: radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.35), rgba(251, 146, 60, 0));
+            animation: closure-float 9s ease-in-out infinite;
+        }
+        .closure-shape--2 {
+            width: 10rem;
+            height: 10rem;
+            bottom: 4rem;
+            left: -3rem;
+            background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0));
+            animation: closure-float 11s ease-in-out infinite reverse;
+        }
+        .closure-shape--3 {
+            width: 6rem;
+            height: 6rem;
+            top: 40%;
+            right: -1rem;
+            background: rgba(234, 88, 12, 0.12);
+            border-radius: 38% 62% 70% 30% / 42% 36% 64% 58%;
+            animation: closure-morph 14s ease-in-out infinite;
+        }
+        @keyframes closure-float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-12px) scale(1.04); }
+        }
+        @keyframes closure-morph {
+            0%, 100% { border-radius: 38% 62% 70% 30% / 42% 36% 64% 58%; }
+            50% { border-radius: 58% 42% 34% 66% / 48% 62% 38% 52%; }
+        }
+        .closure-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem 0.5rem 0.75rem;
+            margin-bottom: 1.75rem;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #9a3412;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border-radius: 9999px;
+            box-shadow: 0 1px 2px rgba(154, 52, 18, 0.08), 0 8px 24px rgba(249, 115, 22, 0.12);
+        }
+        .closure-chip .material-symbols-rounded {
+            font-size: 1.125rem;
+            color: #ea580c;
+        }
+        .closure-headline {
+            margin: 0 0 1.75rem;
+            font-size: clamp(2.25rem, 6vw, 3.75rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            color: #1c1917;
+        }
+        .closure-headline-line {
+            display: block;
+        }
+        .closure-headline-line--accent {
+            background: linear-gradient(120deg, #ea580c 0%, #f97316 45%, #fb923c 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            padding-bottom: 0.08em;
+        }
+        .closure-prose {
+            display: flex;
+            flex-direction: column;
+            gap: 1.125rem;
+            text-align: left;
+        }
+        .closure-prose p {
+            margin: 0;
+            font-size: 1.0625rem;
+            line-height: 1.75;
+            color: #44403c;
+        }
+        .closure-prose p strong {
+            color: #292524;
+            font-weight: 700;
+        }
+        .closure-prose p.closure-prose--emphasis {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #292524;
+            padding-left: 1rem;
+            border-left: 4px solid #fb923c;
+        }
+        .closure-signature {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2.5rem;
+            padding-top: 1.75rem;
+        }
+        .closure-signature__mark {
+            flex-shrink: 0;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #ffedd5, #fed7aa);
+            border-radius: 1rem 1rem 1rem 0.25rem;
+            box-shadow: 0 4px 14px rgba(234, 88, 12, 0.15);
+        }
+        .closure-signature__mark img {
+            width: 1.75rem;
+            height: 1.75rem;
+            object-fit: contain;
+        }
+        .closure-signature__text {
+            margin: 0;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            color: #78716c;
+        }
+        .closure-signature__text strong {
+            color: #44403c;
+            font-weight: 700;
+        }
+        @media (min-width: 640px) {
+            .closure-expressive { max-width: 40rem; }
+            .closure-prose { gap: 1.25rem; }
         }
     </style>
 </head>
@@ -81,7 +235,7 @@
     <!-- ==================== HEADER: ALERTA + NAVBAR ==================== -->
     <header id="site-header" class="fixed w-full z-50 top-0 left-0 right-0">
         <!-- Banner estado del servicio -->
-        <div class="service-closure-banner" role="alert">
+        <div class="service-closure-banner<%= serviceClosed ? ' service-closure-banner--closed' : '' %>" role="alert">
             <div class="service-closure-banner__inner">
                 <p class="service-closure-banner__text">
                     <% if (serviceClosed) { %>
@@ -97,7 +251,7 @@
         </div>
 
     <!-- ==================== NAVBAR ==================== -->
-    <nav class="w-full transition-all duration-300 bg-white/95 backdrop-blur-lg border-b border-slate-100/80" id="navbar">
+    <nav class="w-full transition-all duration-300 <%= serviceClosed ? 'bg-transparent border-b border-transparent' : 'bg-white/95 backdrop-blur-lg border-b border-slate-100/80' %>" id="navbar">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <a href="/" class="flex items-center gap-3 group">
@@ -149,38 +303,55 @@
 
     <!-- ==================== HERO ==================== -->
     <section id="hero" class="landing-hero<%= serviceClosed ? ' landing-hero--closed' : '' %>">
+        <% if (!serviceClosed) { %>
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute -top-40 -right-40 w-96 h-96 bg-orange-200/40 rounded-full blur-3xl"></div>
             <div class="absolute top-1/2 -left-20 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"></div>
         </div>
+        <% } %>
 
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <% if (serviceClosed) { %>
-            <div class="max-w-3xl mx-auto text-center">
-                <div class="landing-closure-card px-6 py-10 sm:px-10 sm:py-12">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 mb-6">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                        </svg>
-                    </div>
-                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-5">
-                        Gracias por haber confiado en nosotros
-                    </h1>
-                    <p class="text-lg text-slate-600 leading-relaxed mb-4">
-                        Condominio360 se encuentra <strong class="text-slate-800">cerrado hasta nuevo aviso</strong>.
-                        Agradecemos profundamente a las juntas de condominio, administradores y propietarios que nos acompañaron en este camino.
+            <article class="closure-expressive" aria-labelledby="closure-headline">
+                <div class="closure-shape closure-shape--1" aria-hidden="true"></div>
+                <div class="closure-shape closure-shape--2" aria-hidden="true"></div>
+                <div class="closure-shape closure-shape--3" aria-hidden="true"></div>
+
+                <div class="closure-chip">
+                    <span class="material-symbols-rounded" aria-hidden="true">pause_circle</span>
+                    Servicio cerrado · Hasta nuevo aviso
+                </div>
+
+                <h1 id="closure-headline" class="closure-headline">
+                    <span class="closure-headline-line">Gracias por</span>
+                    <span class="closure-headline-line closure-headline-line--accent">confiar en nosotros</span>
+                </h1>
+
+                <div class="closure-prose">
+                    <p>
+                        <strong>Condominio360</strong> no está disponible en este momento. A las juntas de condominio,
+                        administradores y propietarios que nos acompañaron: <strong>gracias de corazón</strong>.
                     </p>
-                    <p class="text-base text-slate-600 leading-relaxed mb-4">
-                        Esperamos que la situación en Venezuela mejore pronto, especialmente tras los recientes eventos sísmicos que han afectado a tantas familias y comunidades.
+                    <p>
+                        Esperamos que la situación en Venezuela mejore pronto, especialmente tras los recientes eventos
+                        sísmicos que han afectado a tantas familias y comunidades.
                     </p>
-                    <p class="text-base text-slate-700 leading-relaxed font-medium">
-                        Cuando Dios lo permita, volveremos más fuertes que nunca para seguir digitalizando la gestión de condominios y acompañar a quienes crean en comunidades más organizadas, transparentes y humanas.
-                    </p>
-                    <p class="mt-8 text-sm text-slate-500">
-                        — El equipo de <strong class="text-slate-700">Arsys Intela</strong> y <strong class="text-slate-700">Condominio360</strong>
+                    <p class="closure-prose--emphasis">
+                        Cuando Dios lo permita, volveremos más fuertes que nunca para seguir digitalizando la gestión
+                        de condominios y acompañar a quienes creen en comunidades más organizadas, transparentes y humanas.
                     </p>
                 </div>
-            </div>
+
+                <footer class="closure-signature">
+                    <div class="closure-signature__mark" aria-hidden="true">
+                        <img src="/assets/images/isotipo-naranja.svg" alt="">
+                    </div>
+                    <p class="closure-signature__text">
+                        Con cariño,<br>
+                        <strong>Arsys Intela</strong> y el equipo de <strong>Condominio360</strong>
+                    </p>
+                </footer>
+            </article>
             <% } else { %>
             <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                 <div>
